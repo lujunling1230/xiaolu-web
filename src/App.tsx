@@ -31,7 +31,7 @@ const SKILLS = ["产品规划", "用户研究", "需求分析", "原型设计", 
 const AppContent: React.FC = () => {
   const { isNight, toggleTheme } = useTheme();
   const [current, setCurrent] = useState<Section>("home");
-  const [isFullMode, setIsFullMode] = useState(false);
+  const [isFullMode, setIsFullMode] = useState(true);
   const openBookRef = useRef<(() => void) | null>(null);
   const [lightboxHobby, setLightboxHobby] = useState<number | null>(null);
 
@@ -39,12 +39,12 @@ const AppContent: React.FC = () => {
     openBookRef.current = fn;
   }, []);
 
-  // 解析 URL 参数 ?mode=full — 控制纯净版/完整版
+  // 解析 URL 参数 ?mode=pure — 默认完整版，仅 ?mode=pure 为纯净版（疗愈室）
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    const full = params.get("mode") === "full";
-    setIsFullMode(full);
-    document.title = full ? "路俊玲 | AI 产品经理作品集" : "森林疗愈室";
+    const pure = params.get("mode") === "pure";
+    setIsFullMode(!pure);
+    document.title = pure ? "森林疗愈室" : "路俊玲 | AI 产品经理作品集";
   }, []);
 
   // 滚动监听 — 完整模式监听全部区块，纯净模式仅监听 home + lab

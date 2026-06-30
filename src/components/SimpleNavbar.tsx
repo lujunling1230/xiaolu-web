@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import AmbientSound from "./AmbientSound";
+import { Link } from "react-router-dom";
 
 /**
  * SimpleNavbar 极简文字导航栏
@@ -72,6 +73,13 @@ const SimpleNavbar: React.FC<SimpleNavbarProps> = ({ current, onNavigate, isNigh
           </button>
         ))}
 
+        {/* 米奇妙妙屋 —— 仅完整版显示，Launchpad 发射台（合并原"妙妙工具箱/妙妙屋"） */}
+        {isFullMode && (
+          <Link to="/mickey" className="nav-link" style={{ color: "var(--text-soft)" }}>
+            米奇妙妙屋
+          </Link>
+        )}
+
         {/* 昼夜切换 */}
         <button
           onClick={onToggleTheme}
@@ -121,6 +129,15 @@ const SimpleNavbar: React.FC<SimpleNavbarProps> = ({ current, onNavigate, isNigh
               {item.label}
             </button>
           ))}
+          {isFullMode && (
+            <Link
+              to="/mickey"
+              onClick={() => setMobileOpen(false)}
+              style={{ color: "var(--text-soft)", textAlign: "left" }}
+            >
+              米奇妙妙屋
+            </Link>
+          )}
           <button
             onClick={onToggleTheme}
             style={{ color: "var(--text-soft)", textAlign: "left" }}

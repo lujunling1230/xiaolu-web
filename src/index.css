@@ -102,3 +102,287 @@ a {
 ::-webkit-scrollbar-thumb:hover {
   background: rgba(122, 154, 130, 0.5);
 }
+
+/* ============================================
+   妙妙工具箱 — 纸张 / 工作台质感
+   固定浅米灰底色 #F7F5F2，不随昼夜切换
+   ============================================ */
+
+/* 修复：首页为 PC 端设置了 cursor:none（蝴蝶光标），
+   工具箱页未渲染蝴蝶光标，需恢复系统指针 */
+.toolbox-page,
+.toolbox-page * {
+  cursor: auto;
+}
+.toolbox-page .tool-card,
+.toolbox-page .toolbox-back,
+.toolbox-page .detail-back-link,
+.toolbox-page .detail-return {
+  cursor: pointer;
+}
+
+.toolbox-page {
+  min-height: 100vh;
+  color: #3d3d3d;
+  background-color: #f7f5f2;
+  background-image:
+    radial-gradient(130% 70% at 50% -8%, rgba(255, 255, 255, 0.7) 0%, rgba(255, 255, 255, 0) 55%),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+  font-family: "Noto Sans SC", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  padding: 0 24px 80px;
+}
+
+/* —— 顶部返回条 —— */
+.toolbox-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: 26px 4px 0;
+}
+.toolbox-back {
+  font-size: 14px;
+  color: #6b6b6b;
+  text-decoration: none;
+  letter-spacing: 0.04em;
+  background: none;
+  border: none;
+  padding: 0;
+  display: inline-block;
+  transition: color 0.25s ease, transform 0.25s ease;
+}
+.toolbox-back:hover {
+  color: #7a9a82;
+  transform: translateX(-3px);
+}
+.toolbox-topbar-meta {
+  font-size: 11px;
+  color: #a8a39b;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+}
+
+/* —— 标题区 —— */
+.toolbox-hero {
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: 54px 4px 40px;
+}
+.toolbox-eyebrow {
+  font-size: 12px;
+  letter-spacing: 0.32em;
+  text-transform: uppercase;
+  color: #7a9a82;
+  margin: 0 0 14px;
+  font-weight: 500;
+}
+.toolbox-title {
+  font-family: "Noto Serif SC", Georgia, serif;
+  font-size: clamp(34px, 5vw, 50px);
+  font-weight: 600;
+  color: #3d3d3d;
+  margin: 0 0 14px;
+  letter-spacing: 0.04em;
+  line-height: 1.15;
+}
+.toolbox-subtitle {
+  font-size: 15px;
+  color: #6b6b6b;
+  margin: 0;
+  letter-spacing: 0.06em;
+}
+
+/* —— 3x3 网格 —— */
+.toolbox-grid {
+  max-width: 1000px;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 22px;
+  padding: 8px 4px 0;
+}
+
+/* —— 卡片（小纸片） —— */
+.tool-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  text-align: left;
+  padding: 28px 26px 26px;
+  background: #fdfcf9;
+  border: 1px solid #ece6dc;
+  border-radius: 16px;
+  box-shadow: 0 4px 18px -10px rgba(80, 76, 66, 0.2), 0 1px 2px rgba(80, 76, 66, 0.04);
+  font-family: inherit;
+  color: inherit;
+  overflow: hidden;
+  transition: border-color 0.3s ease, box-shadow 0.3s ease, background 0.3s ease;
+}
+.tool-card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.5) 0%, rgba(255, 255, 255, 0) 42%);
+  pointer-events: none;
+}
+.tool-card:hover {
+  border-color: rgba(122, 154, 130, 0.75);
+  box-shadow: 0 18px 38px -14px rgba(80, 76, 66, 0.3), 0 2px 6px rgba(80, 76, 66, 0.06);
+  background: #fffdf8;
+}
+.tool-card:focus-visible {
+  outline: none;
+  border-color: #7a9a82;
+  box-shadow: 0 0 0 3px rgba(122, 154, 130, 0.28), 0 18px 38px -14px rgba(80, 76, 66, 0.3);
+}
+.tool-card-no {
+  position: absolute;
+  top: 16px;
+  right: 18px;
+  font-family: "Noto Serif SC", Georgia, serif;
+  font-size: 12px;
+  color: #c8c1b4;
+  letter-spacing: 0.1em;
+  z-index: 1;
+}
+.tool-card-dimension {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 58px;
+  height: 58px;
+  border-radius: 50%;
+  font-family: "Noto Serif SC", Georgia, serif;
+  font-size: 30px;
+  font-weight: 600;
+  margin-bottom: 20px;
+  position: relative;
+  z-index: 1;
+}
+.tool-card-title {
+  font-family: "Noto Serif SC", Georgia, serif;
+  font-size: 17px;
+  font-weight: 600;
+  color: #3d3d3d;
+  margin-bottom: 8px;
+  line-height: 1.4;
+  position: relative;
+  z-index: 1;
+}
+.tool-card-value {
+  font-size: 13px;
+  color: #9a948b;
+  letter-spacing: 0.04em;
+  position: relative;
+  z-index: 1;
+}
+
+/* —— 页脚 —— */
+.toolbox-foot {
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: 52px 4px 0;
+  text-align: center;
+  font-size: 13px;
+  color: #a8a39b;
+  letter-spacing: 0.08em;
+}
+.toolbox-foot-dot {
+  margin: 0 10px;
+}
+
+/* —— 详情占位页 —— */
+.detail-hero {
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 54px 4px 36px;
+}
+.detail-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 8px;
+  padding: 6px 14px;
+  border-radius: 999px;
+  background: rgba(122, 154, 130, 0.12);
+  color: #5d8a6a;
+  font-size: 13px;
+  letter-spacing: 0.05em;
+}
+.detail-status-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #7a9a82;
+  box-shadow: 0 0 0 4px rgba(122, 154, 130, 0.2);
+}
+.detail-card {
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 40px 36px;
+  background: #fdfcf9;
+  border: 1px solid #ece6dc;
+  border-radius: 18px;
+  box-shadow: 0 8px 30px -16px rgba(80, 76, 66, 0.22);
+}
+.detail-placeholder-text {
+  font-size: 16px;
+  line-height: 1.9;
+  color: #6b6b6b;
+  margin: 0 0 28px;
+}
+.detail-back-link {
+  display: inline-block;
+  font-size: 14px;
+  color: #5d8a6a;
+  text-decoration: none;
+  letter-spacing: 0.04em;
+  transition: color 0.25s ease, transform 0.25s ease;
+}
+.detail-back-link:hover {
+  color: #7a9a82;
+  transform: translateX(-3px);
+}
+
+/* —— 响应式 —— */
+@media (max-width: 860px) {
+  .toolbox-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+@media (max-width: 520px) {
+  .toolbox-grid {
+    grid-template-columns: 1fr;
+  }
+  .toolbox-hero,
+  .detail-hero {
+    padding: 38px 4px 30px;
+  }
+}
+
+/* ============================================
+   物资管家 Inventory Prophet — SaaS 紧凑风格
+   修复：首页 PC 端 cursor:none（蝴蝶光标）在此页
+   不渲染，需恢复系统指针；并启用 Inter 无衬线字体
+   ============================================ */
+.inventory-page,
+.inventory-page * {
+  cursor: auto;
+}
+.inventory-page button,
+.inventory-page a,
+.inventory-page [role="button"],
+.inventory-page select,
+.inventory-page summary {
+  cursor: pointer;
+}
+.inventory-page input,
+.inventory-page textarea {
+  cursor: text;
+}
+.inventory-page {
+  font-family: "Inter", system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+    Roboto, "Noto Sans SC", sans-serif;
+}

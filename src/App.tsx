@@ -262,6 +262,31 @@ const AppContent: React.FC = () => {
           </div>
         </motion.div>
 
+        {/* —— 承上启下：个人宣言 —— */}
+        <motion.div {...fadeUp} className="about-manifesto">
+          <div className="about-manifesto-inner">
+            <span className="about-manifesto-quote-mark">"</span>
+            <p className="about-manifesto-lead">这是我的第一个数字造物场。</p>
+            <div className="about-manifesto-body">
+              <p>过去，我习惯于在文档里定义需求和逻辑。</p>
+              <p>现在，我想用代码和 AI 去直接构建解决方案。</p>
+              <p>
+                森林疗愈室让我学会了倾听内心的声音，而妙妙工具箱则是我试图用理性重建生活秩序的尝试。
+              </p>
+              <p>
+                我相信，最好的产品不是功能的堆砌，而是对真实痛点的温柔回应。
+              </p>
+            </div>
+          </div>
+        </motion.div>
+
+        {/* 视觉分隔线 */}
+        <div className="about-divider" aria-hidden="true">
+          <span className="about-divider-line" />
+          <span className="about-divider-dot" />
+          <span className="about-divider-line" />
+        </div>
+
         {/* 模块 B：生活切面 */}
         <motion.div {...fadeUp} className="about-module" style={{ marginTop: 48 }}>
           <h3 className="about-section-title" style={{ marginBottom: 20 }}>生活切面</h3>
@@ -392,10 +417,79 @@ const AppContent: React.FC = () => {
           }
           .about-lightbox-detail-text { font-size: 13px; line-height: 1.7; color: var(--text-soft); margin: 0; }
 
+          /* —— 个人宣言 —— */
+          .about-manifesto {
+            margin: 56px 0 40px;
+          }
+          .about-manifesto-inner {
+            position: relative;
+            padding: 36px 40px 32px;
+            border-radius: 16px;
+            background: rgba(122, 154, 130, 0.05);
+            border: 1px solid var(--border);
+            border-left: 3px solid var(--accent);
+          }
+          .about-manifesto-quote-mark {
+            position: absolute;
+            top: 6px;
+            left: 20px;
+            font-family: "Noto Serif SC", Georgia, serif;
+            font-size: 56px;
+            line-height: 1;
+            color: var(--accent);
+            opacity: 0.2;
+          }
+          .about-manifesto-lead {
+            font-family: "Noto Serif SC", Georgia, serif;
+            font-size: 19px;
+            font-weight: 600;
+            color: var(--text);
+            margin: 0 0 18px;
+            letter-spacing: 0.03em;
+            position: relative;
+            z-index: 1;
+          }
+          .about-manifesto-body p {
+            font-size: 14px;
+            line-height: 2;
+            color: var(--text-soft);
+            margin: 0 0 4px;
+          }
+          .about-manifesto-body p:last-child {
+            margin-bottom: 0;
+            color: var(--text);
+            font-weight: 500;
+          }
+
+          /* —— 视觉分隔线 —— */
+          .about-divider {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            margin: 0 0 48px;
+          }
+          .about-divider-line {
+            flex: 1;
+            max-width: 120px;
+            height: 1px;
+            background: linear-gradient(to right, transparent, var(--border), transparent);
+          }
+          .about-divider-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: var(--accent);
+            opacity: 0.5;
+            flex-shrink: 0;
+          }
+
           @media (max-width: 768px) {
             .about-module-inner { grid-template-columns: 1fr; gap: 24px; }
             .about-hobby-grid { grid-template-columns: repeat(2, 1fr); }
             .about-section-title { font-size: 24px; }
+            .about-manifesto-inner { padding: 28px 22px 24px; }
+            .about-manifesto-lead { font-size: 17px; }
           }
         `}</style>
       </section>

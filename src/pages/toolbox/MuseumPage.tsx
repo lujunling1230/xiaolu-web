@@ -990,13 +990,14 @@ const MuseumPage: React.FC = () => {
   const [nets, setNets] = useState<VintageCard[]>(() => loadData(LS_KEYS.nets, DEFAULT_NETS));
   const [honors, setHonors] = useState<HonorItem[]>(() => loadData(LS_KEYS.honors, DEFAULT_HONORS));
 
-  // 荣耀之路强制升序排列（年份小的在上，向下滚动是回顾历史）
+  // 时代回响强制升序排列（年份小的在前）
+  const sortedBgms = useMemo(() => [...bgms].sort((a, b) => (parseInt(a.year) || 0) - (parseInt(b.year) || 0)), [bgms]);
+  const sortedTvs = useMemo(() => [...tvs].sort((a, b) => (parseInt(a.year) || 0) - (parseInt(b.year) || 0)), [tvs]);
+  const sortedNets = useMemo(() => [...nets].sort((a, b) => (parseInt(a.year) || 0) - (parseInt(b.year) || 0)), [nets]);
+
+  // 荣耀之路强制降序排列（年份大的在前，最新成就在最顶部）
   const sortedHonors = useMemo(() => {
-    const sorted = [...honors].sort((a, b) => {
-      const ay = parseInt(a.year) || 0;
-      const by = parseInt(b.year) || 0;
-      return ay - by; // 升序：1999 → 2024
-    });
+    const sorted = [...honors].sort((a, b) => (parseInt(b.year) || 0) - (parseInt(a.year) || 0));
     // eslint-disable-next-line no-console
     console.log("[荣耀之路] 排序后年份:", sorted.map(h => h.year));
     return sorted;
@@ -1116,21 +1117,21 @@ const MuseumPage: React.FC = () => {
           </div>
         </div>
 
-        <VintageGallery title="耳机里的青春 BGM" emoji="🎵" cards={bgms}
+        <VintageGallery title="耳机里的青春 BGM" emoji="🎵" cards={sortedBgms}
           onAdd={(data) => setCardModal({ mode: "add", section: "bgm", data: { id: "", ...data } })}
           onEdit={(card) => setCardModal({ mode: "edit", section: "bgm", data: card })}
           onDelete={(id) => handleCardDelete(id, "bgm")}
           onImageUpload={(id, url) => handleImageUpload(id, url, "bgm")}
           onImageDelete={(id) => handleImageDelete(id, "bgm")} />
 
-        <VintageGallery title="电视里的乌托邦" emoji="📺" cards={tvs}
+        <VintageGallery title="电视里的乌托邦" emoji="📺" cards={sortedTvs}
           onAdd={(data) => setCardModal({ mode: "add", section: "tv", data: { id: "", ...data } })}
           onEdit={(card) => setCardModal({ mode: "edit", section: "tv", data: card })}
           onDelete={(id) => handleCardDelete(id, "tv")}
           onImageUpload={(id, url) => handleImageUpload(id, url, "tv")}
           onImageDelete={(id) => handleImageDelete(id, "tv")} />
 
-        <VintageGallery title="网络初现时的印记" emoji="📱" cards={nets}
+        <VintageGallery title="网络初现时的印记" emoji="📱" cards={sortedNets}
           onAdd={(data) => setCardModal({ mode: "add", section: "net", data: { id: "", ...data } })}
           onEdit={(card) => setCardModal({ mode: "edit", section: "net", data: card })}
           onDelete={(id) => handleCardDelete(id, "net")}

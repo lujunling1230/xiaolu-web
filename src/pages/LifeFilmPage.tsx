@@ -773,6 +773,7 @@ const SportModal: React.FC<{ onClose: () => void; onUpload: () => void }> = ({ o
   const [sports, setSports] = useState<Sport[]>(() => loadData<Sport>(LS_KEYS.sports, MOCK_SPORTS));
   const [showUpload, setShowUpload] = useState(false);
   const [deleting, setDeleting] = useState<string | null>(null);
+  const [hoveredCard, setHoveredCard] = useState<string | null>(null);
 
   const handleDelete = (id: string) => {
     const updated = sports.filter(s => s.id !== id);
@@ -784,38 +785,136 @@ const SportModal: React.FC<{ onClose: () => void; onUpload: () => void }> = ({ o
   const totalDist = sports.reduce((acc, s) => { const m = s.name.match(/(\d+)km/); return acc + (m ? parseInt(m[1]) : 0); }, 0);
   const totalMin = sports.reduce((acc, s) => { const m = s.name.match(/(\d+)min/); return acc + (m ? parseInt(m[1]) : 0); }, 0);
 
+  // 情绪推断：根据关键词映射情绪图标
+  const inferEmotion = (note: string): string => {
+    if (/轻|柔|慢|静|舒服|温柔|自在|peaceful/.test(note)) return "😊";
+    if (/夜|月|星空|晚/.test(note)) return "🌙";
+    if (/热|燃|力量|汗水|挑战|突破/.test(note)) return "🔥";
+    if (/林|山|自然|风|呼吸/.test(note)) return "🍃";
+    if (/快|自由|飞|爽/.test(note)) return "✨";
+    return "🌿";
+  };
+
+  // 波浪时间轴数据（模拟7天，真实数据从 sports 提取）
+  const weekDays = [0,1,2,3,4,5,6].map(i => {
+    const d = new Date(); d.setDate(d.getDate() - (6 - i));
+    return d.toISOString().slice(0, 10);
+  });
+  const dayCounts = weekDays.map(day => sports.filter(s => s.date === day).length);
+  const maxCount = Math.max(...dayCounts, 1);
+
   return (
     <>
+      <style>{`
+        @keyframes sport-wave-grow { from { transform: scaleY(0); opacity: 0; } to { transform: scaleY(1); opacity: 1; } }
+        @keyframes sport-card-in { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes sport-stat-in { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+      `}</style>
       <ModalOverlay onClose={onClose} showFab fabOnClick={() => setShowUpload(true)}>
-        <button style={{ position: "absolute", top: 16, right: 16, width: 32, height: 32, border: "none", borderRadius: "50%", background: "rgba(0,0,0,0.06)", color: "#888", fontSize: 18, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }} onClick={onClose}>×</button>
-        <h3 style={{ fontFamily: "Noto Serif SC, serif", fontSize: 20, fontWeight: 600, color: "#4a4038", margin: "0 0 20px", textAlign: "center", letterSpacing: "0.04em" }}>🏃 我的运动轨迹</h3>
-        <div style={{ display: "flex", gap: 12, marginBottom: 20 }}>
-          {[{ label: "本周运动", value: `${totalRuns || 4}次` }, { label: "总里程", value: `${totalDist || 23}km` }, { label: "累计时长", value: totalMin > 0 ? `${Math.floor(totalMin / 60)}h${totalMin % 60}m` : "3h12m" }].map(s => (
-            <div key={s.label} style={{ flex: 1, padding: "12px 8px", borderRadius: 12, background: "rgba(122,154,130,0.1)", textAlign: "center" }}>
-              <p style={{ fontSize: 20, fontWeight: 700, color: "#6a8a6a", margin: "0 0 2px" }}>{s.value}</p>
-              <p style={{ fontSize: 11, color: "#8a7a6a", margin: 0 }}>{s.label}</p>
+        <button style={{ position: "absolute", top: 16, right: 16, width: 36, height: 36, border: "none", borderRadius: "50%", background: HEALING_COLORS.woodLight, color: HEALING_COLORS.textLight, fontSize: 18, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", transition: "all 0.2s" }}
+          onClick={onClose}
+          onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = HEALING_COLORS.woodBorder; }}
+          onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = HEALING_COLORS.woodLight; }}>×</button>
+
+        <h3 style={{ fontFamily: "Noto Serif SC, serif", fontSize: 22, fontWeight: 600, color: HEALING_COLORS.text, margin: "0 0 28px", textAlign: "center", letterSpacing: "0.06em" }}>🏃 运动疗愈日记</h3>
+
+        {/* ===== 顶部数据区：瀑布流布局 ===== */}
+        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 16, marginBottom: 28, animation: "sport-stat-in 0.5s ease" }}>
+          {/* 主数据：次数 */}
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
+            <span style={{ fontFamily: "DIN Alternate, Arial, sans-serif", fontSize: 52, fontWeight: 700, color: HEALING_COLORS.text, lineHeight: 1, letterSpacing: "-0.02em" }}>{totalRuns || 4}</span>
+            <span style={{ fontSize: 11, color: HEALING_COLORS.textMuted, letterSpacing: "0.15em", textTransform: "uppercase" }}>次运动</span>
+          </div>
+          {/* 次级数据：里程 + 时长 */}
+          <div style={{ display: "flex", gap: 32 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+              <span style={{ fontSize: 16 }}>🏃‍♂️</span>
+              <span style={{ fontFamily: "DIN Alternate, Arial, sans-serif", fontSize: 18, fontWeight: 600, color: HEALING_COLORS.textLight }}>{totalDist || 23}<span style={{ fontSize: 12, fontWeight: 400, marginLeft: 2 }}>km</span></span>
             </div>
-          ))}
-        </div>
-        <div style={{ display: "flex", alignItems: "flex-end", gap: 6, height: 60, marginBottom: 20, padding: "0 4px" }}>
-          {[3, 5, 2, 4, 1, 3, 5].map((h, i) => (
-            <div key={i} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 2 }}>
-              <div style={{ width: "100%", height: h * 10, background: "rgba(122,154,130,0.5)", borderRadius: "3px 3px 0 0" }} />
-              <span style={{ fontSize: 9, color: "#b0a090" }}>{["一","二","三","四","五","六","日"][i]}</span>
+            <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+              <span style={{ fontSize: 16 }}>⏱️</span>
+              <span style={{ fontFamily: "DIN Alternate, Arial, sans-serif", fontSize: 18, fontWeight: 600, color: HEALING_COLORS.textLight }}>{totalMin > 0 ? `${Math.floor(totalMin / 60)}h${totalMin % 60}m` : "3h12m"}</span>
             </div>
-          ))}
+          </div>
         </div>
+
+        {/* ===== 波浪形时间轴 ===== */}
+        <div style={{ marginBottom: 28, animation: "sport-wave-grow 0.6s ease 0.2s both", transformOrigin: "bottom" }}>
+          <div style={{ display: "flex", alignItems: "flex-end", gap: 6, height: 56, padding: "0 8px", position: "relative" }}>
+            {/* 波浪基底 */}
+            <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, height: 3, background: `linear-gradient(90deg, ${HEALING_COLORS.grayGreen}22, ${HEALING_COLORS.grayGreen}44)`, borderRadius: 2 }} />
+            {dayCounts.map((count, i) => {
+              const height = count > 0 ? Math.max(12, (count / maxCount) * 48) : 0;
+              const isToday = i === dayCounts.length - 1;
+              return (
+                <div key={i} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 4 }}>
+                  <div style={{
+                    width: "100%", height, borderRadius: "4px 4px 0 0",
+                    background: count === 0 ? "transparent"
+                      : isToday ? `linear-gradient(180deg, #B8A8D4 0%, ${HEALING_COLORS.accent} 100%)`
+                      : `linear-gradient(180deg, rgba(141,154,139,0.7) 0%, rgba(141,154,139,0.3) 100%)`,
+                    transition: "height 0.4s cubic-bezier(0.34,1.56,0.64,1), background 0.3s",
+                    boxShadow: isToday ? `0 0 12px rgba(184,168,212,0.5)` : "none",
+                  }} />
+                  {isToday && (
+                    <div style={{ width: 6, height: 6, borderRadius: "50%", background: "#B8A8D4", boxShadow: "0 0 6px rgba(184,168,212,0.8)" }} />
+                  )}
+                </div>
+              );
+            })}
+          </div>
+          <div style={{ display: "flex", gap: 6, padding: "0 8px", marginTop: 4 }}>
+            {["一","二","三","四","五","六","日"].map((d, i) => (
+              <span key={i} style={{ flex: 1, textAlign: "center", fontSize: 9, color: i === 6 ? HEALING_COLORS.grayGreen : HEALING_COLORS.textMuted, fontWeight: i === 6 ? 600 : 400 }}>{d}</span>
+            ))}
+          </div>
+        </div>
+
         {sports.length === 0 ? (
-          <EmptyState emoji="🏃" />
+          <EmptyState emoji="🏃" text="还没有运动记录，开始你的第一次吧" />
         ) : (
-          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-            {sports.map(s => (
-              <div key={s.id} style={{ position: "relative", display: "flex", alignItems: "flex-start", gap: 12, padding: "10px 14px", borderRadius: 10, background: "rgba(122,154,130,0.06)" }}>
-                <button onClick={() => setDeleting(s.id)} style={{ position: "absolute", top: 6, right: 6, width: 18, height: 18, border: "none", borderRadius: "50%", background: "rgba(0,0,0,0.06)", color: "rgba(0,0,0,0.3)", fontSize: 12, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", opacity: 0, transition: "opacity 0.2s" }}
-                  onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.opacity = "1"; }}
-                  onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.opacity = "0"; }}>×</button>
-                <span style={{ fontSize: 24, flexShrink: 0 }}>{s.icon}</span>
-                <div><p style={{ fontSize: 13, color: "#4a4038", margin: 0, fontWeight: 500 }}>{s.name} <span style={{ fontSize: 11, color: "#b0a090", fontWeight: 400 }}>{s.date} · {s.time}</span></p><p style={{ fontSize: 12, color: "#7a7268", margin: "4px 0 0", fontStyle: "italic" }}>"{s.note}"</p></div>
+          /* ===== 运动记录列表 ===== */
+          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+            {sports.map((s, i) => (
+              <div key={s.id}
+                style={{
+                  position: "relative", display: "flex", alignItems: "center", gap: 14,
+                  padding: "16px 18px 16px 16px", borderRadius: 16,
+                  background: hoveredCard === s.id ? "#F0EFED" : "#F8F8F8",
+                  boxShadow: hoveredCard === s.id
+                    ? `0 8px 28px rgba(0,0,0,0.1), 0 0 0 1px ${HEALING_COLORS.woodBorder}`
+                    : `0 2px 8px rgba(0,0,0,0.06), 0 0 0 1px rgba(0,0,0,0.03)`,
+                  transition: "all 0.25s cubic-bezier(0.34,1.56,0.64,1)",
+                  animation: `sport-card-in 0.4s ease ${0.3 + i * 0.06}s both`,
+                  cursor: "default",
+                }}
+                onMouseEnter={() => setHoveredCard(s.id)}
+                onMouseLeave={() => setHoveredCard(null)}>
+
+                {/* 删除按钮 */}
+                <button onClick={() => setDeleting(s.id)}
+                  style={{ position: "absolute", top: 8, right: 8, width: 20, height: 20, border: "none", borderRadius: "50%", background: "rgba(0,0,0,0.06)", color: "rgba(0,0,0,0.3)", fontSize: 12, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", opacity: hoveredCard === s.id ? 1 : 0, transition: "opacity 0.2s" }}>×</button>
+
+                {/* 左侧图标 */}
+                <div style={{ width: 44, height: 44, borderRadius: "50%", background: `linear-gradient(135deg, ${HEALING_COLORS.grayGreen}22, ${HEALING_COLORS.grayGreen}11)`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+                  <span style={{ fontSize: 24 }}>{s.icon}</span>
+                </div>
+
+                {/* 中间内容 */}
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ display: "flex", alignItems: "baseline", justifyContent: "space-between", gap: 8, marginBottom: 6 }}>
+                    <p style={{ fontFamily: "Noto Serif SC, serif", fontSize: 15, fontWeight: 600, color: HEALING_COLORS.text, margin: 0, lineHeight: 1.3 }}>{s.name}</p>
+                    <span style={{ fontSize: 10, color: HEALING_COLORS.textMuted, whiteSpace: "nowrap", flexShrink: 0 }}>{s.date} · {s.time}</span>
+                  </div>
+                  {s.note && (
+                    <p style={{ fontFamily: "Noto Serif SC, serif", fontSize: 12, color: "#666", margin: 0, fontStyle: "italic", lineHeight: 1.7, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>"{s.note}"</p>
+                  )}
+                </div>
+
+                {/* 右侧情绪图标 */}
+                <div style={{ width: 28, height: 28, borderRadius: "50%", background: `${HEALING_COLORS.grayGreen}18`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, fontSize: 16 }}>
+                  {inferEmotion(s.note)}
+                </div>
               </div>
             ))}
           </div>

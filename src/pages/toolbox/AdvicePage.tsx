@@ -104,6 +104,10 @@ function generateReply(question: string, tag: TagKey | null): string {
   return pool[seed % pool.length];
 }
 
+/* ===== 中文标签 ↔ 英文 key 映射 ===== */
+const EN_TO_TAG: Record<string, TagKey> = { brain: "脑洞", heart: "心灵", work: "工作", emotion: "情感" };
+const ROLE_NAMES: Record<string, string> = { brain: "小波", heart: "浪矢爷爷", work: "敦也", emotion: "晴美" };
+
 /* ===== 组件 ===== */
 const AdvicePage: React.FC = () => {
   const [question, setQuestion] = useState("");
@@ -111,7 +115,49 @@ const AdvicePage: React.FC = () => {
   const [reply, setReply] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [currentRole, setCurrentRole] = useState<string | null>(null);
+  const [autoDetectedRole, setAutoDetectedRole] = useState<string | null>(null);
   const abortRef = useRef<AbortController | null>(null);
+
+  /**
+   * 自动意图分类：调用 AI 判断用户问题最适合哪个角色
+   * 返回英文 key（brain / heart / work / emotion）
+   */
+  const detectCategory = async (q: string): Promise<string> => {
+    const apiKey = import.meta.env.VITE_API_KEY;
+    const baseUrl = import.meta.env.VITE_BASE_URL;
+    const model = import.meta.env.VITE_MODEL;
+    if (!baseUrl || !apiKey) return "heart"; // 无 AI 时兜底
+
+    try {
+      const res = await fetch(baseUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${apiKey}`,
+        },
+        body: JSON.stringify({
+          model: model || "deepseek-r1",
+          input: {
+            messages: [
+              {
+                role: "system",
+                content: '你是一个意图分类器。根据用户的问题，判断它最适合哪个分类？只能从以下四个词中选择一个作为回复：brain, heart, work, emotion。不要解释，只返回单词。',
+              },
+              { role: "user", content: q },
+            ],
+          },
+        }),
+      });
+      const data = await res.json();
+      const category = data.output?.choices?.[0]?.message?.content?.trim();
+      if (["brain", "heart", "work", "emotion"].includes(category)) {
+        return category;
+      }
+      return "heart";
+    } catch {
+      return "heart"; // 分类失败兜底
+    }
+  };
 
   const handleSubmit = async () => {
     const q = question.trim();
@@ -124,16 +170,30 @@ const AdvicePage: React.FC = () => {
 
     setLoading(true);
     setReply(null);
-
-    // 确定角色（默认小波）
-    const tag = activeTag || "脑洞";
-    const role = ROLES[tag];
-    setCurrentRole(`${role.emoji} ${role.name}`);
+    setAutoDetectedRole(null);
 
     // 环境变量（Vite 规范，VITE_ 前缀）
     const apiKey = import.meta.env.VITE_API_KEY;
     const baseUrl = import.meta.env.VITE_BASE_URL;
     const model = import.meta.env.VITE_MODEL;
+
+    let tag: TagKey;
+
+    if (activeTag) {
+      // 用户手动选择了分类 → 信任用户选择
+      tag = activeTag;
+    } else {
+      // 用户未手动选择 → 自动意图分类
+      setLoading(true);
+      const en = await detectCategory(q);
+      tag = EN_TO_TAG[en] || "心灵";
+      setAutoDetectedRole(en);
+      // 高亮自动检测到的标签
+      setActiveTag(tag);
+    }
+
+    const role = ROLES[tag];
+    setCurrentRole(`${role.emoji} ${role.name}`);
 
     // 如果没有配置 AI，使用本地回复库兜底
     if (!baseUrl || !apiKey) {
@@ -353,6 +413,7 @@ const AdvicePage: React.FC = () => {
           >
             <div className="advice-reply-stamp">已送达</div>
             <p className="advice-reply-greeting">亲爱的旅人：</p>
+            {autoDetectedRole && <p className="advice-reply-detect">自动分类 → {ROLE_NAMES[autoDetectedRole] || autoDetectedRole}</p>}
             {currentRole && <p className="advice-reply-role">{currentRole} 回信</p>}
             <p className="advice-reply-text">{reply}</p>
             <p className="advice-reply-sign">—— 杂货店老板 · 灯下</p>
@@ -500,6 +561,10 @@ const AdvicePage: React.FC = () => {
         .advice-reply-role {
           font-size: 13px; color: #c8924a; margin: 0 0 16px;
           font-style: italic; letter-spacing: 0.05em;
+        }
+        .advice-reply-detect {
+          font-size: 11px; color: #a89070; margin: 0 0 6px;
+          letter-spacing: 0.04em;
         }
         .advice-reply-text {
           font-family: "Noto Serif SC", Georgia, serif;

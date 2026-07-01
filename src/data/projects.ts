@@ -144,4 +144,17 @@ export const projects: Project[] = [
     link: "https://xiaolu-web.vercel.app/toolbox/memories",
     tags: ["Framer Motion", "Lightbox", "复古胶片"],
   },
+  {
+    id: "life-slices",
+    title: "第七卷胶片",
+    tag: "胶卷音乐馆",
+    painPoint: "一卷胶片，六个画面",
+    description:
+      "暗房感胶卷布局，6 个生活片段以画框交错排列在胶卷两侧。点击「音乐/播客」进入枯木生歌子页：黑胶唱片旋转、嫩芽生长、音符飘动，收藏夹式氛围展示。",
+    imageUrl:
+      "https://images.unsplash.com/photo-1483412468200-72182a8a3232?w=800&h=600&fit=crop",
+    liveUrl: "https://xiaolu-web.vercel.app/life",
+    link: "https://xiaolu-web.vercel.app/life",
+    tags: ["Framer Motion", "Web Audio", "胶卷美学"],
+  },
 ];

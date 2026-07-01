@@ -1,0 +1,1035 @@
+import { useState, useEffect, useRef } from "react";
+import { useNavigate } from "react-router-dom";
+
+/* ====== localStorage Keys ====== */
+const LS_KEYS = {
+  reading: "lf_reading",
+  photos: "lf_photos",
+  tracks: "lf_tracks",
+  sports: "lf_sports",
+  meditations: "lf_meditations",
+  dramas: "lf_dramas",
+} as const;
+type ModuleType = "reading" | "photo" | "music" | "sport" | "meditation" | "drama" | null;
+
+/* ====== 数据模型 ====== */
+interface Book { id: string; title: string; author: string; cover: string; quote: string; date: string; }
+interface Photo { id: string; src: string; title: string; date: string; desc: string; }
+interface Track { id: string; title: string; type: string; date: string; cover: string; }
+interface Sport { id: string; icon: string; name: string; date: string; time: string; note: string; }
+interface Meditation { id: string; theme: string; duration: string; date: string; insight: string; }
+interface Drama { id: string; title: string; season: string; date: string; cover: string; quote: string; }
+
+/* ====== Mock 数据 ====== */
+const MOCK_BOOKS: Book[] = [
+  { id: "1", title: "百年孤独", author: "加西亚·马尔克斯", cover: "https://images.unsplash.com/photo-1544947950-fa07a98d237f?w=200&h=280&fit=crop", quote: "生命从来不曾离开孤独而独立存在。", date: "2024.09 · 重读" },
+  { id: "2", title: "小王子", author: "安托万·德·圣-埃克苏佩里", cover: "https://images.unsplash.com/photo-1543002588-bfa74002ed7e?w=200&h=280&fit=crop", quote: "真正重要的东西，用眼睛是看不见的。", date: "2024.06 · 初读" },
+  { id: "3", title: "瓦尔登湖", author: "亨利·梭罗", cover: "https://images.unsplash.com/photo-1512820790803-83ca734da794?w=200&h=280&fit=crop", quote: "我步入丛林，因为我希望生活得有意义。", date: "2024.03 · 初读" },
+  { id: "4", title: "被讨厌的勇气", author: "岸见一郎 / 古贺史健", cover: "https://images.unsplash.com/photo-1495446815901-a7297e633e8d?w=200&h=280&fit=crop", quote: "自由就是被别人讨厌。", date: "2023.11 · 初读" },
+  { id: "5", title: "当下的力量", author: "埃克哈特·托利", cover: "https://images.unsplash.com/photo-1516979187457-637abb4f9353?w=200&h=280&fit=crop", quote: "臣服不是妥协，而是接受当下的存在。", date: "2023.08 · 初读" },
+  { id: "6", title: "设计心理学", author: "唐·诺曼", cover: "https://images.unsplash.com/photo-1589998059171-988d887df646?w=200&h=280&fit=crop", quote: "设计不是关于物品的外观，而是关于物品如何运作。", date: "2023.05 · 初读" },
+];
+const MOCK_PHOTOS: Photo[] = [
+  { id: "1", src: "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800", title: "山间晨雾", date: "2025.03", desc: "凌晨五点的山间，空气里都是安静的味道" },
+  { id: "2", src: "https://images.unsplash.com/photo-1519681393784-d120267933ba?w=800", title: "星空与雪", date: "2025.01", desc: "零下十五度的等待，换来这一刻的永恒" },
+  { id: "3", src: "https://images.unsplash.com/photo-1470252649378-9c29740c9fa8?w=800", title: "日出金山", date: "2024.12", desc: "太阳出来的那一刻，世界都安静了" },
+  { id: "4", src: "https://images.unsplash.com/photo-1501785888041-af3ef285b470?w=800", title: "湖边倒影", date: "2024.10", desc: "水面是世界的另一面" },
+  { id: "5", src: "https://images.unsplash.com/photo-1472214103451-9374bd1c798e?w=800", title: "草原尽头", date: "2024.08", desc: "走到草原的尽头，才发现起点在心里" },
+];
+const MOCK_TRACKS: Track[] = [
+  { id: "1", title: "乐队的夏天 · S3E01", type: "播客", date: "2025.04 · 通勤", cover: "🎸" },
+  { id: "2", title: "贝多芬：月光奏鸣曲", type: "音乐", date: "2025.04 · 夜晚", cover: "🎹" },
+  { id: "3", title: "随机波动 · 那些消失的书店", type: "播客", date: "2025.03 · 睡前", cover: "📻" },
+  { id: "4", title: "落日飞车 · My Jinji", type: "音乐", date: "2025.03 · 黄昏", cover: "🌅" },
+  { id: "5", title: "得意事务所 · 创业者的故事", type: "播客", date: "2025.02 · 通勤", cover: "🎙️" },
+  { id: "6", title: "久石让 · 天空之城", type: "音乐", date: "2025.01 · 工作", cover: "🏰" },
+];
+const MOCK_SPORTS: Sport[] = [
+  { id: "1", icon: "🏃", name: "晨跑 5km", date: "2025.04.15", time: "06:30", note: "风很温柔，脚步很轻" },
+  { id: "2", icon: "🧘", name: "正念瑜伽 30min", date: "2025.04.12", time: "20:00", note: "呼吸比思考更重要" },
+  { id: "3", icon: "💪", name: "力量训练 45min", date: "2025.04.10", time: "19:00", note: "流汗的感觉很踏实" },
+  { id: "4", icon: "🏃", name: "夜跑 3km", date: "2025.04.08", time: "21:30", note: "路灯下的影子很孤独也很自由" },
+  { id: "5", icon: "🧘", name: "睡前拉伸 15min", date: "2025.04.05", time: "22:00", note: "身体放松了，心也安静下来" },
+  { id: "6", icon: "🚴", name: "骑行 12km", date: "2025.04.02", time: "08:00", note: "穿过城市的早晨" },
+];
+const MOCK_MEDITATIONS: Meditation[] = [
+  { id: "1", theme: "正念呼吸", duration: "15分钟", date: "2025.04.15", insight: "平静不是没有波澜，而是学会与波澜共处。" },
+  { id: "2", theme: "身体扫描", duration: "20分钟", date: "2025.04.10", insight: "每一个细胞都在呼吸。身体比我以为的更聪明。" },
+  { id: "3", theme: "慈心禅", duration: "10分钟", date: "2025.04.05", insight: "对自己温柔，是一切温柔的开始。" },
+  { id: "4", theme: "呼吸锚定", duration: "12分钟", date: "2025.03.28", insight: "焦虑来时，只是看着它来，不评判，它就会走。" },
+  { id: "5", theme: "开放觉知", duration: "18分钟", date: "2025.03.20", insight: "世界很吵，但我的内心可以很静。" },
+];
+const MOCK_DRAMAS: Drama[] = [
+  { id: "1", title: "重启人生", season: "S1E3", date: "2025.03 · 周末", cover: "https://images.unsplash.com/photo-1536440136628-849c177e76a1?w=300&h=400&fit=crop", quote: "人生没有白走的路，每一步都算数。" },
+  { id: "2", title: "我的解放日志", season: "S1E8", date: "2025.02 · 深夜", cover: "https://images.unsplash.com/photo-1485846234645-a62644f84728?w=300&h=400&fit=crop", quote: "如果今天能够稍微不一样，明天会不会也跟着不一样？" },
+  { id: "3", title: "俗女养成记", season: "S2E4", date: "2025.01 · 周末", cover: "https://images.unsplash.com/photo-1517604931442-7e0c8ed2963c?w=300&h=400&fit=crop", quote: "你是从什么时候开始，不再相信努力有用的？" },
+  { id: "4", title: "漫长的季节", season: "S1E10", date: "2024.12 · 深夜", cover: "https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?w=300&h=400&fit=crop", quote: "这个秋天，好像比往常都长。" },
+  { id: "5", title: "去有风的地方", season: "S1E6", date: "2024.11 · 周末", cover: "https://images.unsplash.com/photo-1469474968028-56623f02e42e?w=300&h=400&fit=crop", quote: "慢下来，也是一种前进。" },
+  { id: "6", title: "春夜", season: "S1E2", date: "2024.10 · 深夜", cover: "https://images.unsplash.com/photo-1478720568477-152d9b164e26?w=300&h=400&fit=crop", quote: "有些相遇注定要发生，在恰当的时候。" },
+];
+
+/* ====== localStorage 工具函数 ====== */
+function loadData<T>(key: string, fallback: T[]): T[] {
+  try {
+    const raw = localStorage.getItem(key);
+    if (!raw) return fallback;
+    const parsed = JSON.parse(raw);
+    return Array.isArray(parsed) ? parsed : fallback;
+  } catch { return fallback; }
+}
+function saveData<T>(key: string, data: T[]) {
+  try { localStorage.setItem(key, JSON.stringify(data)); } catch {}
+}
+function genId() { return Date.now().toString(36) + Math.random().toString(36).slice(2); }
+function fileToDataUrl(file: File): Promise<string> {
+  return new Promise((res, rej) => {
+    const fr = new FileReader();
+    fr.onload = () => res(fr.result as string);
+    fr.onerror = rej;
+    fr.readAsDataURL(file);
+  });
+}
+
+/* ====== Toast 组件 ====== */
+const Toast: React.FC<{ message: string; onDone: () => void }> = ({ message, onDone }) => {
+  useEffect(() => {
+    const t = setTimeout(onDone, 2500);
+    return () => clearTimeout(t);
+  }, [onDone]);
+  return (
+    <div style={{
+      position: "fixed", bottom: 32, left: "50%", transform: "translateX(-50%)",
+      zIndex: 9999, background: "rgba(90,120,90,0.92)", color: "#fff",
+      padding: "12px 28px", borderRadius: 999, fontSize: 14, fontWeight: 500,
+      backdropFilter: "blur(16px)", boxShadow: "0 8px 32px rgba(0,0,0,0.15)",
+      animation: "lf-toast-in 0.35s cubic-bezier(0.34,1.56,0.64,1)",
+      letterSpacing: "0.03em",
+    }}>
+      {message}
+      <style>{`@keyframes lf-toast-in { from { opacity:0; transform: translateX(-50%) translateY(20px) scale(0.9); } to { opacity:1; transform: translateX(-50%) translateY(0) scale(1); } }`}</style>
+    </div>
+  );
+};
+
+/* ====== 确认删除弹窗 ====== */
+const ConfirmDialog: React.FC<{ message: string; onConfirm: () => void; onCancel: () => void }> = ({ message, onConfirm, onCancel }) => (
+  <div style={{
+    position: "fixed", inset: 0, zIndex: 9998, background: "rgba(0,0,0,0.5)",
+    backdropFilter: "blur(6px)", display: "flex", alignItems: "center", justifyContent: "center", padding: 24,
+  }} onClick={onCancel}>
+    <div style={{
+      background: "rgba(255,252,245,0.97)", borderRadius: 20, padding: "28px 28px 24px",
+      maxWidth: 320, width: "100%", textAlign: "center",
+      boxShadow: "0 20px 60px rgba(0,0,0,0.18)",
+      animation: "lf-slideup 0.3s ease",
+    }} onClick={e => e.stopPropagation()}>
+      <p style={{ fontFamily: "Noto Serif SC, serif", fontSize: 16, color: "#4a4038", margin: "0 0 20px", lineHeight: 1.6 }}>{message}</p>
+      <div style={{ display: "flex", gap: 12, justifyContent: "center" }}>
+        <button onClick={onCancel} style={{ flex: 1, padding: "10px 0", border: "1.5px solid rgba(150,130,110,0.3)", borderRadius: 999, background: "transparent", color: "#8a7a6a", cursor: "pointer", fontSize: 14 }}>取消</button>
+        <button onClick={onConfirm} style={{ flex: 1, padding: "10px 0", border: "none", borderRadius: 999, background: "#c0908a", color: "#fff", cursor: "pointer", fontSize: 14 }}>确认删除</button>
+      </div>
+    </div>
+    <style>{`@keyframes lf-slideup { from { opacity:0; transform:translateY(16px); } to { opacity:1; transform:translateY(0); } }`}</style>
+  </div>
+);
+
+/* ====== 上传模态框 ====== */
+type UploadModuleType = "reading" | "photo" | "music" | "sport" | "meditation" | "drama";
+
+interface FieldDef { key: string; label: string; placeholder?: string; type?: string; options?: string[]; required?: boolean; isTextarea?: boolean; isFile?: boolean; }
+const UPLOAD_FIELDS: Record<UploadModuleType, FieldDef[]> = {
+  reading: [
+    { key: "cover", label: "书籍封面", type: "file", isFile: true, required: true },
+    { key: "title", label: "书名", placeholder: "如：百年孤独", required: true },
+    { key: "author", label: "作者", placeholder: "如：加西亚·马尔克斯" },
+    { key: "quote", label: "喜欢的句子", placeholder: "如：生命从来不曾离开孤独而独立存在。", isTextarea: true },
+    { key: "date", label: "阅读时间", type: "date" },
+  ],
+  photo: [
+    { key: "photos", label: "照片（可多选）", type: "file", isFile: true, required: true },
+    { key: "date", label: "拍摄时间", type: "date" },
+    { key: "desc", label: "地点 / 描述", placeholder: "如：凌晨五点的山间，空气里都是安静的味道", isTextarea: true },
+  ],
+  music: [
+    { key: "cover", label: "封面图", type: "file", isFile: true },
+    { key: "title", label: "标题", placeholder: "如：落日飞车 · My Jinji", required: true },
+    { key: "type", label: "类型", type: "select", options: ["音乐", "播客"], required: true },
+    { key: "date", label: "收听时间", type: "date" },
+    { key: "note", label: "备注", placeholder: "如：通勤 · 睡前 · 黄昏", isTextarea: true },
+  ],
+  sport: [
+    { key: "icon", label: "运动类型", type: "select", options: ["🏃 跑步", "🧘 瑜伽", "💪 健身", "🚴 骑行", "🏊 游泳", "⚽ 球类"], required: true },
+    { key: "name", label: "运动名称", placeholder: "如：晨跑 5km", required: true },
+    { key: "date", label: "日期", type: "date", required: true },
+    { key: "time", label: "时间", type: "time" },
+    { key: "note", label: "感受", placeholder: "如：风很温柔，脚步很轻", isTextarea: true },
+  ],
+  meditation: [
+    { key: "theme", label: "冥想主题", placeholder: "如：正念呼吸", required: true },
+    { key: "duration", label: "时长", placeholder: "如：15分钟", required: true },
+    { key: "date", label: "日期", type: "date", required: true },
+    { key: "insight", label: "感悟", placeholder: "如：平静不是没有波澜，而是学会与波澜共处。", isTextarea: true },
+  ],
+  drama: [
+    { key: "cover", label: "剧集封面", type: "file", isFile: true },
+    { key: "title", label: "剧名", placeholder: "如：重启人生", required: true },
+    { key: "season", label: "季数/集数", placeholder: "如：S1E3" },
+    { key: "date", label: "观看时间", type: "date" },
+    { key: "quote", label: "一句话评价", placeholder: "如：人生没有白走的路，每一步都算数。", isTextarea: true },
+  ],
+};
+const UPLOAD_TITLES: Record<UploadModuleType, string> = {
+  reading: "添加书籍", photo: "添加照片", music: "添加音乐/播客",
+  sport: "添加运动记录", meditation: "添加冥想记录", drama: "添加追剧记录",
+};
+
+const UploadModal: React.FC<{
+  moduleType: UploadModuleType;
+  onSubmit: (data: Record<string, string>, files: Record<string, string[]>) => void;
+  onClose: () => void;
+}> = ({ moduleType, onSubmit, onClose }) => {
+  const fields = UPLOAD_FIELDS[moduleType];
+  const [values, setValues] = useState<Record<string, string>>({});
+  const [filePreviews, setFilePreviews] = useState<Record<string, string[]>>({});
+  const [errors, setErrors] = useState<Record<string, string>>({});
+
+  const handleFileChange = async (key: string, files: FileList | null) => {
+    if (!files || files.length === 0) return;
+    const isMulti = key === "photos";
+    try {
+      if (isMulti) {
+        const urls = await Promise.all(Array.from(files).map(f => fileToDataUrl(f)));
+        setFilePreviews(p => ({ ...p, [key]: urls }));
+      } else {
+        const url = await fileToDataUrl(files[0]);
+        setFilePreviews(p => ({ ...p, [key]: [url] }));
+      }
+    } catch {}
+  };
+
+  const handleSubmit = () => {
+    const newErrors: Record<string, string> = {};
+    fields.forEach(f => {
+      if (f.required && !values[f.key] && filePreviews[f.key]?.length === 0) {
+        newErrors[f.key] = "此项为必填";
+      }
+    });
+    if (Object.keys(newErrors).length > 0) { setErrors(newErrors); return; }
+    setErrors({});
+    onSubmit(values, filePreviews);
+  };
+
+  return (
+    <div style={{
+      position: "fixed", inset: 0, zIndex: 210, background: "rgba(0,0,0,0.55)",
+      backdropFilter: "blur(12px)", display: "flex", alignItems: "center", justifyContent: "center", padding: 24,
+      animation: "lf-fadein 0.25s ease",
+    }} onClick={onClose}>
+      <div style={{
+        background: "rgba(255,252,245,0.98)", borderRadius: 20, padding: "28px 28px 24px",
+        maxWidth: 480, width: "100%", maxHeight: "88vh", overflowY: "auto",
+        boxShadow: "0 20px 60px rgba(0,0,0,0.2)",
+        animation: "lf-slideup 0.3s ease",
+      }} onClick={e => e.stopPropagation()}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
+          <h3 style={{ fontFamily: "Noto Serif SC, serif", fontSize: 18, fontWeight: 600, color: "#4a4038", margin: 0, letterSpacing: "0.04em" }}>{UPLOAD_TITLES[moduleType]}</h3>
+          <button onClick={onClose} style={{ width: 32, height: 32, border: "none", borderRadius: "50%", background: "rgba(0,0,0,0.06)", color: "#888", fontSize: 18, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>×</button>
+        </div>
+        <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
+          {fields.map(field => (
+            <div key={field.key}>
+              <label style={{ display: "block", fontSize: 12, color: "#8a7a6a", marginBottom: 6, fontWeight: 500, letterSpacing: "0.05em" }}>
+                {field.label} {field.required && <span style={{ color: "#c0908a" }}>*</span>}
+              </label>
+              {field.isFile ? (
+                <div>
+                  <label style={{
+                    display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
+                    border: `1.5px dashed ${errors[field.key] ? "#c0908a" : "rgba(150,130,110,0.3)"}`,
+                    borderRadius: 12, padding: "20px 16px", cursor: "pointer", background: "rgba(122,154,130,0.04)",
+                    transition: "border-color 0.2s, background 0.2s",
+                  }}>
+                    {filePreviews[field.key]?.length ? (
+                      field.key === "photos" ? (
+                        <div style={{ display: "flex", gap: 8, flexWrap: "wrap", justifyContent: "center" }}>
+                          {filePreviews[field.key]!.map((url, i) => (
+                            <img key={i} src={url} alt="" style={{ width: 60, height: 60, objectFit: "cover", borderRadius: 8 }} />
+                          ))}
+                        </div>
+                      ) : (
+                        <img src={filePreviews[field.key]![0]} alt="" style={{ width: 80, height: 110, objectFit: "cover", borderRadius: 8 }} />
+                      )
+                    ) : (
+                      <>
+                        <span style={{ fontSize: 28, marginBottom: 8 }}>📷</span>
+                        <span style={{ fontSize: 12, color: "#8a7a6a" }}>点击上传{field.label}</span>
+                        {field.key === "photos" && <span style={{ fontSize: 11, color: "#b0a090", marginTop: 2 }}>可同时选择多张</span>}
+                      </>
+                    )}
+                    <input type="file" accept="image/*" multiple={field.key === "photos"}
+                      onChange={e => handleFileChange(field.key, e.target.files)}
+                      style={{ display: "none" }} />
+                  </label>
+                </div>
+              ) : field.isTextarea ? (
+                <textarea
+                  value={values[field.key] || ""}
+                  onChange={e => setValues(v => ({ ...v, [field.key]: e.target.value }))}
+                  placeholder={field.placeholder}
+                  rows={3}
+                  style={{
+                    width: "100%", boxSizing: "border-box", padding: "10px 0", border: "none", borderBottom: `1.5px solid ${errors[field.key] ? "#c0908a" : "rgba(150,130,110,0.25)"}`,
+                    background: "transparent", color: "#4a4038", fontSize: 14, resize: "none", outline: "none", fontFamily: "inherit", lineHeight: 1.7,
+                  }}
+                />
+              ) : field.type === "select" ? (
+                <select
+                  value={values[field.key] || ""}
+                  onChange={e => setValues(v => ({ ...v, [field.key]: e.target.value }))}
+                  style={{
+                    width: "100%", boxSizing: "border-box", padding: "10px 0", border: "none",
+                    borderBottom: `1.5px solid ${errors[field.key] ? "#c0908a" : "rgba(150,130,110,0.25)"}`,
+                    background: "transparent", color: "#4a4038", fontSize: 14, outline: "none", fontFamily: "inherit", appearance: "none", cursor: "pointer",
+                  }}>
+                  <option value="">请选择</option>
+                  {field.options?.map(o => <option key={o} value={o}>{o}</option>)}
+                </select>
+              ) : (
+                <input
+                  type={field.type || "text"}
+                  value={values[field.key] || ""}
+                  onChange={e => setValues(v => ({ ...v, [field.key]: e.target.value }))}
+                  placeholder={field.placeholder}
+                  style={{
+                    width: "100%", boxSizing: "border-box", padding: "10px 0", border: "none",
+                    borderBottom: `1.5px solid ${errors[field.key] ? "#c0908a" : "rgba(150,130,110,0.25)"}`,
+                    background: "transparent", color: "#4a4038", fontSize: 14, outline: "none", fontFamily: "inherit",
+                  }}
+                />
+              )}
+              {errors[field.key] && <p style={{ fontSize: 11, color: "#c0908a", margin: "4px 0 0" }}>{errors[field.key]}</p>}
+            </div>
+          ))}
+        </div>
+        <button
+          onClick={handleSubmit}
+          style={{
+            width: "100%", marginTop: 24, padding: "12px 0", border: "none", borderRadius: 999,
+            background: "#8BA888", color: "#fff", fontSize: 15, fontWeight: 500, cursor: "pointer",
+            letterSpacing: "0.05em", transition: "background 0.2s, transform 0.2s",
+          }}
+          onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = "#7a9a78"; (e.currentTarget as HTMLButtonElement).style.transform = "translateY(-1px)"; }}
+          onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = "#8BA888"; (e.currentTarget as HTMLButtonElement).style.transform = "translateY(0)"; }}
+        >确认上传 ✨</button>
+      </div>
+      <style>{`
+        @keyframes lf-fadein { from { opacity:0; } to { opacity:1; } }
+        @keyframes lf-slideup { from { opacity:0; transform:translateY(20px); } to { opacity:1; transform:translateY(0); } }
+      `}</style>
+    </div>
+  );
+};
+
+/* ====== FAB 悬浮按钮 ====== */
+const FAB: React.FC<{ onClick: () => void }> = ({ onClick }) => (
+  <button
+    onClick={onClick}
+    title="添加记录"
+    style={{
+      position: "fixed", bottom: 28, right: 28, zIndex: 210, width: 56, height: 56,
+      border: "none", borderRadius: "50%", background: "#8BA888", color: "#fff",
+      fontSize: 28, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
+      boxShadow: "0 6px 24px rgba(90,130,90,0.35)",
+      transition: "transform 0.25s cubic-bezier(0.34,1.56,0.64,1), background 0.2s",
+      animation: "lf-fab-appear 0.4s cubic-bezier(0.34,1.56,0.64,1)",
+    }}
+    onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.transform = "scale(1.12)"; (e.currentTarget as HTMLButtonElement).style.background = "#7a9a78"; }}
+    onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.transform = "scale(1)"; (e.currentTarget as HTMLButtonElement).style.background = "#8BA888"; }}
+  >+</button>
+);
+
+/* ====== 空状态组件 ====== */
+const EmptyState: React.FC<{ emoji: string; text?: string }> = ({ emoji, text }) => (
+  <div style={{ textAlign: "center", padding: "32px 16px", color: "#b0a090" }}>
+    <div style={{ fontSize: 48, marginBottom: 12, opacity: 0.6 }}>{emoji}</div>
+    <p style={{ fontSize: 13, margin: 0, lineHeight: 1.6 }}>{text || "还没记录呢，点击右下角 + 号开始吧"}</p>
+  </div>
+);
+
+/* ====== 通用弹窗遮罩 ====== */
+const ModalOverlay: React.FC<{ children: React.ReactNode; onClose: () => void; showFab?: boolean; fabOnClick?: () => void }> = ({ children, onClose, showFab, fabOnClick }) => (
+  <>
+    <div style={{
+      position: "fixed", inset: 0, zIndex: 200, background: "rgba(0,0,0,0.55)",
+      backdropFilter: "blur(8px)", display: "flex", alignItems: "center", justifyContent: "center",
+      padding: 24, animation: "lfm-fadein 0.3s ease",
+    }} onClick={onClose}>
+      <div style={{
+        position: "relative", width: "100%", maxWidth: 720, maxHeight: "85vh",
+        background: "rgba(255,252,245,0.97)", borderRadius: 20,
+        border: "1px solid rgba(255,255,255,0.5)",
+        boxShadow: "0 20px 60px rgba(0,0,0,0.2)",
+        padding: "28px 24px", overflowY: "auto", color: "#3a3a3a",
+        animation: "lfm-slideup 0.3s ease",
+      }} onClick={e => e.stopPropagation()}>
+        {children}
+      </div>
+    </div>
+    {showFab && fabOnClick && <FAB onClick={fabOnClick} />}
+    <style>{`
+      @keyframes lfm-fadein { from { opacity: 0; } to { opacity: 1; } }
+      @keyframes lfm-slideup { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+      @keyframes lf-fab-appear { from { opacity:0; transform:scale(0.6); } to { opacity:1; transform:scale(1); } }
+      @media (max-width: 600px) {
+        .lfm-modal-box, .lfm-modal-inner { max-height: 90vh; }
+      }
+    `}</style>
+  </>
+);
+
+/* ====== 删除按钮（小×） ====== */
+const DeleteBtn: React.FC<{ onClick: () => void }> = ({ onClick }) => (
+  <button
+    onClick={e => { e.stopPropagation(); onClick(); }}
+    title="删除"
+    style={{
+      position: "absolute", top: 6, right: 6, width: 22, height: 22, border: "none", borderRadius: "50%",
+      background: "rgba(0,0,0,0.18)", color: "rgba(255,255,255,0.85)", fontSize: 13,
+      cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
+      opacity: 0, transition: "opacity 0.2s, background 0.2s",
+    }}
+    onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = "rgba(180,80,80,0.6)"; (e.currentTarget as HTMLButtonElement).style.opacity = "1"; }}
+    onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = "rgba(0,0,0,0.18)"; (e.currentTarget as HTMLButtonElement).style.opacity = "0"; }}
+  >×</button>
+);
+
+/* ====== 阅读模块 ====== */
+const ReadingModal: React.FC<{ onClose: () => void; onUpload: () => void }> = ({ onClose, onUpload }) => {
+  const [books, setBooks] = useState<Book[]>(() => loadData<Book>(LS_KEYS.reading, MOCK_BOOKS));
+  const [selected, setSelected] = useState<Book | null>(null);
+  const [deleting, setDeleting] = useState<string | null>(null);
+  const [showUpload, setShowUpload] = useState(false);
+
+  const handleDelete = (id: string) => {
+    const updated = books.filter(b => b.id !== id);
+    setBooks(updated);
+    saveData(LS_KEYS.reading, updated);
+    setDeleting(null);
+  };
+
+  return (
+    <>
+      <ModalOverlay onClose={onClose} showFab fabOnClick={() => setShowUpload(true)}>
+        <button style={{ position: "absolute", top: 16, right: 16, width: 32, height: 32, border: "none", borderRadius: "50%", background: "rgba(0,0,0,0.06)", color: "#888", fontSize: 18, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }} onClick={onClose}>×</button>
+        <h3 style={{ fontFamily: "Noto Serif SC, serif", fontSize: 20, fontWeight: 600, color: "#4a4038", margin: "0 0 20px", textAlign: "center", letterSpacing: "0.04em" }}>📖 我的书架</h3>
+        {selected ? (
+          <div style={{ textAlign: "center", animation: "lfm-fadein 0.3s" }}>
+            <img src={selected.cover} alt={selected.title} style={{ width: 160, height: 224, objectFit: "cover", borderRadius: 8, boxShadow: "0 4px 16px rgba(0,0,0,0.12)", margin: "0 auto 16px" }} />
+            <h4 style={{ fontFamily: "Noto Serif SC, serif", fontSize: 18, color: "#4a4038", margin: "0 0 4px" }}>{selected.title}</h4>
+            <p style={{ fontSize: 13, color: "#8a7a6a", margin: "0 0 12px" }}>· {selected.author}</p>
+            <blockquote style={{ fontFamily: "Noto Serif SC, serif", fontSize: 14, color: "#6a8a6a", borderLeft: "3px solid #6a8a6a", paddingLeft: 12, margin: "0 0 12px", fontStyle: "italic" }}>"{selected.quote}"</blockquote>
+            <p style={{ fontSize: 12, color: "#b0a090", margin: "0 0 16px" }}>{selected.date}</p>
+            <button onClick={() => setSelected(null)} style={{ padding: "8px 20px", border: "1.5px solid #6a8a6a", borderRadius: 999, background: "transparent", color: "#6a8a6a", cursor: "pointer", fontSize: 13 }}>← 返回书架</button>
+          </div>
+        ) : books.length === 0 ? (
+          <EmptyState emoji="📚" />
+        ) : (
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 12 }}>
+            {books.map(book => (
+              <div key={book.id} style={{ position: "relative", cursor: "pointer", textAlign: "center", transition: "transform 0.2s" }}
+                onClick={() => setSelected(book)}
+                onMouseEnter={e => (e.currentTarget.style.transform = "translateY(-4px)")}
+                onMouseLeave={e => (e.currentTarget.style.transform = "translateY(0)")}>
+                <DeleteBtn onClick={() => setDeleting(book.id)} />
+                <img src={book.cover} alt={book.title} style={{ width: "100%", height: 160, objectFit: "cover", borderRadius: 8, boxShadow: "0 2px 8px rgba(0,0,0,0.1)", marginBottom: 8 }} />
+                <p style={{ fontSize: 12, color: "#5a5248", margin: 0, fontWeight: 500 }}>{book.title}</p>
+                <p style={{ fontSize: 11, color: "#b0a090", margin: "2px 0 0" }}>{book.author}</p>
+              </div>
+            ))}
+          </div>
+        )}
+        {deleting && <ConfirmDialog message="确定要删除这本书吗？" onConfirm={() => handleDelete(deleting)} onCancel={() => setDeleting(null)} />}
+      </ModalOverlay>
+      {showUpload && (
+        <UploadModal moduleType="reading" onSubmit={(data, files) => {
+          const newBook: Book = {
+            id: genId(), title: data.title, author: data.author || "",
+            cover: files["cover"]?.[0] || "https://images.unsplash.com/photo-1544947950-fa07a98d237f?w=200&h=280&fit=crop",
+            quote: data.quote || "", date: data.date || "",
+          };
+          const updated = [newBook, ...books];
+          setBooks(updated); saveData(LS_KEYS.reading, updated);
+          setShowUpload(false); onUpload();
+        }} onClose={() => setShowUpload(false)} />
+      )}
+    </>
+  );
+};
+
+/* ====== 摄影模块 ====== */
+const PhotoModal: React.FC<{ onClose: () => void; onUpload: () => void }> = ({ onClose, onUpload }) => {
+  const [photos, setPhotos] = useState<Photo[]>(() => loadData<Photo>(LS_KEYS.photos, MOCK_PHOTOS));
+  const [idx, setIdx] = useState(0);
+  const [showUpload, setShowUpload] = useState(false);
+  const [deleting, setDeleting] = useState<string | null>(null);
+
+  if (photos.length > 0 && idx >= photos.length) setIdx(0);
+  const p = photos[idx] || null;
+
+  const handleDelete = (id: string) => {
+    const updated = photos.filter(x => x.id !== id);
+    setPhotos(updated); saveData(LS_KEYS.photos, updated);
+    setDeleting(null);
+  };
+
+  return (
+    <>
+      <ModalOverlay onClose={onClose} showFab fabOnClick={() => setShowUpload(true)}>
+        <button style={{ position: "absolute", top: 16, right: 16, width: 32, height: 32, border: "none", borderRadius: "50%", background: "rgba(0,0,0,0.06)", color: "#888", fontSize: 18, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }} onClick={onClose}>×</button>
+        <h3 style={{ fontFamily: "Noto Serif SC, serif", fontSize: 20, fontWeight: 600, color: "#4a4038", margin: "0 0 20px", textAlign: "center", letterSpacing: "0.04em" }}>📷 我的摄影集</h3>
+        {photos.length === 0 ? (
+          <EmptyState emoji="📷" />
+        ) : (
+          <>
+            <div style={{ position: "relative", borderRadius: 12, overflow: "hidden", background: "#1a1a1a", marginBottom: 16 }}>
+              {p && <>
+                <div style={{ position: "relative" }}>
+                  <img src={p.src} alt={p.title} style={{ width: "100%", height: 320, objectFit: "cover", display: "block" }} />
+                  <DeleteBtn onClick={() => setDeleting(p.id)} />
+                </div>
+                <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, padding: "24px 16px 12px", background: "linear-gradient(transparent, rgba(0,0,0,0.7))" }}>
+                  <p style={{ color: "#fff", fontSize: 14, margin: 0, fontWeight: 500 }}>{p.title}</p>
+                  <p style={{ color: "rgba(255,255,255,0.6)", fontSize: 11, margin: "4px 0 0" }}>{p.date} · {p.desc}</p>
+                </div>
+                <button onClick={() => setIdx(i => (i - 1 + photos.length) % photos.length)} style={{ position: "absolute", left: 8, top: "50%", transform: "translateY(-50%)", width: 36, height: 36, borderRadius: "50%", border: "1.5px solid rgba(255,255,255,0.3)", background: "rgba(0,0,0,0.4)", color: "#fff", fontSize: 18, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", backdropFilter: "blur(4px)" }}>‹</button>
+                <button onClick={() => setIdx(i => (i + 1) % photos.length)} style={{ position: "absolute", right: 8, top: "50%", transform: "translateY(-50%)", width: 36, height: 36, borderRadius: "50%", border: "1.5px solid rgba(255,255,255,0.3)", background: "rgba(0,0,0,0.4)", color: "#fff", fontSize: 18, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", backdropFilter: "blur(4px)" }}>›</button>
+                <div style={{ position: "absolute", bottom: 8, left: "50%", transform: "translateX(-50%)", display: "flex", gap: 4 }}>
+                  {photos.map((_, i) => <span key={i} style={{ width: i === idx ? 16 : 6, height: 6, borderRadius: 3, background: i === idx ? "#fff" : "rgba(255,255,255,0.35)", transition: "all 0.2s" }} />)}
+                </div>
+              </>}
+            </div>
+            <div style={{ display: "flex", gap: 8, overflowX: "auto", paddingBottom: 4 }}>
+              {photos.map((ph, i) => (
+                <img key={ph.id} src={ph.src} alt={ph.title} onClick={() => setIdx(i)}
+                  style={{ width: 60, height: 44, objectFit: "cover", borderRadius: 6, cursor: "pointer", flexShrink: 0, border: i === idx ? "2px solid #6a8a6a" : "2px solid transparent", opacity: i === idx ? 1 : 0.6, transition: "all 0.2s" }} />
+              ))}
+            </div>
+          </>
+        )}
+        {deleting && <ConfirmDialog message="确定要删除这张照片吗？" onConfirm={() => handleDelete(deleting)} onCancel={() => setDeleting(null)} />}
+      </ModalOverlay>
+      {showUpload && (
+        <UploadModal moduleType="photo" onSubmit={(data, files) => {
+          const newPhotos: Photo[] = (files["photos"] || []).map((url: string, i: number) => ({
+            id: genId(), src: url, title: data.desc?.split("·")[0]?.trim() || `照片 ${i + 1}`, date: data.date || new Date().toISOString().slice(0, 7), desc: data.desc || "",
+          }));
+          const updated = [...newPhotos, ...photos];
+          setPhotos(updated); saveData(LS_KEYS.photos, updated);
+          setShowUpload(false); onUpload();
+        }} onClose={() => setShowUpload(false)} />
+      )}
+    </>
+  );
+};
+
+/* ====== 音乐/播客模块 ====== */
+const MusicModal: React.FC<{ onClose: () => void; onUpload: () => void }> = ({ onClose, onUpload }) => {
+  const [tracks, setTracks] = useState<Track[]>(() => loadData<Track>(LS_KEYS.tracks, MOCK_TRACKS));
+  const [playing, setPlaying] = useState<string | null>(null);
+  const [progress, setProgress] = useState(0);
+  const [showUpload, setShowUpload] = useState(false);
+  const [deleting, setDeleting] = useState<string | null>(null);
+  const timerRef = useRef<ReturnType<typeof setInterval>>(undefined);
+
+  useEffect(() => {
+    if (playing) {
+      timerRef.current = setInterval(() => {
+        setProgress(p => {
+          if (p >= 100) {
+            if (timerRef.current) clearInterval(timerRef.current);
+            setPlaying(null);
+            return 0;
+          }
+          return p + 1;
+        });
+      }, 300);
+    } else {
+      if (timerRef.current) clearInterval(timerRef.current);
+    }
+    return () => { if (timerRef.current) clearInterval(timerRef.current); };
+  }, [playing]);
+
+  const handleDelete = (id: string) => {
+    const updated = tracks.filter(t => t.id !== id);
+    setTracks(updated); saveData(LS_KEYS.tracks, updated);
+    setDeleting(null);
+  };
+
+  return (
+    <>
+      <ModalOverlay onClose={onClose} showFab fabOnClick={() => setShowUpload(true)}>
+        <button style={{ position: "absolute", top: 16, right: 16, width: 32, height: 32, border: "none", borderRadius: "50%", background: "rgba(0,0,0,0.06)", color: "#888", fontSize: 18, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }} onClick={onClose}>×</button>
+        <h3 style={{ fontFamily: "Noto Serif SC, serif", fontSize: 20, fontWeight: 600, color: "#4a4038", margin: "0 0 20px", textAlign: "center", letterSpacing: "0.04em" }}>🎧 我的收听清单</h3>
+        {playing ? (() => {
+          const track = tracks.find(t => t.id === playing);
+          return track ? (
+            <div style={{ textAlign: "center", padding: "20px 0" }}>
+              <div style={{ width: 100, height: 100, borderRadius: 12, background: "rgba(122,154,130,0.15)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 48, margin: "0 auto 16px" }}>{track.cover}</div>
+              <h4 style={{ fontFamily: "Noto Serif SC, serif", fontSize: 16, color: "#4a4038", margin: "0 0 4px" }}>{track.title}</h4>
+              <p style={{ fontSize: 12, color: "#b0a090", margin: "0 0 16px" }}>{track.type} · {track.date}</p>
+              <div style={{ height: 4, background: "rgba(0,0,0,0.08)", borderRadius: 2, marginBottom: 12 }}>
+                <div style={{ height: "100%", width: `${progress}%`, background: "#6a8a6a", borderRadius: 2, transition: "width 0.3s" }} />
+              </div>
+              <div style={{ display: "flex", gap: 12, justifyContent: "center" }}>
+                <button onClick={() => { setPlaying(null); setProgress(0); }} style={{ padding: "8px 20px", border: "1.5px solid #b0a090", borderRadius: 999, background: "transparent", color: "#8a7a6a", cursor: "pointer", fontSize: 13 }}>停止</button>
+                <button onClick={() => setProgress(p => Math.min(p + 10, 99))} style={{ padding: "8px 20px", border: "none", borderRadius: 999, background: "#6a8a6a", color: "#fff", cursor: "pointer", fontSize: 13 }}>快进 ▶▶</button>
+              </div>
+            </div>
+          ) : null;
+        })() : tracks.length === 0 ? (
+          <EmptyState emoji="🎧" />
+        ) : (
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 12 }}>
+            {tracks.map(t => (
+              <div key={t.id} style={{ position: "relative", cursor: "pointer", display: "flex", alignItems: "center", gap: 12, padding: "12px 14px", borderRadius: 12, background: "rgba(122,154,130,0.08)", transition: "background 0.2s" }}
+                onClick={() => setPlaying(t.id)}
+                onMouseEnter={e => (e.currentTarget.style.background = "rgba(122,154,130,0.16)")}
+                onMouseLeave={e => (e.currentTarget.style.background = "rgba(122,154,130,0.08)")}>
+                <button onClick={e => { e.stopPropagation(); setDeleting(t.id); }} style={{ position: "absolute", top: 4, right: 4, width: 18, height: 18, border: "none", borderRadius: "50%", background: "rgba(0,0,0,0.1)", color: "rgba(0,0,0,0.4)", fontSize: 12, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", opacity: 0, transition: "opacity 0.2s" }}
+                  onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.opacity = "1"; }}
+                  onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.opacity = "0"; }}>×</button>
+                <div style={{ width: 44, height: 44, borderRadius: 8, background: "rgba(122,154,130,0.12)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22, flexShrink: 0 }}>{t.cover}</div>
+                <div><p style={{ fontSize: 13, color: "#4a4038", margin: 0, fontWeight: 500 }}>{t.title}</p><p style={{ fontSize: 11, color: "#b0a090", margin: "2px 0 0" }}>{t.type} · {t.date}</p></div>
+              </div>
+            ))}
+          </div>
+        )}
+        {deleting && <ConfirmDialog message="确定要删除这条记录吗？" onConfirm={() => handleDelete(deleting)} onCancel={() => setDeleting(null)} />}
+      </ModalOverlay>
+      {showUpload && (
+        <UploadModal moduleType="music" onSubmit={(data, files) => {
+          void files; // 音乐封面暂用emoji展示
+          const newTrack: Track = {
+            id: genId(), title: data.title, type: data.type?.replace(/[^音乐播客]/g, "") || "音乐",
+            date: data.date || "", cover: "🎵",
+          };
+          const updated = [newTrack, ...tracks];
+          setTracks(updated); saveData(LS_KEYS.tracks, updated);
+          setShowUpload(false); onUpload();
+        }} onClose={() => setShowUpload(false)} />
+      )}
+    </>
+  );
+};
+
+/* ====== 运动模块 ====== */
+const SportModal: React.FC<{ onClose: () => void; onUpload: () => void }> = ({ onClose, onUpload }) => {
+  const [sports, setSports] = useState<Sport[]>(() => loadData<Sport>(LS_KEYS.sports, MOCK_SPORTS));
+  const [showUpload, setShowUpload] = useState(false);
+  const [deleting, setDeleting] = useState<string | null>(null);
+
+  const handleDelete = (id: string) => {
+    const updated = sports.filter(s => s.id !== id);
+    setSports(updated); saveData(LS_KEYS.sports, updated);
+    setDeleting(null);
+  };
+
+  const totalRuns = sports.filter(s => s.icon === "🏃").length;
+  const totalDist = sports.reduce((acc, s) => { const m = s.name.match(/(\d+)km/); return acc + (m ? parseInt(m[1]) : 0); }, 0);
+  const totalMin = sports.reduce((acc, s) => { const m = s.name.match(/(\d+)min/); return acc + (m ? parseInt(m[1]) : 0); }, 0);
+
+  return (
+    <>
+      <ModalOverlay onClose={onClose} showFab fabOnClick={() => setShowUpload(true)}>
+        <button style={{ position: "absolute", top: 16, right: 16, width: 32, height: 32, border: "none", borderRadius: "50%", background: "rgba(0,0,0,0.06)", color: "#888", fontSize: 18, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }} onClick={onClose}>×</button>
+        <h3 style={{ fontFamily: "Noto Serif SC, serif", fontSize: 20, fontWeight: 600, color: "#4a4038", margin: "0 0 20px", textAlign: "center", letterSpacing: "0.04em" }}>🏃 我的运动轨迹</h3>
+        <div style={{ display: "flex", gap: 12, marginBottom: 20 }}>
+          {[{ label: "本周运动", value: `${totalRuns || 4}次` }, { label: "总里程", value: `${totalDist || 23}km` }, { label: "累计时长", value: totalMin > 0 ? `${Math.floor(totalMin / 60)}h${totalMin % 60}m` : "3h12m" }].map(s => (
+            <div key={s.label} style={{ flex: 1, padding: "12px 8px", borderRadius: 12, background: "rgba(122,154,130,0.1)", textAlign: "center" }}>
+              <p style={{ fontSize: 20, fontWeight: 700, color: "#6a8a6a", margin: "0 0 2px" }}>{s.value}</p>
+              <p style={{ fontSize: 11, color: "#8a7a6a", margin: 0 }}>{s.label}</p>
+            </div>
+          ))}
+        </div>
+        <div style={{ display: "flex", alignItems: "flex-end", gap: 6, height: 60, marginBottom: 20, padding: "0 4px" }}>
+          {[3, 5, 2, 4, 1, 3, 5].map((h, i) => (
+            <div key={i} style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", gap: 2 }}>
+              <div style={{ width: "100%", height: h * 10, background: "rgba(122,154,130,0.5)", borderRadius: "3px 3px 0 0" }} />
+              <span style={{ fontSize: 9, color: "#b0a090" }}>{["一","二","三","四","五","六","日"][i]}</span>
+            </div>
+          ))}
+        </div>
+        {sports.length === 0 ? (
+          <EmptyState emoji="🏃" />
+        ) : (
+          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+            {sports.map(s => (
+              <div key={s.id} style={{ position: "relative", display: "flex", alignItems: "flex-start", gap: 12, padding: "10px 14px", borderRadius: 10, background: "rgba(122,154,130,0.06)" }}>
+                <button onClick={() => setDeleting(s.id)} style={{ position: "absolute", top: 6, right: 6, width: 18, height: 18, border: "none", borderRadius: "50%", background: "rgba(0,0,0,0.06)", color: "rgba(0,0,0,0.3)", fontSize: 12, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", opacity: 0, transition: "opacity 0.2s" }}
+                  onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.opacity = "1"; }}
+                  onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.opacity = "0"; }}>×</button>
+                <span style={{ fontSize: 24, flexShrink: 0 }}>{s.icon}</span>
+                <div><p style={{ fontSize: 13, color: "#4a4038", margin: 0, fontWeight: 500 }}>{s.name} <span style={{ fontSize: 11, color: "#b0a090", fontWeight: 400 }}>{s.date} · {s.time}</span></p><p style={{ fontSize: 12, color: "#7a7268", margin: "4px 0 0", fontStyle: "italic" }}>"{s.note}"</p></div>
+              </div>
+            ))}
+          </div>
+        )}
+        {deleting && <ConfirmDialog message="确定要删除这条运动记录吗？" onConfirm={() => handleDelete(deleting)} onCancel={() => setDeleting(null)} />}
+      </ModalOverlay>
+      {showUpload && (
+        <UploadModal moduleType="sport" onSubmit={(data, _files) => {
+          const newSport: Sport = {
+            id: genId(), icon: data.icon?.split(" ")[0] || "🏃",
+            name: data.name || "运动", date: data.date || new Date().toISOString().slice(0, 10),
+            time: data.time || "", note: data.note || "",
+          };
+          const updated = [newSport, ...sports];
+          setSports(updated); saveData(LS_KEYS.sports, updated);
+          setShowUpload(false); onUpload();
+        }} onClose={() => setShowUpload(false)} />
+      )}
+    </>
+  );
+};
+
+/* ====== 冥想模块 ====== */
+const MeditationModal: React.FC<{ onClose: () => void; onUpload: () => void }> = ({ onClose, onUpload }) => {
+  const [meditations, setMeditations] = useState<Meditation[]>(() => loadData<Meditation>(LS_KEYS.meditations, MOCK_MEDITATIONS));
+  const [playing, setPlaying] = useState(false);
+  const [p, setP] = useState(0);
+  const [showUpload, setShowUpload] = useState(false);
+  const [deleting, setDeleting] = useState<string | null>(null);
+  const timer = useRef<ReturnType<typeof setInterval>>(undefined);
+
+  useEffect(() => {
+    if (playing) {
+      timer.current = setInterval(() => {
+        setP(v => {
+          if (v >= 100) {
+            if (timer.current) clearInterval(timer.current);
+            setPlaying(false);
+            return 0;
+          }
+          return v + 1;
+        });
+      }, 500);
+    } else {
+      if (timer.current) clearInterval(timer.current);
+    }
+    return () => { if (timer.current) clearInterval(timer.current); };
+  }, [playing]);
+
+  const handleDelete = (id: string) => {
+    const updated = meditations.filter(m => m.id !== id);
+    setMeditations(updated); saveData(LS_KEYS.meditations, updated);
+    setDeleting(null);
+  };
+
+  return (
+    <>
+      <ModalOverlay onClose={onClose} showFab fabOnClick={() => setShowUpload(true)}>
+        <button style={{ position: "absolute", top: 16, right: 16, width: 32, height: 32, border: "none", borderRadius: "50%", background: "rgba(0,0,0,0.06)", color: "#888", fontSize: 18, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }} onClick={onClose}>×</button>
+        <h3 style={{ fontFamily: "Noto Serif SC, serif", fontSize: 20, fontWeight: 600, color: "#4a4038", margin: "0 0 20px", textAlign: "center", letterSpacing: "0.04em" }}>🧘 我的冥想日记</h3>
+        <div style={{ padding: "20px", borderRadius: 16, background: "rgba(122,154,130,0.08)", textAlign: "center", marginBottom: 20 }}>
+          <p style={{ fontFamily: "Noto Serif SC, serif", fontSize: 16, color: "#4a4038", margin: "0 0 8px" }}>正念呼引导</p>
+          <p style={{ fontSize: 13, color: "#8a7a6a", margin: "0 0 16px" }}>15分钟 · 此刻可开始</p>
+          <div style={{ height: 4, background: "rgba(0,0,0,0.06)", borderRadius: 2, marginBottom: 12 }}>
+            <div style={{ height: "100%", width: `${p}%`, background: "#6a8a6a", borderRadius: 2, transition: "width 0.5s" }} />
+          </div>
+          <button onClick={() => setPlaying(!playing)} style={{ padding: "10px 28px", border: "none", borderRadius: 999, background: "#6a8a6a", color: "#fff", cursor: "pointer", fontSize: 14, fontWeight: 500 }}>
+            {playing ? "⏸ 暂停" : "▶ 开始冥想"}
+          </button>
+        </div>
+        {meditations.length === 0 ? (
+          <EmptyState emoji="🧘" />
+        ) : (
+          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+            {meditations.map(m => (
+              <div key={m.id} style={{ position: "relative", padding: "14px 16px", borderRadius: 12, background: "rgba(255,255,255,0.6)", borderLeft: "3px solid #6a8a6a" }}>
+                <button onClick={() => setDeleting(m.id)} style={{ position: "absolute", top: 8, right: 8, width: 18, height: 18, border: "none", borderRadius: "50%", background: "rgba(0,0,0,0.06)", color: "rgba(0,0,0,0.3)", fontSize: 12, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", opacity: 0, transition: "opacity 0.2s" }}
+                  onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.opacity = "1"; }}
+                  onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.opacity = "0"; }}>×</button>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
+                  <p style={{ fontSize: 14, fontWeight: 600, color: "#4a4038", margin: 0 }}>{m.theme}</p>
+                  <span style={{ fontSize: 11, color: "#b0a090" }}>{m.duration} · {m.date}</span>
+                </div>
+                <p style={{ fontSize: 12, color: "#7a7268", margin: 0, fontStyle: "italic", lineHeight: 1.6 }}>"{m.insight}"</p>
+              </div>
+            ))}
+          </div>
+        )}
+        {deleting && <ConfirmDialog message="确定要删除这条冥想记录吗？" onConfirm={() => handleDelete(deleting)} onCancel={() => setDeleting(null)} />}
+      </ModalOverlay>
+      {showUpload && (
+        <UploadModal moduleType="meditation" onSubmit={(data, _files) => {
+          const newMed: Meditation = {
+            id: genId(), theme: data.theme || "正念呼吸", duration: data.duration || "15分钟",
+            date: data.date || new Date().toISOString().slice(0, 10), insight: data.insight || "",
+          };
+          const updated = [newMed, ...meditations];
+          setMeditations(updated); saveData(LS_KEYS.meditations, updated);
+          setShowUpload(false); onUpload();
+        }} onClose={() => setShowUpload(false)} />
+      )}
+    </>
+  );
+};
+
+/* ====== 追剧模块 ====== */
+const DramaModal: React.FC<{ onClose: () => void; onUpload: () => void }> = ({ onClose, onUpload }) => {
+  const [dramas, setDramas] = useState<Drama[]>(() => loadData<Drama>(LS_KEYS.dramas, MOCK_DRAMAS));
+  const [selected, setSelected] = useState<Drama | null>(null);
+  const [showUpload, setShowUpload] = useState(false);
+  const [deleting, setDeleting] = useState<string | null>(null);
+
+  const handleDelete = (id: string) => {
+    const updated = dramas.filter(d => d.id !== id);
+    setDramas(updated); saveData(LS_KEYS.dramas, updated);
+    setDeleting(null);
+  };
+
+  return (
+    <>
+      <ModalOverlay onClose={onClose} showFab fabOnClick={() => setShowUpload(true)}>
+        <button style={{ position: "absolute", top: 16, right: 16, width: 32, height: 32, border: "none", borderRadius: "50%", background: "rgba(0,0,0,0.06)", color: "#888", fontSize: 18, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }} onClick={onClose}>×</button>
+        <h3 style={{ fontFamily: "Noto Serif SC, serif", fontSize: 20, fontWeight: 600, color: "#4a4038", margin: "0 0 20px", textAlign: "center", letterSpacing: "0.04em" }}>📺 我的追剧记录</h3>
+        {selected ? (
+          <div style={{ textAlign: "center", animation: "lfm-fadein 0.3s" }}>
+            <img src={selected.cover} alt={selected.title} style={{ width: 200, height: 260, objectFit: "cover", borderRadius: 10, boxShadow: "0 4px 16px rgba(0,0,0,0.12)", margin: "0 auto 16px" }} />
+            <h4 style={{ fontFamily: "Noto Serif SC, serif", fontSize: 18, color: "#4a4038", margin: "0 0 4px" }}>{selected.title}</h4>
+            <p style={{ fontSize: 12, color: "#b0a090", margin: "0 0 12px" }}>{selected.season} · {selected.date}</p>
+            <blockquote style={{ fontFamily: "Noto Serif SC, serif", fontSize: 14, color: "#6a8a6a", borderLeft: "3px solid #6a8a6a", paddingLeft: 12, margin: "0 0 16px", fontStyle: "italic" }}>"{selected.quote}"</blockquote>
+            <button onClick={() => setSelected(null)} style={{ padding: "8px 20px", border: "1.5px solid #6a8a6a", borderRadius: 999, background: "transparent", color: "#6a8a6a", cursor: "pointer", fontSize: 13 }}>← 返回列表</button>
+          </div>
+        ) : dramas.length === 0 ? (
+          <EmptyState emoji="📺" />
+        ) : (
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 12 }}>
+            {dramas.map(d => (
+              <div key={d.id} style={{ position: "relative", cursor: "pointer", borderRadius: 10, overflow: "hidden", background: "rgba(0,0,0,0.04)", transition: "transform 0.2s" }}
+                onClick={() => setSelected(d)}
+                onMouseEnter={e => (e.currentTarget.style.transform = "translateY(-4px)")}
+                onMouseLeave={e => (e.currentTarget.style.transform = "translateY(0)")}>
+                <button onClick={e => { e.stopPropagation(); setDeleting(d.id); }} style={{ position: "absolute", top: 6, right: 6, width: 22, height: 22, border: "none", borderRadius: "50%", background: "rgba(0,0,0,0.25)", color: "rgba(255,255,255,0.85)", fontSize: 13, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 2, opacity: 0, transition: "opacity 0.2s" }}
+                  onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.opacity = "1"; }}
+                  onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.opacity = "0"; }}>×</button>
+                <img src={d.cover} alt={d.title} style={{ width: "100%", height: 140, objectFit: "cover", display: "block" }} />
+                <div style={{ padding: "10px 12px" }}>
+                  <p style={{ fontSize: 13, fontWeight: 600, color: "#4a4038", margin: "0 0 2px" }}>{d.title}</p>
+                  <p style={{ fontSize: 11, color: "#b0a090", margin: 0 }}>{d.season} · {d.date}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+        {deleting && <ConfirmDialog message="确定要删除这条追剧记录吗？" onConfirm={() => handleDelete(deleting)} onCancel={() => setDeleting(null)} />}
+      </ModalOverlay>
+      {showUpload && (
+        <UploadModal moduleType="drama" onSubmit={(data, files) => {
+          const newDrama: Drama = {
+            id: genId(), title: data.title, season: data.season || "",
+            date: data.date || "", cover: files["cover"]?.[0] || "https://images.unsplash.com/photo-1536440136628-849c177e76a1?w=300&h=400&fit=crop",
+            quote: data.quote || "",
+          };
+          const updated = [newDrama, ...dramas];
+          setDramas(updated); saveData(LS_KEYS.dramas, updated);
+          setShowUpload(false); onUpload();
+        }} onClose={() => setShowUpload(false)} />
+      )}
+    </>
+  );
+};
+
+/* ====== 胶片帧数据 ====== */
+const FRAMES = [
+  { id: "reading" as ModuleType, emoji: "📖", name: "阅读", tint: "#DDD0B8" },
+  { id: "photo" as ModuleType, emoji: "📷", name: "摄影", tint: "#C8D8C0" },
+  { id: "music" as ModuleType, emoji: "🎧", name: "音乐/播客", tint: "#DCC8C0" },
+  { id: "sport" as ModuleType, emoji: "🏃", name: "运动", tint: "#D8C8A8" },
+  { id: "meditation" as ModuleType, emoji: "🧘", name: "冥想", tint: "#C0D0CC" },
+  { id: "drama" as ModuleType, emoji: "📺", name: "追剧", tint: "#D0C8C0" },
+];
+
+/* ====== 拖拽胶片条 ====== */
+interface FilmStripProps { onOpen: (m: ModuleType) => void; }
+const FilmStrip: React.FC<FilmStripProps> = ({ onOpen }) => {
+  const trackRef = useRef<HTMLDivElement>(null);
+  const [tx, setTx] = useState(0);
+  const [dragging, setDragging] = useState(false);
+  const startX = useRef(0);
+  const startTX = useRef(0);
+  const frameW = 130; const gap = 8;
+  const totalW = FRAMES.length * (frameW + gap) + gap;
+  const minTX = Math.min(0, -(totalW - 680));
+
+  const clamp = (v: number, min: number, max: number) => Math.max(min, Math.min(max, v));
+  const snap = (v: number) => Math.round(v / (frameW + gap)) * (frameW + gap);
+
+  useEffect(() => {
+    if (!dragging) return;
+    const onMM = (e: MouseEvent) => {
+      const next = clamp(startTX.current + e.clientX - startX.current, minTX, 0);
+      setTx(next);
+      if (trackRef.current) { trackRef.current.style.transition = "none"; trackRef.current.style.transform = `translateX(${next}px)`; }
+    };
+    const onMU = (e: MouseEvent) => {
+      setDragging(false);
+      const next = clamp(snap(clamp(startTX.current + e.clientX - startX.current, minTX, 0)), minTX, 0);
+      setTx(next);
+      if (trackRef.current) { trackRef.current.style.transition = "transform 0.4s cubic-bezier(0.25,0.46,0.45,0.94)"; trackRef.current.style.transform = `translateX(${next}px)`; }
+    };
+    window.addEventListener("mousemove", onMM); window.addEventListener("mouseup", onMU);
+    return () => { window.removeEventListener("mousemove", onMM); window.removeEventListener("mouseup", onMU); };
+  }, [dragging, minTX]);
+
+  const onMouseDown = (e: React.MouseEvent) => { setDragging(true); startX.current = e.clientX; startTX.current = tx; };
+  const onTouchStart = (e: React.TouchEvent) => { setDragging(true); startX.current = e.touches[0].clientX; startTX.current = tx; };
+
+  useEffect(() => {
+    if (!dragging) return;
+    const onTM = (e: TouchEvent) => { e.preventDefault(); const next = clamp(startTX.current + e.touches[0].clientX - startX.current, minTX, 0); setTx(next); if (trackRef.current) { trackRef.current.style.transition = "none"; trackRef.current.style.transform = `translateX(${next}px)`; } };
+    const onTU = () => { setDragging(false); const next = clamp(snap(tx), minTX, 0); setTx(next); if (trackRef.current) { trackRef.current.style.transition = "transform 0.4s cubic-bezier(0.25,0.46,0.45,0.94)"; trackRef.current.style.transform = `translateX(${next}px)`; } };
+    window.addEventListener("touchmove", onTM, { passive: false }); window.addEventListener("touchend", onTU);
+    return () => { window.removeEventListener("touchmove", onTM); window.removeEventListener("touchend", onTU); };
+  }, [dragging, tx, minTX]);
+
+  const scrollBy = (dir: "left" | "right") => {
+    const next = clamp(tx + (dir === "right" ? -(frameW + gap) : (frameW + gap)), minTX, 0);
+    setTx(next);
+    if (trackRef.current) { trackRef.current.style.transition = "transform 0.35s cubic-bezier(0.25,0.46,0.45,0.94)"; trackRef.current.style.transform = `translateX(${next}px)`; }
+  };
+
+  return (
+    <>
+      <div style={{ flexShrink: 0, display: "flex", flexDirection: "column", alignItems: "center", gap: 6 }}>
+        <div style={{ position: "relative", width: 74, height: 74, borderRadius: "50%", background: "radial-gradient(circle at 40% 35%, #f8f4ec, #e8dcc8 60%, #d8c8b0)", boxShadow: "0 4px 12px rgba(0,0,0,0.1), inset 0 2px 4px rgba(255,255,255,0.6)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+          {[0,1,2,3,4].map(i => <div key={i} style={{ position: "absolute", top: "50%", left: "50%", transform: `translate(-50%,-50%)`, width: `${74 - i * 13}px`, height: `${74 - i * 13}px`, borderRadius: "50%", border: "1px solid rgba(180,160,120,0.25)" }} />)}
+          <div style={{ width: 10, height: 10, borderRadius: "50%", background: "#8a7a6a", position: "relative", zIndex: 1 }} />
+        </div>
+        <div style={{ fontSize: 7, letterSpacing: "0.15em", color: "#b0a090", textTransform: "uppercase" }}>KODAK 200</div>
+      </div>
+      <div style={{ flex: 1, overflow: "hidden", padding: "8px 0", cursor: dragging ? "grabbing" : "grab" }}>
+        <div ref={trackRef} onMouseDown={onMouseDown} onTouchStart={onTouchStart} style={{ display: "flex", flexDirection: "column", transition: "transform 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94)" }}>
+          <div style={{ display: "flex", gap: 6, padding: "0 4px", marginBottom: 6 }}>
+            {FRAMES.map(() => <span key={Math.random()} style={{ display: "block", flexShrink: 0, width: 10, height: 8, borderRadius: 2, background: "rgba(180,160,130,0.35)", border: "1px solid rgba(160,140,110,0.25)" }} />)}
+          </div>
+          <div style={{ display: "flex", gap: 8, padding: "0 4px" }}>
+            {FRAMES.map(f => (
+              <div key={f.name} onClick={() => onOpen(f.id)} style={{ position: "relative", flexShrink: 0, width: 120, height: 90, borderRadius: 12, background: f.tint, boxShadow: "0 4px 12px rgba(0,0,0,0.08)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 4, overflow: "hidden", cursor: "pointer", transition: "transform 0.2s ease, box-shadow 0.2s ease" }}
+                onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.transform = "translateY(-4px) scale(1.04)"; (e.currentTarget as HTMLDivElement).style.boxShadow = "0 8px 20px rgba(0,0,0,0.14)"; }}
+                onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.transform = "translateY(0) scale(1)"; (e.currentTarget as HTMLDivElement).style.boxShadow = "0 4px 12px rgba(0,0,0,0.08)"; }}>
+                <span style={{ fontSize: 28, filter: "sepia(0.08) contrast(0.95)" }}>{f.emoji}</span>
+                <span style={{ fontSize: 12, color: "rgba(60,50,40,0.75)", fontWeight: 500, letterSpacing: "0.05em" }}>{f.name}</span>
+              </div>
+            ))}
+          </div>
+          <div style={{ display: "flex", gap: 6, padding: "0 4px", marginTop: 6 }}>
+            {FRAMES.map(() => <span key={Math.random()} style={{ display: "block", flexShrink: 0, width: 10, height: 8, borderRadius: 2, background: "rgba(180,160,130,0.35)", border: "1px solid rgba(160,140,110,0.25)" }} />)}
+          </div>
+        </div>
+      </div>
+      <div style={{ flexShrink: 0, display: "flex", flexDirection: "column", alignItems: "center" }}>
+        <div style={{ position: "relative", width: 74, height: 74, borderRadius: "50%", background: "radial-gradient(circle at 40% 35%, #f8f4ec, #e8dcc8 60%, #d8c8b0)", boxShadow: "0 4px 12px rgba(0,0,0,0.1), inset 0 2px 4px rgba(255,255,255,0.6)", display: "flex", alignItems: "center", justifyContent: "center" }}>
+          {[0,1,2,3,4].map(i => <div key={i} style={{ position: "absolute", top: "50%", left: "50%", transform: `translate(-50%,-50%)`, width: `${74 - i * 13}px`, height: `${74 - i * 13}px`, borderRadius: "50%", border: "1px solid rgba(180,160,120,0.25)" }} />)}
+          <div style={{ width: 10, height: 10, borderRadius: "50%", background: "#8a7a6a", position: "relative", zIndex: 1 }} />
+        </div>
+        <div style={{ width: 40, height: 45, marginTop: 8, animation: "lf3-cat-breathe 3s ease-in-out infinite" }}>
+          <svg viewBox="0 0 80 60" fill="none"><ellipse cx="40" cy="45" rx="30" ry="12" fill="#e8e0d0" opacity="0.95"/><circle cx="40" cy="30" r="18" fill="#e8e0d0"/><path d="M24 18 L28 30 L36 24 Z" fill="#e8e0d0"/><path d="M56 18 L52 30 L44 24 Z" fill="#e8e0d0"/><ellipse cx="34" cy="28" rx="4" ry="3" fill="#4a5a3a" opacity="0.7"/><ellipse cx="46" cy="28" rx="4" ry="3" fill="#4a5a3a" opacity="0.7"/><circle cx="33" cy="27" r="1.5" fill="#fff" opacity="0.8"/><circle cx="45" cy="27" r="1.5" fill="#fff" opacity="0.8"/><ellipse cx="40" cy="33" rx="2.5" ry="1.5" fill="#d4a0a0" opacity="0.7"/><path d="M37 36 Q40 38 43 36" stroke="#8a7a6a" strokeWidth="1" fill="none" opacity="0.5"/></svg>
+        </div>
+      </div>
+      <button onClick={() => scrollBy("left")} style={{ position: "absolute", top: "50%", left: -16, transform: "translateY(-50%)", zIndex: 10, width: 30, height: 30, border: "1.5px solid rgba(150,130,100,0.3)", borderRadius: "50%", background: "rgba(255,252,244,0.88)", color: "#8a7a6a", fontSize: 18, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", backdropFilter: "blur(4px)" }}>‹</button>
+      <button onClick={() => scrollBy("right")} style={{ position: "absolute", top: "50%", right: -16, transform: "translateY(-50%)", zIndex: 10, width: 30, height: 30, border: "1.5px solid rgba(150,130,100,0.3)", borderRadius: "50%", background: "rgba(255,252,244,0.88)", color: "#8a7a6a", fontSize: 18, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", backdropFilter: "blur(4px)" }}>›</button>
+      <style>{`@keyframes lf3-cat-breathe { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-3px); } }`}</style>
+    </>
+  );
+};
+
+/* ====== 主组件 ====== */
+const LifeFilmPage: React.FC = () => {
+  const navigate = useNavigate();
+  const [volume, setVolume] = useState(1);
+  const [openModule, setOpenModule] = useState<ModuleType>(null);
+  const [toast, setToast] = useState<string | null>(null);
+
+  useEffect(() => {
+    const t = setTimeout(() => {
+      try { const ctx = new (window.AudioContext || (window as any).webkitAudioContext)(); const o = ctx.createOscillator(); const g = ctx.createGain(); o.connect(g); g.connect(ctx.destination); o.frequency.value = 320; g.gain.value = 0.06; o.start(); o.stop(ctx.currentTime + 0.4); } catch {}
+    }, 400);
+    return () => clearTimeout(t);
+  }, []);
+
+  const openModuleRef = useRef<ModuleType>(null);
+  openModuleRef.current = openModule;
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") { if (openModuleRef.current) setOpenModule(null); else navigate("/"); } };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [navigate]);
+
+  const handleClose = () => { setOpenModule(null); };
+
+  const toggleMute = () => setVolume(v => v === 0 ? 1 : 0);
+
+  const showToast = (msg: string) => { setToast(msg); };
+
+  const MODALS: Record<Exclude<ModuleType, null>, React.FC<{ onClose: () => void; onUpload: () => void }>> = {
+    reading: ReadingModal, photo: PhotoModal, music: MusicModal,
+    sport: SportModal, meditation: MeditationModal, drama: DramaModal,
+  };
+  const ActiveModal = openModule ? MODALS[openModule] : null;
+
+  return (
+    <div style={{ position: "relative", minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden" }}>
+      {/* 背景 */}
+      <div style={{ position: "fixed", inset: 0, zIndex: 0, background: "linear-gradient(160deg, #F5EFE0 0%, #EDE4CC 40%, #E8DCC4 70%, #E0D4BC 100%)" }} />
+      <div style={{ position: "fixed", inset: 0, zIndex: 1, pointerEvents: "none", backgroundImage: "/healing-forest.jpg", backgroundSize: "cover", backgroundPosition: "center", opacity: 0.1, filter: "blur(10px) saturate(0.6)" }} />
+
+      {/* 关闭 */}
+      <button onClick={() => navigate("/")} style={{ position: "fixed", top: 20, right: 24, zIndex: 20, width: 42, height: 42, border: "none", borderRadius: "50%", background: "rgba(255,255,255,0.85)", backdropFilter: "blur(10px)", boxShadow: "0 4px 16px -4px rgba(0,0,0,0.1)", color: "#7a6a5a", cursor: "pointer", fontSize: 22, display: "flex", alignItems: "center", justifyContent: "center", transition: "transform 0.25s ease, color 0.25s ease" }}
+        onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.transform = "rotate(90deg)"; (e.currentTarget as HTMLButtonElement).style.color = "#c4877a"; }}
+        onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.transform = "rotate(0deg)"; (e.currentTarget as HTMLButtonElement).style.color = "#7a6a5a"; }}>×</button>
+      <button onClick={toggleMute} style={{ position: "fixed", top: 72, right: 24, zIndex: 20, width: 36, height: 36, border: "none", borderRadius: "50%", background: "rgba(255,255,255,0.7)", backdropFilter: "blur(8px)", cursor: "pointer", fontSize: 16, display: "flex", alignItems: "center", justifyContent: "center" }}>{volume === 0 ? "🔇" : "🔊"}</button>
+
+      {/* 树枝 */}
+      <svg style={{ position: "fixed", top: 20, left: 0, width: 100, height: 140, zIndex: 2, pointerEvents: "none" }} viewBox="0 0 100 140" fill="none">
+        <path d="M10 140 Q20 110 25 90 Q30 70 35 55 Q40 40 45 30" stroke="#9aaa8a" strokeWidth="2" strokeLinecap="round" fill="none" opacity="0.45"/>
+        <path d="M25 90 Q15 75 12 65" stroke="#9aaa8a" strokeWidth="1.5" strokeLinecap="round" fill="none" opacity="0.35"/>
+        <circle cx="12" cy="62" r="3.5" fill="#aab898" opacity="0.5"/>
+        <circle cx="18" cy="72" r="2.5" fill="#aab898" opacity="0.4"/>
+        <circle cx="35" cy="55" r="3" fill="#aab898" opacity="0.5"/>
+        <path d="M35 55 Q45 45 52 42" stroke="#9aaa8a" strokeWidth="1.5" strokeLinecap="round" fill="none" opacity="0.35"/>
+        <circle cx="52" cy="40" r="3.5" fill="#aab898" opacity="0.5"/>
+        <circle cx="45" cy="30" r="2.5" fill="#aab898" opacity="0.4"/>
+      </svg>
+
+      {/* 主内容 */}
+      <div style={{ position: "relative", zIndex: 5, display: "flex", flexDirection: "column", alignItems: "center", gap: 28, width: "100%", maxWidth: 900, padding: "60px 24px 40px" }}>
+        <div style={{ textAlign: "center" }}>
+          <h1 style={{ fontFamily: "Noto Serif SC, Georgia, serif", fontSize: "clamp(28px, 5vw, 40px)", fontWeight: 700, color: "#4a4a3a", margin: "0 0 16px", letterSpacing: "0.08em" }}>生活放映中 🎞</h1>
+          <div style={{ fontFamily: "Noto Serif SC, Georgia, serif", lineHeight: 1.7 }}>
+            {["如果把人生比作一整卷胶片：", "前六卷都在寻找光，却忘了自己是光。", "现在，终于轮到第七卷登场啦！", "这里装着我私藏的六个快乐碎片。", "别客气，随便点开看看——", "是我为自己预留的补光时刻。✨"].map((line, i) => (
+              <p key={i} style={{ fontSize: 13.5, color: "#7a6a5a", margin: 0, letterSpacing: "0.02em" }}>{line}</p>
+            ))}
+          </div>
+        </div>
+        <div style={{ position: "relative", display: "flex", alignItems: "center", width: "100%", maxWidth: 760 }}>
+          <FilmStrip onOpen={setOpenModule} />
+        </div>
+        <p style={{ fontSize: 12, color: "rgba(120,110,100,0.5)", margin: 0, letterSpacing: "0.06em" }}>← 点击模块探索内容 · 拖动胶卷滚动 →</p>
+      </div>
+
+      {ActiveModal && <ActiveModal onClose={handleClose} onUpload={() => showToast("已记录这一刻 ✨")} />}
+      {toast && <Toast message={toast} onDone={() => setToast(null)} />}
+
+      <style>{`
+        @media (max-width: 600px) {
+          .lf3-content { padding: 40px 12px 32px !important; gap: 20px !important; }
+          .lf3-film-wrap { max-width: 100% !important; }
+        }
+      `}</style>
+    </div>
+  );
+};
+
+export default LifeFilmPage;

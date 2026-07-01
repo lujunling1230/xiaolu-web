@@ -238,7 +238,7 @@ const MuseumPage: React.FC = () => {
       {/* 顶部返回 */}
       <header className="museum-topbar">
         <Link to="/mickey" className="museum-back">
-          ← 回到妙妙屋
+          ← 回到妙妙工具箱
         </Link>
         <span className="museum-topbar-meta">Museum of Memories</span>
       </header>

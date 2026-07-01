@@ -92,7 +92,7 @@ const AdvicePage: React.FC = () => {
       {/* 顶部返回 */}
       <header className="advice-topbar">
         <Link to={`/mickey`} className="advice-back">
-          ← 回到妙妙屋
+          ← 回到妙妙工具箱
         </Link>
         <span className="advice-topbar-meta">The Advice Shop</span>
       </header>

@@ -158,7 +158,7 @@ const SystemTuningPage: React.FC = () => {
       {/* 顶部返回 */}
       <header className="tune-topbar">
         <Link to="/mickey" className="tune-back">
-          ← 回到妙妙屋
+          ← 回到妙妙工具箱
         </Link>
         <span className="tune-topbar-meta">System Tuning</span>
       </header>

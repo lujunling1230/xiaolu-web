@@ -7,11 +7,14 @@ import ToolboxDetail from "./pages/toolbox/ToolboxDetail";
 import InventoryPage from "./pages/toolbox/InventoryPage";
 import AdvicePage from "./pages/toolbox/AdvicePage";
 import QuestLogPage from "./pages/toolbox/QuestLogPage";
+import RechargePage from "./pages/toolbox/RechargePage";
 import MuseumPage from "./pages/toolbox/MuseumPage";
 import StressReliefPage from "./pages/toolbox/StressReliefPage";
-import RechargePage from "./pages/toolbox/RechargePage";
 import TravelPage from "./pages/toolbox/TravelPage";
 import SystemTuningPage from "./pages/toolbox/SystemTuningPage";
+import LifeFilmPage from "./pages/LifeFilmPage";
+import HealingRoomPage from "./pages/HealingRoomPage";
+import MusicPage from "./pages/toolbox/MusicPage";
 import MickeyLaunchpad from "./pages/MickeyLaunchpad";
 import "./index.css";
 
@@ -34,8 +37,13 @@ createRoot(document.getElementById("root")!).render(
         <Route path="/" element={<App />} />
         {/* /forest 别名：米奇妙妙屋中「森林疗愈室」入口专用，指向同一组件 */}
         <Route path="/forest" element={<App />} />
+        {/* 疗愈室独立页面 */}
+        <Route path="/healing" element={<HealingRoomPage />} />
         {/* 米奇妙妙屋：Launchpad 发射台 */}
         <Route path="/mickey" element={<MickeyLaunchpad />} />
+        {/* 第七卷胶片：独立全屏页面 */}
+        <Route path="/film" element={<LifeFilmPage />} />
+        <Route path="/music" element={<MusicPage />} />
         {/* 妙妙工具箱首页：9 维度作品 3×3 网格 */}
         <Route path="/toolbox" element={<ToolboxHome />} />
         {/* 物资管家：库存管理应用（静态路径优先于 :title） */}

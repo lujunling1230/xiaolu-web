@@ -48,6 +48,11 @@ const ToolboxHome: React.FC = () => {
   const fromQuery = isFromFull ? "?from=full" : "";
 
   const handleOpen = (title: string) => {
+    // 森林疗愈室：跳转独立疗愈室页面
+    if (title === "森林疗愈室") {
+      navigate(`/healing${fromQuery}`);
+      return;
+    }
     // 物资管家：进入独立的库存管理应用
     if (title === "物资管家") {
       navigate(`/toolbox/inventory${fromQuery}`);
@@ -67,7 +72,7 @@ const ToolboxHome: React.FC = () => {
       {/* 顶部返回条 */}
       <header className="toolbox-topbar">
         <Link to={homePath} className="toolbox-back">
-          ← 合上工具箱
+          ← 回到妙妙工具箱
         </Link>
         <span className="toolbox-topbar-meta">数字造物场</span>
       </header>

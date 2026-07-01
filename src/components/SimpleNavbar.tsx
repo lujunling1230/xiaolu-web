@@ -10,7 +10,7 @@ import { Link } from "react-router-dom";
  * 移动端折叠为汉堡菜单。
  */
 
-type Section = "home" | "about" | "projects" | "lab";
+type Section = "home" | "about" | "projects" | "lab" | "film" | "mickey";
 
 interface SimpleNavbarProps {
   current: Section;
@@ -18,21 +18,25 @@ interface SimpleNavbarProps {
   isNight: boolean;
   onToggleTheme: () => void;
   isFullMode: boolean;
+  onOpenFilmSpace?: () => void;
 }
-
-const ALL_NAV_ITEMS: { key: Section; label: string }[] = [
-  { key: "home", label: "首页" },
-  { key: "about", label: "关于我" },
-  { key: "projects", label: "项目集" },
-  { key: "lab", label: "疗愈室" },
-];
 
 const SimpleNavbar: React.FC<SimpleNavbarProps> = ({ current, onNavigate, isNight, onToggleTheme, isFullMode }) => {
   const [mobileOpen, setMobileOpen] = useState(false);
-  // 纯净模式仅显示"疗愈室"，完整模式显示全部链接
+  // 导航顺序：首页 → 关于我 → 项目集 → 疗愈室 → 妙妙工具箱 → 第七卷胶片
   const navItems = isFullMode
-    ? ALL_NAV_ITEMS
-    : ALL_NAV_ITEMS.filter((item) => item.key === "lab");
+    ? [
+        { key: "home" as const, label: "首页", href: null },
+        { key: "about" as const, label: "关于我", href: null },
+        { key: "projects" as const, label: "项目集", href: null },
+        { key: "lab" as const, label: "疗愈室", href: "/healing" },
+        { key: "mickey" as const, label: "妙妙工具箱", href: "/mickey" },
+        { key: "film" as const, label: "第七卷胶片", href: "/film" },
+      ]
+    : [
+        { key: "lab" as const, label: "疗愈室", href: "/healing" },
+        { key: "film" as const, label: "第七卷胶片", href: "/film" },
+      ];
 
   useEffect(() => {
     setMobileOpen(false);
@@ -60,25 +64,24 @@ const SimpleNavbar: React.FC<SimpleNavbarProps> = ({ current, onNavigate, isNigh
       {/* 桌面端导航 */}
       <div className="hidden md:flex items-center gap-8">
         {navItems.map((item) => (
-          <button
-            key={item.key}
-            onClick={() => onNavigate(item.key)}
-            className="nav-link"
-            style={{
-              color: current === item.key ? "var(--accent)" : "var(--text-soft)",
-              fontWeight: current === item.key ? 500 : 400,
-            }}
-          >
-            {item.label}
-          </button>
+          item.href ? (
+            <Link key={item.key} to={item.href} className="nav-link" style={{ color: "var(--text-soft)" }}>
+              {item.label}
+            </Link>
+          ) : (
+            <button
+              key={item.key}
+              onClick={() => onNavigate(item.key)}
+              className="nav-link"
+              style={{
+                color: current === item.key ? "var(--accent)" : "var(--text-soft)",
+                fontWeight: current === item.key ? 500 : 400,
+              }}
+            >
+              {item.label}
+            </button>
+          )
         ))}
-
-        {/* 米奇妙妙屋 —— 仅完整版显示，Launchpad 发射台（合并原"妙妙工具箱/妙妙屋"） */}
-        {isFullMode && (
-          <Link to="/mickey" className="nav-link" style={{ color: "var(--text-soft)" }}>
-            米奇妙妙屋
-          </Link>
-        )}
 
         {/* 昼夜切换 */}
         <button
@@ -117,27 +120,24 @@ const SimpleNavbar: React.FC<SimpleNavbarProps> = ({ current, onNavigate, isNigh
           }}
         >
           {navItems.map((item) => (
-            <button
-              key={item.key}
-              onClick={() => onNavigate(item.key)}
-              style={{
-                color: current === item.key ? "var(--accent)" : "var(--text-soft)",
-                fontWeight: current === item.key ? 500 : 400,
-                textAlign: "left",
-              }}
-            >
-              {item.label}
-            </button>
+            item.href ? (
+              <Link key={item.key} to={item.href} onClick={() => setMobileOpen(false)} style={{ color: "var(--text-soft)" }}>
+                {item.label}
+              </Link>
+            ) : (
+              <button
+                key={item.key}
+                onClick={() => { onNavigate(item.key); setMobileOpen(false); }}
+                style={{
+                  color: current === item.key ? "var(--accent)" : "var(--text-soft)",
+                  fontWeight: current === item.key ? 500 : 400,
+                  textAlign: "left",
+                }}
+              >
+                {item.label}
+              </button>
+            )
           ))}
-          {isFullMode && (
-            <Link
-              to="/mickey"
-              onClick={() => setMobileOpen(false)}
-              style={{ color: "var(--text-soft)", textAlign: "left" }}
-            >
-              米奇妙妙屋
-            </Link>
-          )}
           <button
             onClick={onToggleTheme}
             style={{ color: "var(--text-soft)", textAlign: "left" }}

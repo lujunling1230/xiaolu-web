@@ -21,7 +21,7 @@ const ToolboxDetail: React.FC = () => {
       {/* 顶部返回条 */}
       <header className="toolbox-topbar">
         <button className="toolbox-back" onClick={() => navigate(-1)}>
-          ← 返回
+          ← 回到妙妙工具箱
         </button>
         <span className="toolbox-topbar-meta">造物详情</span>
       </header>

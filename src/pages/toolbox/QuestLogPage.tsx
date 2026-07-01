@@ -402,7 +402,7 @@ const QuestLogPage: React.FC = () => {
       {/* 顶部返回 */}
       <header className="quest-topbar">
         <Link to="/mickey" className="quest-back">
-          ← 回到妙妙屋
+          ← 回到妙妙工具箱
         </Link>
         <span className="quest-topbar-meta">Quest Log</span>
       </header>

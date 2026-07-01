@@ -547,7 +547,7 @@ const StressReliefPage: React.FC = () => {
       {/* 顶部返回 */}
       <header className="sr-topbar">
         <Link to="/mickey" className="sr-back">
-          ← 回到妙妙屋
+          ← 回到妙妙工具箱
         </Link>
         <span className="sr-topbar-meta">Stress Relief Room</span>
       </header>

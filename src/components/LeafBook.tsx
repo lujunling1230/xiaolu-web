@@ -279,9 +279,13 @@ const PreviewPage: React.FC<{
    ============================================================ */
 interface LeafBookProps {
   registerOpenBook?: (fn: () => void) => void;
+  /** ProjectsPage 专用：暴露翻书函数到外部 ref */
+  flipTriggerRef?: React.MutableRefObject<(() => void) | null>;
+  /** 进入页面后自动翻书的延迟（毫秒），不传则不自动翻 */
+  autoFlipDelay?: number;
 }
 
-const LeafBook: React.FC<LeafBookProps> = ({ registerOpenBook }) => {
+const LeafBook: React.FC<LeafBookProps> = ({ registerOpenBook, flipTriggerRef, autoFlipDelay }) => {
   const [view, setView] = useState<View>("cover");
   const [direction, setDirection] = useState(0);
   const [selectedIndex, setSelectedIndex] = useState(0);
@@ -375,6 +379,23 @@ const LeafBook: React.FC<LeafBookProps> = ({ registerOpenBook }) => {
   useEffect(() => {
     if (registerOpenBook) registerOpenBook(openBook);
   }, [registerOpenBook, openBook]);
+
+  /* ProjectsPage 专用：暴露翻书函数 */
+  useEffect(() => {
+    if (flipTriggerRef) {
+      flipTriggerRef.current = openBook;
+    }
+  }, [flipTriggerRef, openBook]);
+
+  /* 自动翻书延迟 */
+  useEffect(() => {
+    if (autoFlipDelay !== undefined) {
+      const timer = setTimeout(() => {
+        openBook();
+      }, autoFlipDelay);
+      return () => clearTimeout(timer);
+    }
+  }, [autoFlipDelay, openBook]);
 
   /** 点击书页翻页 */
   const handleBookClick = (e: React.MouseEvent) => {

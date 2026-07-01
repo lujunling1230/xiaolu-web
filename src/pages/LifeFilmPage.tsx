@@ -99,9 +99,9 @@ const Toast: React.FC<{ message: string; onDone: () => void }> = ({ message, onD
   return (
     <div style={{
       position: "fixed", bottom: 32, left: "50%", transform: "translateX(-50%)",
-      zIndex: 9999, background: "rgba(90,120,90,0.92)", color: "#fff",
+      zIndex: 9999, background: `${HEALING_COLORS.grayGreen}ee`, color: "#fff",
       padding: "12px 28px", borderRadius: 999, fontSize: 14, fontWeight: 500,
-      backdropFilter: "blur(16px)", boxShadow: "0 8px 32px rgba(0,0,0,0.15)",
+      backdropFilter: "blur(16px)", boxShadow: `0 8px 32px rgba(0,0,0,0.15), 0 0 0 1px ${HEALING_COLORS.woodBorder}`,
       animation: "lf-toast-in 0.35s cubic-bezier(0.34,1.56,0.64,1)",
       letterSpacing: "0.03em",
     }}>
@@ -114,19 +114,24 @@ const Toast: React.FC<{ message: string; onDone: () => void }> = ({ message, onD
 /* ====== 确认删除弹窗 ====== */
 const ConfirmDialog: React.FC<{ message: string; onConfirm: () => void; onCancel: () => void }> = ({ message, onConfirm, onCancel }) => (
   <div style={{
-    position: "fixed", inset: 0, zIndex: 9998, background: "rgba(0,0,0,0.5)",
-    backdropFilter: "blur(6px)", display: "flex", alignItems: "center", justifyContent: "center", padding: 24,
+    position: "fixed", inset: 0, zIndex: 9998, background: "rgba(0,0,0,0.4)",
+    backdropFilter: "blur(8px)", display: "flex", alignItems: "center", justifyContent: "center", padding: 24,
   }} onClick={onCancel}>
     <div style={{
-      background: "rgba(255,252,245,0.97)", borderRadius: 20, padding: "28px 28px 24px",
+      background: HEALING_COLORS.cream, borderRadius: 20, padding: "28px 28px 24px",
       maxWidth: 320, width: "100%", textAlign: "center",
+      border: `1px solid ${HEALING_COLORS.woodBorder}`,
       boxShadow: "0 20px 60px rgba(0,0,0,0.18)",
       animation: "lf-slideup 0.3s ease",
     }} onClick={e => e.stopPropagation()}>
-      <p style={{ fontFamily: "Noto Serif SC, serif", fontSize: 16, color: "#4a4038", margin: "0 0 20px", lineHeight: 1.6 }}>{message}</p>
+      <p style={{ fontFamily: "Noto Serif SC, serif", fontSize: 16, color: HEALING_COLORS.text, margin: "0 0 20px", lineHeight: 1.6 }}>{message}</p>
       <div style={{ display: "flex", gap: 12, justifyContent: "center" }}>
-        <button onClick={onCancel} style={{ flex: 1, padding: "10px 0", border: "1.5px solid rgba(150,130,110,0.3)", borderRadius: 999, background: "transparent", color: "#8a7a6a", cursor: "pointer", fontSize: 14 }}>取消</button>
-        <button onClick={onConfirm} style={{ flex: 1, padding: "10px 0", border: "none", borderRadius: 999, background: "#c0908a", color: "#fff", cursor: "pointer", fontSize: 14 }}>确认删除</button>
+        <button onClick={onCancel} style={{ flex: 1, padding: "10px 0", border: `1.5px solid ${HEALING_COLORS.woodBorder}`, borderRadius: 999, background: "transparent", color: HEALING_COLORS.textLight, cursor: "pointer", fontSize: 14, transition: "all 0.2s" }}
+          onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = HEALING_COLORS.woodLight; }}
+          onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = "transparent"; }}>取消</button>
+        <button onClick={onConfirm} style={{ flex: 1, padding: "10px 0", border: "none", borderRadius: 999, background: "#D46B4D", color: "#fff", cursor: "pointer", fontSize: 14, transition: "all 0.2s" }}
+          onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.transform = "translateY(-1px)"; }}
+          onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.transform = "translateY(0)"; }}>确认删除</button>
       </div>
     </div>
     <style>{`@keyframes lf-slideup { from { opacity:0; transform:translateY(16px); } to { opacity:1; transform:translateY(0); } }`}</style>
@@ -136,7 +141,7 @@ const ConfirmDialog: React.FC<{ message: string; onConfirm: () => void; onCancel
 /* ====== 上传模态框 ====== */
 type UploadModuleType = "reading" | "photo" | "music" | "sport" | "meditation" | "drama";
 
-interface FieldDef { key: string; label: string; placeholder?: string; type?: string; options?: string[]; required?: boolean; isTextarea?: boolean; isFile?: boolean; }
+interface FieldDef { key: string; label: string; placeholder?: string; type?: string; options?: string[]; required?: boolean; isTextarea?: boolean; isFile?: boolean; icon?: string; }
 const UPLOAD_FIELDS: Record<UploadModuleType, FieldDef[]> = {
   reading: [
     { key: "cover", label: "书籍封面", type: "file", isFile: true, required: true },
@@ -147,8 +152,8 @@ const UPLOAD_FIELDS: Record<UploadModuleType, FieldDef[]> = {
   ],
   photo: [
     { key: "photos", label: "照片（可多选）", type: "file", isFile: true, required: true },
-    { key: "date", label: "拍摄时间", type: "date" },
-    { key: "desc", label: "地点 / 描述", placeholder: "如：凌晨五点的山间，空气里都是安静的味道", isTextarea: true },
+    { key: "date", label: "拍摄时间", type: "date", icon: "📅" },
+    { key: "desc", label: "地点 / 描述", placeholder: "如：凌晨五点的山间，空气里都是安静的味道", isTextarea: true, icon: "📍" },
   ],
   music: [
     { key: "cover", label: "封面图", type: "file", isFile: true },
@@ -221,105 +226,132 @@ const UploadModal: React.FC<{
 
   return (
     <div style={{
-      position: "fixed", inset: 0, zIndex: 210, background: "rgba(0,0,0,0.55)",
-      backdropFilter: "blur(12px)", display: "flex", alignItems: "center", justifyContent: "center", padding: 24,
-      animation: "lf-fadein 0.25s ease",
+      position: "fixed", inset: 0, zIndex: 210, background: "rgba(0,0,0,0.45)",
+      backdropFilter: "blur(12px)", WebkitBackdropFilter: "blur(12px)",
+      display: "flex", alignItems: "center", justifyContent: "center", padding: 24,
+      animation: "lf-fadein 0.3s ease",
     }} onClick={onClose}>
       <div style={{
-        background: "rgba(255,252,245,0.98)", borderRadius: 20, padding: "28px 28px 24px",
+        background: HEALING_COLORS.cream, borderRadius: 24, padding: "32px 28px 28px",
         maxWidth: 480, width: "100%", maxHeight: "88vh", overflowY: "auto",
-        boxShadow: "0 20px 60px rgba(0,0,0,0.2)",
-        animation: "lf-slideup 0.3s ease",
+        border: `1px solid ${HEALING_COLORS.woodBorder}`,
+        boxShadow: "0 24px 64px rgba(0,0,0,0.15)",
+        animation: "lf-slideup 0.35s ease",
       }} onClick={e => e.stopPropagation()}>
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
-          <h3 style={{ fontFamily: "Noto Serif SC, serif", fontSize: 18, fontWeight: 600, color: "#4a4038", margin: 0, letterSpacing: "0.04em" }}>{UPLOAD_TITLES[moduleType]}</h3>
-          <button onClick={onClose} style={{ width: 32, height: 32, border: "none", borderRadius: "50%", background: "rgba(0,0,0,0.06)", color: "#888", fontSize: 18, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>×</button>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24 }}>
+          <h3 style={{ fontFamily: "Noto Serif SC, serif", fontSize: 20, fontWeight: 600, color: HEALING_COLORS.text, margin: 0, letterSpacing: "0.04em" }}>{UPLOAD_TITLES[moduleType]}</h3>
+          <button onClick={onClose} style={{ width: 36, height: 36, border: "none", borderRadius: "50%", background: HEALING_COLORS.woodLight, color: HEALING_COLORS.textLight, fontSize: 18, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", transition: "all 0.2s" }}
+            onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = HEALING_COLORS.woodBorder; }}
+            onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = HEALING_COLORS.woodLight; }}>×</button>
         </div>
-        <div style={{ display: "flex", flexDirection: "column", gap: 18 }}>
-          {fields.map(field => (
+        <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+          {fields.map((field) => (
             <div key={field.key}>
-              <label style={{ display: "block", fontSize: 12, color: "#8a7a6a", marginBottom: 6, fontWeight: 500, letterSpacing: "0.05em" }}>
-                {field.label} {field.required && <span style={{ color: "#c0908a" }}>*</span>}
-              </label>
-              {field.isFile ? (
-                <div>
-                  <label style={{
-                    display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
-                    border: `1.5px dashed ${errors[field.key] ? "#c0908a" : "rgba(150,130,110,0.3)"}`,
-                    borderRadius: 12, padding: "20px 16px", cursor: "pointer", background: "rgba(122,154,130,0.04)",
-                    transition: "border-color 0.2s, background 0.2s",
-                  }}>
-                    {filePreviews[field.key]?.length ? (
-                      field.key === "photos" ? (
-                        <div style={{ display: "flex", gap: 8, flexWrap: "wrap", justifyContent: "center" }}>
-                          {filePreviews[field.key]!.map((url, i) => (
-                            <img key={i} src={url} alt="" style={{ width: 60, height: 60, objectFit: "cover", borderRadius: 8 }} />
-                          ))}
-                        </div>
-                      ) : (
-                        <img src={filePreviews[field.key]![0]} alt="" style={{ width: 80, height: 110, objectFit: "cover", borderRadius: 8 }} />
-                      )
-                    ) : (
-                      <>
-                        <span style={{ fontSize: 28, marginBottom: 8 }}>📷</span>
-                        <span style={{ fontSize: 12, color: "#8a7a6a" }}>点击上传{field.label}</span>
-                        {field.key === "photos" && <span style={{ fontSize: 11, color: "#b0a090", marginTop: 2 }}>可同时选择多张</span>}
-                      </>
-                    )}
-                    <input type="file" accept="image/*" multiple={field.key === "photos"}
-                      onChange={e => handleFileChange(field.key, e.target.files)}
-                      style={{ display: "none" }} />
-                  </label>
-                </div>
-              ) : field.isTextarea ? (
-                <textarea
-                  value={values[field.key] || ""}
-                  onChange={e => setValues(v => ({ ...v, [field.key]: e.target.value }))}
-                  placeholder={field.placeholder}
-                  rows={3}
-                  style={{
-                    width: "100%", boxSizing: "border-box", padding: "10px 0", border: "none", borderBottom: `1.5px solid ${errors[field.key] ? "#c0908a" : "rgba(150,130,110,0.25)"}`,
-                    background: "transparent", color: "#4a4038", fontSize: 14, resize: "none", outline: "none", fontFamily: "inherit", lineHeight: 1.7,
-                  }}
-                />
-              ) : field.type === "select" ? (
-                <select
-                  value={values[field.key] || ""}
-                  onChange={e => setValues(v => ({ ...v, [field.key]: e.target.value }))}
-                  style={{
-                    width: "100%", boxSizing: "border-box", padding: "10px 0", border: "none",
-                    borderBottom: `1.5px solid ${errors[field.key] ? "#c0908a" : "rgba(150,130,110,0.25)"}`,
-                    background: "transparent", color: "#4a4038", fontSize: 14, outline: "none", fontFamily: "inherit", appearance: "none", cursor: "pointer",
-                  }}>
-                  <option value="">请选择</option>
-                  {field.options?.map(o => <option key={o} value={o}>{o}</option>)}
-                </select>
-              ) : (
-                <input
-                  type={field.type || "text"}
-                  value={values[field.key] || ""}
-                  onChange={e => setValues(v => ({ ...v, [field.key]: e.target.value }))}
-                  placeholder={field.placeholder}
-                  style={{
-                    width: "100%", boxSizing: "border-box", padding: "10px 0", border: "none",
-                    borderBottom: `1.5px solid ${errors[field.key] ? "#c0908a" : "rgba(150,130,110,0.25)"}`,
-                    background: "transparent", color: "#4a4038", fontSize: 14, outline: "none", fontFamily: "inherit",
-                  }}
-                />
+              {/* 摄影模块：拍摄时间和地点描述分开区块 */}
+              {moduleType === "photo" && field.key === "desc" && (
+                <div style={{ height: 16 }} />
               )}
-              {errors[field.key] && <p style={{ fontSize: 11, color: "#c0908a", margin: "4px 0 0" }}>{errors[field.key]}</p>}
+              <div style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
+                {/* 线性图标 */}
+                {field.icon && (
+                  <span style={{ fontSize: 18, marginTop: 10, flexShrink: 0, opacity: 0.7 }}>{field.icon}</span>
+                )}
+                <div style={{ flex: 1 }}>
+                  <label style={{ display: "block", fontSize: 12, color: HEALING_COLORS.textLight, marginBottom: 8, fontWeight: 500, letterSpacing: "0.05em" }}>
+                    {field.label} {field.required && <span style={{ color: "#D46B4D" }}>*</span>}
+                  </label>
+                  {field.isFile ? (
+                    <div>
+                      <label style={{
+                        display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center",
+                        border: `2px dashed ${errors[field.key] ? "#D46B4D" : HEALING_COLORS.woodBorder}`,
+                        borderRadius: 16, padding: "24px 16px", cursor: "pointer",
+                        background: HEALING_COLORS.grayGreenLight,
+                        transition: "all 0.25s",
+                      }}>
+                        {filePreviews[field.key]?.length ? (
+                          field.key === "photos" ? (
+                            <div style={{ display: "flex", gap: 8, flexWrap: "wrap", justifyContent: "center" }}>
+                              {filePreviews[field.key]!.map((url, i) => (
+                                <img key={i} src={url} alt="" style={{ width: 64, height: 64, objectFit: "cover", borderRadius: 10, boxShadow: "0 2px 8px rgba(0,0,0,0.1)" }} />
+                              ))}
+                            </div>
+                          ) : (
+                            <img src={filePreviews[field.key]![0]} alt="" style={{ width: 80, height: 110, objectFit: "cover", borderRadius: 10, boxShadow: "0 4px 12px rgba(0,0,0,0.12)" }} />
+                          )
+                        ) : (
+                          <>
+                            <span style={{ fontSize: 32, marginBottom: 10 }}>📷</span>
+                            <span style={{ fontSize: 13, color: HEALING_COLORS.textLight, fontFamily: "Noto Serif SC, serif" }}>点击上传{field.label}</span>
+                            {field.key === "photos" && <span style={{ fontSize: 11, color: HEALING_COLORS.textMuted, marginTop: 4 }}>可同时选择多张</span>}
+                          </>
+                        )}
+                        <input type="file" accept="image/*" multiple={field.key === "photos"}
+                          onChange={e => handleFileChange(field.key, e.target.files)}
+                          style={{ display: "none" }} />
+                      </label>
+                    </div>
+                  ) : field.isTextarea ? (
+                    <textarea
+                      value={values[field.key] || ""}
+                      onChange={e => setValues(v => ({ ...v, [field.key]: e.target.value }))}
+                      placeholder={field.placeholder}
+                      rows={3}
+                      style={{
+                        width: "100%", boxSizing: "border-box", padding: "10px 0",
+                        border: "none", borderBottom: `2px solid ${errors[field.key] ? "#D46B4D" : HEALING_COLORS.woodBorder}`,
+                        background: "transparent", color: HEALING_COLORS.text, fontSize: 14,
+                        resize: "none", outline: "none", fontFamily: "Noto Serif SC, serif", lineHeight: 1.8,
+                        transition: "border-color 0.2s",
+                      }}
+                    />
+                  ) : field.type === "select" ? (
+                    <select
+                      value={values[field.key] || ""}
+                      onChange={e => setValues(v => ({ ...v, [field.key]: e.target.value }))}
+                      style={{
+                        width: "100%", boxSizing: "border-box", padding: "10px 0", border: "none",
+                        borderBottom: `2px solid ${errors[field.key] ? "#D46B4D" : HEALING_COLORS.woodBorder}`,
+                        background: "transparent", color: HEALING_COLORS.text, fontSize: 14,
+                        outline: "none", fontFamily: "inherit", appearance: "none", cursor: "pointer",
+                        transition: "border-color 0.2s",
+                      }}>
+                      <option value="">请选择</option>
+                      {field.options?.map(o => <option key={o} value={o}>{o}</option>)}
+                    </select>
+                  ) : (
+                    <input
+                      type={field.type || "text"}
+                      value={values[field.key] || ""}
+                      onChange={e => setValues(v => ({ ...v, [field.key]: e.target.value }))}
+                      placeholder={field.placeholder}
+                      style={{
+                        width: "100%", boxSizing: "border-box", padding: "10px 0", border: "none",
+                        borderBottom: `2px solid ${errors[field.key] ? "#D46B4D" : HEALING_COLORS.woodBorder}`,
+                        background: "transparent", color: HEALING_COLORS.text, fontSize: 14,
+                        outline: "none", fontFamily: "Noto Serif SC, serif",
+                        transition: "border-color 0.2s",
+                      }}
+                    />
+                  )}
+                  {errors[field.key] && <p style={{ fontSize: 11, color: "#D46B4D", margin: "6px 0 0" }}>{errors[field.key]}</p>}
+                </div>
+              </div>
             </div>
           ))}
         </div>
         <button
           onClick={handleSubmit}
           style={{
-            width: "100%", marginTop: 24, padding: "12px 0", border: "none", borderRadius: 999,
-            background: "#8BA888", color: "#fff", fontSize: 15, fontWeight: 500, cursor: "pointer",
-            letterSpacing: "0.05em", transition: "background 0.2s, transform 0.2s",
+            width: "100%", marginTop: 28, padding: "14px 0", border: "none",
+            borderRadius: 16, background: HEALING_COLORS.grayGreen, color: "#fff",
+            fontSize: 15, fontWeight: 500, cursor: "pointer",
+            fontFamily: "Noto Serif SC, serif", letterSpacing: "0.06em",
+            transition: "all 0.25s cubic-bezier(0.34,1.56,0.64,1)",
+            boxShadow: "0 4px 16px rgba(141,154,139,0.3)",
           }}
-          onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = "#7a9a78"; (e.currentTarget as HTMLButtonElement).style.transform = "translateY(-1px)"; }}
-          onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = "#8BA888"; (e.currentTarget as HTMLButtonElement).style.transform = "translateY(0)"; }}
+          onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.transform = "translateY(-2px)"; (e.currentTarget as HTMLButtonElement).style.boxShadow = "0 8px 24px rgba(141,154,139,0.4)"; }}
+          onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.transform = "translateY(0)"; (e.currentTarget as HTMLButtonElement).style.boxShadow = "0 4px 16px rgba(141,154,139,0.3)"; }}
         >确认上传 ✨</button>
       </div>
       <style>{`
@@ -330,59 +362,71 @@ const UploadModal: React.FC<{
   );
 };
 
-/* ====== FAB 悬浮按钮 ====== */
-const FAB: React.FC<{ onClick: () => void }> = ({ onClick }) => (
-  <button
-    onClick={onClick}
-    title="添加记录"
-    style={{
-      position: "fixed", bottom: 28, right: 28, zIndex: 210, width: 56, height: 56,
-      border: "none", borderRadius: "50%", background: "#8BA888", color: "#fff",
-      fontSize: 28, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
-      boxShadow: "0 6px 24px rgba(90,130,90,0.35)",
-      transition: "transform 0.25s cubic-bezier(0.34,1.56,0.64,1), background 0.2s",
-      animation: "lf-fab-appear 0.4s cubic-bezier(0.34,1.56,0.64,1)",
-    }}
-    onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.transform = "scale(1.12)"; (e.currentTarget as HTMLButtonElement).style.background = "#7a9a78"; }}
-    onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.transform = "scale(1)"; (e.currentTarget as HTMLButtonElement).style.background = "#8BA888"; }}
-  >+</button>
-);
-
 /* ====== 空状态组件 ====== */
 const EmptyState: React.FC<{ emoji: string; text?: string }> = ({ emoji, text }) => (
-  <div style={{ textAlign: "center", padding: "32px 16px", color: "#b0a090" }}>
-    <div style={{ fontSize: 48, marginBottom: 12, opacity: 0.6 }}>{emoji}</div>
-    <p style={{ fontSize: 13, margin: 0, lineHeight: 1.6 }}>{text || "还没记录呢，点击右下角 + 号开始吧"}</p>
+  <div style={{ textAlign: "center", padding: "40px 16px" }}>
+    <div style={{ fontSize: 52, marginBottom: 16, opacity: 0.5 }}>{emoji}</div>
+    <p style={{ fontSize: 13, color: HEALING_COLORS.textMuted, margin: 0, lineHeight: 1.8, fontFamily: "Noto Serif SC, serif" }}>{text || "还没记录呢，点击右下角 + 号开始吧"}</p>
   </div>
 );
 
-/* ====== 通用弹窗遮罩 ====== */
-const ModalOverlay: React.FC<{ children: React.ReactNode; onClose: () => void; showFab?: boolean; fabOnClick?: () => void }> = ({ children, onClose, showFab, fabOnClick }) => (
+/* ====== 疗愈系通用颜色常量 ====== */
+const HEALING_COLORS = {
+  wood: "#C4A77D",
+  woodLight: "rgba(196,167,125,0.15)",
+  woodBorder: "rgba(196,167,125,0.3)",
+  grayGreen: "#8D9A8B",
+  grayGreenLight: "rgba(141,154,139,0.12)",
+  cream: "#FAF9F6",
+  creamDark: "#F5F3EE",
+  text: "#4A4038",
+  textLight: "#8A7A6A",
+  textMuted: "#B0A090",
+  accent: "#6A8A6A",
+  accentLight: "rgba(106,138,106,0.15)",
+};
+const ModalOverlay: React.FC<{ children: React.ReactNode; onClose: () => void; showFab?: boolean; fabOnClick?: () => void; fabColor?: string }> = ({ children, onClose, showFab, fabOnClick, fabColor }) => (
   <>
     <div style={{
-      position: "fixed", inset: 0, zIndex: 200, background: "rgba(0,0,0,0.55)",
-      backdropFilter: "blur(8px)", display: "flex", alignItems: "center", justifyContent: "center",
-      padding: 24, animation: "lfm-fadein 0.3s ease",
+      position: "fixed", inset: 0, zIndex: 200, background: "rgba(0,0,0,0.45)",
+      backdropFilter: "blur(10px)", WebkitBackdropFilter: "blur(10px)",
+      display: "flex", alignItems: "center", justifyContent: "center",
+      padding: 24, animation: "lfm-fadein 0.35s ease",
     }} onClick={onClose}>
       <div style={{
         position: "relative", width: "100%", maxWidth: 720, maxHeight: "85vh",
-        background: "rgba(255,252,245,0.97)", borderRadius: 20,
-        border: "1px solid rgba(255,255,255,0.5)",
-        boxShadow: "0 20px 60px rgba(0,0,0,0.2)",
-        padding: "28px 24px", overflowY: "auto", color: "#3a3a3a",
-        animation: "lfm-slideup 0.3s ease",
+        background: HEALING_COLORS.cream, borderRadius: 24,
+        border: `1px solid ${HEALING_COLORS.woodBorder}`,
+        boxShadow: "0 24px 64px rgba(0,0,0,0.15)",
+        padding: "32px 28px", overflowY: "auto", color: HEALING_COLORS.text,
+        animation: "lfm-slideup 0.35s ease",
       }} onClick={e => e.stopPropagation()}>
         {children}
       </div>
     </div>
-    {showFab && fabOnClick && <FAB onClick={fabOnClick} />}
+    {showFab && fabOnClick && (
+      <button onClick={fabOnClick} title="添加记录"
+        style={{
+          position: "fixed", bottom: 32, right: 32, zIndex: 210, width: 60, height: 60,
+          border: "none", borderRadius: "50%", background: fabColor || HEALING_COLORS.grayGreen, color: "#fff",
+          fontSize: 28, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
+          boxShadow: "0 8px 28px rgba(141,154,139,0.4)",
+          transition: "transform 0.25s cubic-bezier(0.34,1.56,0.64,1), background 0.2s",
+          animation: "lf-fab-appear 0.5s cubic-bezier(0.34,1.56,0.64,1)",
+        }}
+        onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.transform = "scale(1.1) rotate(90deg)"; }}
+        onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.transform = "scale(1) rotate(0deg)"; }}>
+        +
+      </button>
+    )}
     <style>{`
       @keyframes lfm-fadein { from { opacity: 0; } to { opacity: 1; } }
-      @keyframes lfm-slideup { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+      @keyframes lfm-slideup { from { opacity: 0; transform: translateY(24px); } to { opacity: 1; transform: translateY(0); } }
       @keyframes lf-fab-appear { from { opacity:0; transform:scale(0.6); } to { opacity:1; transform:scale(1); } }
-      @media (max-width: 600px) {
-        .lfm-modal-box, .lfm-modal-inner { max-height: 90vh; }
-      }
+      @keyframes vinyl-spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+      @keyframes note-float { 0% { opacity: 0.8; transform: translateY(0) scale(1); } 100% { opacity: 0; transform: translateY(-60px) scale(0.5); } }
+      @keyframes branch-extend { from { width: 0; opacity: 0; } to { width: 60px; opacity: 1; } }
+      @keyframes branch-retract { from { width: 60px; opacity: 1; } to { width: 0; opacity: 0; } }
     `}</style>
   </>
 );
@@ -466,7 +510,7 @@ const ReadingModal: React.FC<{ onClose: () => void; onUpload: () => void }> = ({
   );
 };
 
-/* ====== 摄影模块 ====== */
+/* ====== 摄影模块（疗愈系） ====== */
 const PhotoModal: React.FC<{ onClose: () => void; onUpload: () => void }> = ({ onClose, onUpload }) => {
   const [photos, setPhotos] = useState<Photo[]>(() => loadData<Photo>(LS_KEYS.photos, MOCK_PHOTOS));
   const [idx, setIdx] = useState(0);
@@ -484,35 +528,62 @@ const PhotoModal: React.FC<{ onClose: () => void; onUpload: () => void }> = ({ o
 
   return (
     <>
-      <ModalOverlay onClose={onClose} showFab fabOnClick={() => setShowUpload(true)}>
-        <button style={{ position: "absolute", top: 16, right: 16, width: 32, height: 32, border: "none", borderRadius: "50%", background: "rgba(0,0,0,0.06)", color: "#888", fontSize: 18, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }} onClick={onClose}>×</button>
-        <h3 style={{ fontFamily: "Noto Serif SC, serif", fontSize: 20, fontWeight: 600, color: "#4a4038", margin: "0 0 20px", textAlign: "center", letterSpacing: "0.04em" }}>📷 我的摄影集</h3>
+      <ModalOverlay onClose={onClose} showFab fabOnClick={() => setShowUpload(true)} fabColor={HEALING_COLORS.wood}>
+        <button style={{ position: "absolute", top: 16, right: 16, width: 36, height: 36, border: "none", borderRadius: "50%", background: HEALING_COLORS.woodLight, color: HEALING_COLORS.textLight, fontSize: 18, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", transition: "all 0.2s" }}
+          onClick={onClose}
+          onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = HEALING_COLORS.woodBorder; }}
+          onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = HEALING_COLORS.woodLight; }}>×</button>
+        <h3 style={{ fontFamily: "Noto Serif SC, serif", fontSize: 22, fontWeight: 600, color: HEALING_COLORS.text, margin: "0 0 24px", textAlign: "center", letterSpacing: "0.06em" }}>📷 我的摄影集</h3>
         {photos.length === 0 ? (
           <EmptyState emoji="📷" />
         ) : (
           <>
-            <div style={{ position: "relative", borderRadius: 12, overflow: "hidden", background: "#1a1a1a", marginBottom: 16 }}>
+            {/* 主图 - 带阴影提升立体感 */}
+            <div style={{ position: "relative", borderRadius: 16, overflow: "hidden", background: HEALING_COLORS.creamDark, marginBottom: 24, boxShadow: "0 12px 48px rgba(0,0,0,0.18), 0 4px 16px rgba(0,0,0,0.08)" }}>
               {p && <>
                 <div style={{ position: "relative" }}>
-                  <img src={p.src} alt={p.title} style={{ width: "100%", height: 320, objectFit: "cover", display: "block" }} />
+                  <img src={p.src} alt={p.title} style={{ width: "100%", height: 340, objectFit: "cover", display: "block" }} />
                   <DeleteBtn onClick={() => setDeleting(p.id)} />
                 </div>
-                <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, padding: "24px 16px 12px", background: "linear-gradient(transparent, rgba(0,0,0,0.7))" }}>
-                  <p style={{ color: "#fff", fontSize: 14, margin: 0, fontWeight: 500 }}>{p.title}</p>
-                  <p style={{ color: "rgba(255,255,255,0.6)", fontSize: 11, margin: "4px 0 0" }}>{p.date} · {p.desc}</p>
+                <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, padding: "32px 20px 16px", background: "linear-gradient(transparent, rgba(0,0,0,0.6))" }}>
+                  <p style={{ color: "#fff", fontSize: 16, margin: 0, fontWeight: 500, fontFamily: "Noto Serif SC, serif" }}>{p.title}</p>
+                  <p style={{ color: "rgba(255,255,255,0.65)", fontSize: 12, margin: "6px 0 0", letterSpacing: "0.02em" }}>{p.date} · {p.desc}</p>
                 </div>
-                <button onClick={() => setIdx(i => (i - 1 + photos.length) % photos.length)} style={{ position: "absolute", left: 8, top: "50%", transform: "translateY(-50%)", width: 36, height: 36, borderRadius: "50%", border: "1.5px solid rgba(255,255,255,0.3)", background: "rgba(0,0,0,0.4)", color: "#fff", fontSize: 18, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", backdropFilter: "blur(4px)" }}>‹</button>
-                <button onClick={() => setIdx(i => (i + 1) % photos.length)} style={{ position: "absolute", right: 8, top: "50%", transform: "translateY(-50%)", width: 36, height: 36, borderRadius: "50%", border: "1.5px solid rgba(255,255,255,0.3)", background: "rgba(0,0,0,0.4)", color: "#fff", fontSize: 18, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", backdropFilter: "blur(4px)" }}>›</button>
-                <div style={{ position: "absolute", bottom: 8, left: "50%", transform: "translateX(-50%)", display: "flex", gap: 4 }}>
-                  {photos.map((_, i) => <span key={i} style={{ width: i === idx ? 16 : 6, height: 6, borderRadius: 3, background: i === idx ? "#fff" : "rgba(255,255,255,0.35)", transition: "all 0.2s" }} />)}
+                <button onClick={() => setIdx(i => (i - 1 + photos.length) % photos.length)} style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", width: 40, height: 40, borderRadius: "50%", border: "none", background: "rgba(255,255,255,0.2)", backdropFilter: "blur(8px)", color: "#fff", fontSize: 20, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", transition: "all 0.2s" }}
+                  onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = "rgba(255,255,255,0.35)"; }}
+                  onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = "rgba(255,255,255,0.2)"; }}>‹</button>
+                <button onClick={() => setIdx(i => (i + 1) % photos.length)} style={{ position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)", width: 40, height: 40, borderRadius: "50%", border: "none", background: "rgba(255,255,255,0.2)", backdropFilter: "blur(8px)", color: "#fff", fontSize: 20, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", transition: "all 0.2s" }}
+                  onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = "rgba(255,255,255,0.35)"; }}
+                  onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = "rgba(255,255,255,0.2)"; }}>›</button>
+                <div style={{ position: "absolute", bottom: 12, left: "50%", transform: "translateX(-50%)", display: "flex", gap: 6 }}>
+                  {photos.map((_, i) => <span key={i} style={{ width: i === idx ? 20 : 8, height: 8, borderRadius: 4, background: i === idx ? "#fff" : "rgba(255,255,255,0.4)", transition: "all 0.3s" }} />)}
                 </div>
               </>}
             </div>
-            <div style={{ display: "flex", gap: 8, overflowX: "auto", paddingBottom: 4 }}>
+            {/* 阶梯式缩略图墙 */}
+            <div style={{ display: "flex", alignItems: "flex-end", gap: 10, padding: "0 4px", overflowX: "auto", paddingBottom: 8 }}>
               {photos.map((ph, i) => (
-                <img key={ph.id} src={ph.src} alt={ph.title} onClick={() => setIdx(i)}
-                  style={{ width: 60, height: 44, objectFit: "cover", borderRadius: 6, cursor: "pointer", flexShrink: 0, border: i === idx ? "2px solid #6a8a6a" : "2px solid transparent", opacity: i === idx ? 1 : 0.6, transition: "all 0.2s" }} />
+                <div key={ph.id}
+                  style={{
+                    flexShrink: 0, cursor: "pointer", borderRadius: 10, overflow: "hidden",
+                    border: i === idx ? `3px solid ${HEALING_COLORS.grayGreen}` : `3px solid transparent`,
+                    transform: i === idx ? "translateY(-8px)" : i === (idx - 1 + photos.length) % photos.length || i === (idx + 1) % photos.length ? "translateY(-3px)" : "translateY(0)",
+                    boxShadow: i === idx ? `0 8px 24px rgba(0,0,0,0.2)` : "0 2px 8px rgba(0,0,0,0.1)",
+                    transition: "all 0.3s cubic-bezier(0.34,1.56,0.64,1)",
+                    opacity: Math.abs(i - idx) > 2 ? 0.5 : 1,
+                  }}
+                  onClick={() => setIdx(i)}
+                >
+                  <img src={ph.src} alt={ph.title} style={{ width: 72, height: 54, objectFit: "cover", display: "block" }} />
+                </div>
               ))}
+              {/* 添加位 */}
+              <div style={{ flexShrink: 0, width: 72, height: 54, borderRadius: 10, border: `2px dashed ${HEALING_COLORS.woodBorder}`, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", background: HEALING_COLORS.woodLight, transition: "all 0.2s" }}
+                onClick={() => setShowUpload(true)}
+                onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.borderColor = HEALING_COLORS.grayGreen; (e.currentTarget as HTMLDivElement).style.background = HEALING_COLORS.grayGreenLight; }}
+                onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.borderColor = HEALING_COLORS.woodBorder; (e.currentTarget as HTMLDivElement).style.background = HEALING_COLORS.woodLight; }}>
+                <span style={{ fontSize: 24, color: HEALING_COLORS.textLight }}>+</span>
+              </div>
             </div>
           </>
         )}
@@ -532,13 +603,14 @@ const PhotoModal: React.FC<{ onClose: () => void; onUpload: () => void }> = ({ o
   );
 };
 
-/* ====== 音乐/播客模块 ====== */
+/* ====== 音乐/播客模块（疗愈系黑胶唱片） ====== */
 const MusicModal: React.FC<{ onClose: () => void; onUpload: () => void }> = ({ onClose, onUpload }) => {
   const [tracks, setTracks] = useState<Track[]>(() => loadData<Track>(LS_KEYS.tracks, MOCK_TRACKS));
   const [playing, setPlaying] = useState<string | null>(null);
   const [progress, setProgress] = useState(0);
   const [showUpload, setShowUpload] = useState(false);
   const [deleting, setDeleting] = useState<string | null>(null);
+  const [showNotes, setShowNotes] = useState(false);
   const timerRef = useRef<ReturnType<typeof setInterval>>(undefined);
 
   useEffect(() => {
@@ -548,6 +620,7 @@ const MusicModal: React.FC<{ onClose: () => void; onUpload: () => void }> = ({ o
           if (p >= 100) {
             if (timerRef.current) clearInterval(timerRef.current);
             setPlaying(null);
+            setShowNotes(false);
             return 0;
           }
           return p + 1;
@@ -559,47 +632,115 @@ const MusicModal: React.FC<{ onClose: () => void; onUpload: () => void }> = ({ o
     return () => { if (timerRef.current) clearInterval(timerRef.current); };
   }, [playing]);
 
+  const handlePlay = (id: string) => {
+    if (playing === id) {
+      setPlaying(null);
+      setShowNotes(false);
+      setProgress(0);
+    } else {
+      setPlaying(id);
+      setShowNotes(true);
+    }
+  };
+
   const handleDelete = (id: string) => {
     const updated = tracks.filter(t => t.id !== id);
     setTracks(updated); saveData(LS_KEYS.tracks, updated);
     setDeleting(null);
   };
 
+  const NOTE_EMOJIS = ["♪", "♫", "♬", "🎵"];
+  const currentTrack = tracks.find(t => t.id === playing);
+
   return (
     <>
-      <ModalOverlay onClose={onClose} showFab fabOnClick={() => setShowUpload(true)}>
-        <button style={{ position: "absolute", top: 16, right: 16, width: 32, height: 32, border: "none", borderRadius: "50%", background: "rgba(0,0,0,0.06)", color: "#888", fontSize: 18, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }} onClick={onClose}>×</button>
-        <h3 style={{ fontFamily: "Noto Serif SC, serif", fontSize: 20, fontWeight: 600, color: "#4a4038", margin: "0 0 20px", textAlign: "center", letterSpacing: "0.04em" }}>🎧 我的收听清单</h3>
-        {playing ? (() => {
-          const track = tracks.find(t => t.id === playing);
-          return track ? (
-            <div style={{ textAlign: "center", padding: "20px 0" }}>
-              <div style={{ width: 100, height: 100, borderRadius: 12, background: "rgba(122,154,130,0.15)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 48, margin: "0 auto 16px" }}>{track.cover}</div>
-              <h4 style={{ fontFamily: "Noto Serif SC, serif", fontSize: 16, color: "#4a4038", margin: "0 0 4px" }}>{track.title}</h4>
-              <p style={{ fontSize: 12, color: "#b0a090", margin: "0 0 16px" }}>{track.type} · {track.date}</p>
-              <div style={{ height: 4, background: "rgba(0,0,0,0.08)", borderRadius: 2, marginBottom: 12 }}>
-                <div style={{ height: "100%", width: `${progress}%`, background: "#6a8a6a", borderRadius: 2, transition: "width 0.3s" }} />
+      <ModalOverlay onClose={onClose} showFab fabOnClick={() => setShowUpload(true)} fabColor={HEALING_COLORS.wood}>
+        <button style={{ position: "absolute", top: 16, right: 16, width: 36, height: 36, border: "none", borderRadius: "50%", background: HEALING_COLORS.woodLight, color: HEALING_COLORS.textLight, fontSize: 18, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", transition: "all 0.2s" }}
+          onClick={onClose}
+          onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = HEALING_COLORS.woodBorder; }}
+          onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = HEALING_COLORS.woodLight; }}>×</button>
+        <h3 style={{ fontFamily: "Noto Serif SC, serif", fontSize: 22, fontWeight: 600, color: HEALING_COLORS.text, margin: "0 0 24px", textAlign: "center", letterSpacing: "0.06em" }}>🎧 我的收听清单</h3>
+        {currentTrack ? (
+          /* 播放界面 */
+          <div style={{ display: "flex", flexDirection: "column", alignItems: "center", padding: "16px 0 8px" }}>
+            {/* 黑胶唱片 + 树枝动画 */}
+            <div style={{ position: "relative", width: 200, height: 200, marginBottom: 24, display: "flex", alignItems: "center", justifyContent: "center" }}>
+              {/* 飘出的音符 */}
+              {showNotes && NOTE_EMOJIS.slice(0, 4).map((note, i) => (
+                <span key={i} style={{
+                  position: "absolute", fontSize: 20, color: HEALING_COLORS.accent,
+                  animation: `note-float ${2 + i * 0.3}s ease-out infinite`,
+                  animationDelay: `${i * 0.5}s`,
+                  top: `${20 + i * 15}%`, right: `${10 + i * 5}%`,
+                  opacity: 0,
+                }}>{note}</span>
+              ))}
+              {/* 绿色细树枝 */}
+              <div style={{
+                position: "absolute", left: playing ? -60 : -10, top: "50%", transform: "translateY(-50%)",
+                width: playing ? 70 : 0, height: 3,
+                background: `linear-gradient(90deg, ${HEALING_COLORS.accent}, ${HEALING_COLORS.wood})`,
+                borderRadius: 2, transition: "width 0.8s cubic-bezier(0.34,1.56,0.64,1)",
+                overflow: "hidden", zIndex: 1,
+              }}>
+                <div style={{ position: "absolute", right: -6, top: -5, width: 14, height: 14, background: HEALING_COLORS.accent, borderRadius: "50% 0 50% 50%", transform: "rotate(-45deg)" }} />
               </div>
-              <div style={{ display: "flex", gap: 12, justifyContent: "center" }}>
-                <button onClick={() => { setPlaying(null); setProgress(0); }} style={{ padding: "8px 20px", border: "1.5px solid #b0a090", borderRadius: 999, background: "transparent", color: "#8a7a6a", cursor: "pointer", fontSize: 13 }}>停止</button>
-                <button onClick={() => setProgress(p => Math.min(p + 10, 99))} style={{ padding: "8px 20px", border: "none", borderRadius: 999, background: "#6a8a6a", color: "#fff", cursor: "pointer", fontSize: 13 }}>快进 ▶▶</button>
+              {/* 黑胶唱片 */}
+              <div style={{
+                width: 160, height: 160, borderRadius: "50%", background: "linear-gradient(135deg, #2a2a2a 0%, #1a1a1a 50%, #2a2a2a 100%)",
+                boxShadow: `0 12px 40px rgba(0,0,0,0.3), inset 0 2px 4px rgba(255,255,255,0.1), ${playing ? `0 0 20px rgba(106,138,106,0.35)` : "none"}`,
+                display: "flex", alignItems: "center", justifyContent: "center",
+                animation: playing ? "vinyl-spin 5s linear infinite" : "none",
+                transition: "box-shadow 0.5s ease",
+                position: "relative",
+              }}>
+                {/* 唱片同心圆纹理 */}
+                {[40, 60, 80, 100, 120].map(r => (
+                  <div key={r} style={{ position: "absolute", width: r, height: r, borderRadius: "50%", border: `1px solid rgba(255,255,255,0.04)` }} />
+                ))}
+                {/* 中心封面 */}
+                <div style={{ width: 50, height: 50, borderRadius: "50%", background: HEALING_COLORS.wood, display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 2px 8px rgba(0,0,0,0.3)", zIndex: 2 }}>
+                  <span style={{ fontSize: 24 }}>{currentTrack.cover}</span>
+                </div>
               </div>
             </div>
-          ) : null;
-        })() : tracks.length === 0 ? (
+            {/* 曲目信息 */}
+            <h4 style={{ fontFamily: "Noto Serif SC, serif", fontSize: 18, color: HEALING_COLORS.text, margin: "0 0 4px", textAlign: "center" }}>{currentTrack.title}</h4>
+            <p style={{ fontSize: 13, color: HEALING_COLORS.textLight, margin: "0 0 20px" }}>{currentTrack.type} · {currentTrack.date}</p>
+            {/* 进度条 */}
+            <div style={{ width: "100%", maxWidth: 300, marginBottom: 16 }}>
+              <div style={{ height: 4, background: HEALING_COLORS.woodLight, borderRadius: 2 }}>
+                <div style={{ height: "100%", width: `${progress}%`, background: `linear-gradient(90deg, ${HEALING_COLORS.grayGreen}, ${HEALING_COLORS.accent})`, borderRadius: 2, transition: "width 0.3s" }} />
+              </div>
+            </div>
+            {/* 控制按钮 */}
+            <div style={{ display: "flex", gap: 16 }}>
+              <button onClick={() => handlePlay(currentTrack.id)} style={{ padding: "12px 28px", border: `2px solid ${HEALING_COLORS.woodBorder}`, borderRadius: 16, background: "transparent", color: HEALING_COLORS.text, cursor: "pointer", fontSize: 14, fontFamily: "Noto Serif SC, serif", transition: "all 0.25s" }}
+                onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = HEALING_COLORS.woodLight; }}
+                onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = "transparent"; }}>停止</button>
+              <button onClick={() => setProgress(p => Math.min(p + 10, 99))} style={{ padding: "12px 28px", border: "none", borderRadius: 16, background: HEALING_COLORS.grayGreen, color: "#fff", cursor: "pointer", fontSize: 14, fontFamily: "Noto Serif SC, serif", transition: "all 0.25s" }}
+                onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.transform = "translateY(-2px)"; (e.currentTarget as HTMLButtonElement).style.boxShadow = `0 6px 20px rgba(141,154,139,0.4)`; }}
+                onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.transform = "translateY(0)"; (e.currentTarget as HTMLButtonElement).style.boxShadow = "none"; }}>快进 ▶▶</button>
+            </div>
+          </div>
+        ) : tracks.length === 0 ? (
           <EmptyState emoji="🎧" />
         ) : (
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 12 }}>
+          /* 卡片列表 */
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 14 }}>
             {tracks.map(t => (
-              <div key={t.id} style={{ position: "relative", cursor: "pointer", display: "flex", alignItems: "center", gap: 12, padding: "12px 14px", borderRadius: 12, background: "rgba(122,154,130,0.08)", transition: "background 0.2s" }}
-                onClick={() => setPlaying(t.id)}
-                onMouseEnter={e => (e.currentTarget.style.background = "rgba(122,154,130,0.16)")}
-                onMouseLeave={e => (e.currentTarget.style.background = "rgba(122,154,130,0.08)")}>
-                <button onClick={e => { e.stopPropagation(); setDeleting(t.id); }} style={{ position: "absolute", top: 4, right: 4, width: 18, height: 18, border: "none", borderRadius: "50%", background: "rgba(0,0,0,0.1)", color: "rgba(0,0,0,0.4)", fontSize: 12, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", opacity: 0, transition: "opacity 0.2s" }}
+              <div key={t.id} style={{ position: "relative", cursor: "pointer", display: "flex", alignItems: "center", gap: 14, padding: "14px 16px", borderRadius: 16, background: HEALING_COLORS.creamDark, border: `1px solid ${HEALING_COLORS.woodBorder}`, transition: "all 0.25s cubic-bezier(0.34,1.56,0.64,1)" }}
+                onClick={() => handlePlay(t.id)}
+                onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.transform = "translateY(-4px)"; (e.currentTarget as HTMLDivElement).style.boxShadow = `0 8px 24px rgba(0,0,0,0.1)`; (e.currentTarget as HTMLDivElement).style.background = HEALING_COLORS.woodLight; }}
+                onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.transform = "translateY(0)"; (e.currentTarget as HTMLDivElement).style.boxShadow = "none"; (e.currentTarget as HTMLDivElement).style.background = HEALING_COLORS.creamDark; }}>
+                <button onClick={e => { e.stopPropagation(); setDeleting(t.id); }} style={{ position: "absolute", top: 6, right: 6, width: 20, height: 20, border: "none", borderRadius: "50%", background: "rgba(0,0,0,0.08)", color: "rgba(0,0,0,0.3)", fontSize: 12, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", opacity: 0, transition: "opacity 0.2s" }}
                   onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.opacity = "1"; }}
                   onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.opacity = "0"; }}>×</button>
-                <div style={{ width: 44, height: 44, borderRadius: 8, background: "rgba(122,154,130,0.12)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 22, flexShrink: 0 }}>{t.cover}</div>
-                <div><p style={{ fontSize: 13, color: "#4a4038", margin: 0, fontWeight: 500 }}>{t.title}</p><p style={{ fontSize: 11, color: "#b0a090", margin: "2px 0 0" }}>{t.type} · {t.date}</p></div>
+                {/* 黑胶唱片图标 */}
+                <div style={{ width: 48, height: 48, borderRadius: "50%", background: "linear-gradient(135deg, #3a3a3a 0%, #1a1a1a 100%)", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 4px 12px rgba(0,0,0,0.2)", flexShrink: 0 }}>
+                  <span style={{ fontSize: 22 }}>{t.cover}</span>
+                </div>
+                <div><p style={{ fontSize: 13, color: HEALING_COLORS.text, margin: 0, fontWeight: 500, fontFamily: "Noto Serif SC, serif" }}>{t.title}</p><p style={{ fontSize: 11, color: HEALING_COLORS.textMuted, margin: "4px 0 0" }}>{t.type} · {t.date}</p></div>
               </div>
             ))}
           </div>
@@ -607,8 +748,7 @@ const MusicModal: React.FC<{ onClose: () => void; onUpload: () => void }> = ({ o
         {deleting && <ConfirmDialog message="确定要删除这条记录吗？" onConfirm={() => handleDelete(deleting)} onCancel={() => setDeleting(null)} />}
       </ModalOverlay>
       {showUpload && (
-        <UploadModal moduleType="music" onSubmit={(data, files) => {
-          void files; // 音乐封面暂用emoji展示
+        <UploadModal moduleType="music" onSubmit={(data, _files) => {
           const newTrack: Track = {
             id: genId(), title: data.title, type: data.type?.replace(/[^音乐播客]/g, "") || "音乐",
             date: data.date || "", cover: "🎵",

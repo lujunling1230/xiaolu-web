@@ -191,42 +191,23 @@ const AdvicePage: React.FC = () => {
               { role: "user", content: question },
             ],
           },
-          parameters: {
-            stream: true,
-          },
+          // 强制关闭 stream，前端自己拆字实现打字机
+          parameters: { stream: false },
         }),
         signal: controller.signal,
       });
 
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
+      if (!response.ok) throw new Error("请求失败");
 
-      // 4. 强制流式读取（fetch + reader.read()）
-      const reader = response.body?.getReader();
-      if (!reader) {
-        throw new Error("无法读取响应流");
-      }
+      // 拿到完整文本
+      const data = await response.json();
+      const fullText = data.output?.choices?.[0]?.message?.content || "";
 
-      const decoder = new TextDecoder("utf-8");
-      let receivedText = "";
-
-      // 持续读取数据
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-
-        const chunk = decoder.decode(value, { stream: true });
-        receivedText += chunk;
-
-        // 逐字渲染循环：每次收到新 chunk 后，从头到尾逐字显示
-        let currentDisplayText = "";
-        for (let i = 0; i <= receivedText.length; i++) {
-          currentDisplayText = receivedText.substring(0, i);
-          setReply(currentDisplayText);
-          // 控制打字速度，数字越小越快
-          await new Promise((resolve) => setTimeout(resolve, 40));
-        }
+      // 伪流式：一个字一个字打印，100% 保证打字机效果
+      setReply("");
+      for (let i = 0; i < fullText.length; i++) {
+        await new Promise((resolve) => setTimeout(resolve, 30));
+        setReply(fullText.slice(0, i + 1));
       }
     } catch (error) {
       if (error instanceof DOMException && error.name === "AbortError") return;

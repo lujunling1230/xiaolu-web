@@ -685,22 +685,26 @@ const MusicModal: React.FC<{ onClose: () => void; onUpload: () => void }> = ({ o
               }}>
                 <div style={{ position: "absolute", right: -6, top: -5, width: 14, height: 14, background: HEALING_COLORS.accent, borderRadius: "50% 0 50% 50%", transform: "rotate(-45deg)" }} />
               </div>
-              {/* 黑胶唱片 */}
+              {/* 黑胶唱片 - 木纹唱片沟槽质感 */}
               <div style={{
-                width: 160, height: 160, borderRadius: "50%", background: "linear-gradient(135deg, #2a2a2a 0%, #1a1a1a 50%, #2a2a2a 100%)",
-                boxShadow: `0 12px 40px rgba(0,0,0,0.3), inset 0 2px 4px rgba(255,255,255,0.1), ${playing ? `0 0 20px rgba(106,138,106,0.35)` : "none"}`,
+                width: 160, height: 160, borderRadius: "50%",
+                background: `linear-gradient(135deg, #3a3028 0%, #4a4038 20%, #3a3028 40%, #4a4038 60%, #3a3028 80%, #4a4038 100%)`,
+                boxShadow: `0 12px 40px rgba(0,0,0,0.3), inset 0 2px 4px rgba(255,255,255,0.08), ${playing ? `0 0 24px rgba(106,138,106,0.4)` : "none"}`,
                 display: "flex", alignItems: "center", justifyContent: "center",
                 animation: playing ? "vinyl-spin 5s linear infinite" : "none",
                 transition: "box-shadow 0.5s ease",
-                position: "relative",
+                position: "relative", overflow: "hidden",
               }}>
+                {/* 唱片沟槽纹理 */}
+                <div style={{ position: "absolute", width: "100%", height: "100%", borderRadius: "50%", background: "repeating-radial-gradient(circle at center, transparent 0px, transparent 1px, rgba(255,255,255,0.015) 1px, rgba(255,255,255,0.015) 2px)" }} />
                 {/* 唱片同心圆纹理 */}
-                {[40, 60, 80, 100, 120].map(r => (
-                  <div key={r} style={{ position: "absolute", width: r, height: r, borderRadius: "50%", border: `1px solid rgba(255,255,255,0.04)` }} />
+                {[40, 55, 70, 85, 100, 115].map(r => (
+                  <div key={r} style={{ position: "absolute", width: r, height: r, borderRadius: "50%", border: `1px solid rgba(255,255,255,0.03)` }} />
                 ))}
-                {/* 中心封面 */}
-                <div style={{ width: 50, height: 50, borderRadius: "50%", background: HEALING_COLORS.wood, display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 2px 8px rgba(0,0,0,0.3)", zIndex: 2 }}>
-                  <span style={{ fontSize: 24 }}>{currentTrack.cover}</span>
+                {/* 中心封面 - 40mm 黑胶唱片风格 + 木纹圆心 */}
+                <div style={{ width: 40, height: 40, borderRadius: "50%", background: `linear-gradient(135deg, ${HEALING_COLORS.wood} 0%, #D4B896 50%, ${HEALING_COLORS.wood} 100%)`, display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "inset 0 2px 6px rgba(0,0,0,0.4), 0 1px 4px rgba(0,0,0,0.3)", zIndex: 2 }}>
+                  <div style={{ width: 8, height: 8, borderRadius: "50%", background: "rgba(0,0,0,0.7)", boxShadow: "inset 0 1px 2px rgba(255,255,255,0.1)" }} />
+                  <span style={{ fontSize: 16, position: "absolute" }}>{currentTrack.cover}</span>
                 </div>
               </div>
             </div>
@@ -717,7 +721,7 @@ const MusicModal: React.FC<{ onClose: () => void; onUpload: () => void }> = ({ o
             <div style={{ display: "flex", gap: 16 }}>
               <button onClick={() => handlePlay(currentTrack.id)} style={{ padding: "12px 28px", border: `2px solid ${HEALING_COLORS.woodBorder}`, borderRadius: 16, background: "transparent", color: HEALING_COLORS.text, cursor: "pointer", fontSize: 14, fontFamily: "Noto Serif SC, serif", transition: "all 0.25s" }}
                 onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = HEALING_COLORS.woodLight; }}
-                onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = "transparent"; }}>停止</button>
+                onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = "transparent"; }}>暂停</button>
               <button onClick={() => setProgress(p => Math.min(p + 10, 99))} style={{ padding: "12px 28px", border: "none", borderRadius: 16, background: HEALING_COLORS.grayGreen, color: "#fff", cursor: "pointer", fontSize: 14, fontFamily: "Noto Serif SC, serif", transition: "all 0.25s" }}
                 onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.transform = "translateY(-2px)"; (e.currentTarget as HTMLButtonElement).style.boxShadow = `0 6px 20px rgba(141,154,139,0.4)`; }}
                 onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.transform = "translateY(0)"; (e.currentTarget as HTMLButtonElement).style.boxShadow = "none"; }}>快进 ▶▶</button>
@@ -726,19 +730,21 @@ const MusicModal: React.FC<{ onClose: () => void; onUpload: () => void }> = ({ o
         ) : tracks.length === 0 ? (
           <EmptyState emoji="🎧" />
         ) : (
-          /* 卡片列表 */
+          /* 卡片列表 - 米白纸纹质感 */
           <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 14 }}>
             {tracks.map(t => (
-              <div key={t.id} style={{ position: "relative", cursor: "pointer", display: "flex", alignItems: "center", gap: 14, padding: "14px 16px", borderRadius: 16, background: HEALING_COLORS.creamDark, border: `1px solid ${HEALING_COLORS.woodBorder}`, transition: "all 0.25s cubic-bezier(0.34,1.56,0.64,1)" }}
+              <div key={t.id} style={{ position: "relative", cursor: "pointer", display: "flex", alignItems: "center", gap: 14, padding: "14px 16px", borderRadius: 16, background: `linear-gradient(135deg, ${HEALING_COLORS.creamDark} 0%, ${HEALING_COLORS.cream} 50%, ${HEALING_COLORS.creamDark} 100%)`, border: `1px solid ${HEALING_COLORS.woodBorder}`, boxShadow: "inset 0 1px 0 rgba(255,255,255,0.8)", transition: "all 0.25s cubic-bezier(0.34,1.56,0.64,1)" }}
                 onClick={() => handlePlay(t.id)}
-                onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.transform = "translateY(-4px)"; (e.currentTarget as HTMLDivElement).style.boxShadow = `0 8px 24px rgba(0,0,0,0.1)`; (e.currentTarget as HTMLDivElement).style.background = HEALING_COLORS.woodLight; }}
-                onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.transform = "translateY(0)"; (e.currentTarget as HTMLDivElement).style.boxShadow = "none"; (e.currentTarget as HTMLDivElement).style.background = HEALING_COLORS.creamDark; }}>
+                onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.transform = "translateY(-4px)"; (e.currentTarget as HTMLDivElement).style.boxShadow = `0 8px 24px rgba(0,0,0,0.1), 0 0 0 1px ${HEALING_COLORS.woodBorder}`; }}
+                onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.transform = "translateY(0)"; (e.currentTarget as HTMLDivElement).style.boxShadow = "none"; }}>
                 <button onClick={e => { e.stopPropagation(); setDeleting(t.id); }} style={{ position: "absolute", top: 6, right: 6, width: 20, height: 20, border: "none", borderRadius: "50%", background: "rgba(0,0,0,0.08)", color: "rgba(0,0,0,0.3)", fontSize: 12, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", opacity: 0, transition: "opacity 0.2s" }}
                   onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.opacity = "1"; }}
                   onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.opacity = "0"; }}>×</button>
-                {/* 黑胶唱片图标 */}
-                <div style={{ width: 48, height: 48, borderRadius: "50%", background: "linear-gradient(135deg, #3a3a3a 0%, #1a1a1a 100%)", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 4px 12px rgba(0,0,0,0.2)", flexShrink: 0 }}>
-                  <span style={{ fontSize: 22 }}>{t.cover}</span>
+                {/* 黑胶唱片图标 - 木纹质感 */}
+                <div style={{ width: 48, height: 48, borderRadius: "50%", background: `linear-gradient(135deg, #4a4038 0%, #3a3028 40%, #4a4038 60%, #2a2018 100%)`, display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "inset 0 2px 4px rgba(0,0,0,0.5), 0 2px 8px rgba(0,0,0,0.2)", flexShrink: 0, position: "relative" }}>
+                  <div style={{ position: "absolute", width: "100%", height: "100%", borderRadius: "50%", background: "repeating-conic-gradient(from 0deg, rgba(255,255,255,0.02) 0deg 3deg, transparent 3deg 6deg)" }} />
+                  <div style={{ width: 14, height: 14, borderRadius: "50%", background: `linear-gradient(135deg, ${HEALING_COLORS.wood} 0%, #D4B896 100%)`, boxShadow: "inset 0 1px 3px rgba(0,0,0,0.5)" }} />
+                  <span style={{ fontSize: 16, position: "absolute", zIndex: 1 }}>{t.cover}</span>
                 </div>
                 <div><p style={{ fontSize: 13, color: HEALING_COLORS.text, margin: 0, fontWeight: 500, fontFamily: "Noto Serif SC, serif" }}>{t.title}</p><p style={{ fontSize: 11, color: HEALING_COLORS.textMuted, margin: "4px 0 0" }}>{t.type} · {t.date}</p></div>
               </div>

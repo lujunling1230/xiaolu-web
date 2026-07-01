@@ -1267,7 +1267,7 @@ const MuseumPage: React.FC = () => {
         .vintage-gallery-track { display: flex; gap: 20px; padding: 8px 4px; }
 
         /* 时代回响大图卡片（封面杂志风格） */
-        .vintage-card { position: relative; flex-shrink: 0; width: 320px; background: linear-gradient(135deg, ${VINTAGE_CREAM} 0%, #F5ECD8 50%, #EDE4D0 100%); border: 1px solid rgba(139,109,79,0.5); border-radius: 4px; padding: 0; box-shadow: 0 8px 24px rgba(0,0,0,0.15), inset 0 1px 0 rgba(255,255,255,0.6); transition: all 0.3s ease; overflow: hidden; }
+        .vintage-card { position: relative; flex-shrink: 0; width: 320px; min-height: 380px; background: linear-gradient(135deg, ${VINTAGE_CREAM} 0%, #F5ECD8 50%, #EDE4D0 100%); border: 1px solid rgba(139,109,79,0.5); border-radius: 4px; padding: 0; box-shadow: 0 8px 24px rgba(0,0,0,0.15), inset 0 1px 0 rgba(255,255,255,0.6); transition: all 0.3s ease; overflow: hidden; }
 
         /* 大图封面区域 */
         .vintage-card-hero { position: relative; width: 100%; height: 150px; overflow: hidden; border-radius: 4px 4px 0 0; }

@@ -522,33 +522,47 @@ const InventoryPage: React.FC = () => {
             </div>
           </section>
 
-          {/* 今日消耗建议 */}
+          {/* 赏味期限建议 */}
           <section className="rounded-xl border border-gray-200 bg-white p-5">
             <h2 className="mb-3 flex items-center gap-2 text-sm font-semibold text-gray-700">
               <span className="h-1 w-4 rounded-full bg-amber-400" />
-              今日消耗建议
+              赏味期限
             </h2>
 
-            {earliest ? (
-              <div>
-                <p className="text-sm leading-relaxed text-gray-600">
-                  您的「
-                  <span className="font-medium text-gray-900">
-                    {earliest.name}
-                  </span>
-                  」
-                  {relativeHint(earliestDays)}
-                  ，建议今天使用！
-                </p>
-                <button
-                  type="button"
-                  onClick={() => handleDelete(earliest.id)}
-                  className="mt-3 text-sm font-medium text-red-500 transition-colors hover:text-red-600"
-                >
-                  标记已用完
-                </button>
-              </div>
-            ) : (
+            {earliest ? (() => {
+              const isUrgent = earliestDays <= 30;
+              return (
+                <div style={{
+                  display: "flex", flexDirection: "column", alignItems: "center", gap: 12, padding: "12px 0"
+                }}>
+                  <p style={{
+                    fontSize: 12, fontWeight: 500, textAlign: "center",
+                    background: "rgba(255,255,255,0.6)",
+                    borderRadius: 20, padding: "6px 14px",
+                    color: isUrgent ? "#D46B4D" : "#557C55",
+                  }}>
+                    {isUrgent ? "🔥" : "🍃"}&nbsp;
+                    {isUrgent ? "赏味期限将至，宜趁鲜启用。" : "余量丰盈，且容它静候时光。"}
+                  </p>
+                  <p style={{ fontSize: 13, color: "#6B7280", textAlign: "center" }}>
+                    {earliest.name} · {earliest.count}{earliest.unit}
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => handleDelete(earliest.id)}
+                    style={{
+                      fontSize: 12, fontWeight: 500, padding: "6px 18px",
+                      border: `1.5px solid ${isUrgent ? "#D46B4D" : "#557C55"}`,
+                      borderRadius: 999, background: "transparent",
+                      color: isUrgent ? "#D46B4D" : "#557C55",
+                      cursor: "pointer", transition: "all 0.2s",
+                    }}
+                  >
+                    {isUrgent ? "立即消耗" : "留着以后"}
+                  </button>
+                </div>
+              );
+            })() : (
               <p className="text-sm text-gray-400">
                 暂无物品。先在上方入库，我来帮你规划。
               </p>

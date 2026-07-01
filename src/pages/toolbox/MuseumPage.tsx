@@ -55,7 +55,8 @@ interface VintageCard {
   year: string;
   title: string;
   description: string;
-  musicLink?: string; // 音乐链接
+  musicLink?: string;
+  imageUrl?: string; // 图片 Base64/URL
 }
 
 interface HonorItem {
@@ -213,6 +214,7 @@ interface CardFormData {
   title: string;
   description: string;
   musicLink?: string;
+  imageUrl?: string;
 }
 
 const CardFormModal: React.FC<{
@@ -226,7 +228,7 @@ const CardFormModal: React.FC<{
   const [title, setTitle] = useState(initialData?.title || "");
   const [description, setDescription] = useState(initialData?.description || "");
   const [musicLink, setMusicLink] = useState(initialData?.musicLink || "");
-  const [imagePreview, setImagePreview] = useState<string>("");
+  const [imagePreview, setImagePreview] = useState<string>(initialData?.imageUrl || "");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const canSubmit = year.trim() && title.trim() && description.trim();
@@ -257,6 +259,7 @@ const CardFormModal: React.FC<{
       title: title.trim(),
       description: description.trim(),
       musicLink: musicLink.trim() || undefined,
+      imageUrl: imagePreview || undefined,
     });
   };
 
@@ -496,27 +499,102 @@ const HonorFormModal: React.FC<{
 };
 
 /* ============================================================
-   复古报纸卡片组件（增强版）
+   图片预览弹窗
+   ============================================================ */
+const ImagePreviewModal: React.FC<{
+  src: string;
+  title: string;
+  onClose: () => void;
+  onDelete?: () => void;
+}> = ({ src, title, onClose, onDelete }) => (
+  <motion.div
+    style={{ position: "fixed", inset: 0, zIndex: 500, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(20,12,10,0.92)", backdropFilter: "blur(8px)" }}
+    initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+    onClick={onClose}
+  >
+    <motion.div
+      style={{ background: "#f9f5f0", border: `2px solid ${VINTAGE_BROWN}60`, borderRadius: 12, padding: 24, maxWidth: 420, width: "90%", boxShadow: "0 8px 32px rgba(92,64,51,0.3)" }}
+      initial={{ scale: 0.85, y: 20 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.85, y: 20 }}
+      transition={{ type: "spring", stiffness: 200, damping: 20 }}
+      onClick={e => e.stopPropagation()}
+    >
+      <p style={{ fontFamily: "Noto Serif SC, serif", fontSize: 13, color: VINTAGE_TEXT_LIGHT, margin: "0 0 12px", textAlign: "center" }}>{title}</p>
+      <img src={src} alt={title} style={{ width: "100%", maxHeight: 300, objectFit: "contain", borderRadius: 8, border: `2px solid ${VINTAGE_LINK}`, filter: "sepia(0.15) contrast(1.05)" }} />
+      <div style={{ display: "flex", gap: 10, marginTop: 16 }}>
+        <button onClick={onClose} style={{ flex: 1, padding: "8px 14px", border: `1px solid ${VINTAGE_BROWN}40`, borderRadius: 8, background: "transparent", color: VINTAGE_TEXT_LIGHT, fontSize: 13, cursor: "pointer", fontFamily: "Noto Serif SC, serif" }}>关闭</button>
+        {onDelete && (
+          <button onClick={() => { onDelete(); onClose(); }} style={{ flex: 1, padding: "8px 14px", border: "none", borderRadius: 8, background: VINTAGE_DELETE, color: "#fff", fontSize: 13, cursor: "pointer", fontFamily: "Noto Serif SC, serif" }}>删除图片</button>
+        )}
+      </div>
+    </motion.div>
+  </motion.div>
+);
+
+/* ============================================================
+   复古报纸卡片组件（增强版 - 含图片上传）
    ============================================================ */
 const VintageCard: React.FC<{
   card: VintageCard;
   emoji: string;
   onEdit: (card: VintageCard) => void;
   onDelete: (id: string) => void;
-}> = ({ card, emoji, onEdit, onDelete }) => {
+  onImageUpload?: (id: string, imageUrl: string) => void;
+  onImageDelete?: (id: string) => void;
+}> = ({ card, emoji, onEdit, onDelete, onImageUpload, onImageDelete }) => {
   const [showActions, setShowActions] = useState(false);
   const [showPlayer, setShowPlayer] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
+  const [imagePreviewModal, setImagePreviewModal] = useState<string | null>(null);
+  const [imageDeleteConfirm, setImageDeleteConfirm] = useState(false);
+  const imageUploadRef = useRef<HTMLInputElement>(null);
 
   const hasMusic = !!card.musicLink;
+  const hasImage = !!card.imageUrl;
+
+  const handleFileSelect = (file: File) => {
+    if (!file) return;
+    if (file.size > 2 * 1024 * 1024) { alert("图片大小不能超过 2MB"); return; }
+    if (!["image/jpeg", "image/png", "image/jpg"].includes(file.type)) { alert("只支持 JPG/PNG 格式"); return; }
+    setIsUploading(true);
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const result = ev.target?.result as string;
+      setIsUploading(false);
+      onImageUpload?.(card.id, result);
+    };
+    reader.onerror = () => { setIsUploading(false); alert("图片上传失败，请重试"); };
+    reader.readAsDataURL(file);
+  };
+
+  const handleFileInput = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) handleFileSelect(file);
+    e.target.value = "";
+  };
+
+  const handleDrop = (e: React.DragEvent) => { e.preventDefault(); setIsDragging(false); const file = e.dataTransfer.files?.[0]; if (file) handleFileSelect(file); };
+  const handleDragOver = (e: React.DragEvent) => { e.preventDefault(); setIsDragging(true); };
+  const handleDragLeave = () => setIsDragging(false);
+
+  const handleImageDelete = () => { setImageDeleteConfirm(false); onImageDelete?.(card.id); };
 
   return (
     <motion.div
       className="vintage-card"
-      style={{ position: "relative" }}
+      style={{
+        position: "relative",
+        border: isDragging ? `2px dashed #D4AF37` : undefined,
+        boxShadow: isDragging ? "0 0 16px rgba(212,175,55,0.5)" : undefined,
+        transition: "border 0.2s, box-shadow 0.2s",
+      }}
       whileHover={{ y: -4, rotate: 0.3 }}
       onHoverStart={() => setShowActions(true)}
       onHoverEnd={() => { if (!deleteConfirm) setShowActions(false); }}
+      onDragOver={handleDragOver}
+      onDragLeave={handleDragLeave}
+      onDrop={handleDrop}
     >
       {/* 年份邮票标签 */}
       <div className="vintage-year-stamp">{card.year}</div>
@@ -528,21 +606,13 @@ const VintageCard: React.FC<{
             initial={{ opacity: 0, scale: 0.8 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.8 }}
-            style={{
-              position: "absolute", top: 8, right: 8, zIndex: 10,
-              display: "flex", gap: 6,
-            }}
+            style={{ position: "absolute", top: 8, right: 8, zIndex: 10, display: "flex", gap: 5 }}
           >
-            <button
-              onClick={(e) => { e.stopPropagation(); onEdit(card); }}
-              className="museum-edit-btn"
-              title="编辑"
-            >✏️</button>
-            <button
-              onClick={(e) => { e.stopPropagation(); setDeleteConfirm(true); }}
-              className="museum-delete-btn"
-              title="删除"
-            >🗑️</button>
+            <button onClick={(e) => { e.stopPropagation(); onEdit(card); }} className="museum-edit-btn" title="编辑">✏️</button>
+            <button onClick={(e) => { e.stopPropagation(); setDeleteConfirm(true); }} className="museum-delete-btn" title="删除">🗑️</button>
+            <button onClick={(e) => { e.stopPropagation(); imageUploadRef.current?.click(); }} className="museum-upload-btn" title="上传图片" style={{ background: isUploading ? `${VINTAGE_LINK}80` : undefined }}>
+              {isUploading ? "⏳" : "🖼️"}
+            </button>
           </motion.div>
         )}
       </AnimatePresence>
@@ -550,11 +620,7 @@ const VintageCard: React.FC<{
       {/* 删除确认 */}
       <AnimatePresence>
         {deleteConfirm && (
-          <ConfirmDialog
-            message="确定删除？不可恢复。"
-            onConfirm={() => { onDelete(card.id); setDeleteConfirm(false); setShowActions(false); }}
-            onCancel={() => setDeleteConfirm(false)}
-          />
+          <ConfirmDialog message="确定删除？不可恢复。" onConfirm={() => { onDelete(card.id); setDeleteConfirm(false); setShowActions(false); }} onCancel={() => setDeleteConfirm(false)} />
         )}
       </AnimatePresence>
 
@@ -565,29 +631,68 @@ const VintageCard: React.FC<{
         )}
       </AnimatePresence>
 
+      {/* 图片预览弹窗 */}
+      <AnimatePresence>
+        {imagePreviewModal && (
+          <ImagePreviewModal src={imagePreviewModal} title={card.title} onClose={() => setImagePreviewModal(null)} onDelete={hasImage ? () => { setImageDeleteConfirm(true); } : undefined} />
+        )}
+        {imageDeleteConfirm && (
+          <ConfirmDialog message="确定删除图片？" onConfirm={handleImageDelete} onCancel={() => setImageDeleteConfirm(false)} />
+        )}
+      </AnimatePresence>
+
       {/* 内容区 */}
       <div className="vintage-card-content">
         <div className="vintage-card-icon" style={{ position: "relative" }}>
-          <span>{emoji}</span>
+          {/* 拖拽指示器 */}
+          {isDragging && (
+            <div className="vintage-drag-overlay">
+              <span>🖼️</span>
+              <span style={{ fontSize: 10, marginTop: 4 }}>放置上传</span>
+            </div>
+          )}
+
+          {/* 已上传图片 */}
+          {hasImage && !isDragging && (
+            <motion.img
+              src={card.imageUrl}
+              alt={card.title}
+              className="vintage-card-img"
+              onClick={(e) => { e.stopPropagation(); setImagePreviewModal(card.imageUrl!); }}
+              whileHover={{ scale: 1.05 }}
+              transition={{ type: "spring", stiffness: 300 }}
+              style={{ cursor: "pointer" }}
+            />
+          )}
+
+          {/* 上传中动画 */}
+          {isUploading && (
+            <div className="vintage-upload-loading">
+              <span className="vintage-spin">🎵</span>
+            </div>
+          )}
+
+          {/* 兜底 emoji（无图片时） */}
+          {!hasImage && !isUploading && !isDragging && (
+            <span>{emoji}</span>
+          )}
+
+          {/* 音乐播放按钮 */}
           {hasMusic && (
-            <button
-              onClick={(e) => { e.stopPropagation(); setShowPlayer(!showPlayer); }}
-              style={{
-                position: "absolute", bottom: -4, right: -4,
-                width: 24, height: 24, borderRadius: "50%",
-                border: "none", background: `${VINTAGE_BROWN}cc`, color: "#fff",
-                fontSize: 12, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
-                boxShadow: "0 2px 6px rgba(0,0,0,0.3)",
-              }}
-              title="播放音乐"
-            >🎵</button>
+            <button onClick={(e) => { e.stopPropagation(); setShowPlayer(!showPlayer); }}
+              style={{ position: "absolute", bottom: -4, right: -4, width: 24, height: 24, borderRadius: "50%", border: "none", background: `${VINTAGE_BROWN}cc`, color: "#fff", fontSize: 12, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 2px 6px rgba(0,0,0,0.3)" }}
+              title="播放音乐">🎵</button>
           )}
         </div>
+
         <div className="vintage-card-body">
           <h4 className="vintage-card-title">{card.title}</h4>
           <p className="vintage-card-desc">"{card.description}"</p>
         </div>
       </div>
+
+      {/* 隐藏的文件输入 */}
+      <input ref={imageUploadRef} type="file" accept="image/jpeg,image/png,image/jpg" onChange={handleFileInput} style={{ display: "none" }} />
     </motion.div>
   );
 };
@@ -602,7 +707,9 @@ const VintageGallery: React.FC<{
   onAdd: (data: CardFormData) => void;
   onEdit: (card: VintageCard) => void;
   onDelete: (id: string) => void;
-}> = ({ title, emoji, cards, onAdd, onEdit, onDelete }) => (
+  onImageUpload?: (id: string, imageUrl: string) => void;
+  onImageDelete?: (id: string) => void;
+}> = ({ title, emoji, cards, onAdd, onEdit, onDelete, onImageUpload, onImageDelete }) => (
   <div className="vintage-section">
     <div className="vintage-section-header">
       <span className="vintage-section-emoji">{emoji}</span>
@@ -617,7 +724,7 @@ const VintageGallery: React.FC<{
         <AnimatePresence mode="popLayout">
           {cards.map(card => (
             <motion.div key={card.id} initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.8 }} transition={{ duration: 0.3 }}>
-              <VintageCard card={card} emoji={emoji} onEdit={onEdit} onDelete={onDelete} />
+              <VintageCard card={card} emoji={emoji} onEdit={onEdit} onDelete={onDelete} onImageUpload={onImageUpload} onImageDelete={onImageDelete} />
             </motion.div>
           ))}
         </AnimatePresence>
@@ -842,6 +949,19 @@ const MuseumPage: React.FC = () => {
     setHonors(prev => prev.filter(h => h.id !== id));
   };
 
+  // 图片上传/删除处理
+  const handleImageUpload = (id: string, imageUrl: string, section: "bgm" | "tv" | "net") => {
+    if (section === "bgm") setBgms(prev => prev.map(c => c.id === id ? { ...c, imageUrl } : c));
+    else if (section === "tv") setTvs(prev => prev.map(c => c.id === id ? { ...c, imageUrl } : c));
+    else setNets(prev => prev.map(c => c.id === id ? { ...c, imageUrl } : c));
+  };
+
+  const handleImageDelete = (id: string, section: "bgm" | "tv" | "net") => {
+    if (section === "bgm") setBgms(prev => prev.map(c => c.id === id ? { ...c, imageUrl: undefined } : c));
+    else if (section === "tv") setTvs(prev => prev.map(c => c.id === id ? { ...c, imageUrl: undefined } : c));
+    else setNets(prev => prev.map(c => c.id === id ? { ...c, imageUrl: undefined } : c));
+  };
+
   // 获取 section 标题
   const getSectionTitle = (section: "bgm" | "tv" | "net") => {
     if (section === "bgm") return "🎵 耳机里的青春 BGM";
@@ -878,17 +998,23 @@ const MuseumPage: React.FC = () => {
         <VintageGallery title="耳机里的青春 BGM" emoji="🎵" cards={bgms}
           onAdd={(data) => setCardModal({ mode: "add", section: "bgm", data: { id: "", ...data } })}
           onEdit={(card) => setCardModal({ mode: "edit", section: "bgm", data: card })}
-          onDelete={(id) => handleCardDelete(id, "bgm")} />
+          onDelete={(id) => handleCardDelete(id, "bgm")}
+          onImageUpload={(id, url) => handleImageUpload(id, url, "bgm")}
+          onImageDelete={(id) => handleImageDelete(id, "bgm")} />
 
         <VintageGallery title="电视里的乌托邦" emoji="📺" cards={tvs}
           onAdd={(data) => setCardModal({ mode: "add", section: "tv", data: { id: "", ...data } })}
           onEdit={(card) => setCardModal({ mode: "edit", section: "tv", data: card })}
-          onDelete={(id) => handleCardDelete(id, "tv")} />
+          onDelete={(id) => handleCardDelete(id, "tv")}
+          onImageUpload={(id, url) => handleImageUpload(id, url, "tv")}
+          onImageDelete={(id) => handleImageDelete(id, "tv")} />
 
         <VintageGallery title="网络初现时的印记" emoji="📱" cards={nets}
           onAdd={(data) => setCardModal({ mode: "add", section: "net", data: { id: "", ...data } })}
           onEdit={(card) => setCardModal({ mode: "edit", section: "net", data: card })}
-          onDelete={(id) => handleCardDelete(id, "net")} />
+          onDelete={(id) => handleCardDelete(id, "net")}
+          onImageUpload={(id, url) => handleImageUpload(id, url, "net")}
+          onImageDelete={(id) => handleImageDelete(id, "net")} />
       </section>
 
       {/* ===== 展厅二：荣耀之路 ===== */}
@@ -1025,6 +1151,47 @@ const MuseumPage: React.FC = () => {
         .museum-delete-btn { background: ${VINTAGE_DELETE_HOVER}; color: #fff; }
         .museum-delete-btn:hover { background: ${VINTAGE_DELETE}; animation: shake 0.3s ease-in-out; }
         @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-2px) rotate(-5deg); } 75% { transform: translateX(2px) rotate(5deg); } }
+
+        /* 上传按钮 */
+        .museum-upload-btn {
+          width: 28px; height: 28px; border: none; border-radius: 50%;
+          font-size: 13px; cursor: pointer; display: flex; align-items: center; justify-content: center;
+          box-shadow: 0 2px 8px rgba(0,0,0,0.25); transition: all 0.2s ease;
+          background: ${VINTAGE_LINK}; color: #fff;
+        }
+        .museum-upload-btn:hover { background: ${VINTAGE_BROWN}; transform: scale(1.1); }
+
+        /* 卡片图片 */
+        .vintage-card-img {
+          width: 48px; height: 48px; object-fit: cover; border-radius: 8px;
+          border: 2px solid ${VINTAGE_LINK};
+          background: #f5f0e5;
+          filter: sepia(0.12) contrast(1.05);
+          box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+        }
+
+        /* 拖拽上传指示器 */
+        .vintage-drag-overlay {
+          display: flex; flex-direction: column; align-items: center; justify-content: center;
+          width: 48px; height: 48px; border-radius: 8px;
+          background: rgba(212,175,55,0.15); border: 2px dashed #D4AF37;
+          font-size: 10px; color: ${VINTAGE_TEXT_LIGHT};
+        }
+
+        /* 上传中旋转动画 */
+        .vintage-upload-loading {
+          width: 48px; height: 48px; border-radius: 8px;
+          background: rgba(245,240,229,0.9); border: 2px solid ${VINTAGE_LINK}60;
+          display: flex; align-items: center; justify-content: center;
+        }
+        .vintage-spin {
+          font-size: 28px; display: inline-block;
+          animation: vintage-spin 1s linear infinite;
+        }
+        @keyframes vintage-spin {
+          from { transform: rotate(0deg); }
+          to { transform: rotate(360deg); }
+        }
 
         .vintage-card-content { padding: 52px 20px 20px; display: flex; flex-direction: column; gap: 14px; }
         .vintage-card-icon { font-size: 36px; text-align: center; filter: grayscale(0.2); opacity: 0.85; }

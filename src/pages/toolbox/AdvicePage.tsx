@@ -211,6 +211,7 @@ const AdvicePage: React.FC = () => {
       const decoder = new TextDecoder("utf-8");
       let receivedText = "";
 
+      // 持续读取数据
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
@@ -218,10 +219,14 @@ const AdvicePage: React.FC = () => {
         const chunk = decoder.decode(value, { stream: true });
         receivedText += chunk;
 
-        setReply(receivedText);
-
-        // 打字机速度控制
-        await new Promise((resolve) => setTimeout(resolve, 20));
+        // 逐字渲染循环：每次收到新 chunk 后，从头到尾逐字显示
+        let currentDisplayText = "";
+        for (let i = 0; i <= receivedText.length; i++) {
+          currentDisplayText = receivedText.substring(0, i);
+          setReply(currentDisplayText);
+          // 控制打字速度，数字越小越快
+          await new Promise((resolve) => setTimeout(resolve, 40));
+        }
       }
     } catch (error) {
       if (error instanceof DOMException && error.name === "AbortError") return;

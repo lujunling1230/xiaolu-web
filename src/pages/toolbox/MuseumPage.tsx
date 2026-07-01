@@ -74,37 +74,37 @@ interface HonorItem {
 const DEFAULT_BGMS: VintageCard[] = [
   { id: "bgm-2002", year: "2002", title: "刀郎《2002年的第一场雪》", description: "当年大街小巷都在放的歌，是刻在 DNA 里的旋律。", imageUrl: "/images/bgm-2002-daolang.jpg" },
   { id: "bgm-2003", year: "2003", title: "周杰伦《稻香》", description: `前奏的蟋蟀声一响，就仿佛回到了那个无忧无虑的夏天，相信"回家吧，回到最初的美好"。`, imageUrl: "/images/bgm-2003-jay.jpg" },
-  { id: "bgm-2004", year: "2004", title: "S.H.E《中国话》", description: `"全世界都在学中国话"，这首歌的旋律一响，三个女孩的身影就浮现在眼前。` },
+  { id: "bgm-2004", year: "2004", title: "S.H.E《中国话》", description: `"全世界都在学中国话"，这首歌的旋律一响，三个女孩的身影就浮现在眼前。`, imageUrl: "/images/bgm-2004-she.jpg" },
   { id: "bgm-2005", year: "2005", title: "王心凌《那年夏天宁静的海》", description: "甜心教主的歌，总是伴随着偶像剧里又傻又可爱的画面，唱进很多人的心里。", imageUrl: "/images/bgm-2005-cyndi.jpg" },
   { id: "bgm-2006a", year: "2006", title: "孙燕姿《我怀念的》", description: "每次听到，都会有不一样的感悟，是争吵后想要爱你的冲动，还是无话不说的从前？", imageUrl: "/images/bgm-2006-stefanie.jpg" },
-  { id: "bgm-2006b", year: "2006", title: "沈建祥《形容》", description: "像是那灰色天空中的小雨，下下停停，不动声色淋湿土地。有些情绪不必言说，全在眼神与长发里，那是青春最细腻的注脚。" },
+  { id: "bgm-2006b", year: "2006", title: "沈建祥《形容》", description: "像是那灰色天空中的小雨，下下停停，不动声色淋湿土地。有些情绪不必言说，全在眼神与长发里，那是青春最细腻的注脚。", imageUrl: "/images/bgm-2006b-shenjianxiang.jpg" },
   { id: "bgm-2007", year: "2007", title: "梁静茹《崇拜》", description: `经典的"梁式情歌"，打动了多少年轻女孩的心，纯粹又悲伤。`, imageUrl: "/images/bgm-2007-fishleong.jpg" },
-  { id: "bgm-2008", year: "2008", title: "五月天《倔强》", description: `"我和我最后的倔强，握紧双手绝对不放"，是青春里最热血的口号。` },
-  { id: "bgm-2011a", year: "2011", title: "陈奕迅《十年》", description: "一首歌的时间，仿佛经历了一场漫长的告别，教会我们成长。" },
-  { id: "bgm-2011b", year: "2011", title: "林宥嘉《想自由》", description: "就像被困住的野兽，在摩天大楼里渴求自由。一路嗅着追着美梦，哪怕跌得再重，也不觉得痛，只觉得空。" },
-  { id: "bgm-2015", year: "2015", title: "陈楚生《那个远方》", description: "萦绕着发烫的梦想，就奋不顾身撑起手掌。那个叫做流浪的远方，到不了也念念不忘，是青春里最倔强的冲锋号。" },
-  { id: "bgm-2022", year: "2022", title: "吴宇恒《失重旅行》", description: "关掉无用的思考，摆脱手机的烦扰。在月光与微风中摇啊摇，这是一场没有重力、也没有束缚的都市夜游。" },
+  { id: "bgm-2008", year: "2008", title: "五月天《倔强》", description: `"我和我最后的倔强，握紧双手绝对不放"，是青春里最热血的口号。`, imageUrl: "/images/bgm-2008-mayday.jpg" },
+  { id: "bgm-2011a", year: "2011", title: "陈奕迅《十年》", description: "一首歌的时间，仿佛经历了一场漫长的告别，教会我们成长。", imageUrl: "/images/bgm-2011a-eason.jpg" },
+  { id: "bgm-2011b", year: "2011", title: "林宥嘉《想自由》", description: "就像被困住的野兽，在摩天大楼里渴求自由。一路嗅着追着美梦，哪怕跌得再重，也不觉得痛，只觉得空。", imageUrl: "/images/bgm-2011b-yoga.jpg" },
+  { id: "bgm-2015", year: "2015", title: "陈楚生《那个远方》", description: "萦绕着发烫的梦想，就奋不顾身撑起手掌。那个叫做流浪的远方，到不了也念念不忘，是青春里最倔强的冲锋号。", imageUrl: "/images/bgm-2015-chenchusheng.jpg" },
+  { id: "bgm-2022", year: "2022", title: "吴宇恒《失重旅行》", description: "关掉无用的思考，摆脱手机的烦扰。在月光与微风中摇啊摇，这是一场没有重力、也没有束缚的都市夜游。", imageUrl: "/images/bgm-2022-wuyuheng.jpg" },
 ];
 
 const DEFAULT_TVS: VintageCard[] = [
   { id: "tv-1999", year: "1999", title: "《还珠格格》（重播巅峰）", description: `每年寒暑假的必备经典，小燕子的古灵精怪和"当"的歌声，是几代人的共同记忆。`, imageUrl: "/images/tv-1999-huanzhugege.jpg" },
   { id: "tv-2005a", year: "2005", title: "《家有儿女》", description: "刘星、夏雪、夏雨一家的欢乐日常，是童年最温暖的背景音。", imageUrl: "/images/tv-2005-jiayouernv.jpg" },
   { id: "tv-2005b", year: "2005", title: "《仙剑奇侠传》", description: "李逍遥和赵灵儿的仙侠梦，配上《杀破狼》和《六月的雨》，是无数人的意难平。", imageUrl: "/images/tv-2005-xianjian.jpg" },
-  { id: "tv-2005c", year: "2005", title: "《恶作剧之吻》", description: "袁湘琴和江直树的故事，让每个女孩都幻想过自己的白马王子。" },
+  { id: "tv-2005c", year: "2005", title: "《恶作剧之吻》", description: "袁湘琴和江直树的故事，让每个女孩都幻想过自己的白马王子。", imageUrl: "/images/tv-2005c-kiss.jpg" },
   { id: "tv-2006", year: "2006", title: "《武林外传》", description: "同福客栈的屋顶，藏着江湖最柔软的角落。一群不靠谱的人，说着最扎心的话，成了我们青春里最治愈的避风港。", imageUrl: "/images/tv-2006-wulin.jpg" },
-  { id: "tv-2010", year: "2010", title: "《新三国演义》", description: "烽火连天的不仅是赤壁的火，还有那些英雄辈出的梦。桃园结义的酒，至今还在历史的风烟里温热。" },
-  { id: "tv-2013", year: "2013", title: "《咱们结婚吧》", description: "大龄未婚的焦虑，被一碗热汤和一句'咱们结婚吧'悄悄融化。爱情或许会迟到，但绝不会缺席。" },
-  { id: "tv-2014", year: "2014", title: "《来自星星的你》", description: `引爆全民追剧热潮的韩剧，都敏俊和千颂伊让"我好像爱上你了"成了流行语。` },
-  { id: "tv-2016", year: "2016", title: "《欢乐颂》", description: "五个女孩，五种颜色，在城市的钢筋水泥里互相取暖。原来孤独的灵魂，也能找到共振的频率。" },
-  { id: "tv-2019", year: "2019", title: "《都挺好》", description: "原生家庭的刺，扎在每个成年人心里。苏家的故事，是一面镜子，照见我们自己与亲情的复杂和解。" },
-  { id: "tv-2022", year: "2022", title: "《人世间》", description: "五十年光阴流转，周家三代人的悲欢离合，就是一部中国老百姓的史诗。最平凡的烟火，往往最动人。" },
-  { id: "tv-2025", year: "2025", title: "《生万物》", description: "从泥土里长出的希望，是乡村振兴最美的画卷。杨幂的转型，让我们看到了女性在时代浪潮中的坚韧与温柔。" },
+  { id: "tv-2010", year: "2010", title: "《新三国演义》", description: "烽火连天的不仅是赤壁的火，还有那些英雄辈出的梦。桃园结义的酒，至今还在历史的风烟里温热。", imageUrl: "/images/tv-2010-sanguo.jpg" },
+  { id: "tv-2013", year: "2013", title: "《咱们结婚吧》", description: "大龄未婚的焦虑，被一碗热汤和一句'咱们结婚吧'悄悄融化。爱情或许会迟到，但绝不会缺席。", imageUrl: "/images/tv-2013-marry.jpg" },
+  { id: "tv-2014", year: "2014", title: "《来自星星的你》", description: `引爆全民追剧热潮的韩剧，都敏俊和千颂伊让"我好像爱上你了"成了流行语。`, imageUrl: "/images/tv-2014-star.jpg" },
+  { id: "tv-2016", year: "2016", title: "《欢乐颂》", description: "五个女孩，五种颜色，在城市的钢筋水泥里互相取暖。原来孤独的灵魂，也能找到共振的频率。", imageUrl: "/images/tv-2016-ode.jpg" },
+  { id: "tv-2019", year: "2019", title: "《都挺好》", description: "原生家庭的刺，扎在每个成年人心里。苏家的故事，是一面镜子，照见我们自己与亲情的复杂和解。", imageUrl: "/images/tv-2019-doujiahao.jpg" },
+  { id: "tv-2022", year: "2022", title: "《人世间》", description: "五十年光阴流转，周家三代人的悲欢离合，就是一部中国老百姓的史诗。最平凡的烟火，往往最动人。", imageUrl: "/images/tv-2022-renshijian.jpg" },
+  { id: "tv-2025", year: "2025", title: "《生万物》", description: "从泥土里长出的希望，是乡村振兴最美的画卷。杨幂的转型，让我们看到了女性在时代浪潮中的坚韧与温柔。", imageUrl: "/images/tv-2025-shengwanwu.jpg" },
 ];
 
 const DEFAULT_NETS: VintageCard[] = [
   { id: "net-1", year: "2005-2009", title: "QQ 空间与火星文", description: `每天精心挑选的 QQ 秀、非主流的伤感头像和满屏的火星文，是我们最初在网络上构建的"另一个世界"。` },
   { id: "net-2", year: "2004-2008", title: "Flash 小游戏", description: `办公室里偷偷玩的"黄金矿工"、"森林冰火人"，还有后来风靡全球的"愤怒的小鸟"和"地铁跑酷"，是青春里最摸鱼的黑历史。`, imageUrl: "/images/net-2005-goldminer.jpg" },
-  { id: "net-3", year: "2009-2012", title: "贴吧与论坛", description: `为了追星，在贴吧里疯狂刷帖，看同人文，分享资源，是第一批"网友"聚集地。` },
+  { id: "net-3", year: "2009-2012", title: "贴吧与论坛", description: `为了追星，在贴吧里疯狂刷帖，看同人文，分享资源，是第一批"网友"聚集地。`, imageUrl: "/images/net-2009-tieba.jpg" },
 ];
 
 const DEFAULT_HONORS: HonorItem[] = [

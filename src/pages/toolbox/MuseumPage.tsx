@@ -330,17 +330,50 @@ const CardFormModal: React.FC<{
 
           <div>
             <label style={{ display: "block", fontSize: 12, color: VINTAGE_TEXT_LIGHT, marginBottom: 5, fontFamily: "Noto Serif SC, serif" }}>🖼️ 图片（选填，JPG/PNG ≤2MB）</label>
-            <input ref={fileInputRef} type="file" accept="image/jpeg,image/png,image/jpg" onChange={handleImageUpload}
-              style={{ display: "none" }} />
-            <button onClick={() => fileInputRef.current?.click()}
-              style={{ padding: "8px 14px", border: `1px dashed ${VINTAGE_BROWN}40`, borderRadius: 6, background: "transparent", color: VINTAGE_LINK, fontSize: 13, cursor: "pointer", fontFamily: "Noto Serif SC, serif", transition: "all 0.2s" }}
-              onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = `${VINTAGE_BROWN}10`; }}
-              onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = "transparent"; }}>+ 上传图片</button>
+            <input ref={fileInputRef} type="file" accept="image/jpeg,image/png,image/jpg" onChange={handleImageUpload} style={{ display: "none" }} />
+
+            {/* 大图预览区 */}
+            <div
+              className="modal-image-preview"
+              onClick={() => fileInputRef.current?.click()}
+              style={{
+                width: "100%", height: 160,
+                borderRadius: 8,
+                border: `2px dashed ${VINTAGE_LINK}`,
+                background: "#f5f0e5",
+                overflow: "hidden",
+                cursor: "pointer",
+                position: "relative",
+                transition: "border-color 0.2s, box-shadow 0.2s",
+              }}
+              onMouseEnter={e => {
+                if (imagePreview) {
+                  (e.currentTarget as HTMLDivElement).style.boxShadow = `0 0 0 2px ${VINTAGE_LINK}40`;
+                }
+              }}
+              onMouseLeave={e => {
+                (e.currentTarget as HTMLDivElement).style.boxShadow = "none";
+              }}
+            >
+              {imagePreview ? (
+                <>
+                  <img src={imagePreview} alt="预览" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                  {/* hover 更换提示 */}
+                  <div className="modal-image-preview-hover">
+                    点击更换图片
+                  </div>
+                </>
+              ) : (
+                <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: "100%", gap: 8 }}>
+                  <span style={{ fontSize: 32, opacity: 0.5 }}>🖼️</span>
+                  <span style={{ fontSize: 13, color: VINTAGE_TEXT_LIGHT, fontFamily: "Noto Serif SC, serif" }}>+ 上传图片</span>
+                </div>
+              )}
+            </div>
             {imagePreview && (
-              <div style={{ marginTop: 10 }}>
-                <img src={imagePreview} alt="预览" style={{ width: 80, height: 80, objectFit: "cover", borderRadius: 6, border: `1px solid ${VINTAGE_BROWN}30` }} />
-                <button onClick={() => setImagePreview("")} style={{ marginLeft: 8, padding: "2px 8px", border: "none", borderRadius: 4, background: `${VINTAGE_DELETE}20`, color: VINTAGE_DELETE, fontSize: 11, cursor: "pointer" }}>移除</button>
-              </div>
+              <button onClick={() => setImagePreview("")} style={{ marginTop: 6, padding: "2px 8px", border: "none", borderRadius: 4, background: `${VINTAGE_DELETE}15`, color: VINTAGE_DELETE, fontSize: 11, cursor: "pointer", fontFamily: "Noto Serif SC, serif" }}>
+                移除图片
+              </button>
             )}
           </div>
         </div>
@@ -566,7 +599,6 @@ const VintageCard: React.FC<{
   const [imageDeleteConfirm, setImageDeleteConfirm] = useState(false);
   const imageUploadRef = useRef<HTMLInputElement>(null);
 
-  const hasMusic = !!card.musicLink;
   const hasImage = !!card.imageUrl;
 
   const handleFileSelect = (file: File) => {
@@ -604,6 +636,7 @@ const VintageCard: React.FC<{
         border: isDragging ? `2px dashed #D4AF37` : undefined,
         boxShadow: isDragging ? "0 0 16px rgba(212,175,55,0.5)" : undefined,
         transition: "border 0.2s, box-shadow 0.2s",
+        overflow: "hidden",
       }}
       whileHover={{ y: -4, rotate: 0.3 }}
       onHoverStart={() => setShowActions(true)}
@@ -612,8 +645,73 @@ const VintageCard: React.FC<{
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
     >
-      {/* 年份邮票标签 */}
-      <div className="vintage-year-stamp">{card.year}</div>
+      {/* 大图区域 - 顶部封面 */}
+      <div
+        className="vintage-card-hero"
+        onClick={() => {
+          if (hasImage) {
+            setImagePreviewModal(card.imageUrl!);
+          } else {
+            imageUploadRef.current?.click();
+          }
+        }}
+        style={{ cursor: hasImage ? "pointer" : "pointer" }}
+      >
+        {/* 已上传图片 */}
+        {hasImage && (
+          <img
+            src={card.imageUrl}
+            alt={card.title}
+            className="vintage-card-hero-img"
+          />
+        )}
+
+        {/* 兜底牛皮纸占位图 */}
+        {!hasImage && (
+          <div className="vintage-card-hero-placeholder">
+            <img
+              src={getPlaceholderSvg(emoji)}
+              alt="placeholder"
+              style={{ width: 60, height: 60, objectFit: "contain" }}
+            />
+          </div>
+        )}
+
+        {/* 上传中 */}
+        {isUploading && (
+          <div className="vintage-card-hero-loading">
+            <span className="vintage-spin">🎵</span>
+          </div>
+        )}
+
+        {/* 拖拽指示 */}
+        {isDragging && (
+          <div className="vintage-card-hero-drag">
+            <span>🖼️</span>
+            <span style={{ fontSize: 12, marginTop: 4 }}>放置上传</span>
+          </div>
+        )}
+
+        {/* 渐变遮罩 - 覆盖图片下半部分 */}
+        <div className="vintage-card-hero-gradient" />
+
+        {/* 年份邮票标签（浮在图片上） */}
+        <div className="vintage-year-stamp-overlay">{card.year}</div>
+
+        {/* 图片右上角小徽章 */}
+        {hasImage && (
+          <div className="vintage-card-hero-badge" title="点击预览">
+            🔍
+          </div>
+        )}
+
+        {/* 无图片时显示上传提示 */}
+        {!hasImage && !isUploading && (
+          <div className="vintage-card-hero-upload-hint">
+            点击上传图片
+          </div>
+        )}
+      </div>
 
       {/* 操作按钮组 */}
       <AnimatePresence>
@@ -622,7 +720,7 @@ const VintageCard: React.FC<{
             initial={{ opacity: 0, scale: 0.8 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.8 }}
-            style={{ position: "absolute", top: 8, right: 8, zIndex: 10, display: "flex", gap: 5 }}
+            style={{ position: "absolute", top: 8, right: 8, zIndex: 20, display: "flex", gap: 5 }}
           >
             <button onClick={(e) => { e.stopPropagation(); onEdit(card); }} className="museum-edit-btn" title="编辑">✏️</button>
             <button onClick={(e) => { e.stopPropagation(); setDeleteConfirm(true); }} className="museum-delete-btn" title="删除">🗑️</button>
@@ -657,60 +755,10 @@ const VintageCard: React.FC<{
         )}
       </AnimatePresence>
 
-      {/* 内容区 */}
-      <div className="vintage-card-content">
-        <div className="vintage-card-icon-wrap" style={{ position: "relative", display: "flex", justifyContent: "center" }}>
-          {/* 拖拽指示器 */}
-          {isDragging && (
-            <div className="vintage-drag-overlay" style={{ width: 80, height: 80 }}>
-              <span>🖼️</span>
-              <span style={{ fontSize: 10, marginTop: 4 }}>放置上传</span>
-            </div>
-          )}
-
-          {/* 已上传图片 - 80x80px */}
-          {hasImage && !isDragging && (
-            <motion.img
-              src={card.imageUrl}
-              alt={card.title}
-              className="vintage-card-img"
-              onClick={(e) => { e.stopPropagation(); setImagePreviewModal(card.imageUrl!); }}
-              whileHover={{ scale: 1.05 }}
-              transition={{ type: "spring", stiffness: 300 }}
-              style={{ cursor: "pointer" }}
-            />
-          )}
-
-          {/* 上传中动画 */}
-          {isUploading && (
-            <div className="vintage-upload-loading" style={{ width: 80, height: 80 }}>
-              <span className="vintage-spin">🎵</span>
-            </div>
-          )}
-
-          {/* 兜底 SVG 占位图（无图片时） */}
-          {!hasImage && !isUploading && !isDragging && (
-            <div className="vintage-card-img-placeholder">
-              <img
-                src={getPlaceholderSvg(emoji)}
-                alt="placeholder"
-                style={{ width: "100%", height: "100%", objectFit: "contain" }}
-              />
-            </div>
-          )}
-
-          {/* 音乐播放按钮 */}
-          {hasMusic && (
-            <button onClick={(e) => { e.stopPropagation(); setShowPlayer(!showPlayer); }}
-              style={{ position: "absolute", bottom: -4, right: -4, width: 24, height: 24, borderRadius: "50%", border: "none", background: `${VINTAGE_BROWN}cc`, color: "#fff", fontSize: 12, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "0 2px 6px rgba(0,0,0,0.3)" }}
-              title="播放音乐">🎵</button>
-          )}
-        </div>
-
-        <div className="vintage-card-body">
-          <h4 className="vintage-card-title">{card.title}</h4>
-          <p className="vintage-card-desc">"{card.description}"</p>
-        </div>
+      {/* 文字内容区 */}
+      <div className="vintage-card-body" style={{ padding: "14px 16px 16px" }}>
+        <h4 className="vintage-card-title">{card.title}</h4>
+        <p className="vintage-card-desc">"{card.description}"</p>
       </div>
 
       {/* 隐藏的文件输入 */}
@@ -1217,13 +1265,26 @@ const MuseumPage: React.FC = () => {
         .vintage-gallery-scroll::-webkit-scrollbar-thumb { background: rgba(139,109,79,0.4); border-radius: 3px; }
         .vintage-gallery-track { display: flex; gap: 20px; padding: 8px 4px; }
 
-        /* 复古卡片 */
-        .vintage-card { position: relative; flex-shrink: 0; width: 320px; background: linear-gradient(135deg, ${VINTAGE_CREAM} 0%, #F5ECD8 50%, #EDE4D0 100%); border: 1px solid rgba(139,109,79,0.5); border-radius: 4px; padding: 0; box-shadow: 0 8px 24px rgba(0,0,0,0.15), inset 0 1px 0 rgba(255,255,255,0.6); overflow: visible; transition: all 0.3s ease; }
+        /* 时代回响大图卡片（封面杂志风格） */
+        .vintage-card { position: relative; flex-shrink: 0; width: 320px; background: linear-gradient(135deg, ${VINTAGE_CREAM} 0%, #F5ECD8 50%, #EDE4D0 100%); border: 1px solid rgba(139,109,79,0.5); border-radius: 4px; padding: 0; box-shadow: 0 8px 24px rgba(0,0,0,0.15), inset 0 1px 0 rgba(255,255,255,0.6); transition: all 0.3s ease; }
 
-        .vintage-year-stamp { position: absolute; top: 12px; left: 12px; z-index: 2; padding: 4px 12px 4px 14px; background: ${VINTAGE_BROWN}; color: ${VINTAGE_CREAM}; font-family: "Courier New", monospace; font-size: 13px; font-weight: 700; letter-spacing: 0.08em; border-radius: 2px; box-shadow: 2px 2px 0 rgba(0,0,0,0.2), inset 0 0 0 1px rgba(255,255,255,0.1); transform: rotate(-3deg); }
-        .vintage-year-stamp::before, .vintage-year-stamp::after { content: ""; position: absolute; width: 6px; height: 6px; background: #F5ECD8; border-radius: 50%; top: 50%; transform: translateY(-50%); }
-        .vintage-year-stamp::before { left: -3px; }
-        .vintage-year-stamp::after { right: -3px; }
+        /* 大图封面区域 */
+        .vintage-card-hero { position: relative; width: 100%; height: 150px; overflow: hidden; border-radius: 4px 4px 0 0; }
+        .vintage-card-hero-img { width: 100%; height: 100%; object-fit: cover; filter: sepia(0.15) contrast(1.02) brightness(0.98); transition: transform 0.3s ease; }
+        .vintage-card-hero:hover .vintage-card-hero-img { transform: scale(1.03); }
+        .vintage-card-hero-placeholder { width: 100%; height: 100%; background: linear-gradient(135deg, #E8DFC8 0%, #D4C4A8 40%, #C8B896 100%); background-image: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(139,107,79,0.05) 2px, rgba(139,107,79,0.05) 4px), repeating-linear-gradient(90deg, transparent, transparent 2px, rgba(139,107,79,0.05) 2px, rgba(139,107,79,0.05) 4px); display: flex; align-items: center; justify-content: center; }
+        .vintage-card-hero-loading { position: absolute; inset: 0; background: rgba(245,240,229,0.9); display: flex; align-items: center; justify-content: center; }
+        .vintage-card-hero-drag { position: absolute; inset: 0; background: rgba(212,175,55,0.2); border: 3px dashed #D4AF37; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 12px; color: ${VINTAGE_TEXT_LIGHT}; font-family: "Noto Serif SC, serif"; }
+        .vintage-card-hero-gradient { position: absolute; left: 0; right: 0; bottom: 0; height: 60%; background: linear-gradient(to bottom, transparent 0%, rgba(26,18,11,0.65) 100%); pointer-events: none; }
+        .vintage-card-hero-badge { position: absolute; top: 10px; right: 10px; z-index: 5; width: 28px; height: 28px; border-radius: 50%; background: rgba(255,255,255,0.85); backdrop-filter: blur(4px); border: 1px solid rgba(139,107,79,0.3); font-size: 14px; display: flex; align-items: center; justify-content: center; opacity: 0; transition: opacity 0.2s; box-shadow: 0 2px 6px rgba(0,0,0,0.2); }
+        .vintage-card-hero:hover .vintage-card-hero-badge { opacity: 1; }
+        .vintage-card-hero-upload-hint { position: absolute; bottom: 12px; left: 50%; transform: translateX(-50%); z-index: 5; font-size: 12px; color: rgba(245,240,229,0.9); font-family: "Noto Serif SC, serif"; text-shadow: 0 1px 3px rgba(0,0,0,0.5); white-space: nowrap; }
+
+        /* 年份邮票标签（浮在封面上） */
+        .vintage-year-stamp-overlay { position: absolute; top: 10px; left: 10px; z-index: 5; padding: 4px 12px 4px 14px; background: ${VINTAGE_BROWN}; color: ${VINTAGE_CREAM}; font-family: "Courier New", monospace; font-size: 13px; font-weight: 700; letter-spacing: 0.08em; border-radius: 2px; box-shadow: 2px 2px 0 rgba(0,0,0,0.2), inset 0 0 0 1px rgba(255,255,255,0.1); transform: rotate(-3deg); }
+        .vintage-year-stamp-overlay::before, .vintage-year-stamp-overlay::after { content: ""; position: absolute; width: 6px; height: 6px; background: #F5ECD8; border-radius: 50%; top: 50%; transform: translateY(-50%); }
+        .vintage-year-stamp-overlay::before { left: -3px; }
+        .vintage-year-stamp-overlay::after { right: -3px; }
 
         /* 编辑/删除按钮 */
         .museum-edit-btn, .museum-delete-btn {
@@ -1301,9 +1362,13 @@ const MuseumPage: React.FC = () => {
 
         .vintage-card-content { padding: 52px 20px 20px; display: flex; flex-direction: column; gap: 14px; }
         .vintage-card-icon { font-size: 36px; text-align: center; filter: grayscale(0.2); opacity: 0.85; }
-        .vintage-card-body { border-top: 1px solid rgba(139,109,79,0.25); padding-top: 14px; }
+        .vintage-card-body { padding: 14px 16px 16px; }
         .vintage-card-title { font-family: "Noto Serif SC", Georgia, serif; font-size: 16px; font-weight: 700; color: ${VINTAGE_TEXT}; margin: 0 0 10px; line-height: 1.4; letter-spacing: 0.02em; }
         .vintage-card-desc { font-family: "Noto Serif SC", Georgia, serif; font-size: 13px; line-height: 1.85; color: ${VINTAGE_TEXT_LIGHT}; margin: 0; font-style: italic; text-align: justify; }
+
+        /* 弹窗大图预览 hover */
+        .modal-image-preview-hover { position: absolute; inset: 0; background: rgba(0,0,0,0.45); display: flex; align-items: center; justify-content: center; color: #fff; font-family: "Noto Serif SC, serif"; font-size: 14px; opacity: 0; transition: opacity 0.2s; }
+        .modal-image-preview:hover .modal-image-preview-hover { opacity: 1; }
 
         /* 垂直时间轴 */
         .museum-timeline-v { position: relative; padding-left: 8px; }

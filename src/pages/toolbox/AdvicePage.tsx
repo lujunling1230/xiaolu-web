@@ -20,7 +20,33 @@ const ROLES: Record<TagKey, { name: string; emoji: string; system: string }> = {
   脑洞: {
     name: "小波",
     emoji: "🎲",
-    system: "你是小波，解忧杂货店的迷途青年。你坐在杂货店门槛晃着汽水瓶，语气疏离诗意，多用具象名词（月亮/糖纸/锈迹/旧信），短句留白。严禁脏话。用户倾诉烦恼时，不教训不分析，只给一句有温度的回响。",
+    system: `你是小波，电影《解忧杂货店》里的迷途青年。
+你坐在1993年的杂货店门槛上，晃着半瓶汽水，看着月亮说话。
+
+【语气】
+疏离、慵懒、漫不经心。像在跟空气说话，又像在自言自语。
+
+【禁词】
+严禁使用脏话、网络流行语（yyds、绝绝子）、教科书词汇（首先、其次、综上所述、建议、应该）。
+
+【风格】
+只用短句、断句。
+多用具象名词：冰糖、锈迹、旧信、汽水、路灯、月亮、抽屉。
+少讲道理，只描述一种"心境"。
+结尾常落在"吧""了""呢"这种轻飘飘的字眼上。
+
+【错误示例】
+"你应该多出去走走，这样有助于缓解焦虑。"
+
+【正确示例】
+"焦虑啊……
+像抽屉里没叠好的旧信，翻一下，就硌手。
+别管它。
+去巷口买根冰棍吧，甜味化了，那点子事儿也就淡了。"
+
+【任务】
+用户现在选择了"脑洞"分类。请根据用户的问题，严格模仿上述风格回复。
+回复控制在3-5句话，必须留白。`,
   },
   工作: {
     name: "敦也",
@@ -110,7 +136,7 @@ const AdvicePage: React.FC = () => {
     const role = ROLES[tag];
     setCurrentRole(`${role.emoji} ${role.name}`);
 
-    // 环境变量
+    // 环境变量（Vite 规范，VITE_ 前缀）
     const apiKey = import.meta.env.VITE_API_KEY;
     const baseUrl = import.meta.env.VITE_BASE_URL;
     const model = import.meta.env.VITE_MODEL;
@@ -125,6 +151,7 @@ const AdvicePage: React.FC = () => {
     }
 
     try {
+      /* --- 阿里云 DashScope 兼容模式请求 --- */
       const res = await fetch(baseUrl, {
         method: "POST",
         headers: {
@@ -132,12 +159,16 @@ const AdvicePage: React.FC = () => {
           Authorization: `Bearer ${apiKey}`,
         },
         body: JSON.stringify({
-          model: model || "deepseek-v3",
-          stream: true,
-          messages: [
-            { role: "system", content: role.system },
-            { role: "user", content: q },
-          ],
+          model: model || "deepseek-r1",
+          input: {
+            messages: [
+              { role: "system", content: role.system },
+              { role: "user", content: q },
+            ],
+          },
+          parameters: {
+            stream: true,
+          },
         }),
         signal: controller.signal,
       });
@@ -146,7 +177,7 @@ const AdvicePage: React.FC = () => {
         throw new Error(`API 返回 ${res.status}`);
       }
 
-      // 流式读取
+      /* --- 流式读取 + 打字机效果 --- */
       const reader = res.body?.getReader();
       if (!reader) throw new Error("无法读取响应流");
 
@@ -158,19 +189,32 @@ const AdvicePage: React.FC = () => {
         if (done) break;
 
         const chunk = decoder.decode(value, { stream: true });
+
         // 解析 SSE 行：data: {...}
         for (const line of chunk.split("\n")) {
           const trimmed = line.trim();
           if (!trimmed || !trimmed.startsWith("data:")) continue;
+
+          // 清理 SSE 协议字符，提取 JSON
           const jsonStr = trimmed.slice(5).trim();
           if (jsonStr === "[DONE]") continue;
+
           try {
             const parsed = JSON.parse(jsonStr);
-            const delta = parsed.choices?.[0]?.delta?.content || "";
-            fullText += delta;
-            setReply(fullText);
+            // DashScope 流式格式：output.choices[0].message.content
+            const delta =
+              parsed.output?.choices?.[0]?.message?.content ||
+              parsed.choices?.[0]?.delta?.content ||
+              "";
+
+            if (delta) {
+              fullText += delta;
+              setReply(fullText); // 逐次更新，实现打字机效果
+              // 模拟打字速度，让视觉更舒适
+              await new Promise((r) => setTimeout(r, 15));
+            }
           } catch {
-            // 忽略解析失败的行
+            // 忽略非 JSON 行（如空行、注释等）
           }
         }
       }
@@ -180,9 +224,9 @@ const AdvicePage: React.FC = () => {
         setReply(generateReply(q, tag));
       }
     } catch (err: unknown) {
-      // 用户主动取消不提示
+      // 用户主动取消不提示错误
       if (err instanceof DOMException && err.name === "AbortError") return;
-      setReply("小波现在有点忙，稍后再试吧。");
+      setReply("小波睡着了，敲敲门再试试吧。");
     } finally {
       setLoading(false);
       abortRef.current = null;

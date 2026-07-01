@@ -28,12 +28,25 @@ function genId(): string {
   return `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 }
 
-function loadData<T>(key: string, fallback: T[]): T[] {
+function loadData<T extends { id: string; imageUrl?: string }>(key: string, fallback: T[]): T[] {
   try {
     const raw = localStorage.getItem(key);
     if (!raw) return fallback;
     const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) ? (parsed as T[]) : fallback;
+    if (!Array.isArray(parsed)) return fallback;
+    // 迁移：补全旧数据中缺少的 imageUrl
+    let migrated = false;
+    const merged = parsed.map((item: T) => {
+      const fb = fallback.find((f) => f.id === item.id);
+      if (fb && !item.imageUrl && fb.imageUrl) {
+        migrated = true;
+        return { ...item, imageUrl: fb.imageUrl };
+      }
+      return item;
+    });
+    // 同步回写 localStorage
+    if (migrated) saveData(key, merged);
+    return merged as T[];
   } catch {
     return fallback;
   }

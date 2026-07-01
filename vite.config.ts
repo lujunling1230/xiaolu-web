@@ -16,11 +16,11 @@ export default defineConfig({
         name: "解忧回信局",
         short_name: "解忧回信局",
         description: "治愈系问答空间 —— 像朋友写信一样回应你的疑惑",
-        theme_color: "#1a1a2e",
-        background_color: "#0f0f23",
-        display: "standalone",
-        start_url: "/",
+        start_url: "/toolbox/advice",
         scope: "/",
+        display: "standalone",
+        background_color: "#ffffff",
+        theme_color: "#4CAF50",
         icons: [
           {
             src: "/pwa-192x192.png",
@@ -31,12 +31,6 @@ export default defineConfig({
             src: "/pwa-512x512.png",
             sizes: "512x512",
             type: "image/png",
-          },
-          {
-            src: "/pwa-512x512.png",
-            sizes: "512x512",
-            type: "image/png",
-            purpose: "any maskable",
           },
         ],
       },

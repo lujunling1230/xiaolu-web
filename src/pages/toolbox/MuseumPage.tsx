@@ -72,11 +72,11 @@ interface HonorItem {
    默认数据
    ============================================================ */
 const DEFAULT_BGMS: VintageCard[] = [
-  { id: "bgm-2002", year: "2002", title: "刀郎《2002年的第一场雪》", description: "当年大街小巷都在放的歌，是刻在 DNA 里的旋律。" },
-  { id: "bgm-2003", year: "2003", title: "周杰伦《稻香》", description: `前奏的蟋蟀声一响，就仿佛回到了那个无忧无虑的夏天，相信"回家吧，回到最初的美好"。` },
+  { id: "bgm-2002", year: "2002", title: "刀郎《2002年的第一场雪》", description: "当年大街小巷都在放的歌，是刻在 DNA 里的旋律。", imageUrl: "/images/bgm-2002-daolang.jpg" },
+  { id: "bgm-2003", year: "2003", title: "周杰伦《稻香》", description: `前奏的蟋蟀声一响，就仿佛回到了那个无忧无虑的夏天，相信"回家吧，回到最初的美好"。`, imageUrl: "/images/bgm-2003-jay.jpg" },
   { id: "bgm-2004", year: "2004", title: "S.H.E《中国话》", description: `"全世界都在学中国话"，这首歌的旋律一响，三个女孩的身影就浮现在眼前。` },
   { id: "bgm-2005", year: "2005", title: "王心凌《那年夏天宁静的海》", description: "甜心教主的歌，总是伴随着偶像剧里又傻又可爱的画面，唱进很多人的心里。" },
-  { id: "bgm-2006a", year: "2006", title: "孙燕姿《我怀念的》", description: "每次听到，都会有不一样的感悟，是争吵后想要爱你的冲动，还是无话不说的从前？" },
+  { id: "bgm-2006a", year: "2006", title: "孙燕姿《我怀念的》", description: "每次听到，都会有不一样的感悟，是争吵后想要爱你的冲动，还是无话不说的从前？", imageUrl: "/images/bgm-2006-stefanie.jpg" },
   { id: "bgm-2006b", year: "2006", title: "沈建祥《形容》", description: "像是那灰色天空中的小雨，下下停停，不动声色淋湿土地。有些情绪不必言说，全在眼神与长发里，那是青春最细腻的注脚。" },
   { id: "bgm-2007", year: "2007", title: "梁静茹《崇拜》", description: `经典的"梁式情歌"，打动了多少年轻女孩的心，纯粹又悲伤。` },
   { id: "bgm-2008", year: "2008", title: "五月天《倔强》", description: `"我和我最后的倔强，握紧双手绝对不放"，是青春里最热血的口号。` },
@@ -87,7 +87,7 @@ const DEFAULT_BGMS: VintageCard[] = [
 ];
 
 const DEFAULT_TVS: VintageCard[] = [
-  { id: "tv-1999", year: "1999", title: "《还珠格格》（重播巅峰）", description: `每年寒暑假的必备经典，小燕子的古灵精怪和"当"的歌声，是几代人的共同记忆。` },
+  { id: "tv-1999", year: "1999", title: "《还珠格格》（重播巅峰）", description: `每年寒暑假的必备经典，小燕子的古灵精怪和"当"的歌声，是几代人的共同记忆。`, imageUrl: "/images/tv-1999-huanzhugege.jpg" },
   { id: "tv-2005a", year: "2005", title: "《家有儿女》", description: "刘星、夏雪、夏雨一家的欢乐日常，是童年最温暖的背景音。" },
   { id: "tv-2005b", year: "2005", title: "《仙剑奇侠传》", description: "李逍遥和赵灵儿的仙侠梦，配上《杀破狼》和《六月的雨》，是无数人的意难平。" },
   { id: "tv-2005c", year: "2005", title: "《恶作剧之吻》", description: "袁湘琴和江直树的故事，让每个女孩都幻想过自己的白马王子。" },

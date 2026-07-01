@@ -26,19 +26,19 @@ interface Quest {
 
 const STORAGE_KEY = "quest_log_data";
 const XP_PER_LEVEL = 100;
-// 各难度完成后获得的经验值
-const XP_REWARD: Record<Difficulty, number> = { easy: 15, normal: 30, hard: 50 };
+// 各难度完成后获得的经验值（风险越高、收益越高）
+const XP_REWARD: Record<Difficulty, number> = { easy: 10, normal: 60, hard: 100 };
 
 const DIFF_LABEL: Record<Difficulty, string> = {
-  easy: "及格线",
+  easy: "热身",
   normal: "常规",
   hard: "挑战",
 };
 
 const DIFF_COLOR: Record<Difficulty, string> = {
-  easy: "#34d399", // 柠檬绿
-  normal: "#60a5fa", // 电光蓝
-  hard: "#f472b6", // 霓虹粉
+  easy: "#4CAF50",   // 浅绿色
+  normal: "#FFC107", // 金黄色
+  hard: "#FF5722",   // 橙红色
 };
 
 /* ============================================================
@@ -99,7 +99,7 @@ const playCoinSound = () => {
     const now = ctx.currentTime;
     // 两段升频方波，模拟经典金币音 B5→E6
     [
-      { f: 988, t: 0 }, // B5
+      { f: 988, t: 0 },   // B5
       { f: 1319, t: 0.08 }, // E6
     ].forEach(({ f, t }) => {
       const osc = ctx.createOscillator();
@@ -165,13 +165,98 @@ const XpBar: React.FC<{ xp: number }> = ({ xp }) => {
 };
 
 /* ============================================================
-   子组件：任务项（含粒子爆炸）
+   子组件：编辑任务模态框
+   ============================================================ */
+const EditModal: React.FC<{
+  quest: Quest;
+  onSave: (updated: Quest) => void;
+  onClose: () => void;
+}> = ({ quest, onSave, onClose }) => {
+  const [text, setText] = useState(quest.text);
+  const [difficulty, setDifficulty] = useState<Difficulty>(quest.difficulty);
+
+  const canSave = text.trim().length > 0;
+
+  const handleSave = () => {
+    if (!canSave) return;
+    onSave({ ...quest, text: text.trim(), difficulty });
+  };
+
+  return (
+    <motion.div
+      className="quest-modal-overlay"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      onClick={onClose}
+    >
+      <motion.div
+        className="quest-modal quest-edit-modal"
+        initial={{ scale: 0.85, y: 30 }}
+        animate={{ scale: 1, y: 0 }}
+        exit={{ scale: 0.85, y: 30 }}
+        transition={{ type: "spring", stiffness: 200, damping: 18 }}
+        onClick={e => e.stopPropagation()}
+      >
+        <h3 className="quest-modal-title">编辑任务</h3>
+
+        <div className="quest-edit-form">
+          <div className="quest-edit-field">
+            <label className="quest-edit-label">任务描述</label>
+            <input
+              type="text"
+              value={text}
+              onChange={e => setText(e.target.value)}
+              className="quest-edit-input"
+              placeholder="输入任务内容..."
+              autoFocus
+            />
+          </div>
+
+          <div className="quest-edit-field">
+            <label className="quest-edit-label">挑战等级</label>
+            <div className="quest-edit-difficulty">
+              {(["easy", "normal", "hard"] as Difficulty[]).map(d => (
+                <button
+                  key={d}
+                  type="button"
+                  className={cn("quest-diff-option", difficulty === d && "quest-diff-option-active")}
+                  style={{
+                    borderColor: DIFF_COLOR[d],
+                    color: difficulty === d ? DIFF_COLOR[d] : "#9ca3af",
+                    background: difficulty === d ? `${DIFF_COLOR[d]}20` : "transparent",
+                  }}
+                  onClick={() => setDifficulty(d)}
+                >
+                  <span className="quest-diff-option-icon">
+                    {d === "easy" ? "🌱" : d === "normal" ? "⚔️" : "🔥"}
+                  </span>
+                  <span className="quest-diff-option-label">{DIFF_LABEL[d]}</span>
+                  <span className="quest-diff-option-xp">+{XP_REWARD[d]}分</span>
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        <div className="quest-edit-actions">
+          <button className="quest-edit-cancel" onClick={onClose}>取消</button>
+          <button className="quest-edit-save" onClick={handleSave} disabled={!canSave}>保存</button>
+        </div>
+      </motion.div>
+    </motion.div>
+  );
+};
+
+/* ============================================================
+   子组件：任务项（含粒子爆炸 + 编辑）
    ============================================================ */
 const QuestItem: React.FC<{
   quest: Quest;
   onComplete: (id: string) => void;
   onDelete: (id: string) => void;
-}> = ({ quest, onComplete, onDelete }) => {
+  onEdit: (quest: Quest) => void;
+}> = ({ quest, onComplete, onDelete, onEdit }) => {
   const [particles, setParticles] = useState<Particle[]>([]);
   const [exiting, setExiting] = useState(false);
   const [displayCountdown, setDisplayCountdown] = useState<number | undefined>(
@@ -261,12 +346,23 @@ const QuestItem: React.FC<{
             完成
           </button>
         )}
+        {!quest.completed && (
+          <button
+            type="button"
+            className="quest-btn-edit"
+            onClick={() => onEdit(quest)}
+            title="编辑任务"
+          >
+            ✏️
+          </button>
+        )}
         <button
           type="button"
           className="quest-btn-del"
           onClick={() => onDelete(quest.id)}
+          title="删除任务"
         >
-          ✕
+          🗑️
         </button>
       </div>
     </motion.li>
@@ -274,7 +370,7 @@ const QuestItem: React.FC<{
 };
 
 /* ============================================================
-   子组件：智能拆解 Modal
+   子组件：智能拆解 Modal（游戏化风险收益标签）
    ============================================================ */
 const BreakdownModal: React.FC<{
   text: string;
@@ -300,20 +396,34 @@ const BreakdownModal: React.FC<{
       <p className="quest-modal-ask">要不要拆解一下？</p>
 
       <div className="quest-modal-options">
-        <button className="quest-modal-opt" onClick={() => onPick("five")}>
+        {/* 选项一：先做 5 分钟 - 低风险低收益 */}
+        <button className="quest-modal-opt quest-modal-opt-easy" onClick={() => onPick("five")}>
           <span className="quest-modal-opt-icon">⏱️</span>
-          <span className="quest-modal-opt-label">先做 5 分钟</span>
-          <span className="quest-modal-opt-desc">倒计时自动完成</span>
+          <div className="quest-modal-opt-content">
+            <span className="quest-modal-opt-label">先做 5 分钟</span>
+            <span className="quest-modal-opt-desc">倒计时自动完成</span>
+          </div>
+          <span className="quest-modal-opt-xp quest-modal-opt-xp-green">+10分</span>
         </button>
-        <button className="quest-modal-opt" onClick={() => onPick("pass")}>
+
+        {/* 选项二：只要 60 分 - 中等风险中等收益 */}
+        <button className="quest-modal-opt quest-modal-opt-normal" onClick={() => onPick("pass")}>
           <span className="quest-modal-opt-icon">🎯</span>
-          <span className="quest-modal-opt-label">只要 60 分</span>
-          <span className="quest-modal-opt-desc">标为及格线，低难度</span>
+          <div className="quest-modal-opt-content">
+            <span className="quest-modal-opt-label">只要 60 分</span>
+            <span className="quest-modal-opt-desc">标为及格线，低难度</span>
+          </div>
+          <span className="quest-modal-opt-xp quest-modal-opt-xp-gold">目标: 60分</span>
         </button>
-        <button className="quest-modal-opt" onClick={() => onPick("direct")}>
+
+        {/* 选项三：直接挑战 - 高风险高收益 */}
+        <button className="quest-modal-opt quest-modal-opt-hard" onClick={() => onPick("direct")}>
           <span className="quest-modal-opt-icon">⚔️</span>
-          <span className="quest-modal-opt-label">直接挑战</span>
-          <span className="quest-modal-opt-desc">原样添加</span>
+          <div className="quest-modal-opt-content">
+            <span className="quest-modal-opt-label">直接挑战</span>
+            <span className="quest-modal-opt-desc">满分完成，原样添加</span>
+          </div>
+          <span className="quest-modal-opt-xp quest-modal-opt-xp-orange">满分挑战</span>
         </button>
       </div>
     </motion.div>
@@ -329,6 +439,8 @@ const QuestLogPage: React.FC = () => {
   const [input, setInput] = useState("");
   // 智能拆解：待处理的新任务文本
   const [pending, setPending] = useState<string | null>(null);
+  // 编辑任务
+  const [editingQuest, setEditingQuest] = useState<Quest | null>(null);
 
   // 持久化
   useEffect(() => {
@@ -347,7 +459,7 @@ const QuestLogPage: React.FC = () => {
     }
   }, [xp]);
 
-  // 完成回调（供 QuestItem 倒计时归零与点击完成共用）
+  // 完成回调
   const handleComplete = (id: string) => {
     setQuests((prev) => {
       const target = prev.find((q) => q.id === id);
@@ -360,6 +472,11 @@ const QuestLogPage: React.FC = () => {
 
   const handleDelete = (id: string) => {
     setQuests((prev) => prev.filter((q) => q.id !== id));
+  };
+
+  const handleEdit = (updated: Quest) => {
+    setQuests((prev) => prev.map(q => q.id === updated.id ? updated : q));
+    setEditingQuest(null);
   };
 
   const handleAdd = () => {
@@ -379,11 +496,11 @@ const QuestLogPage: React.FC = () => {
       completed: false,
     };
     if (mode === "five") {
-      base.difficulty = "normal";
+      base.difficulty = "easy";
       base.countdown = 300; // 5 分钟
       base.text = `${pending}（5分钟挑战）`;
     } else if (mode === "pass") {
-      base.difficulty = "easy";
+      base.difficulty = "normal";
       base.text = `${pending}（及格线）`;
     }
     setQuests((prev) => [base, ...prev]);
@@ -438,6 +555,7 @@ const QuestLogPage: React.FC = () => {
                   quest={q}
                   onComplete={handleComplete}
                   onDelete={handleDelete}
+                  onEdit={setEditingQuest}
                 />
               ))}
             </AnimatePresence>
@@ -471,6 +589,17 @@ const QuestLogPage: React.FC = () => {
       <AnimatePresence>
         {pending && (
           <BreakdownModal text={pending} onPick={handlePick} />
+        )}
+      </AnimatePresence>
+
+      {/* 编辑任务 Modal */}
+      <AnimatePresence>
+        {editingQuest && (
+          <EditModal
+            quest={editingQuest}
+            onSave={handleEdit}
+            onClose={() => setEditingQuest(null)}
+          />
         )}
       </AnimatePresence>
 
@@ -567,7 +696,7 @@ const QuestLogPage: React.FC = () => {
           margin-left: 8px; font-variant-numeric: tabular-nums;
           color: #fde047; font-weight: 700;
         }
-        .quest-actions { display: flex; gap: 8px; flex-shrink: 0; }
+        .quest-actions { display: flex; gap: 8px; flex-shrink: 0; align-items: center; }
         .quest-btn-complete {
           font-size: 13px; font-weight: 600; color: #059669;
           padding: 5px 14px; border-radius: 8px; border: none;
@@ -579,11 +708,18 @@ const QuestLogPage: React.FC = () => {
           transform: scale(1.08); box-shadow: 0 0 14px rgba(52, 211, 153, 0.6);
         }
         .quest-btn-complete:disabled { opacity: 0.5; }
-        .quest-btn-del {
-          font-size: 13px; color: #6b7280; background: none; border: none;
-          padding: 4px 6px; transition: color 0.2s ease;
+        .quest-btn-edit {
+          font-size: 13px; background: none; border: none;
+          padding: 5px 6px; transition: transform 0.2s ease, opacity 0.2s;
+          opacity: 0.6;
         }
-        .quest-btn-del:hover { color: #f87171; }
+        .quest-btn-edit:hover { opacity: 1; transform: scale(1.15); }
+        .quest-btn-del {
+          font-size: 13px; background: none; border: none;
+          padding: 5px 6px; transition: color 0.2s ease, opacity 0.2s;
+          opacity: 0.5;
+        }
+        .quest-btn-del:hover { color: #f87171; opacity: 1; }
 
         /* 粒子 */
         .quest-particle {
@@ -641,19 +777,90 @@ const QuestLogPage: React.FC = () => {
         .quest-modal-title { font-size: 17px; font-weight: 700; color: #fff; margin: 0 0 6px; }
         .quest-modal-sub { font-size: 14px; color: #fde047; margin: 0 0 4px; }
         .quest-modal-ask { font-size: 13px; color: #9ca3af; margin: 0 0 20px; }
-        .quest-modal-options { display: flex; flex-direction: column; gap: 10px; }
+
+        /* 智能拆解选项 - 游戏化风险收益标签 */
+        .quest-modal-options { display: flex; flex-direction: column; gap: 12px; }
         .quest-modal-opt {
-          display: flex; align-items: center; gap: 12px; text-align: left;
-          padding: 14px 16px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.1);
-          background: rgba(255,255,255,0.04); transition: background 0.2s ease, border-color 0.2s ease;
+          display: flex; align-items: center; gap: 14px; text-align: left;
+          padding: 16px 16px 16px 14px; border-radius: 14px;
+          border: 1px solid rgba(255,255,255,0.1);
+          background: rgba(255,255,255,0.04); transition: all 0.2s ease;
         }
-        .quest-modal-opt:hover { background: rgba(255,255,255,0.09); border-color: rgba(253, 224, 71, 0.4); }
-        .quest-modal-opt-icon { font-size: 22px; }
-        .quest-modal-opt-label { font-size: 14px; font-weight: 600; color: #f3f4f6; flex: 1; }
+        .quest-modal-opt:hover {
+          background: rgba(255,255,255,0.08);
+          border-color: rgba(255,255,255,0.2);
+          transform: translateX(4px);
+        }
+        .quest-modal-opt-easy:hover { border-color: rgba(76, 175, 80, 0.5); }
+        .quest-modal-opt-normal:hover { border-color: rgba(255, 193, 7, 0.5); }
+        .quest-modal-opt-hard:hover { border-color: rgba(255, 87, 34, 0.5); }
+
+        .quest-modal-opt-icon { font-size: 24px; flex-shrink: 0; }
+        .quest-modal-opt-content { flex: 1; display: flex; flex-direction: column; gap: 2px; }
+        .quest-modal-opt-label { font-size: 15px; font-weight: 600; color: #f3f4f6; }
         .quest-modal-opt-desc { font-size: 11px; color: #9ca3af; }
+
+        /* XP 标签 - 右侧居中 */
+        .quest-modal-opt-xp {
+          flex-shrink: 0; font-size: 12px; font-weight: 700;
+          padding: 4px 10px; border-radius: 4px;
+          letter-spacing: 0.02em;
+        }
+        .quest-modal-opt-xp-green {
+          background: rgba(76, 175, 80, 0.2); color: #4CAF50;
+          border: 1px solid rgba(76, 175, 80, 0.4);
+        }
+        .quest-modal-opt-xp-gold {
+          background: rgba(255, 193, 7, 0.2); color: #FFC107;
+          border: 1px solid rgba(255, 193, 7, 0.4);
+        }
+        .quest-modal-opt-xp-orange {
+          background: rgba(255, 87, 34, 0.2); color: #FF5722;
+          border: 1px solid rgba(255, 87, 34, 0.4);
+        }
+
+        /* 编辑 Modal */
+        .quest-edit-modal { max-width: 480px; }
+        .quest-edit-form { display: flex; flex-direction: column; gap: 20px; margin-bottom: 24px; }
+        .quest-edit-field { display: flex; flex-direction: column; gap: 8px; }
+        .quest-edit-label { font-size: 12px; color: #9ca3af; font-weight: 500; letter-spacing: 0.05em; }
+        .quest-edit-input {
+          padding: 12px 14px; border-radius: 10px;
+          background: rgba(255,255,255,0.06); border: 1px solid rgba(255,255,255,0.12);
+          color: #fff; font-size: 14px; font-family: inherit; outline: none;
+          transition: border-color 0.2s ease;
+        }
+        .quest-edit-input:focus { border-color: #fde047; }
+        .quest-edit-input::placeholder { color: #6b7280; }
+        .quest-edit-difficulty { display: flex; gap: 10px; }
+        .quest-diff-option {
+          flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px;
+          padding: 12px 8px; border-radius: 10px; border: 1px solid;
+          font-size: 12px; transition: all 0.2s ease;
+        }
+        .quest-diff-option-icon { font-size: 20px; }
+        .quest-diff-option-label { font-weight: 600; }
+        .quest-diff-option-xp { font-size: 11px; opacity: 0.8; }
+        .quest-edit-actions { display: flex; gap: 10px; }
+        .quest-edit-cancel {
+          flex: 1; padding: 11px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.12);
+          background: transparent; color: #9ca3af; font-size: 14px; font-family: inherit;
+          cursor: pointer; transition: all 0.2s ease;
+        }
+        .quest-edit-cancel:hover { background: rgba(255,255,255,0.05); color: #f3f4f6; }
+        .quest-edit-save {
+          flex: 1; padding: 11px; border-radius: 10px; border: none;
+          background: linear-gradient(135deg, #fde047, #f59e0b); color: #06281f;
+          font-size: 14px; font-weight: 600; font-family: inherit;
+          cursor: pointer; transition: all 0.2s ease;
+        }
+        .quest-edit-save:hover:not(:disabled) { transform: scale(1.02); }
+        .quest-edit-save:disabled { opacity: 0.5; cursor: not-allowed; }
 
         @media (max-width: 480px) {
           .quest-modal-opt-desc { display: none; }
+          .quest-modal-opt-xp { font-size: 11px; padding: 3px 8px; }
+          .quest-edit-difficulty { flex-direction: column; }
         }
       `}</style>
     </div>

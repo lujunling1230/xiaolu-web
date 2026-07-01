@@ -27,18 +27,18 @@ interface Quest {
 const STORAGE_KEY = "quest_log_data";
 const XP_PER_LEVEL = 100;
 // 各难度完成后获得的经验值（风险越高、收益越高）
-const XP_REWARD: Record<Difficulty, number> = { easy: 10, normal: 60, hard: 100 };
+const XP_REWARD: Record<Difficulty, number> = { easy: 5, normal: 60, hard: 100 };
 
 const DIFF_LABEL: Record<Difficulty, string> = {
-  easy: "热身",
-  normal: "常规",
-  hard: "挑战",
+  easy: "先做 5 分钟",
+  normal: "只要 60 分",
+  hard: "直接挑战",
 };
 
 const DIFF_COLOR: Record<Difficulty, string> = {
-  easy: "#4CAF50",   // 浅绿色
-  normal: "#FFC107", // 金黄色
-  hard: "#FF5722",   // 橙红色
+  easy: "#4CAF50",   // 绿色
+  normal: "#FFC107", // 黄色
+  hard: "#F44336",   // 红色
 };
 
 /* ============================================================
@@ -216,25 +216,68 @@ const EditModal: React.FC<{
           <div className="quest-edit-field">
             <label className="quest-edit-label">挑战等级</label>
             <div className="quest-edit-difficulty">
-              {(["easy", "normal", "hard"] as Difficulty[]).map(d => (
-                <button
-                  key={d}
-                  type="button"
-                  className={cn("quest-diff-option", difficulty === d && "quest-diff-option-active")}
-                  style={{
-                    borderColor: DIFF_COLOR[d],
-                    color: difficulty === d ? DIFF_COLOR[d] : "#9ca3af",
-                    background: difficulty === d ? `${DIFF_COLOR[d]}20` : "transparent",
-                  }}
-                  onClick={() => setDifficulty(d)}
-                >
-                  <span className="quest-diff-option-icon">
-                    {d === "easy" ? "🌱" : d === "normal" ? "⚔️" : "🔥"}
-                  </span>
-                  <span className="quest-diff-option-label">{DIFF_LABEL[d]}</span>
-                  <span className="quest-diff-option-xp">+{XP_REWARD[d]}分</span>
-                </button>
-              ))}
+              {/* 先做 5 分钟 */}
+              <button
+                type="button"
+                className={cn("quest-edit-diff-btn", difficulty === "easy" && "quest-edit-diff-btn-active")}
+                style={difficulty === "easy" ? {
+                  borderColor: "#4CAF50",
+                  background: "#1B2A22",
+                  boxShadow: "0 0 8px #4CAF50",
+                  color: "#fff",
+                } : {
+                  borderColor: "#4CAF50",
+                  background: "transparent",
+                  color: "#9ca3af",
+                }}
+                onClick={() => setDifficulty("easy")}
+              >
+                <span className="quest-edit-diff-icon">🕒</span>
+                <span className="quest-edit-diff-label">先做 5 分钟</span>
+                <span className="quest-edit-diff-xp" style={{ color: "#4CAF50" }}>+5分</span>
+              </button>
+
+              {/* 只要 60 分 */}
+              <button
+                type="button"
+                className={cn("quest-edit-diff-btn", difficulty === "normal" && "quest-edit-diff-btn-active")}
+                style={difficulty === "normal" ? {
+                  borderColor: "#FFC107",
+                  background: "#1F2A33",
+                  boxShadow: "0 0 8px #FFC107",
+                  color: "#fff",
+                } : {
+                  borderColor: "#FFC107",
+                  background: "transparent",
+                  color: "#9ca3af",
+                }}
+                onClick={() => setDifficulty("normal")}
+              >
+                <span className="quest-edit-diff-icon">🎯</span>
+                <span className="quest-edit-diff-label">只要 60 分</span>
+                <span className="quest-edit-diff-xp" style={{ color: "#FFC107" }}>+60分</span>
+              </button>
+
+              {/* 直接挑战 */}
+              <button
+                type="button"
+                className={cn("quest-edit-diff-btn", difficulty === "hard" && "quest-edit-diff-btn-active")}
+                style={difficulty === "hard" ? {
+                  borderColor: "#F44336",
+                  background: "#2A2222",
+                  boxShadow: "0 0 8px #F44336",
+                  color: "#fff",
+                } : {
+                  borderColor: "#F44336",
+                  background: "transparent",
+                  color: "#9ca3af",
+                }}
+                onClick={() => setDifficulty("hard")}
+              >
+                <span className="quest-edit-diff-icon">⚔️</span>
+                <span className="quest-edit-diff-label">直接挑战</span>
+                <span className="quest-edit-diff-xp" style={{ color: "#F44336" }}>+100分</span>
+              </button>
             </div>
           </div>
         </div>
@@ -403,7 +446,7 @@ const BreakdownModal: React.FC<{
             <span className="quest-modal-opt-label">先做 5 分钟</span>
             <span className="quest-modal-opt-desc">倒计时自动完成</span>
           </div>
-          <span className="quest-modal-opt-xp quest-modal-opt-xp-green">+10分</span>
+          <span className="quest-modal-opt-xp quest-modal-opt-xp-green">+5分</span>
         </button>
 
         {/* 选项二：只要 60 分 - 中等风险中等收益 */}
@@ -413,7 +456,7 @@ const BreakdownModal: React.FC<{
             <span className="quest-modal-opt-label">只要 60 分</span>
             <span className="quest-modal-opt-desc">标为及格线，低难度</span>
           </div>
-          <span className="quest-modal-opt-xp quest-modal-opt-xp-gold">目标: 60分</span>
+          <span className="quest-modal-opt-xp quest-modal-opt-xp-gold">+60分</span>
         </button>
 
         {/* 选项三：直接挑战 - 高风险高收益 */}
@@ -423,7 +466,7 @@ const BreakdownModal: React.FC<{
             <span className="quest-modal-opt-label">直接挑战</span>
             <span className="quest-modal-opt-desc">满分完成，原样添加</span>
           </div>
-          <span className="quest-modal-opt-xp quest-modal-opt-xp-orange">满分挑战</span>
+          <span className="quest-modal-opt-xp quest-modal-opt-xp-orange">+100分</span>
         </button>
       </div>
     </motion.div>
@@ -815,8 +858,8 @@ const QuestLogPage: React.FC = () => {
           border: 1px solid rgba(255, 193, 7, 0.4);
         }
         .quest-modal-opt-xp-orange {
-          background: rgba(255, 87, 34, 0.2); color: #FF5722;
-          border: 1px solid rgba(255, 87, 34, 0.4);
+          background: rgba(244, 67, 54, 0.2); color: #F44336;
+          border: 1px solid rgba(244, 67, 54, 0.4);
         }
 
         /* 编辑 Modal */
@@ -833,14 +876,14 @@ const QuestLogPage: React.FC = () => {
         .quest-edit-input:focus { border-color: #fde047; }
         .quest-edit-input::placeholder { color: #6b7280; }
         .quest-edit-difficulty { display: flex; gap: 10px; }
-        .quest-diff-option {
-          flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px;
-          padding: 12px 8px; border-radius: 10px; border: 1px solid;
-          font-size: 12px; transition: all 0.2s ease;
+        .quest-edit-diff-btn {
+          flex: 1; display: flex; flex-direction: column; align-items: center; gap: 6px;
+          padding: 16px 8px; border-radius: 12px; border: 1.5px solid;
+          font-size: 12px; transition: all 0.25s ease; cursor: pointer;
         }
-        .quest-diff-option-icon { font-size: 20px; }
-        .quest-diff-option-label { font-weight: 600; }
-        .quest-diff-option-xp { font-size: 11px; opacity: 0.8; }
+        .quest-edit-diff-icon { font-size: 24px; line-height: 1; }
+        .quest-edit-diff-label { font-weight: 600; font-size: 14px; }
+        .quest-edit-diff-xp { font-size: 13px; font-weight: 700; }
         .quest-edit-actions { display: flex; gap: 10px; }
         .quest-edit-cancel {
           flex: 1; padding: 11px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.12);

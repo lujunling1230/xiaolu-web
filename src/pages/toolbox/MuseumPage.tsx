@@ -1144,21 +1144,21 @@ const MuseumPage: React.FC = () => {
         </div>
 
         <VintageGallery title="耳机里的青春 BGM" emoji="🎵" cards={sortedBgms}
-          onAdd={(data) => setCardModal({ mode: "add", section: "bgm", data: { ...data, id: "", year: data.year || String(new Date().getFullYear()), title: data.title || "新记录", description: data.description || "暂无描述" } })}
+          onAdd={(data) => setCardModal({ mode: "add", section: "bgm", data: { ...data, id: "", year: data.year || String(new Date().getFullYear()) } })}
           onEdit={(card) => setCardModal({ mode: "edit", section: "bgm", data: card })}
           onDelete={(id) => handleCardDelete(id, "bgm")}
           onImageUpload={(id, url) => handleImageUpload(id, url, "bgm")}
           onImageDelete={(id) => handleImageDelete(id, "bgm")} />
 
         <VintageGallery title="电视里的乌托邦" emoji="📺" cards={sortedTvs}
-          onAdd={(data) => setCardModal({ mode: "add", section: "tv", data: { ...data, id: "", year: data.year || String(new Date().getFullYear()), title: data.title || "新记录", description: data.description || "暂无描述" } })}
+          onAdd={(data) => setCardModal({ mode: "add", section: "tv", data: { ...data, id: "", year: data.year || String(new Date().getFullYear()) } })}
           onEdit={(card) => setCardModal({ mode: "edit", section: "tv", data: card })}
           onDelete={(id) => handleCardDelete(id, "tv")}
           onImageUpload={(id, url) => handleImageUpload(id, url, "tv")}
           onImageDelete={(id) => handleImageDelete(id, "tv")} />
 
         <VintageGallery title="网络初现时的印记" emoji="📱" cards={sortedNets}
-          onAdd={(data) => setCardModal({ mode: "add", section: "net", data: { ...data, id: "", year: data.year || String(new Date().getFullYear()), title: data.title || "新记录", description: data.description || "暂无描述" } })}
+          onAdd={(data) => setCardModal({ mode: "add", section: "net", data: { ...data, id: "", year: data.year || String(new Date().getFullYear()) } })}
           onEdit={(card) => setCardModal({ mode: "edit", section: "net", data: card })}
           onDelete={(id) => handleCardDelete(id, "net")}
           onImageUpload={(id, url) => handleImageUpload(id, url, "net")}

@@ -103,7 +103,7 @@ const DEFAULT_TVS: VintageCard[] = [
 
 const DEFAULT_NETS: VintageCard[] = [
   { id: "net-1", year: "2005-2009", title: "QQ 空间与火星文", description: `每天精心挑选的 QQ 秀、非主流的伤感头像和满屏的火星文，是我们最初在网络上构建的"另一个世界"。` },
-  { id: "net-2", year: "2004-2008", title: "Flash 小游戏", description: `办公室里偷偷玩的"黄金矿工"、"森林冰火人"，还有后来风靡全球的"愤怒的小鸟"和"地铁跑酷"，是青春里最摸鱼的黑历史。`, imageUrl: "/images/net-2005-goldminer.jpg" },
+  { id: "net-2", year: "2004-2008", title: "Flash 小游戏", description: `键盘是船，浏览器是海，我们在"黄金矿工"里淘金，在"地铁跑酷"里逃亡。那些被定义为"摸鱼"的时光，其实是青春偷偷埋下的彩蛋。`, imageUrl: "/images/net-2005-goldminer.jpg" },
   { id: "net-3", year: "2009-2012", title: "贴吧与论坛", description: `为了追星，在贴吧里疯狂刷帖，看同人文，分享资源，是第一批"网友"聚集地。`, imageUrl: "/images/net-2009-tieba.jpg" },
 ];
 

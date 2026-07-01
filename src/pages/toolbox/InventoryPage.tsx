@@ -92,12 +92,27 @@ function relativeHint(days: number): string {
   return `还剩 ${days} 天`;
 }
 
+/** 获取库存状态（用于样式绑定） */
+function getStockStatus(daysLeft: number): "expired" | "warning" | "safe" {
+  if (daysLeft <= 0) return "expired";
+  if (daysLeft <= 30) return "warning";
+  return "safe";
+}
+
+/** 状态颜色常量 */
+const STATUS_COLORS = {
+  expired: "#E53935",
+  warning: "#FF9800",
+  safe: "#81C784",
+} as const;
+
 /* ============================================================
    胶囊配置
    ============================================================ */
 const PILLS: {
   key: Status;
   label: string;
+  emoji: string;
   dot: string;
   active: string;
   idle: string;
@@ -105,13 +120,15 @@ const PILLS: {
   {
     key: "expired",
     label: "已过期",
+    emoji: "🔴",
     dot: "bg-red-400",
     active: "bg-red-50 border-red-300 text-red-600",
     idle: "bg-white border-gray-200 text-gray-600 hover:border-red-200",
   },
   {
     key: "expiring",
-    label: "临期 · 30 天内",
+    label: "临期·30天内",
+    emoji: "🟠",
     dot: "bg-amber-400",
     active: "bg-amber-50 border-amber-300 text-amber-700",
     idle: "bg-white border-gray-200 text-gray-600 hover:border-amber-200",
@@ -119,6 +136,7 @@ const PILLS: {
   {
     key: "sufficient",
     label: "库存充足",
+    emoji: "🟢",
     dot: "bg-emerald-400",
     active: "bg-emerald-50 border-emerald-300 text-emerald-700",
     idle: "bg-white border-gray-200 text-gray-600 hover:border-emerald-200",
@@ -588,6 +606,7 @@ const InventoryPage: React.FC = () => {
                   )}
                 >
                   <span className={cn("h-2 w-2 rounded-full", p.dot)} />
+                  <span>{p.emoji}</span>
                   {p.label}
                   <span className="font-semibold">{count}</span>
                 </button>
@@ -640,47 +659,44 @@ const InventoryPage: React.FC = () => {
                   <tbody>
                     {filtered.map((it) => {
                       const d = daysUntil(it.expiryDate, today);
-                      const expired = d < 0;
-                      const expiring = d >= 0 && d <= NEAR_THRESHOLD;
+                      const status = getStockStatus(d);
+                      const statusColor = STATUS_COLORS[status];
                       return (
                         <tr
                           key={it.id}
                           className={cn(
-                            "border-b border-gray-50 transition-opacity duration-300",
+                            "border-b border-gray-50 transition-opacity duration-300 stock-item",
                             deletingIds.has(it.id) && "opacity-0"
                           )}
+                          style={{ borderLeft: `4px solid ${statusColor}` }}
                         >
-                          <td
-                            className={cn(
-                              "border-l-4 px-5 py-3",
-                              expired
-                                ? "border-l-red-400"
-                                : expiring
-                                ? "border-l-amber-300"
-                                : "border-l-transparent"
-                            )}
-                          >
-                            <span
-                              className={cn(
-                                "font-medium",
-                                expired ? "text-red-600" : "text-gray-800"
+                          <td className="px-5 py-3">
+                            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                              <span
+                                className={cn(
+                                  "font-medium",
+                                  status === "expired" ? "text-red-600" : "text-gray-800"
+                                )}
+                              >
+                                {it.name}
+                              </span>
+                              {status === "expired" && (
+                                <span style={{
+                                  fontSize: 10, padding: "2px 6px",
+                                  borderRadius: 999, background: "rgba(229,57,53,0.1)",
+                                  color: "#E53935", fontWeight: 500
+                                }}>
+                                  已过期
+                                </span>
                               )}
-                            >
-                              {it.name}
-                            </span>
+                            </div>
                           </td>
                           <td className="px-5 py-3 text-gray-600">
                             {it.count} {it.unit}
                           </td>
                           <td className="px-5 py-3">
                             <span
-                              className={cn(
-                                expired
-                                  ? "text-red-500"
-                                  : expiring
-                                  ? "text-amber-600"
-                                  : "text-gray-600"
-                              )}
+                              style={{ color: statusColor, fontWeight: 500 }}
                             >
                               {it.expiryDate}
                             </span>

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Link } from "react-router-dom";
 
@@ -8,7 +8,7 @@ import { Link } from "react-router-dom";
  * 个人作品集压轴篇章 —— 双展厅回忆录。
  * 展厅一「时代回响」：复古报纸风格卡片 + CRUD 操作。
  * 展厅二「荣耀之路」：垂直时间轴 + 高光时刻 + 展开复盘 + CRUD。
- * 复古胶片风：深褐底、暗金边框、尘埃飘落、胶片显影。
+ * 复古胶片风：深褐底，暗金边框、尘埃飘落、胶片显影。
  */
 
 /* ============================================================
@@ -55,6 +55,7 @@ interface VintageCard {
   year: string;
   title: string;
   description: string;
+  musicLink?: string; // 音乐链接
 }
 
 interface HonorItem {
@@ -64,7 +65,6 @@ interface HonorItem {
   description: string;
   imageUrl: string;
   reflection?: string;
-  emoji?: string;
 }
 
 /* ============================================================
@@ -110,6 +110,11 @@ const VINTAGE_BROWN = "#8B6B4F";
 const VINTAGE_CREAM = "#FDF8F0";
 const VINTAGE_TEXT = "#3D2C22";
 const VINTAGE_TEXT_LIGHT = "#6B5A4A";
+const VINTAGE_DEEP = "#5c4033"; // 深棕 - 标题
+const VINTAGE_LINK = "#8B7355"; // 链接棕
+const VINTAGE_ORANGE = "#D2691E"; // 橙棕 - 编辑hover
+const VINTAGE_DELETE = "#C0392B"; // 删除红
+const VINTAGE_DELETE_HOVER = "#8B4513"; // 删除hover
 
 /* ============================================================
    确认对话框组件
@@ -121,9 +126,9 @@ const ConfirmDialog: React.FC<{
 }> = ({ message, onConfirm, onCancel }) => (
   <motion.div
     style={{
-      position: "fixed", inset: 0, zIndex: 300,
+      position: "fixed", inset: 0, zIndex: 400,
       display: "flex", alignItems: "center", justifyContent: "center",
-      background: "rgba(20,12,10,0.8)", backdropFilter: "blur(6px)",
+      background: "rgba(20,12,10,0.85)", backdropFilter: "blur(8px)",
     }}
     initial={{ opacity: 0 }}
     animate={{ opacity: 1 }}
@@ -132,43 +137,82 @@ const ConfirmDialog: React.FC<{
   >
     <motion.div
       style={{
-        background: "#f5edd6", border: `1px solid ${GOLD}`, borderRadius: 12,
-        padding: "28px 32px", maxWidth: 360, width: "90%",
-        boxShadow: "0 20px 60px rgba(0,0,0,0.5)",
+        background: "#f9f5f0", border: `1px solid ${VINTAGE_BROWN}40`, borderRadius: 12,
+        padding: "28px 32px", maxWidth: 380, width: "90%",
+        boxShadow: "0 4px 16px rgba(92,64,51,0.15)",
       }}
       initial={{ scale: 0.9, y: 20 }}
       animate={{ scale: 1, y: 0 }}
       exit={{ scale: 0.9, y: 20 }}
+      transition={{ type: "spring", stiffness: 200, damping: 20 }}
       onClick={e => e.stopPropagation()}
     >
-      <p style={{ fontFamily: "Noto Serif SC, serif", fontSize: 15, color: VINTAGE_TEXT, margin: "0 0 24px", lineHeight: 1.7, textAlign: "center" }}>{message}</p>
+      <p style={{ fontFamily: "Noto Serif SC, serif", fontSize: 15, color: VINTAGE_DEEP, margin: "0 0 24px", lineHeight: 1.7, textAlign: "center" }}>{message}</p>
       <div style={{ display: "flex", gap: 12 }}>
-        <button onClick={onCancel} style={{ flex: 1, padding: "10px 16px", border: "1px solid rgba(176,141,87,0.4)", borderRadius: 8, background: "transparent", color: VINTAGE_TEXT_LIGHT, fontSize: 14, cursor: "pointer", transition: "all 0.2s" }}
-          onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = "rgba(176,141,87,0.1)"; }}
+        <button onClick={onCancel} style={{ flex: 1, padding: "10px 16px", border: `1px solid ${VINTAGE_BROWN}40`, borderRadius: 8, background: "transparent", color: VINTAGE_TEXT_LIGHT, fontSize: 14, cursor: "pointer", transition: "all 0.2s", fontFamily: "Noto Serif SC, serif" }}
+          onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = `${VINTAGE_BROWN}15`; }}
           onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = "transparent"; }}>取消</button>
-        <button onClick={onConfirm} style={{ flex: 1, padding: "10px 16px", border: "none", borderRadius: 8, background: "#c0392b", color: "#fff", fontSize: 14, cursor: "pointer", transition: "all 0.2s" }}
-          onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = "#a93226"; }}
-          onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = "#c0392b"; }}>确认删除</button>
+        <button onClick={onConfirm} style={{ flex: 1, padding: "10px 16px", border: "none", borderRadius: 8, background: VINTAGE_DELETE, color: "#fff", fontSize: 14, cursor: "pointer", transition: "all 0.2s", fontFamily: "Noto Serif SC, serif" }}
+          onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = "#a02020"; }}
+          onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = VINTAGE_DELETE; }}>确定删除</button>
       </div>
     </motion.div>
   </motion.div>
 );
 
 /* ============================================================
-   上传/编辑模态框组件
+   迷你播放器组件
+   ============================================================ */
+const MiniPlayer: React.FC<{ link: string; onClose: () => void }> = ({ link, onClose }) => {
+  const iframeRef = useRef<HTMLIFrameElement>(null);
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: -10, scale: 0.95 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      exit={{ opacity: 0, y: -10, scale: 0.95 }}
+      style={{
+        position: "absolute", top: -70, right: 0, zIndex: 50,
+        width: 200, height: 70,
+        background: "rgba(255,255,255,0.95)", borderRadius: 8,
+        boxShadow: "0 4px 20px rgba(92,64,51,0.2), 0 0 0 1px rgba(139,107,79,0.2)",
+        overflow: "hidden", backdropFilter: "blur(8px)",
+      }}
+    >
+      <button
+        onClick={onClose}
+        style={{
+          position: "absolute", top: 4, right: 4, zIndex: 51,
+          width: 20, height: 20, border: "none", borderRadius: "50%",
+          background: `${VINTAGE_BROWN}30`, color: VINTAGE_BROWN, fontSize: 12,
+          cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
+        }}
+      >×</button>
+      {link.includes("music.163.com") || link.includes("y.qq.com") || link.includes("spotify") || link.includes("song") ? (
+        <iframe
+          ref={iframeRef}
+          src={`https://music.163.com/outchain/player?type=2&id=${link.match(/\d+/)?.[0] || ""}&auto=0&height=66`}
+          width={200} height={70}
+          style={{ border: "none", display: "block" }}
+        />
+      ) : (
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", height: "100%", flexDirection: "column", gap: 4 }}>
+          <span style={{ fontSize: 24 }}>🎵</span>
+          <a href={link} target="_blank" rel="noopener noreferrer" style={{ fontSize: 11, color: VINTAGE_LINK, fontFamily: "Noto Serif SC, serif" }}>在浏览器打开</a>
+        </div>
+      )}
+    </motion.div>
+  );
+};
+
+/* ============================================================
+   时代回响卡片表单（支持图片上传/音乐链接）
    ============================================================ */
 interface CardFormData {
   year: string;
   title: string;
   description: string;
-}
-
-interface HonorFormData {
-  year: string;
-  title: string;
-  description: string;
-  imageUrl: string;
-  reflection: string;
+  musicLink?: string;
 }
 
 const CardFormModal: React.FC<{
@@ -181,12 +225,39 @@ const CardFormModal: React.FC<{
   const [year, setYear] = useState(initialData?.year || "");
   const [title, setTitle] = useState(initialData?.title || "");
   const [description, setDescription] = useState(initialData?.description || "");
+  const [musicLink, setMusicLink] = useState(initialData?.musicLink || "");
+  const [imagePreview, setImagePreview] = useState<string>("");
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const canSubmit = year.trim() && title.trim() && description.trim();
 
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 2 * 1024 * 1024) {
+      alert("图片大小不能超过 2MB");
+      return;
+    }
+    if (!["image/jpeg", "image/png", "image/jpg"].includes(file.type)) {
+      alert("只支持 JPG/PNG 格式");
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const result = ev.target?.result as string;
+      setImagePreview(result);
+    };
+    reader.readAsDataURL(file);
+  };
+
   const handleSubmit = () => {
     if (!canSubmit) return;
-    onSubmit({ year: year.trim(), title: title.trim(), description: description.trim() });
+    onSubmit({
+      year: year.trim(),
+      title: title.trim(),
+      description: description.trim(),
+      musicLink: musicLink.trim() || undefined,
+    });
   };
 
   return (
@@ -204,73 +275,78 @@ const CardFormModal: React.FC<{
     >
       <motion.div
         style={{
-          background: "linear-gradient(135deg, #FDF8F0 0%, #F5ECD8 100%)",
-          border: `1px solid ${VINTAGE_BROWN}80`,
-          borderRadius: 12,
-          padding: "32px 28px",
-          maxWidth: 480,
-          width: "100%",
-          boxShadow: "0 24px 60px rgba(0,0,0,0.4)",
+          background: "#f9f5f0", border: `1px solid ${VINTAGE_BROWN}30`,
+          borderRadius: 12, padding: "28px 24px", maxWidth: 480, width: "100%",
+          boxShadow: "0 2px 8px rgba(92,64,51,0.1)",
         }}
         initial={{ scale: 0.9, y: 24 }}
         animate={{ scale: 1, y: 0 }}
         exit={{ scale: 0.9, y: 24 }}
-        transition={{ type: "spring", stiffness: 180, damping: 20 }}
+        transition={{ type: "spring", stiffness: 200, damping: 20 }}
         onClick={e => e.stopPropagation()}
       >
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 24 }}>
-          <h3 style={{ fontFamily: "Noto Serif SC, serif", fontSize: 18, fontWeight: 600, color: VINTAGE_TEXT, margin: 0 }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}>
+          <h3 style={{ fontFamily: "Noto Serif SC, serif", fontSize: 17, fontWeight: 600, color: VINTAGE_DEEP, margin: 0 }}>
             {mode === "add" ? "✏️ 添加记录" : "✏️ 编辑记录"}
           </h3>
-          <span style={{ fontSize: 12, color: VINTAGE_TEXT_LIGHT, opacity: 0.7 }}>{sectionTitle}</span>
+          <span style={{ fontSize: 11, color: VINTAGE_TEXT_LIGHT, opacity: 0.7, fontFamily: "Noto Serif SC, serif" }}>{sectionTitle}</span>
         </div>
 
-        <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
           <div>
-            <label style={{ display: "block", fontSize: 12, color: VINTAGE_TEXT_LIGHT, marginBottom: 6, fontFamily: "Noto Serif SC, serif" }}>📅 年份</label>
-            <input
-              type="text"
-              value={year}
-              onChange={e => setYear(e.target.value)}
-              placeholder="例如：2005 或 2005-2010"
-              style={{ width: "100%", padding: "12px 14px", border: `1px solid ${VINTAGE_BROWN}40`, borderRadius: 8, background: "#fffef8", fontSize: 14, color: VINTAGE_TEXT, outline: "none", fontFamily: "Courier New, monospace", transition: "border-color 0.2s" }}
+            <label style={{ display: "block", fontSize: 12, color: VINTAGE_TEXT_LIGHT, marginBottom: 5, fontFamily: "Noto Serif SC, serif" }}>📅 年份</label>
+            <input type="text" value={year} onChange={e => setYear(e.target.value)} placeholder="例如：2005 或 2005-2010"
+              style={{ width: "100%", padding: "10px 12px", border: `1px solid ${VINTAGE_BROWN}30`, borderRadius: 6, background: "#fffef8", fontSize: 14, color: VINTAGE_DEEP, outline: "none", fontFamily: "Courier New, monospace", transition: "border-color 0.2s" }}
               onFocus={e => { (e.target as HTMLInputElement).style.borderColor = VINTAGE_BROWN; }}
-              onBlur={e => { (e.target as HTMLInputElement).style.borderColor = `${VINTAGE_BROWN}40`; }}
-            />
+              onBlur={e => { (e.target as HTMLInputElement).style.borderColor = `${VINTAGE_BROWN}30`; }} />
           </div>
 
           <div>
-            <label style={{ display: "block", fontSize: 12, color: VINTAGE_TEXT_LIGHT, marginBottom: 6, fontFamily: "Noto Serif SC, serif" }}>📌 标题</label>
-            <input
-              type="text"
-              value={title}
-              onChange={e => setTitle(e.target.value)}
-              placeholder="例如：周杰伦《晴天》"
-              style={{ width: "100%", padding: "12px 14px", border: `1px solid ${VINTAGE_BROWN}40`, borderRadius: 8, background: "#fffef8", fontSize: 14, color: VINTAGE_TEXT, outline: "none", fontFamily: "Noto Serif SC, serif", transition: "border-color 0.2s" }}
+            <label style={{ display: "block", fontSize: 12, color: VINTAGE_TEXT_LIGHT, marginBottom: 5, fontFamily: "Noto Serif SC, serif" }}>📌 标题</label>
+            <input type="text" value={title} onChange={e => setTitle(e.target.value)} placeholder="例如：周杰伦《晴天》"
+              style={{ width: "100%", padding: "10px 12px", border: `1px solid ${VINTAGE_BROWN}30`, borderRadius: 6, background: "#fffef8", fontSize: 14, color: VINTAGE_DEEP, outline: "none", fontFamily: "Noto Serif SC, serif", transition: "border-color 0.2s" }}
               onFocus={e => { (e.target as HTMLInputElement).style.borderColor = VINTAGE_BROWN; }}
-              onBlur={e => { (e.target as HTMLInputElement).style.borderColor = `${VINTAGE_BROWN}40`; }}
-            />
+              onBlur={e => { (e.target as HTMLInputElement).style.borderColor = `${VINTAGE_BROWN}30`; }} />
           </div>
 
           <div>
-            <label style={{ display: "block", fontSize: 12, color: VINTAGE_TEXT_LIGHT, marginBottom: 6, fontFamily: "Noto Serif SC, serif" }}>💬 文案描述</label>
-            <textarea
-              value={description}
-              onChange={e => setDescription(e.target.value)}
-              placeholder="写下你的回忆..."
-              rows={4}
-              style={{ width: "100%", padding: "12px 14px", border: `1px solid ${VINTAGE_BROWN}40`, borderRadius: 8, background: "#fffef8", fontSize: 14, color: VINTAGE_TEXT, outline: "none", fontFamily: "Noto Serif SC, serif", lineHeight: 1.8, resize: "vertical", transition: "border-color 0.2s" }}
+            <label style={{ display: "block", fontSize: 12, color: VINTAGE_TEXT_LIGHT, marginBottom: 5, fontFamily: "Noto Serif SC, serif" }}>💬 文案描述</label>
+            <textarea value={description} onChange={e => setDescription(e.target.value)} placeholder="写下你的回忆..."
+              rows={3} style={{ width: "100%", padding: "10px 12px", border: `1px solid ${VINTAGE_BROWN}30`, borderRadius: 6, background: "#fffef8", fontSize: 14, color: VINTAGE_DEEP, outline: "none", fontFamily: "Noto Serif SC, serif", lineHeight: 1.7, resize: "vertical", transition: "border-color 0.2s" }}
               onFocus={e => { (e.target as HTMLTextAreaElement).style.borderColor = VINTAGE_BROWN; }}
-              onBlur={e => { (e.target as HTMLTextAreaElement).style.borderColor = `${VINTAGE_BROWN}40`; }}
-            />
+              onBlur={e => { (e.target as HTMLTextAreaElement).style.borderColor = `${VINTAGE_BROWN}30`; }} />
+          </div>
+
+          <div>
+            <label style={{ display: "block", fontSize: 12, color: VINTAGE_TEXT_LIGHT, marginBottom: 5, fontFamily: "Noto Serif SC, serif" }}>🎵 音乐链接（选填）</label>
+            <input type="text" value={musicLink} onChange={e => setMusicLink(e.target.value)} placeholder="网易云/QQ音乐/Spotify 链接"
+              style={{ width: "100%", padding: "10px 12px", border: `1px solid ${VINTAGE_BROWN}30`, borderRadius: 6, background: "#fffef8", fontSize: 14, color: VINTAGE_DEEP, outline: "none", fontFamily: "monospace", transition: "border-color 0.2s" }}
+              onFocus={e => { (e.target as HTMLInputElement).style.borderColor = VINTAGE_BROWN; }}
+              onBlur={e => { (e.target as HTMLInputElement).style.borderColor = `${VINTAGE_BROWN}30`; }} />
+          </div>
+
+          <div>
+            <label style={{ display: "block", fontSize: 12, color: VINTAGE_TEXT_LIGHT, marginBottom: 5, fontFamily: "Noto Serif SC, serif" }}>🖼️ 图片（选填，JPG/PNG ≤2MB）</label>
+            <input ref={fileInputRef} type="file" accept="image/jpeg,image/png,image/jpg" onChange={handleImageUpload}
+              style={{ display: "none" }} />
+            <button onClick={() => fileInputRef.current?.click()}
+              style={{ padding: "8px 14px", border: `1px dashed ${VINTAGE_BROWN}40`, borderRadius: 6, background: "transparent", color: VINTAGE_LINK, fontSize: 13, cursor: "pointer", fontFamily: "Noto Serif SC, serif", transition: "all 0.2s" }}
+              onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = `${VINTAGE_BROWN}10`; }}
+              onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = "transparent"; }}>+ 上传图片</button>
+            {imagePreview && (
+              <div style={{ marginTop: 10 }}>
+                <img src={imagePreview} alt="预览" style={{ width: 80, height: 80, objectFit: "cover", borderRadius: 6, border: `1px solid ${VINTAGE_BROWN}30` }} />
+                <button onClick={() => setImagePreview("")} style={{ marginLeft: 8, padding: "2px 8px", border: "none", borderRadius: 4, background: `${VINTAGE_DELETE}20`, color: VINTAGE_DELETE, fontSize: 11, cursor: "pointer" }}>移除</button>
+              </div>
+            )}
           </div>
         </div>
 
-        <div style={{ display: "flex", gap: 12, marginTop: 24 }}>
-          <button onClick={onClose} style={{ flex: 1, padding: "12px 16px", border: `1px solid ${VINTAGE_BROWN}40`, borderRadius: 8, background: "transparent", color: VINTAGE_TEXT_LIGHT, fontSize: 14, cursor: "pointer", transition: "all 0.2s", fontFamily: "Noto Serif SC, serif" }}
-            onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = `${VINTAGE_BROWN}15`; }}
+        <div style={{ display: "flex", gap: 10, marginTop: 20 }}>
+          <button onClick={onClose} style={{ flex: 1, padding: "10px 14px", border: `1px solid ${VINTAGE_BROWN}30`, borderRadius: 8, background: "transparent", color: VINTAGE_TEXT_LIGHT, fontSize: 14, cursor: "pointer", transition: "all 0.2s", fontFamily: "Noto Serif SC, serif" }}
+            onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = `${VINTAGE_BROWN}10`; }}
             onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = "transparent"; }}>取消</button>
-          <button onClick={handleSubmit} disabled={!canSubmit} style={{ flex: 1, padding: "12px 16px", border: "none", borderRadius: 8, background: canSubmit ? VINTAGE_BROWN : `${VINTAGE_BROWN}50`, color: "#fff", fontSize: 14, cursor: canSubmit ? "pointer" : "not-allowed", transition: "all 0.2s", fontFamily: "Noto Serif SC, serif" }}
+          <button onClick={handleSubmit} disabled={!canSubmit} style={{ flex: 1, padding: "10px 14px", border: "none", borderRadius: 8, background: canSubmit ? VINTAGE_BROWN : `${VINTAGE_BROWN}50`, color: "#fff", fontSize: 14, cursor: canSubmit ? "pointer" : "not-allowed", transition: "all 0.2s", fontFamily: "Noto Serif SC, serif" }}
             onMouseEnter={e => { if (canSubmit) (e.currentTarget as HTMLButtonElement).style.background = "#7a5c3f"; }}
             onMouseLeave={e => { if (canSubmit) (e.currentTarget as HTMLButtonElement).style.background = VINTAGE_BROWN; }}>{mode === "add" ? "添加" : "保存"}</button>
         </div>
@@ -280,8 +356,16 @@ const CardFormModal: React.FC<{
 };
 
 /* ============================================================
-   荣耀之路编辑模态框
+   荣耀之路表单（支持图片上传）
    ============================================================ */
+interface HonorFormData {
+  year: string;
+  title: string;
+  description: string;
+  imageUrl: string;
+  reflection: string;
+}
+
 const HonorFormModal: React.FC<{
   mode: "add" | "edit";
   initialData?: HonorItem;
@@ -293,8 +377,30 @@ const HonorFormModal: React.FC<{
   const [description, setDescription] = useState(initialData?.description || "");
   const [imageUrl, setImageUrl] = useState(initialData?.imageUrl || "");
   const [reflection, setReflection] = useState(initialData?.reflection || "");
+  const [imagePreview, setImagePreview] = useState(initialData?.imageUrl || "");
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const canSubmit = year.trim() && title.trim() && description.trim() && imageUrl.trim();
+  const canSubmit = year.trim() && title.trim() && description.trim();
+
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 2 * 1024 * 1024) {
+      alert("图片大小不能超过 2MB");
+      return;
+    }
+    if (!["image/jpeg", "image/png", "image/jpg"].includes(file.type)) {
+      alert("只支持 JPG/PNG 格式");
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const result = ev.target?.result as string;
+      setImagePreview(result);
+      setImageUrl(result);
+    };
+    reader.readAsDataURL(file);
+  };
 
   const handleSubmit = () => {
     if (!canSubmit) return;
@@ -302,7 +408,7 @@ const HonorFormModal: React.FC<{
       year: year.trim(),
       title: title.trim(),
       description: description.trim(),
-      imageUrl: imageUrl.trim(),
+      imageUrl: imageUrl.trim() || imagePreview,
       reflection: reflection.trim(),
     });
   };
@@ -322,62 +428,67 @@ const HonorFormModal: React.FC<{
     >
       <motion.div
         style={{
-          background: "#f5edd6",
-          border: `1px solid ${GOLD}`,
-          borderRadius: 12,
-          padding: "32px 28px",
-          maxWidth: 520,
-          width: "100%",
-          maxHeight: "90vh",
-          overflowY: "auto",
-          boxShadow: "0 24px 60px rgba(0,0,0,0.5)",
+          background: "#f9f5f0", border: `1px solid ${VINTAGE_BROWN}30`,
+          borderRadius: 12, padding: "28px 24px", maxWidth: 520, width: "100%",
+          maxHeight: "90vh", overflowY: "auto",
+          boxShadow: "0 4px 16px rgba(92,64,51,0.15)",
         }}
         initial={{ scale: 0.9, y: 24 }}
         animate={{ scale: 1, y: 0 }}
         exit={{ scale: 0.9, y: 24 }}
-        transition={{ type: "spring", stiffness: 180, damping: 20 }}
+        transition={{ type: "spring", stiffness: 200, damping: 20 }}
         onClick={e => e.stopPropagation()}
       >
-        <h3 style={{ fontFamily: "Playfair Display, Noto Serif SC, serif", fontSize: 20, fontWeight: 700, color: "#3d2c2e", margin: "0 0 24px" }}>
+        <h3 style={{ fontFamily: "Noto Serif SC, serif", fontSize: 18, fontWeight: 700, color: VINTAGE_DEEP, margin: "0 0 20px" }}>
           {mode === "add" ? "🏆 添加荣耀时刻" : "🏆 编辑荣耀时刻"}
         </h3>
 
-        <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+        <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
             <div>
-              <label style={{ display: "block", fontSize: 12, color: "#8a7a64", marginBottom: 6, fontFamily: "Courier New, monospace", letterSpacing: "0.05em" }}>年份</label>
+              <label style={{ display: "block", fontSize: 12, color: VINTAGE_TEXT_LIGHT, marginBottom: 5, fontFamily: "Courier New, monospace", letterSpacing: "0.05em" }}>年份</label>
               <input type="text" value={year} onChange={e => setYear(e.target.value)} placeholder="2024"
-                style={{ width: "100%", padding: "10px 12px", border: "1px solid rgba(176,141,87,0.4)", borderRadius: 6, background: "#fffef8", fontSize: 14, color: "#3d2c2e", outline: "none", fontFamily: "Courier New, monospace" }} />
+                style={{ width: "100%", padding: "10px 12px", border: `1px solid ${VINTAGE_BROWN}30`, borderRadius: 6, background: "#fffef8", fontSize: 14, color: VINTAGE_DEEP, outline: "none", fontFamily: "Courier New, monospace" }} />
             </div>
             <div>
-              <label style={{ display: "block", fontSize: 12, color: "#8a7a64", marginBottom: 6, fontFamily: "Noto Serif SC, serif" }}>🏆 成就名称</label>
+              <label style={{ display: "block", fontSize: 12, color: VINTAGE_TEXT_LIGHT, marginBottom: 5, fontFamily: "Noto Serif SC, serif" }}>🏆 成就名称</label>
               <input type="text" value={title} onChange={e => setTitle(e.target.value)} placeholder="首个马拉松完赛"
-                style={{ width: "100%", padding: "10px 12px", border: "1px solid rgba(176,141,87,0.4)", borderRadius: 6, background: "#fffef8", fontSize: 14, color: "#3d2c2e", outline: "none", fontFamily: "Noto Serif SC, serif" }} />
+                style={{ width: "100%", padding: "10px 12px", border: `1px solid ${VINTAGE_BROWN}30`, borderRadius: 6, background: "#fffef8", fontSize: 14, color: VINTAGE_DEEP, outline: "none", fontFamily: "Noto Serif SC, serif" }} />
             </div>
           </div>
 
           <div>
-            <label style={{ display: "block", fontSize: 12, color: "#8a7a64", marginBottom: 6, fontFamily: "Noto Serif SC, serif" }}>📝 成就描述</label>
+            <label style={{ display: "block", fontSize: 12, color: VINTAGE_TEXT_LIGHT, marginBottom: 5, fontFamily: "Noto Serif SC, serif" }}>📝 成就描述</label>
             <textarea value={description} onChange={e => setDescription(e.target.value)} placeholder="描述这段经历..."
-              rows={3} style={{ width: "100%", padding: "10px 12px", border: "1px solid rgba(176,141,87,0.4)", borderRadius: 6, background: "#fffef8", fontSize: 14, color: "#3d2c2e", outline: "none", fontFamily: "Noto Serif SC, serif", lineHeight: 1.8, resize: "vertical" }} />
+              rows={3} style={{ width: "100%", padding: "10px 12px", border: `1px solid ${VINTAGE_BROWN}30`, borderRadius: 6, background: "#fffef8", fontSize: 14, color: VINTAGE_DEEP, outline: "none", fontFamily: "Noto Serif SC, serif", lineHeight: 1.7, resize: "vertical" }} />
           </div>
 
           <div>
-            <label style={{ display: "block", fontSize: 12, color: "#8a7a64", marginBottom: 6, fontFamily: "Noto Serif SC, serif" }}>🖼️ 图片链接</label>
-            <input type="text" value={imageUrl} onChange={e => setImageUrl(e.target.value)} placeholder="https://..."
-              style={{ width: "100%", padding: "10px 12px", border: "1px solid rgba(176,141,87,0.4)", borderRadius: 6, background: "#fffef8", fontSize: 14, color: "#3d2c2e", outline: "none", fontFamily: "monospace" }} />
-          </div>
-
-          <div>
-            <label style={{ display: "block", fontSize: 12, color: "#8a7a64", marginBottom: 6, fontFamily: "Noto Serif SC, serif" }}>💭 感悟反思（选填）</label>
+            <label style={{ display: "block", fontSize: 12, color: VINTAGE_TEXT_LIGHT, marginBottom: 5, fontFamily: "Noto Serif SC, serif" }}>💭 感悟反思（选填）</label>
             <textarea value={reflection} onChange={e => setReflection(e.target.value)} placeholder="写下你的感悟..."
-              rows={2} style={{ width: "100%", padding: "10px 12px", border: "1px solid rgba(176,141,87,0.4)", borderRadius: 6, background: "#fffef8", fontSize: 14, color: "#3d2c2e", outline: "none", fontFamily: "Noto Serif SC, serif", lineHeight: 1.8, resize: "vertical", fontStyle: "italic" }} />
+              rows={2} style={{ width: "100%", padding: "10px 12px", border: `1px solid ${VINTAGE_BROWN}30`, borderRadius: 6, background: "#fffef8", fontSize: 14, color: VINTAGE_DEEP, outline: "none", fontFamily: "Noto Serif SC, serif", lineHeight: 1.7, resize: "vertical", fontStyle: "italic" }} />
+          </div>
+
+          <div>
+            <label style={{ display: "block", fontSize: 12, color: VINTAGE_TEXT_LIGHT, marginBottom: 5, fontFamily: "Noto Serif SC, serif" }}>🖼️ 图片上传（JPG/PNG ≤2MB，4:3）</label>
+            <input ref={fileInputRef} type="file" accept="image/jpeg,image/png,image/jpg" onChange={handleImageUpload}
+              style={{ display: "none" }} />
+            <button onClick={() => fileInputRef.current?.click()}
+              style={{ padding: "8px 14px", border: `1px dashed ${VINTAGE_BROWN}40`, borderRadius: 6, background: "transparent", color: VINTAGE_LINK, fontSize: 13, cursor: "pointer", fontFamily: "Noto Serif SC, serif", transition: "all 0.2s" }}
+              onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = `${VINTAGE_BROWN}10`; }}
+              onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = "transparent"; }}>+ 上传图片</button>
+            {imagePreview && (
+              <div style={{ marginTop: 10 }}>
+                <img src={imagePreview} alt="预览" style={{ width: 160, height: 120, objectFit: "cover", borderRadius: 6, border: `1px solid ${VINTAGE_BROWN}30` }} />
+                <button onClick={() => { setImagePreview(""); setImageUrl(""); }} style={{ marginLeft: 8, padding: "2px 8px", border: "none", borderRadius: 4, background: `${VINTAGE_DELETE}20`, color: VINTAGE_DELETE, fontSize: 11, cursor: "pointer" }}>移除</button>
+              </div>
+            )}
           </div>
         </div>
 
-        <div style={{ display: "flex", gap: 12, marginTop: 24 }}>
-          <button onClick={onClose} style={{ flex: 1, padding: "11px 16px", border: "1px solid rgba(176,141,87,0.4)", borderRadius: 8, background: "transparent", color: "#6b5a4a", fontSize: 14, cursor: "pointer", fontFamily: "Noto Serif SC, serif" }}>取消</button>
-          <button onClick={handleSubmit} disabled={!canSubmit} style={{ flex: 1, padding: "11px 16px", border: "none", borderRadius: 8, background: canSubmit ? GOLD : "rgba(176,141,87,0.4)", color: "#fff", fontSize: 14, cursor: canSubmit ? "pointer" : "not-allowed", fontFamily: "Noto Serif SC, serif" }}>{mode === "add" ? "添加" : "保存"}</button>
+        <div style={{ display: "flex", gap: 10, marginTop: 20 }}>
+          <button onClick={onClose} style={{ flex: 1, padding: "10px 14px", border: `1px solid ${VINTAGE_BROWN}30`, borderRadius: 8, background: "transparent", color: VINTAGE_TEXT_LIGHT, fontSize: 14, cursor: "pointer", fontFamily: "Noto Serif SC, serif" }}>取消</button>
+          <button onClick={handleSubmit} disabled={!canSubmit} style={{ flex: 1, padding: "10px 14px", border: "none", borderRadius: 8, background: canSubmit ? GOLD : `${GOLD}80`, color: "#fff", fontSize: 14, cursor: canSubmit ? "pointer" : "not-allowed", fontFamily: "Noto Serif SC, serif" }}>{mode === "add" ? "添加" : "保存"}</button>
         </div>
       </motion.div>
     </motion.div>
@@ -385,7 +496,7 @@ const HonorFormModal: React.FC<{
 };
 
 /* ============================================================
-   复古报纸卡片组件（带编辑/删除）
+   复古报纸卡片组件（增强版）
    ============================================================ */
 const VintageCard: React.FC<{
   card: VintageCard;
@@ -394,19 +505,23 @@ const VintageCard: React.FC<{
   onDelete: (id: string) => void;
 }> = ({ card, emoji, onEdit, onDelete }) => {
   const [showActions, setShowActions] = useState(false);
+  const [showPlayer, setShowPlayer] = useState(false);
+  const [deleteConfirm, setDeleteConfirm] = useState(false);
+
+  const hasMusic = !!card.musicLink;
 
   return (
     <motion.div
       className="vintage-card"
       style={{ position: "relative" }}
-      whileHover={{ y: -4, rotate: 0.5 }}
+      whileHover={{ y: -4, rotate: 0.3 }}
       onHoverStart={() => setShowActions(true)}
-      onHoverEnd={() => setShowActions(false)}
+      onHoverEnd={() => { if (!deleteConfirm) setShowActions(false); }}
     >
       {/* 年份邮票标签 */}
       <div className="vintage-year-stamp">{card.year}</div>
 
-      {/* 操作按钮 */}
+      {/* 操作按钮组 */}
       <AnimatePresence>
         {showActions && (
           <motion.div
@@ -420,31 +535,54 @@ const VintageCard: React.FC<{
           >
             <button
               onClick={(e) => { e.stopPropagation(); onEdit(card); }}
-              style={{
-                width: 28, height: 28, border: "none", borderRadius: "50%",
-                background: `${VINTAGE_BROWN}cc`, color: "#fff", fontSize: 13,
-                cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
-                boxShadow: "0 2px 8px rgba(0,0,0,0.3)",
-              }}
+              className="museum-edit-btn"
               title="编辑"
             >✏️</button>
             <button
-              onClick={(e) => { e.stopPropagation(); onDelete(card.id); }}
-              style={{
-                width: 28, height: 28, border: "none", borderRadius: "50%",
-                background: "#c0392bcc", color: "#fff", fontSize: 13,
-                cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
-                boxShadow: "0 2px 8px rgba(0,0,0,0.3)",
-              }}
+              onClick={(e) => { e.stopPropagation(); setDeleteConfirm(true); }}
+              className="museum-delete-btn"
               title="删除"
             >🗑️</button>
           </motion.div>
         )}
       </AnimatePresence>
 
+      {/* 删除确认 */}
+      <AnimatePresence>
+        {deleteConfirm && (
+          <ConfirmDialog
+            message="确定删除？不可恢复。"
+            onConfirm={() => { onDelete(card.id); setDeleteConfirm(false); setShowActions(false); }}
+            onCancel={() => setDeleteConfirm(false)}
+          />
+        )}
+      </AnimatePresence>
+
+      {/* 迷你播放器 */}
+      <AnimatePresence>
+        {showPlayer && card.musicLink && (
+          <MiniPlayer link={card.musicLink} onClose={() => setShowPlayer(false)} />
+        )}
+      </AnimatePresence>
+
       {/* 内容区 */}
       <div className="vintage-card-content">
-        <div className="vintage-card-icon">{emoji}</div>
+        <div className="vintage-card-icon" style={{ position: "relative" }}>
+          <span>{emoji}</span>
+          {hasMusic && (
+            <button
+              onClick={(e) => { e.stopPropagation(); setShowPlayer(!showPlayer); }}
+              style={{
+                position: "absolute", bottom: -4, right: -4,
+                width: 24, height: 24, borderRadius: "50%",
+                border: "none", background: `${VINTAGE_BROWN}cc`, color: "#fff",
+                fontSize: 12, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
+                boxShadow: "0 2px 6px rgba(0,0,0,0.3)",
+              }}
+              title="播放音乐"
+            >🎵</button>
+          )}
+        </div>
         <div className="vintage-card-body">
           <h4 className="vintage-card-title">{card.title}</h4>
           <p className="vintage-card-desc">"{card.description}"</p>
@@ -455,7 +593,7 @@ const VintageCard: React.FC<{
 };
 
 /* ============================================================
-   横向滑动长廊组件（支持增删改）
+   横向滑动长廊组件
    ============================================================ */
 const VintageGallery: React.FC<{
   title: string;
@@ -471,31 +609,101 @@ const VintageGallery: React.FC<{
       <h3 className="vintage-section-title">{title}</h3>
       <button
         onClick={() => onAdd({ year: "", title: "", description: "" })}
-        style={{
-          marginLeft: "auto", padding: "6px 14px", border: `1px dashed ${VINTAGE_BROWN}60`,
-          borderRadius: 20, background: "transparent", color: VINTAGE_BROWN,
-          fontSize: 12, cursor: "pointer", fontFamily: "Noto Serif SC, serif",
-          transition: "all 0.2s", display: "flex", alignItems: "center", gap: 4,
-        }}
-        onMouseEnter={e => {
-          (e.currentTarget as HTMLButtonElement).style.background = `${VINTAGE_BROWN}15`;
-          (e.currentTarget as HTMLButtonElement).style.borderStyle = "solid";
-        }}
-        onMouseLeave={e => {
-          (e.currentTarget as HTMLButtonElement).style.background = "transparent";
-          (e.currentTarget as HTMLButtonElement).style.borderStyle = "dashed";
-        }}
+        className="museum-add-btn"
       >+ 添加</button>
     </div>
     <div className="vintage-gallery-scroll">
       <div className="vintage-gallery-track">
-        {cards.map(card => (
-          <VintageCard key={card.id} card={card} emoji={emoji} onEdit={onEdit} onDelete={onDelete} />
-        ))}
+        <AnimatePresence mode="popLayout">
+          {cards.map(card => (
+            <motion.div key={card.id} initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.8 }} transition={{ duration: 0.3 }}>
+              <VintageCard card={card} emoji={emoji} onEdit={onEdit} onDelete={onDelete} />
+            </motion.div>
+          ))}
+        </AnimatePresence>
       </div>
     </div>
   </div>
 );
+
+/* ============================================================
+   荣耀成就卡片组件（增强版）
+   ============================================================ */
+const HonorCard: React.FC<{
+  item: HonorItem;
+  onEdit: (item: HonorItem) => void;
+  onDelete: (id: string) => void;
+}> = ({ item, onEdit, onDelete }) => {
+  const [showActions, setShowActions] = useState(false);
+  const [deleteConfirm, setDeleteConfirm] = useState(false);
+
+  return (
+    <>
+      <motion.div
+        className="museum-honor-card museum-honor-card-enhanced"
+        initial={{ opacity: 0, x: -20 }}
+        whileInView={{ opacity: 1, x: 0 }}
+        viewport={{ once: true, margin: "-40px" }}
+        whileHover={{ x: 4 }}
+        transition={{ duration: 0.4 }}
+        onHoverStart={() => setShowActions(true)}
+        onHoverEnd={() => { if (!deleteConfirm) setShowActions(false); }}
+      >
+        {/* 操作按钮组 */}
+        <AnimatePresence>
+          {showActions && (
+            <motion.div
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.8 }}
+              style={{
+                position: "absolute", top: 8, right: 8, zIndex: 20,
+                display: "flex", gap: 6,
+              }}
+            >
+              <button
+                onClick={(e) => { e.stopPropagation(); onEdit(item); }}
+                className="honor-edit-btn"
+                title="编辑"
+              >✏️</button>
+              <button
+                onClick={(e) => { e.stopPropagation(); setDeleteConfirm(true); }}
+                className="honor-delete-btn"
+                title="删除"
+              >🗑️</button>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* 图片 */}
+        <FilmImage src={item.imageUrl} alt={item.title} className="museum-honor-img" />
+
+        {/* 内容 */}
+        <div className="museum-honor-body">
+          <h3 className="museum-card-title">{item.title}</h3>
+          <p className="museum-card-desc">{item.description}</p>
+          {item.reflection && (
+            <p className="museum-honor-reflection">
+              <span className="museum-reflection-mark">"</span>{item.reflection}
+            </p>
+          )}
+          <span className="museum-card-zoom-hint">🏆 荣耀时刻</span>
+        </div>
+      </motion.div>
+
+      {/* 删除确认 */}
+      <AnimatePresence>
+        {deleteConfirm && (
+          <ConfirmDialog
+            message="确定删除？不可恢复。"
+            onConfirm={() => { onDelete(item.id); setDeleteConfirm(false); setShowActions(false); }}
+            onCancel={() => setDeleteConfirm(false)}
+          />
+        )}
+      </AnimatePresence>
+    </>
+  );
+};
 
 /* ============================================================
    子组件：尘埃粒子
@@ -522,12 +730,7 @@ const DustParticles: React.FC = () => {
           style={{ left: `${d.left}%`, width: d.size, height: d.size }}
           initial={{ y: -20, opacity: 0 }}
           animate={{ y: "110vh", opacity: [0, 0.6, 0.6, 0], x: d.drift }}
-          transition={{
-            duration: d.duration,
-            delay: d.delay,
-            repeat: Infinity,
-            ease: "linear",
-          }}
+          transition={{ duration: d.duration, delay: d.delay, repeat: Infinity, ease: "linear" }}
         />
       ))}
     </div>
@@ -537,27 +740,13 @@ const DustParticles: React.FC = () => {
 /* ============================================================
    子组件：胶片显影图片
    ============================================================ */
-const FilmImage: React.FC<{
-  src: string;
-  alt: string;
-  className?: string;
-}> = ({ src, alt, className }) => {
+const FilmImage: React.FC<{ src: string; alt: string; className?: string }> = ({ src, alt, className }) => {
   const [loaded, setLoaded] = useState(false);
   return (
     <div className={className ? `museum-film-wrap ${className}` : "museum-film-wrap"}>
       {!loaded && <div className="museum-film-placeholder" />}
-      <img
-        src={src}
-        alt={alt}
-        loading="lazy"
-        onLoad={() => setLoaded(true)}
-        className="museum-film-img"
-        style={{
-          opacity: loaded ? 1 : 0,
-          filter: loaded ? "blur(0px)" : "blur(14px)",
-          transition: "opacity 1.2s ease, filter 1.2s ease",
-        }}
-      />
+      <img src={src} alt={alt} loading="lazy" onLoad={() => setLoaded(true)} className="museum-film-img"
+        style={{ opacity: loaded ? 1 : 0, filter: loaded ? "blur(0px)" : "blur(14px)", transition: "opacity 1.2s ease, filter 1.2s ease" }} />
     </div>
   );
 };
@@ -565,7 +754,7 @@ const FilmImage: React.FC<{
 /* ============================================================
    悬浮添加按钮 (FAB)
    ============================================================ */
-const FAB: React.FC<{ onClick: () => void; label: string }> = ({ onClick, label }) => (
+const FAB: React.FC<{ onClick: () => void }> = ({ onClick }) => (
   <motion.button
     onClick={onClick}
     style={{
@@ -580,10 +769,8 @@ const FAB: React.FC<{ onClick: () => void; label: string }> = ({ onClick, label 
     whileTap={{ scale: 0.95 }}
     initial={{ opacity: 0, y: 20 }}
     animate={{ opacity: 1, y: 0 }}
-    title={label}
-  >
-    +
-  </motion.button>
+    title="添加荣耀时刻"
+  >+</motion.button>
 );
 
 /* ============================================================
@@ -599,7 +786,6 @@ const MuseumPage: React.FC = () => {
   // 模态框状态
   const [cardModal, setCardModal] = useState<{ mode: "add" | "edit"; section: "bgm" | "tv" | "net"; data?: VintageCard } | null>(null);
   const [honorModal, setHonorModal] = useState<{ mode: "add" | "edit"; data?: HonorItem } | null>(null);
-  const [deleteConfirm, setDeleteConfirm] = useState<{ type: "card"; id: string; section: "bgm" | "tv" | "net" } | { type: "honor"; id: string } | null>(null);
 
   // 持久化
   useEffect(() => { saveData(LS_KEYS.bgms, bgms); }, [bgms]);
@@ -609,19 +795,15 @@ const MuseumPage: React.FC = () => {
 
   // 锁定背景滚动
   useEffect(() => {
-    if (cardModal || honorModal || deleteConfirm) {
-      document.body.style.overflow = "hidden";
-    } else {
-      document.body.style.overflow = "";
-    }
+    if (cardModal || honorModal) document.body.style.overflow = "hidden";
+    else document.body.style.overflow = "";
     return () => { document.body.style.overflow = ""; };
-  }, [cardModal, honorModal, deleteConfirm]);
+  }, [cardModal, honorModal]);
 
   // CRUD 操作 - 卡片
   const handleCardSubmit = (data: CardFormData) => {
     if (!cardModal) return;
     const { section, mode, data: editData } = cardModal;
-
     if (mode === "add") {
       const newCard: VintageCard = { id: genId(), ...data };
       if (section === "bgm") setBgms(prev => [newCard, ...prev]);
@@ -637,23 +819,15 @@ const MuseumPage: React.FC = () => {
   };
 
   const handleCardDelete = (id: string, section: "bgm" | "tv" | "net") => {
-    setDeleteConfirm({ type: "card", id, section });
-  };
-
-  const confirmCardDelete = () => {
-    if (!deleteConfirm || deleteConfirm.type !== "card") return;
-    const { id, section } = deleteConfirm;
     if (section === "bgm") setBgms(prev => prev.filter(c => c.id !== id));
     else if (section === "tv") setTvs(prev => prev.filter(c => c.id !== id));
     else setNets(prev => prev.filter(c => c.id !== id));
-    setDeleteConfirm(null);
   };
 
   // CRUD 操作 - 荣耀
   const handleHonorSubmit = (data: HonorFormData) => {
     if (!honorModal) return;
     const { mode, data: editData } = honorModal;
-
     if (mode === "add") {
       const newHonor: HonorItem = { id: genId(), ...data };
       setHonors(prev => [...prev, newHonor]);
@@ -665,13 +839,7 @@ const MuseumPage: React.FC = () => {
   };
 
   const handleHonorDelete = (id: string) => {
-    setDeleteConfirm({ type: "honor", id });
-  };
-
-  const confirmHonorDelete = () => {
-    if (!deleteConfirm || deleteConfirm.type !== "honor") return;
-    setHonors(prev => prev.filter(h => h.id !== deleteConfirm.id));
-    setDeleteConfirm(null);
+    setHonors(prev => prev.filter(h => h.id !== id));
   };
 
   // 获取 section 标题
@@ -748,26 +916,7 @@ const MuseumPage: React.FC = () => {
                 <span className="museum-honor-dot" />
                 <span className="museum-honor-year">{m.year}</span>
               </div>
-              <div className="museum-honor-card" style={{ position: "relative" }}>
-                {/* 编辑/删除按钮 */}
-                <div style={{ position: "absolute", top: 10, right: 10, zIndex: 5, display: "flex", gap: 6, opacity: 0, transition: "opacity 0.2s" }}
-                  className="honor-actions"
-                >
-                  <button onClick={() => setHonorModal({ mode: "edit", data: m })} style={{ width: 28, height: 28, border: "none", borderRadius: "50%", background: `${GOLD}cc`, color: "#fff", fontSize: 12, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }} title="编辑">✏️</button>
-                  <button onClick={() => handleHonorDelete(m.id)} style={{ width: 28, height: 28, border: "none", borderRadius: "50%", background: "#c0392bcc", color: "#fff", fontSize: 12, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }} title="删除">🗑️</button>
-                </div>
-                <FilmImage src={m.imageUrl} alt={m.title} className="museum-honor-img" />
-                <div className="museum-honor-body">
-                  <h3 className="museum-card-title">{m.title}</h3>
-                  <p className="museum-card-desc">{m.description}</p>
-                  {m.reflection && (
-                    <p className="museum-honor-reflection">
-                      <span className="museum-reflection-mark">"</span>{m.reflection}
-                    </p>
-                  )}
-                  <span className="museum-card-zoom-hint">🏆 荣耀时刻</span>
-                </div>
-              </div>
+              <HonorCard item={m} onEdit={(item) => setHonorModal({ mode: "edit", data: item })} onDelete={handleHonorDelete} />
             </motion.div>
           ))}
         </div>
@@ -777,7 +926,7 @@ const MuseumPage: React.FC = () => {
       <footer className="museum-foot"><span>时光不语，静待花开。</span></footer>
 
       {/* 悬浮添加按钮 */}
-      <FAB onClick={() => setHonorModal({ mode: "add" })} label="添加荣耀时刻" />
+      <FAB onClick={() => setHonorModal({ mode: "add" })} />
 
       {/* 模态框 */}
       <AnimatePresence>
@@ -803,19 +952,6 @@ const MuseumPage: React.FC = () => {
         )}
       </AnimatePresence>
 
-      <AnimatePresence>
-        {deleteConfirm && (
-          <ConfirmDialog
-            message="确定要删除这条记录吗？删除后可在刷新前撤销。"
-            onConfirm={() => {
-              if (deleteConfirm.type === "card") confirmCardDelete();
-              else confirmHonorDelete();
-            }}
-            onCancel={() => setDeleteConfirm(null)}
-          />
-        )}
-      </AnimatePresence>
-
       <style>{`
         .museum-page,
         .museum-page * { cursor: auto; }
@@ -824,7 +960,7 @@ const MuseumPage: React.FC = () => {
         .museum-page .museum-card-collection,
         .museum-page .museum-honor-card { cursor: pointer; }
 
-        .museum-page { position: relative; min-height: 100vh; overflow: hidden; color: #e8dcc8; background: radial-gradient(120% 80% at 50% 0%, #4a3a2e 0%, #3d2c2e 45%, #2a1f20 100%); font-family: "Courier New", "Noto Sans SC", monospace; padding: 0 24px 120px; }
+        .museum-page { position: relative; min-height: 100vh; overflow: hidden; color: #e8dcc8; background: radial-gradient(120% 80% at 50% 0%, #4a3a2e 0%, #3d2c2e 45%, #2a1f20 100%); font-family: "Noto Sans SC", system-ui, sans-serif; padding: 0 24px 120px; }
 
         /* 尘埃粒子 */
         .museum-dust-layer { position: absolute; inset: 0; z-index: 0; pointer-events: none; overflow: hidden; }
@@ -838,23 +974,31 @@ const MuseumPage: React.FC = () => {
 
         /* 标题区 */
         .museum-hero { position: relative; z-index: 2; max-width: 960px; margin: 0 auto; padding: 56px 4px 48px; text-align: center; }
-        .museum-hero-title { font-family: "Playfair Display", "Noto Serif SC", Georgia, serif; font-size: clamp(34px, 5.5vw, 54px); font-weight: 700; color: ${GOLD}; margin: 0 0 14px; letter-spacing: 0.06em; text-shadow: 0 0 30px rgba(176,141,87,0.3); }
+        .museum-hero-title { font-family: "Noto Serif SC", Georgia, serif; font-size: clamp(34px, 5.5vw, 54px); font-weight: 700; color: ${GOLD}; margin: 0 0 14px; letter-spacing: 0.06em; text-shadow: 0 0 30px rgba(176,141,87,0.3); }
         .museum-hero-sub { font-size: 16px; color: #b8a890; margin: 0; letter-spacing: 0.12em; font-style: italic; }
 
         /* 展厅 */
         .museum-hall { position: relative; z-index: 2; max-width: 960px; margin: 0 auto 72px; }
         .museum-hall-head { display: flex; align-items: center; gap: 18px; margin-bottom: 36px; padding-bottom: 18px; border-bottom: 1px solid rgba(176,141,87,0.25); }
-        .museum-hall-roman { font-family: "Playfair Display", Georgia, serif; font-size: 38px; font-weight: 700; color: ${GOLD}; opacity: 0.7; line-height: 1; }
-        .museum-hall-title { font-family: "Playfair Display", "Noto Serif SC", Georgia, serif; font-size: 26px; font-weight: 700; color: ${GOLD}; margin: 0 0 4px; }
+        .museum-hall-roman { font-family: "Noto Serif SC", Georgia, serif; font-size: 38px; font-weight: 700; color: ${GOLD}; opacity: 0.7; line-height: 1; }
+        .museum-hall-title { font-family: "Noto Serif SC", Georgia, serif; font-size: 26px; font-weight: 700; color: ${GOLD}; margin: 0 0 4px; }
         .museum-hall-sub { font-size: 13px; color: #9a8a78; margin: 0; font-style: italic; }
 
         /* ====== 复古报纸风格 ====== */
         .museum-era-section { background: none; }
-
         .vintage-section { margin-bottom: 48px; }
         .vintage-section-header { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; padding-bottom: 12px; border-bottom: 1px dashed rgba(139,109,79,0.4); }
         .vintage-section-emoji { font-size: 24px; filter: grayscale(0.3); }
         .vintage-section-title { font-family: "Noto Serif SC", Georgia, serif; font-size: 18px; font-weight: 600; color: ${VINTAGE_BROWN}; margin: 0; letter-spacing: 0.08em; }
+
+        /* 添加按钮 */
+        .museum-add-btn {
+          margin-left: auto; padding: 6px 14px; border: 1px dashed ${VINTAGE_BROWN}60;
+          border-radius: 20px; background: transparent; color: ${VINTAGE_BROWN};
+          font-size: 12px; cursor: pointer; font-family: "Noto Serif SC", serif;
+          transition: all 0.2s; display: flex; align-items: center; gap: 4px;
+        }
+        .museum-add-btn:hover { background: ${VINTAGE_BROWN}15; border-style: solid; }
 
         /* 横向滑动 */
         .vintage-gallery-scroll { overflow-x: auto; padding-bottom: 16px; scrollbar-width: thin; scrollbar-color: ${VINTAGE_BROWN} transparent; }
@@ -863,21 +1007,30 @@ const MuseumPage: React.FC = () => {
         .vintage-gallery-track { display: flex; gap: 20px; padding: 8px 4px; }
 
         /* 复古卡片 */
-        .vintage-card { position: relative; flex-shrink: 0; width: 320px; background: linear-gradient(135deg, ${VINTAGE_CREAM} 0%, #F5ECD8 50%, #EDE4D0 100%); border: 1px solid rgba(139,109,79,0.5); border-radius: 4px; padding: 0; box-shadow: 0 8px 24px rgba(0,0,0,0.15), inset 0 1px 0 rgba(255,255,255,0.6); overflow: hidden; transition: all 0.3s ease; }
+        .vintage-card { position: relative; flex-shrink: 0; width: 320px; background: linear-gradient(135deg, ${VINTAGE_CREAM} 0%, #F5ECD8 50%, #EDE4D0 100%); border: 1px solid rgba(139,109,79,0.5); border-radius: 4px; padding: 0; box-shadow: 0 8px 24px rgba(0,0,0,0.15), inset 0 1px 0 rgba(255,255,255,0.6); overflow: visible; transition: all 0.3s ease; }
 
         .vintage-year-stamp { position: absolute; top: 12px; left: 12px; z-index: 2; padding: 4px 12px 4px 14px; background: ${VINTAGE_BROWN}; color: ${VINTAGE_CREAM}; font-family: "Courier New", monospace; font-size: 13px; font-weight: 700; letter-spacing: 0.08em; border-radius: 2px; box-shadow: 2px 2px 0 rgba(0,0,0,0.2), inset 0 0 0 1px rgba(255,255,255,0.1); transform: rotate(-3deg); }
         .vintage-year-stamp::before, .vintage-year-stamp::after { content: ""; position: absolute; width: 6px; height: 6px; background: #F5ECD8; border-radius: 50%; top: 50%; transform: translateY(-50%); }
         .vintage-year-stamp::before { left: -3px; }
         .vintage-year-stamp::after { right: -3px; }
 
+        /* 编辑/删除按钮 */
+        .museum-edit-btn, .museum-delete-btn {
+          width: 28px; height: 28px; border: none; border-radius: 50%;
+          font-size: 13px; cursor: pointer; display: flex; align-items: center; justify-content: center;
+          box-shadow: 0 2px 8px rgba(0,0,0,0.25); transition: all 0.2s ease;
+        }
+        .museum-edit-btn { background: ${VINTAGE_LINK}; color: #fff; }
+        .museum-edit-btn:hover { background: ${VINTAGE_ORANGE}; transform: scale(1.1); }
+        .museum-delete-btn { background: ${VINTAGE_DELETE_HOVER}; color: #fff; }
+        .museum-delete-btn:hover { background: ${VINTAGE_DELETE}; animation: shake 0.3s ease-in-out; }
+        @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-2px) rotate(-5deg); } 75% { transform: translateX(2px) rotate(5deg); } }
+
         .vintage-card-content { padding: 52px 20px 20px; display: flex; flex-direction: column; gap: 14px; }
         .vintage-card-icon { font-size: 36px; text-align: center; filter: grayscale(0.2); opacity: 0.85; }
         .vintage-card-body { border-top: 1px solid rgba(139,109,79,0.25); padding-top: 14px; }
         .vintage-card-title { font-family: "Noto Serif SC", Georgia, serif; font-size: 16px; font-weight: 700; color: ${VINTAGE_TEXT}; margin: 0 0 10px; line-height: 1.4; letter-spacing: 0.02em; }
         .vintage-card-desc { font-family: "Noto Serif SC", Georgia, serif; font-size: 13px; line-height: 1.85; color: ${VINTAGE_TEXT_LIGHT}; margin: 0; font-style: italic; text-align: justify; }
-
-        /* 荣耀卡片悬停显示操作 */
-        .museum-honor-card:hover .honor-actions { opacity: 1 !important; }
 
         /* 垂直时间轴 */
         .museum-timeline-v { position: relative; padding-left: 8px; }
@@ -887,14 +1040,25 @@ const MuseumPage: React.FC = () => {
         .museum-honor-dot { width: 14px; height: 14px; border-radius: 50%; background: ${GOLD}; border: 3px solid #3d2c2e; box-shadow: 0 0 12px rgba(176,141,87,0.6); }
         .museum-honor-year { margin-top: 8px; font-family: "Courier New", monospace; font-size: 12px; font-weight: 700; color: ${GOLD}; }
         .museum-honor-card { position: relative; flex: 1; display: flex; gap: 20px; background: #f5edd6; border: 1px solid rgba(176,141,87,0.5); border-radius: 8px; overflow: hidden; box-shadow: 0 10px 30px -12px rgba(0,0,0,0.6); transition: transform 0.3s ease, box-shadow 0.3s ease; }
-        .museum-honor-card:hover { transform: translateX(6px); box-shadow: 0 18px 40px -12px rgba(0,0,0,0.7), 0 0 0 1px ${GOLD}; }
+
+        /* 荣耀编辑/删除按钮 */
+        .honor-edit-btn, .honor-delete-btn {
+          width: 28px; height: 28px; border: none; border-radius: 50%;
+          font-size: 13px; cursor: pointer; display: flex; align-items: center; justify-content: center;
+          box-shadow: 0 2px 8px rgba(0,0,0,0.3); transition: all 0.2s ease;
+        }
+        .honor-edit-btn { background: ${VINTAGE_DEEP}; color: #fff; }
+        .honor-edit-btn:hover { transform: scale(1.1); }
+        .honor-delete-btn { background: ${VINTAGE_DELETE_HOVER}; color: #fff; }
+        .honor-delete-btn:hover { background: ${VINTAGE_DELETE}; animation: shake 0.3s ease-in-out; }
+
         .museum-honor-img { width: 160px; flex-shrink: 0; height: auto; }
         .museum-honor-img .museum-film-img { height: 100%; min-height: 140px; }
         .museum-honor-body { padding: 18px 20px; flex: 1; }
-        .museum-card-title { font-family: "Playfair Display", "Noto Serif SC", Georgia, serif; font-size: 16px; font-weight: 700; color: #3d2c2e; margin: 0 0 6px; }
+        .museum-card-title { font-family: "Noto Serif SC", Georgia, serif; font-size: 16px; font-weight: 700; color: #3d2c2e; margin: 0 0 6px; }
         .museum-card-desc { font-size: 12px; line-height: 1.7; color: #6b5a4a; margin: 0; }
         .museum-honor-reflection { margin: 10px 0 0; padding-left: 14px; border-left: 2px solid ${GOLD}; font-size: 13px; line-height: 1.8; color: #8a6a4a; font-style: italic; }
-        .museum-reflection-mark { font-family: "Playfair Display", Georgia, serif; font-size: 22px; color: ${GOLD}; margin-right: 2px; line-height: 0; }
+        .museum-reflection-mark { font-family: "Noto Serif SC", Georgia, serif; font-size: 22px; color: ${GOLD}; margin-right: 2px; line-height: 0; }
         .museum-card-zoom-hint { position: absolute; bottom: 10px; right: 10px; z-index: 2; font-size: 11px; color: #8a7a64; opacity: 0; transition: opacity 0.3s ease; }
         .museum-honor-card:hover .museum-card-zoom-hint { opacity: 0.9; }
 

@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Link } from "react-router-dom";
 
@@ -7,20 +7,42 @@ import { Link } from "react-router-dom";
  *
  * 治愈系问答空间 —— 像朋友写信一样回应你的疑惑。
  * 信纸界面，输入问题后"回信"从下方缓缓升起。
- * 无后端依赖，本地预设温暖回复库，按关键词与分类匹配。
+ * 接入 AI（OpenAI 兼容模式 / 阿里云百炼 DeepSeek），流式打字机效果。
  */
+
+/* ===== 角色映射 ===== */
+const ROLES: Record<TagKey, { name: string; emoji: string; system: string }> = {
+  心灵: {
+    name: "浪矢爷爷",
+    emoji: "💌",
+    system: "你是浪矢爷爷，温暖慈祥的老人。你总是先肯定对方的感受，再温和地给出建议。语气像写信，真诚朴实。回答简洁有温度。",
+  },
+  脑洞: {
+    name: "小波",
+    emoji: "🎲",
+    system: "你是小波，解忧杂货店的迷途青年。你坐在杂货店门槛晃着汽水瓶，语气疏离诗意，多用具象名词（月亮/糖纸/锈迹/旧信），短句留白。严禁脏话。用户倾诉烦恼时，不教训不分析，只给一句有温度的回响。",
+  },
+  工作: {
+    name: "敦也",
+    emoji: "💼",
+    system: "你是敦也，冷静理性的职场人。遇到问题习惯分三步分析：现状、原因、对策。言简意赅，逻辑清晰。",
+  },
+  情感: {
+    name: "晴美",
+    emoji: "🌸",
+    system: "你是晴美，善解人意的倾听者。你总是先共情对方的情绪，再温柔地引导思考。温暖但不腻。",
+  },
+};
 
 /* ===== 分类标签 ===== */
 const TAGS = [
-  { key: "心灵", emoji: "🌿", label: "心灵" },
-  { key: "脑洞", emoji: "🧠", label: "脑洞" },
-  { key: "工作", emoji: "💼", label: "工作" },
-  { key: "情感", emoji: "❤️", label: "情感" },
-] as const;
+  { key: "心灵" as TagKey, emoji: "🌿", label: "心灵" },
+  { key: "脑洞" as TagKey, emoji: "🧠", label: "脑洞" },
+  { key: "工作" as TagKey, emoji: "💼", label: "工作" },
+  { key: "情感" as TagKey, emoji: "❤️", label: "情感" },
+];
 
-type TagKey = (typeof TAGS)[number]["key"];
-
-/* ===== 温暖回复库（按分类） ===== */
+type TagKey = "心灵" | "脑洞" | "工作" | "情感";
 const REPLIES: Record<TagKey, string[]> = {
   心灵: [
     "你不需要时时刻刻都坚强。允许自己偶尔脆弱，那才是完整的你。",
@@ -68,17 +90,103 @@ const AdvicePage: React.FC = () => {
   const [activeTag, setActiveTag] = useState<TagKey | null>(null);
   const [reply, setReply] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [currentRole, setCurrentRole] = useState<string | null>(null);
+  const abortRef = useRef<AbortController | null>(null);
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     const q = question.trim();
     if (!q) return;
+
+    // 取消上一次未完成的请求
+    abortRef.current?.abort();
+    const controller = new AbortController();
+    abortRef.current = controller;
+
     setLoading(true);
     setReply(null);
-    // 模拟"写信"的短暂等待，增加仪式感
-    window.setTimeout(() => {
-      setReply(generateReply(q, activeTag));
+
+    // 确定角色（默认小波）
+    const tag = activeTag || "脑洞";
+    const role = ROLES[tag];
+    setCurrentRole(`${role.emoji} ${role.name}`);
+
+    // 环境变量
+    const apiKey = import.meta.env.VITE_API_KEY;
+    const baseUrl = import.meta.env.VITE_BASE_URL;
+    const model = import.meta.env.VITE_MODEL;
+
+    // 如果没有配置 AI，使用本地回复库兜底
+    if (!baseUrl || !apiKey) {
+      window.setTimeout(() => {
+        setReply(generateReply(q, tag));
+        setLoading(false);
+      }, 900);
+      return;
+    }
+
+    try {
+      const res = await fetch(baseUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${apiKey}`,
+        },
+        body: JSON.stringify({
+          model: model || "deepseek-v3",
+          stream: true,
+          messages: [
+            { role: "system", content: role.system },
+            { role: "user", content: q },
+          ],
+        }),
+        signal: controller.signal,
+      });
+
+      if (!res.ok) {
+        throw new Error(`API 返回 ${res.status}`);
+      }
+
+      // 流式读取
+      const reader = res.body?.getReader();
+      if (!reader) throw new Error("无法读取响应流");
+
+      const decoder = new TextDecoder();
+      let fullText = "";
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        const chunk = decoder.decode(value, { stream: true });
+        // 解析 SSE 行：data: {...}
+        for (const line of chunk.split("\n")) {
+          const trimmed = line.trim();
+          if (!trimmed || !trimmed.startsWith("data:")) continue;
+          const jsonStr = trimmed.slice(5).trim();
+          if (jsonStr === "[DONE]") continue;
+          try {
+            const parsed = JSON.parse(jsonStr);
+            const delta = parsed.choices?.[0]?.delta?.content || "";
+            fullText += delta;
+            setReply(fullText);
+          } catch {
+            // 忽略解析失败的行
+          }
+        }
+      }
+
+      // 如果流读完但没内容，使用本地兜底
+      if (!fullText.trim()) {
+        setReply(generateReply(q, tag));
+      }
+    } catch (err: unknown) {
+      // 用户主动取消不提示
+      if (err instanceof DOMException && err.name === "AbortError") return;
+      setReply("小波现在有点忙，稍后再试吧。");
+    } finally {
       setLoading(false);
-    }, 900);
+      abortRef.current = null;
+    }
   };
 
   // 随机取一个温馨开场白（稳定）
@@ -205,6 +313,7 @@ const AdvicePage: React.FC = () => {
           >
             <div className="advice-reply-stamp">已送达</div>
             <p className="advice-reply-greeting">亲爱的旅人：</p>
+            {currentRole && <p className="advice-reply-role">{currentRole} 回信</p>}
             <p className="advice-reply-text">{reply}</p>
             <p className="advice-reply-sign">—— 杂货店老板 · 灯下</p>
             <button
@@ -347,6 +456,10 @@ const AdvicePage: React.FC = () => {
         .advice-reply-greeting {
           font-family: "Noto Serif SC", serif; font-size: 15px; color: #b89968;
           margin: 0 0 14px;
+        }
+        .advice-reply-role {
+          font-size: 13px; color: #c8924a; margin: 0 0 16px;
+          font-style: italic; letter-spacing: 0.05em;
         }
         .advice-reply-text {
           font-family: "Noto Serif SC", Georgia, serif;

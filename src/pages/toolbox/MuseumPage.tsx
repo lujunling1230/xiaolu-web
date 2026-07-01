@@ -222,7 +222,32 @@ const CardFormModal: React.FC<{
   onSubmit: (data: CardFormData) => void;
   onClose: () => void;
   sectionTitle: string;
-}> = ({ mode, initialData, onSubmit, onClose, sectionTitle }) => {
+  emoji: string;
+}> = ({ mode, initialData, onSubmit, onClose, sectionTitle, emoji }) => {
+  // 主题化 Placeholder 映射
+  const placeholders = {
+    "🎵": {
+      title: "🎧 耳机里的青春 BGM",
+      desc: "那年夏天循环播放的旋律，是刻在DNA里的歌。",
+      imgIcon: "🎵",
+    },
+    "📺": {
+      title: "📺 电视里的乌托邦",
+      desc: "全家围坐追过的经典剧集，是童年最暖的光。",
+      imgIcon: "📺",
+    },
+    "📱": {
+      title: "🌐 网络初现时的印记",
+      desc: "拨号上网时的第一个网页，是探索世界的起点。",
+      imgIcon: "🌐",
+    },
+  };
+  const ph = placeholders[emoji as keyof typeof placeholders] || {
+    title: sectionTitle,
+    desc: "写下你的回忆...",
+    imgIcon: "🖼️",
+  };
+
   const [year, setYear] = useState(initialData?.year || "");
   const [title, setTitle] = useState(initialData?.title || "");
   const [description, setDescription] = useState(initialData?.description || "");
@@ -289,9 +314,8 @@ const CardFormModal: React.FC<{
       >
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}>
           <h3 style={{ fontFamily: "Noto Serif SC, serif", fontSize: 17, fontWeight: 600, color: VINTAGE_DEEP, margin: 0 }}>
-            {mode === "add" ? "✏️ 添加记录" : "✏️ 编辑记录"}
+            {ph.title}
           </h3>
-          <span style={{ fontSize: 11, color: VINTAGE_TEXT_LIGHT, opacity: 0.7, fontFamily: "Noto Serif SC, serif" }}>{sectionTitle}</span>
         </div>
 
         <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
@@ -313,8 +337,7 @@ const CardFormModal: React.FC<{
 
           <div>
             <label style={{ display: "block", fontSize: 12, color: VINTAGE_TEXT_LIGHT, marginBottom: 5, fontFamily: "Noto Serif SC, serif" }}>💬 文案描述</label>
-            <textarea value={description} onChange={e => setDescription(e.target.value)} placeholder="写下你的回忆..."
-              rows={3} style={{ width: "100%", padding: "10px 12px", border: `1px solid ${VINTAGE_BROWN}30`, borderRadius: 6, background: "#fffef8", fontSize: 14, color: VINTAGE_DEEP, outline: "none", fontFamily: "Noto Serif SC, serif", lineHeight: 1.7, resize: "vertical", transition: "border-color 0.2s" }}
+            <textarea value={description} onChange={e => setDescription(e.target.value)} placeholder={ph.desc} rows={3} style={{ width: "100%", padding: "10px 12px", border: `1px solid ${VINTAGE_BROWN}30`, borderRadius: 6, background: "#fffef8", fontSize: 14, color: VINTAGE_DEEP, outline: "none", fontFamily: "Noto Serif SC, serif", lineHeight: 1.7, resize: "vertical", transition: "border-color 0.2s" }}
               onFocus={e => { (e.target as HTMLTextAreaElement).style.borderColor = VINTAGE_BROWN; }}
               onBlur={e => { (e.target as HTMLTextAreaElement).style.borderColor = `${VINTAGE_BROWN}30`; }} />
           </div>
@@ -364,7 +387,7 @@ const CardFormModal: React.FC<{
                 </>
               ) : (
                 <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: "100%", gap: 8 }}>
-                  <span style={{ fontSize: 32, opacity: 0.5 }}>🖼️</span>
+                  <span style={{ fontSize: 32, opacity: 0.5 }}>{ph.imgIcon}</span>
                   <span style={{ fontSize: 13, color: VINTAGE_TEXT_LIGHT, fontFamily: "Noto Serif SC, serif" }}>+ 上传图片</span>
                 </div>
               )}
@@ -1083,11 +1106,16 @@ const MuseumPage: React.FC = () => {
     else setNets(prev => prev.map(c => c.id === id ? { ...c, imageUrl: undefined } : c));
   };
 
-  // 获取 section 标题
+  // 获取 section 标题和 emoji
   const getSectionTitle = (section: "bgm" | "tv" | "net") => {
     if (section === "bgm") return "🎵 耳机里的青春 BGM";
     if (section === "tv") return "📺 电视里的乌托邦";
     return "📱 网络初现时的印记";
+  };
+  const getSectionEmoji = (section: "bgm" | "tv" | "net") => {
+    if (section === "bgm") return "🎵";
+    if (section === "tv") return "📺";
+    return "📱";
   };
 
   return (
@@ -1196,6 +1224,7 @@ const MuseumPage: React.FC = () => {
             onSubmit={handleCardSubmit}
             onClose={() => setCardModal(null)}
             sectionTitle={getSectionTitle(cardModal.section)}
+            emoji={getSectionEmoji(cardModal.section)}
           />
         )}
       </AnimatePresence>

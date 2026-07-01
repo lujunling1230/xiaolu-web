@@ -1118,21 +1118,21 @@ const MuseumPage: React.FC = () => {
         </div>
 
         <VintageGallery title="耳机里的青春 BGM" emoji="🎵" cards={sortedBgms}
-          onAdd={(data) => setCardModal({ mode: "add", section: "bgm", data: { id: "", ...data } })}
+          onAdd={(data) => setCardModal({ mode: "add", section: "bgm", data: { ...data, id: "", year: data.year || String(new Date().getFullYear()), title: data.title || "新记录", description: data.description || "暂无描述" } })}
           onEdit={(card) => setCardModal({ mode: "edit", section: "bgm", data: card })}
           onDelete={(id) => handleCardDelete(id, "bgm")}
           onImageUpload={(id, url) => handleImageUpload(id, url, "bgm")}
           onImageDelete={(id) => handleImageDelete(id, "bgm")} />
 
         <VintageGallery title="电视里的乌托邦" emoji="📺" cards={sortedTvs}
-          onAdd={(data) => setCardModal({ mode: "add", section: "tv", data: { id: "", ...data } })}
+          onAdd={(data) => setCardModal({ mode: "add", section: "tv", data: { ...data, id: "", year: data.year || String(new Date().getFullYear()), title: data.title || "新记录", description: data.description || "暂无描述" } })}
           onEdit={(card) => setCardModal({ mode: "edit", section: "tv", data: card })}
           onDelete={(id) => handleCardDelete(id, "tv")}
           onImageUpload={(id, url) => handleImageUpload(id, url, "tv")}
           onImageDelete={(id) => handleImageDelete(id, "tv")} />
 
         <VintageGallery title="网络初现时的印记" emoji="📱" cards={sortedNets}
-          onAdd={(data) => setCardModal({ mode: "add", section: "net", data: { id: "", ...data } })}
+          onAdd={(data) => setCardModal({ mode: "add", section: "net", data: { ...data, id: "", year: data.year || String(new Date().getFullYear()), title: data.title || "新记录", description: data.description || "暂无描述" } })}
           onEdit={(card) => setCardModal({ mode: "edit", section: "net", data: card })}
           onDelete={(id) => handleCardDelete(id, "net")}
           onImageUpload={(id, url) => handleImageUpload(id, url, "net")}
@@ -1267,10 +1267,17 @@ const MuseumPage: React.FC = () => {
         .vintage-gallery-track { display: flex; gap: 20px; padding: 8px 4px; }
 
         /* 时代回响大图卡片（封面杂志风格） */
-        .vintage-card { position: relative; flex-shrink: 0; width: 320px; min-height: 380px; background: linear-gradient(135deg, ${VINTAGE_CREAM} 0%, #F5ECD8 50%, #EDE4D0 100%); border: 1px solid rgba(139,109,79,0.5); border-radius: 4px; padding: 0; box-shadow: 0 8px 24px rgba(0,0,0,0.15), inset 0 1px 0 rgba(255,255,255,0.6); transition: all 0.3s ease; overflow: hidden; }
+        .vintage-card {
+          position: relative; flex-shrink: 0; width: 320px; min-height: 380px;
+          background: linear-gradient(135deg, ${VINTAGE_CREAM} 0%, #F5ECD8 50%, #EDE4D0 100%);
+          border: 1px solid rgba(139,109,79,0.5); border-radius: 4px; padding: 0;
+          box-shadow: 0 8px 24px rgba(0,0,0,0.15), inset 0 1px 0 rgba(255,255,255,0.6);
+          transition: all 0.3s ease; overflow: hidden;
+          display: flex; flex-direction: column;
+        }
 
         /* 大图封面区域 */
-        .vintage-card-hero { position: relative; width: 100%; height: 150px; overflow: hidden; border-radius: 4px 4px 0 0; }
+        .vintage-card-hero { position: relative; width: 100%; height: 150px; flex-shrink: 0; overflow: hidden; border-radius: 4px 4px 0 0; }
         .vintage-card-hero-img { width: 100%; height: 100%; object-fit: cover; filter: sepia(0.15) contrast(1.02) brightness(0.98); transition: transform 0.3s ease; }
         .vintage-card-hero:hover .vintage-card-hero-img { transform: scale(1.03); }
         .vintage-card-hero-placeholder { width: 100%; height: 100%; background: linear-gradient(135deg, #E8DFC8 0%, #D4C4A8 40%, #C8B896 100%); background-image: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(139,107,79,0.05) 2px, rgba(139,107,79,0.05) 4px), repeating-linear-gradient(90deg, transparent, transparent 2px, rgba(139,107,79,0.05) 2px, rgba(139,107,79,0.05) 4px); display: flex; align-items: center; justify-content: center; }
@@ -1363,7 +1370,11 @@ const MuseumPage: React.FC = () => {
 
         .vintage-card-content { padding: 52px 20px 20px; display: flex; flex-direction: column; gap: 14px; }
         .vintage-card-icon { font-size: 36px; text-align: center; filter: grayscale(0.2); opacity: 0.85; }
-        .vintage-card-body { padding: 14px 16px 16px; }
+        .vintage-card-body {
+          padding: 14px 16px 16px;
+          flex: 1;
+          display: flex; flex-direction: column; justify-content: space-between;
+        }
         .vintage-card-title { font-family: "Noto Serif SC", Georgia, serif; font-size: 16px; font-weight: 700; color: ${VINTAGE_TEXT}; margin: 0 0 10px; line-height: 1.4; letter-spacing: 0.02em; }
         .vintage-card-desc { font-family: "Noto Serif SC", Georgia, serif; font-size: 13px; line-height: 1.85; color: ${VINTAGE_TEXT_LIGHT}; margin: 0; font-style: italic; text-align: justify; }
 

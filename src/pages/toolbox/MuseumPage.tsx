@@ -779,7 +779,8 @@ const VintageCard: React.FC<{
       {/* 文字内容区 */}
       <div className="vintage-card-body">
         <h4 className="vintage-card-title">{card.title}</h4>
-        <p className="vintage-card-desc">"{card.description}"</p>
+        <div className="vintage-card-divider" />
+        <p className="vintage-card-quote">{card.description}</p>
       </div>
 
       {/* 隐藏的文件输入 */}
@@ -1319,10 +1320,36 @@ const MuseumPage: React.FC = () => {
         /* 年份邮票标签（浮在图片左上角） */
         .vintage-year-stamp-overlay { position: absolute; top: 8px; left: 8px; z-index: 5; padding: 4px 8px; background: #8B7355; color: #fff; font-family: "Courier New", monospace; font-size: 12px; font-weight: 700; letter-spacing: 0.06em; border-radius: 2px; box-shadow: 2px 2px 0 rgba(0,0,0,0.15), inset 0 0 0 1px rgba(255,255,255,0.15); transform: rotate(-3deg); }
 
-        /* 文字区域（50% = 160px） */
-        .vintage-card-body { height: 160px; padding: 14px 16px; flex-shrink: 0; display: flex; flex-direction: column; justify-content: space-between; }
-        .vintage-card-title { font-family: "Noto Serif SC", Georgia, serif; font-size: 16px; font-weight: 700; color: #3E2723; margin: 0 0 6px; line-height: 1.4; }
-        .vintage-card-desc { font-family: "Noto Serif SC", Georgia, serif; font-size: 13px; line-height: 1.5; color: #5D4037; margin: 0; }
+        /* 文字区域（紧凑杂志排版） */
+        .vintage-card-body {
+          height: 160px; padding: 12px 16px 12px;
+          flex-shrink: 0; display: flex; flex-direction: column;
+        }
+        .vintage-card-title {
+          font-family: "Noto Serif SC", Georgia, serif;
+          font-size: 16px; font-weight: 600; color: #3E2723;
+          margin: 0 0 6px; line-height: 1.4;
+          flex-shrink: 0;
+        }
+        /* 标题下方分隔线 */
+        .vintage-card-divider {
+          width: 60px; height: 1px; background: #E0D6D0;
+          margin: 0 0 8px; flex-shrink: 0;
+        }
+        .vintage-card-desc {
+          font-family: "Noto Serif SC", Georgia, serif;
+          font-size: 13px; line-height: 1.5; color: #5D4037;
+          margin: 0; flex: 1; overflow: hidden;
+          display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+        }
+        /* 引用（带前缀符号） */
+        .vintage-card-quote {
+          font-family: "Noto Serif SC", Georgia, serif;
+          font-size: 13px; line-height: 1.5; color: #795548;
+          margin: 6px 0 0; font-style: italic; flex-shrink: 0;
+        }
+        .vintage-card-quote::before { content: "❝ "; }
+        .vintage-card-quote::after { content: " ❞"; }
 
         /* 编辑/删除/上传按钮 */
         .museum-edit-btn, .museum-delete-btn {
@@ -1351,12 +1378,6 @@ const MuseumPage: React.FC = () => {
           animation: vintage-spin 1s linear infinite;
         }
         @keyframes vintage-spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-
-        .vintage-card-content { padding: 52px 20px 20px; display: flex; flex-direction: column; gap: 14px; }
-        .vintage-card-icon { font-size: 36px; text-align: center; filter: grayscale(0.2); opacity: 0.85; }
-        .vintage-card-body { padding: 10px 12px 12px; flex: 1; display: flex; flex-direction: column; justify-content: space-between; }
-        .vintage-card-title { font-family: "Noto Serif SC", Georgia, serif; font-size: 15px; font-weight: 700; color: #3E2723; margin: 0 0 6px; line-height: 1.4; letter-spacing: 0.02em; }
-        .vintage-card-desc { font-family: "Noto Serif SC", Georgia, serif; font-size: 12px; line-height: 1.6; color: #5D4037; margin: 0; font-style: italic; text-align: justify; }
 
         /* 弹窗大图预览 hover */
         .modal-image-preview-hover { position: absolute; inset: 0; background: rgba(0,0,0,0.45); display: flex; align-items: center; justify-content: center; color: #fff; font-family: "Noto Serif SC, serif"; font-size: 14px; opacity: 0; transition: opacity 0.2s; }
@@ -1443,7 +1464,7 @@ const MuseumPage: React.FC = () => {
         @media (max-width: 640px) {
           .vintage-card { width: 100%; max-width: 320px; height: 320px; }
           .vintage-card-hero { height: 160px; }
-          .vintage-card-body { height: 160px; }
+          .vintage-card-body { height: 160px; padding: 12px; }
           .vintage-section-header { gap: 10px; }
           .vintage-section-title { font-size: 16px; }
           .museum-honor-card { flex-direction: column; }

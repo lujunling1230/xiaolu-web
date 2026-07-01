@@ -499,6 +499,22 @@ const HonorFormModal: React.FC<{
 };
 
 /* ============================================================
+   复古 SVG 占位图（时代回响卡片用）
+   ============================================================ */
+// 留声机 - BGM
+const SVG_MUSIC_PLACEHOLDER = `data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI4MCIgaGVpZ2h0PSI4MCIgdmlld0JveD0iMCAwIDgwIDgwIj48cmVjdCB4PSIxMCIgeT0iMTAiIHdpZHRoPSI2MCIgaGVpZ2h0PSI2MCIgZmlsbD0iI2Y1ZjBlNSIgcnJ4PSIxMCIvPjxjaXJjbGUgY3g9IjQwIiBjeT0iNDAiIHI9IjI4IiBmaWxsPSIjZTZlNmU2Ii8+PGNpcmNsZSBjeD0iNDAiIGN5PSI0MCIgcj0iMTYiIGZpbGw9IiNlOGU4ZTgiLz48Y2lyY2xlIGN4PSI0MCIgY3k9IjQwIiByPSI4IiBmaWxsPSIjZDRhZjM3Ii8+PGNpcmNsZSBjeD0iNDAiIGN5PSI0MCIgcj0iNCIgZmlsbD0iI2Y1ZjBlNSIvPjxwYXRoIGQ9Ik00MCA0MGwzMiAtMzIiIHN0cm9rZT0iI2Q0YWYzNyIgc3Ryb2tlLXdpZHRoPSIzIiBmaWxsPSJub25lIi8+PC9zdmc+`;
+// 老式电视 - TV
+const SVG_TV_PLACEHOLDER = `data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI4MCIgaGVpZ2h0PSI4MCIgdmlld0JveD0iMCAwIDgwIDgwIj48cmVjdCB4PSI4IiB5PSIxMCIgd2lkdGg9IjY0IiBoZWlnaHQ9IjQ2IiBmaWxsPSIjZTZlNmU2IiByeD0iNCIvPjxyZWN0IHg9IjE2IiB5PSIxNiIgd2lkdGg9IjQ4IiBoZWlnaHQ9IjM0IiBmaWxsPSIjZDZkOGQ4IiByeD0iMiIvPjxjaXJjbGUgY3g9IjQwIiBjeT0iNjQiIHI9IjgiIGZpbGw9IiNkNGFmMzciLz48bGluZSB4MT0iNDAiIHkxPSI2NSIgeDI9IjQwIiB5Mj0iNzUiIHN0cm9rZT0iI2Q0YWYzNyIgc3Ryb2tlLXdpZHRoPSIzIi8+PC9zdmc+`;
+// 诺基亚手机 - Internet
+const SVG_PHONE_PLACEHOLDER = `data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI4MCIgaGVpZ2h0PSI4MCIgdmlld0JveD0iMCAwIDgwIDgwIj48cmVjdCB4PSIyNCIgeT0iOCIgd2lkdGg9IjMyIiBoZWlnaHQ9IjY0IiBmaWxsPSIjZTZlNmU2IiByeD0iNCIvPjxyZWN0IHg9IjI4IiB5PSIxNiIgd2lkdGg9IjI0IiBoZWlnaHQ9IjQwIiBmaWxsPSIjZDZkOGQ4IiByeD0iMiIvPjxiaW5kIGN4PSI0MCIgY3k9IjU4IiByPSIzIiBmaWxsPSIjZDRhZjM3Ii8+PC9zdmc+`;
+
+function getPlaceholderSvg(emoji: string): string {
+  if (emoji === "🎵") return SVG_MUSIC_PLACEHOLDER;
+  if (emoji === "📺") return SVG_TV_PLACEHOLDER;
+  return SVG_PHONE_PLACEHOLDER;
+}
+
+/* ============================================================
    图片预览弹窗
    ============================================================ */
 const ImagePreviewModal: React.FC<{
@@ -643,16 +659,16 @@ const VintageCard: React.FC<{
 
       {/* 内容区 */}
       <div className="vintage-card-content">
-        <div className="vintage-card-icon" style={{ position: "relative" }}>
+        <div className="vintage-card-icon-wrap" style={{ position: "relative", display: "flex", justifyContent: "center" }}>
           {/* 拖拽指示器 */}
           {isDragging && (
-            <div className="vintage-drag-overlay">
+            <div className="vintage-drag-overlay" style={{ width: 80, height: 80 }}>
               <span>🖼️</span>
               <span style={{ fontSize: 10, marginTop: 4 }}>放置上传</span>
             </div>
           )}
 
-          {/* 已上传图片 */}
+          {/* 已上传图片 - 80x80px */}
           {hasImage && !isDragging && (
             <motion.img
               src={card.imageUrl}
@@ -667,14 +683,20 @@ const VintageCard: React.FC<{
 
           {/* 上传中动画 */}
           {isUploading && (
-            <div className="vintage-upload-loading">
+            <div className="vintage-upload-loading" style={{ width: 80, height: 80 }}>
               <span className="vintage-spin">🎵</span>
             </div>
           )}
 
-          {/* 兜底 emoji（无图片时） */}
+          {/* 兜底 SVG 占位图（无图片时） */}
           {!hasImage && !isUploading && !isDragging && (
-            <span>{emoji}</span>
+            <div className="vintage-card-img-placeholder">
+              <img
+                src={getPlaceholderSvg(emoji)}
+                alt="placeholder"
+                style={{ width: "100%", height: "100%", objectFit: "contain" }}
+              />
+            </div>
           )}
 
           {/* 音乐播放按钮 */}
@@ -920,12 +942,12 @@ const MuseumPage: React.FC = () => {
   const [nets, setNets] = useState<VintageCard[]>(() => loadData(LS_KEYS.nets, DEFAULT_NETS));
   const [honors, setHonors] = useState<HonorItem[]>(() => loadData(LS_KEYS.honors, DEFAULT_HONORS));
 
-  // 荣耀之路强制倒序排列（年份大的在上）
+  // 荣耀之路强制升序排列（年份小的在上，向下滚动是回顾历史）
   const sortedHonors = useMemo(() => {
     const sorted = [...honors].sort((a, b) => {
       const ay = parseInt(a.year) || 0;
       const by = parseInt(b.year) || 0;
-      return by - ay;
+      return ay - by; // 升序：1999 → 2024
     });
     // eslint-disable-next-line no-console
     console.log("[荣耀之路] 排序后年份:", sorted.map(h => h.year));
@@ -1224,26 +1246,47 @@ const MuseumPage: React.FC = () => {
         }
         .museum-upload-btn:hover { background: ${VINTAGE_BROWN}; transform: scale(1.1); }
 
-        /* 卡片图片 */
+        /* 卡片图片（80x80px，主视觉焦点） */
         .vintage-card-img {
-          width: 48px; height: 48px; object-fit: cover; border-radius: 8px;
+          width: 80px; height: 80px; object-fit: cover; border-radius: 12px;
           border: 2px solid ${VINTAGE_LINK};
           background: #f5f0e5;
-          filter: sepia(0.12) contrast(1.05);
+          filter: sepia(0.2) contrast(0.95) brightness(0.97);
           box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+          transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+        .vintage-card-img:hover {
+          transform: scale(1.05);
+          box-shadow: 0 4px 12px rgba(92,64,51,0.3);
+        }
+
+        /* 卡片图片占位图容器 */
+        .vintage-card-img-placeholder {
+          width: 80px; height: 80px; border-radius: 12px;
+          border: 2px solid ${VINTAGE_LINK}80;
+          background: #f5f0e5;
+          padding: 4px;
+          display: flex; align-items: center; justify-content: center;
+          box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        /* 卡片图标区域 */
+        .vintage-card-icon-wrap {
+          display: flex; justify-content: center;
+          margin: 16px 0;
         }
 
         /* 拖拽上传指示器 */
         .vintage-drag-overlay {
           display: flex; flex-direction: column; align-items: center; justify-content: center;
-          width: 48px; height: 48px; border-radius: 8px;
+          border-radius: 12px;
           background: rgba(212,175,55,0.15); border: 2px dashed #D4AF37;
           font-size: 10px; color: ${VINTAGE_TEXT_LIGHT};
         }
 
         /* 上传中旋转动画 */
         .vintage-upload-loading {
-          width: 48px; height: 48px; border-radius: 8px;
+          border-radius: 12px;
           background: rgba(245,240,229,0.9); border: 2px solid ${VINTAGE_LINK}60;
           display: flex; align-items: center; justify-content: center;
         }

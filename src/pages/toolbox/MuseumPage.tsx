@@ -109,7 +109,6 @@ const DEFAULT_HONORS: HonorItem[] = [
 const GOLD = "#b08d57";
 const VINTAGE_BROWN = "#8B6B4F";
 const VINTAGE_CREAM = "#FDF8F0";
-const VINTAGE_TEXT = "#3D2C22";
 const VINTAGE_TEXT_LIGHT = "#6B5A4A";
 const VINTAGE_DEEP = "#5c4033"; // 深棕 - 标题
 const VINTAGE_LINK = "#8B7355"; // 链接棕
@@ -756,7 +755,7 @@ const VintageCard: React.FC<{
       </AnimatePresence>
 
       {/* 文字内容区 */}
-      <div className="vintage-card-body" style={{ padding: "14px 16px 16px" }}>
+      <div className="vintage-card-body">
         <h4 className="vintage-card-title">{card.title}</h4>
         <p className="vintage-card-desc">"{card.description}"</p>
       </div>
@@ -1266,39 +1265,39 @@ const MuseumPage: React.FC = () => {
         .vintage-gallery-scroll::-webkit-scrollbar-thumb { background: rgba(139,109,79,0.4); border-radius: 3px; }
         .vintage-gallery-track { display: flex; gap: 20px; padding: 8px 4px; }
 
-        /* 时代回响大图卡片（封面杂志风格） */
+        /* 时代回响卡片（精装小相册风格） */
         .vintage-card {
-          position: relative; flex-shrink: 0; width: 320px; min-height: 380px;
+          position: relative; flex-shrink: 0; width: 280px; min-height: 320px;
           background: linear-gradient(135deg, ${VINTAGE_CREAM} 0%, #F5ECD8 50%, #EDE4D0 100%);
           border: 1px solid rgba(139,109,79,0.5); border-radius: 4px; padding: 0;
-          box-shadow: 0 8px 24px rgba(0,0,0,0.15), inset 0 1px 0 rgba(255,255,255,0.6);
+          box-shadow: 0 4px 14px rgba(0,0,0,0.1), inset 0 1px 0 rgba(255,255,255,0.6);
           transition: all 0.3s ease; overflow: hidden;
           display: flex; flex-direction: column;
         }
 
-        /* 大图封面区域 */
-        .vintage-card-hero { position: relative; width: 100%; height: 150px; flex-shrink: 0; overflow: hidden; border-radius: 4px 4px 0 0; }
+        /* 封面图片区域 */
+        .vintage-card-hero { position: relative; width: 100%; height: 120px; flex-shrink: 0; overflow: hidden; border-radius: 12px 12px 0 0; }
         .vintage-card-hero-img { width: 100%; height: 100%; object-fit: cover; filter: sepia(0.15) contrast(1.02) brightness(0.98); transition: transform 0.3s ease; }
         .vintage-card-hero:hover .vintage-card-hero-img { transform: scale(1.03); }
         .vintage-card-hero-placeholder { width: 100%; height: 100%; background: linear-gradient(135deg, #E8DFC8 0%, #D4C4A8 40%, #C8B896 100%); background-image: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(139,107,79,0.05) 2px, rgba(139,107,79,0.05) 4px), repeating-linear-gradient(90deg, transparent, transparent 2px, rgba(139,107,79,0.05) 2px, rgba(139,107,79,0.05) 4px); display: flex; align-items: center; justify-content: center; }
         .vintage-card-hero-loading { position: absolute; inset: 0; background: rgba(245,240,229,0.9); display: flex; align-items: center; justify-content: center; }
         .vintage-card-hero-drag { position: absolute; inset: 0; background: rgba(212,175,55,0.2); border: 3px dashed #D4AF37; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 12px; color: ${VINTAGE_TEXT_LIGHT}; font-family: "Noto Serif SC, serif"; }
         .vintage-card-hero-gradient { position: absolute; left: 0; right: 0; bottom: 0; height: 60%; background: linear-gradient(to bottom, transparent 0%, rgba(26,18,11,0.65) 100%); pointer-events: none; }
-        .vintage-card-hero-badge { position: absolute; top: 10px; right: 10px; z-index: 5; width: 28px; height: 28px; border-radius: 50%; background: rgba(255,255,255,0.85); backdrop-filter: blur(4px); border: 1px solid rgba(139,107,79,0.3); font-size: 14px; display: flex; align-items: center; justify-content: center; opacity: 0; transition: opacity 0.2s; box-shadow: 0 2px 6px rgba(0,0,0,0.2); }
+        .vintage-card-hero-badge { position: absolute; top: 8px; right: 8px; z-index: 5; width: 24px; height: 24px; border-radius: 50%; background: rgba(255,255,255,0.85); backdrop-filter: blur(4px); border: 1px solid rgba(139,107,79,0.3); font-size: 12px; display: flex; align-items: center; justify-content: center; opacity: 0; transition: opacity 0.2s; box-shadow: 0 2px 6px rgba(0,0,0,0.2); }
         .vintage-card-hero:hover .vintage-card-hero-badge { opacity: 1; }
-        .vintage-card-hero-upload-hint { position: absolute; bottom: 12px; left: 50%; transform: translateX(-50%); z-index: 5; font-size: 12px; color: rgba(245,240,229,0.9); font-family: "Noto Serif SC, serif"; text-shadow: 0 1px 3px rgba(0,0,0,0.5); white-space: nowrap; }
+        .vintage-card-hero-upload-hint { position: absolute; bottom: 8px; left: 50%; transform: translateX(-50%); z-index: 5; font-size: 11px; color: rgba(245,240,229,0.9); font-family: "Noto Serif SC, serif"; text-shadow: 0 1px 3px rgba(0,0,0,0.5); white-space: nowrap; }
 
         /* 年份邮票标签（浮在封面上） */
-        .vintage-year-stamp-overlay { position: absolute; top: 10px; left: 10px; z-index: 5; padding: 4px 12px 4px 14px; background: ${VINTAGE_BROWN}; color: ${VINTAGE_CREAM}; font-family: "Courier New", monospace; font-size: 13px; font-weight: 700; letter-spacing: 0.08em; border-radius: 2px; box-shadow: 2px 2px 0 rgba(0,0,0,0.2), inset 0 0 0 1px rgba(255,255,255,0.1); transform: rotate(-3deg); }
-        .vintage-year-stamp-overlay::before, .vintage-year-stamp-overlay::after { content: ""; position: absolute; width: 6px; height: 6px; background: #F5ECD8; border-radius: 50%; top: 50%; transform: translateY(-50%); }
-        .vintage-year-stamp-overlay::before { left: -3px; }
-        .vintage-year-stamp-overlay::after { right: -3px; }
+        .vintage-year-stamp-overlay { position: absolute; top: 8px; left: 8px; z-index: 5; padding: 3px 10px 3px 12px; background: #8B7355; color: #fff; font-family: "Courier New", monospace; font-size: 12px; font-weight: 700; letter-spacing: 0.06em; border-radius: 2px; box-shadow: 2px 2px 0 rgba(0,0,0,0.2), inset 0 0 0 1px rgba(255,255,255,0.15); transform: rotate(-3deg); }
+        .vintage-year-stamp-overlay::before, .vintage-year-stamp-overlay::after { content: ""; position: absolute; width: 5px; height: 5px; background: #F5ECD8; border-radius: 50%; top: 50%; transform: translateY(-50%); }
+        .vintage-year-stamp-overlay::before { left: -2px; }
+        .vintage-year-stamp-overlay::after { right: -2px; }
 
-        /* 编辑/删除按钮 */
+        /* 编辑/删除/上传按钮 */
         .museum-edit-btn, .museum-delete-btn {
-          width: 28px; height: 28px; border: none; border-radius: 50%;
-          font-size: 13px; cursor: pointer; display: flex; align-items: center; justify-content: center;
-          box-shadow: 0 2px 8px rgba(0,0,0,0.25); transition: all 0.2s ease;
+          width: 26px; height: 26px; border: none; border-radius: 50%;
+          font-size: 12px; cursor: pointer; display: flex; align-items: center; justify-content: center;
+          box-shadow: 0 2px 6px rgba(0,0,0,0.25); transition: all 0.2s ease;
         }
         .museum-edit-btn { background: ${VINTAGE_LINK}; color: #fff; }
         .museum-edit-btn:hover { background: ${VINTAGE_ORANGE}; transform: scale(1.1); }
@@ -1308,30 +1307,20 @@ const MuseumPage: React.FC = () => {
 
         /* 上传按钮 */
         .museum-upload-btn {
-          width: 28px; height: 28px; border: none; border-radius: 50%;
-          font-size: 13px; cursor: pointer; display: flex; align-items: center; justify-content: center;
-          box-shadow: 0 2px 8px rgba(0,0,0,0.25); transition: all 0.2s ease;
+          width: 26px; height: 26px; border: none; border-radius: 50%;
+          font-size: 12px; cursor: pointer; display: flex; align-items: center; justify-content: center;
+          box-shadow: 0 2px 6px rgba(0,0,0,0.25); transition: all 0.2s ease;
           background: ${VINTAGE_LINK}; color: #fff;
         }
         .museum-upload-btn:hover { background: ${VINTAGE_BROWN}; transform: scale(1.1); }
 
-        /* 卡片图片（80x80px，主视觉焦点） */
-        .vintage-card-img {
-          width: 80px; height: 80px; object-fit: cover; border-radius: 12px;
-          border: 2px solid ${VINTAGE_LINK};
-          background: #f5f0e5;
-          filter: sepia(0.2) contrast(0.95) brightness(0.97);
-          box-shadow: 0 2px 8px rgba(0,0,0,0.15);
-          transition: transform 0.2s ease, box-shadow 0.2s ease;
-        }
-        .vintage-card-img:hover {
-          transform: scale(1.05);
-          box-shadow: 0 4px 12px rgba(92,64,51,0.3);
-        }
+        /* 卡片图片（48x48 辅助图） */
+        .vintage-card-img { width: 48px; height: 48px; object-fit: cover; border-radius: 8px; border: 2px solid ${VINTAGE_LINK}; background: #f5f0e5; filter: sepia(0.2) contrast(0.95) brightness(0.97); box-shadow: 0 2px 8px rgba(0,0,0,0.15); transition: transform 0.2s ease, box-shadow 0.2s ease; }
+        .vintage-card-img:hover { transform: scale(1.05); box-shadow: 0 4px 12px rgba(92,64,51,0.3); }
 
         /* 卡片图片占位图容器 */
         .vintage-card-img-placeholder {
-          width: 80px; height: 80px; border-radius: 12px;
+          width: 48px; height: 48px; border-radius: 8px;
           border: 2px solid ${VINTAGE_LINK}80;
           background: #f5f0e5;
           padding: 4px;
@@ -1370,13 +1359,9 @@ const MuseumPage: React.FC = () => {
 
         .vintage-card-content { padding: 52px 20px 20px; display: flex; flex-direction: column; gap: 14px; }
         .vintage-card-icon { font-size: 36px; text-align: center; filter: grayscale(0.2); opacity: 0.85; }
-        .vintage-card-body {
-          padding: 14px 16px 16px;
-          flex: 1;
-          display: flex; flex-direction: column; justify-content: space-between;
-        }
-        .vintage-card-title { font-family: "Noto Serif SC", Georgia, serif; font-size: 16px; font-weight: 700; color: ${VINTAGE_TEXT}; margin: 0 0 10px; line-height: 1.4; letter-spacing: 0.02em; }
-        .vintage-card-desc { font-family: "Noto Serif SC", Georgia, serif; font-size: 13px; line-height: 1.85; color: ${VINTAGE_TEXT_LIGHT}; margin: 0; font-style: italic; text-align: justify; }
+        .vintage-card-body { padding: 10px 12px 12px; flex: 1; display: flex; flex-direction: column; justify-content: space-between; }
+        .vintage-card-title { font-family: "Noto Serif SC", Georgia, serif; font-size: 15px; font-weight: 700; color: #3E2723; margin: 0 0 6px; line-height: 1.4; letter-spacing: 0.02em; }
+        .vintage-card-desc { font-family: "Noto Serif SC", Georgia, serif; font-size: 12px; line-height: 1.6; color: #5D4037; margin: 0; font-style: italic; text-align: justify; }
 
         /* 弹窗大图预览 hover */
         .modal-image-preview-hover { position: absolute; inset: 0; background: rgba(0,0,0,0.45); display: flex; align-items: center; justify-content: center; color: #fff; font-family: "Noto Serif SC, serif"; font-size: 14px; opacity: 0; transition: opacity 0.2s; }
@@ -1461,7 +1446,8 @@ const MuseumPage: React.FC = () => {
 
         /* 移动端 */
         @media (max-width: 640px) {
-          .vintage-card { width: 280px; }
+          .vintage-card { width: 260px; min-height: 300px; }
+          .vintage-card-hero { height: 110px; }
           .vintage-section-header { gap: 10px; }
           .vintage-section-title { font-size: 16px; }
           .vintage-card-icon { font-size: 28px; }

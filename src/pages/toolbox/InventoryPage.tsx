@@ -13,8 +13,8 @@ import { Link, useSearchParams } from "react-router-dom";
 /* ============================================================
    类型定义
    ============================================================ */
-const UNITS = ["瓶", "盒", "袋"] as const;
-const LOCATIONS = ["冰箱", "浴室", "储物间"] as const;
+const UNITS = ["瓶", "盒", "袋", "罐", "箱", "个", "支"] as const;
+const LOCATIONS = ["冰箱", "浴室", "储物间", "厨房", "客厅", "卧室"] as const;
 
 type Unit = (typeof UNITS)[number];
 type Location = (typeof LOCATIONS)[number];
@@ -126,12 +126,149 @@ const PILLS: {
 ];
 
 /* ============================================================
-   组件
+   编辑弹窗组件
+   ============================================================ */
+const EditModal: React.FC<{
+  item: InventoryItem;
+  onSave: (item: InventoryItem) => void;
+  onClose: () => void;
+}> = ({ item, onSave, onClose }) => {
+  const [form, setForm] = useState<FormState>({
+    name: item.name,
+    count: item.count,
+    unit: item.unit,
+    expiryDate: item.expiryDate,
+    location: item.location,
+  });
+
+  const canSave =
+    form.name.trim().length > 0 &&
+    form.count >= 1 &&
+    form.expiryDate.length > 0;
+
+  const handleSubmit = () => {
+    if (!canSave) return;
+    onSave({
+      ...item,
+      name: form.name.trim(),
+      count: form.count,
+      unit: form.unit,
+      expiryDate: form.expiryDate,
+      location: form.location,
+    });
+  };
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4"
+      onClick={onClose}
+    >
+      <div
+        className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <h3 className="mb-4 text-lg font-semibold text-gray-800">编辑物品</h3>
+        <div className="space-y-4">
+          <div>
+            <label className="mb-1 block text-xs text-gray-500">物品名称</label>
+            <input
+              type="text"
+              value={form.name}
+              onChange={(e) =>
+                setForm((f) => ({ ...f, name: e.target.value }))
+              }
+              className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm outline-none transition-colors focus:border-[#5d8a6a]"
+            />
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="mb-1 block text-xs text-gray-500">数量</label>
+              <input
+                type="number"
+                min={1}
+                value={form.count}
+                onChange={(e) =>
+                  setForm((f) => ({
+                    ...f,
+                    count: Math.max(1, Number(e.target.value) || 1),
+                  }))
+                }
+                className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm outline-none transition-colors focus:border-[#5d8a6a]"
+              />
+            </div>
+            <div>
+              <label className="mb-1 block text-xs text-gray-500">单位</label>
+              <select
+                value={form.unit}
+                onChange={(e) =>
+                  setForm((f) => ({ ...f, unit: e.target.value as Unit }))
+                }
+                className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm outline-none transition-colors focus:border-[#5d8a6a]"
+              >
+                {UNITS.map((u) => (
+                  <option key={u} value={u}>
+                    {u}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+          <div>
+            <label className="mb-1 block text-xs text-gray-500">到期日</label>
+            <input
+              type="date"
+              value={form.expiryDate}
+              onChange={(e) =>
+                setForm((f) => ({ ...f, expiryDate: e.target.value }))
+              }
+              className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm outline-none transition-colors focus:border-[#5d8a6a]"
+            />
+          </div>
+          <div>
+            <label className="mb-1 block text-xs text-gray-500">存放位置</label>
+            <select
+              value={form.location}
+              onChange={(e) =>
+                setForm((f) => ({ ...f, location: e.target.value as Location }))
+              }
+              className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm outline-none transition-colors focus:border-[#5d8a6a]"
+            >
+              {LOCATIONS.map((l) => (
+                <option key={l} value={l}>
+                  {l}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+        <div className="mt-6 flex gap-3">
+          <button
+            onClick={onClose}
+            className="flex-1 rounded-lg border border-gray-200 py-2.5 text-sm text-gray-600 transition-colors hover:bg-gray-50"
+          >
+            取消
+          </button>
+          <button
+            onClick={handleSubmit}
+            disabled={!canSave}
+            className="flex-1 rounded-lg bg-[#5d8a6a] py-2.5 text-sm font-medium text-white transition-colors hover:bg-[#4d7a5a] disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            保存修改
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+/* ============================================================
+   主组件
    ============================================================ */
 const InventoryPage: React.FC = () => {
   const [items, setItems] = useState<InventoryItem[]>(() => loadItems());
   const [filter, setFilter] = useState<FilterKey>("all");
   const [deletingIds, setDeletingIds] = useState<Set<string>>(new Set());
+  const [editingItem, setEditingItem] = useState<InventoryItem | null>(null);
   // 透传来源标记：完整版入口进来时，回工具箱仍带 from=full
   const [searchParams] = useSearchParams();
   const fromQuery = searchParams.get("from") === "full" ? "?from=full" : "";
@@ -211,6 +348,14 @@ const InventoryPage: React.FC = () => {
     setForm((f) => ({ ...f, name: "" }));
   };
 
+  /* —— 编辑保存 —— */
+  const handleEditSave = (updatedItem: InventoryItem) => {
+    setItems((prev) =>
+      prev.map((it) => (it.id === updatedItem.id ? updatedItem : it))
+    );
+    setEditingItem(null);
+  };
+
   /* —— 删除（带淡出动画） —— */
   const handleDelete = (id: string) => {
     setDeletingIds((prev) => new Set(prev).add(id));
@@ -230,6 +375,15 @@ const InventoryPage: React.FC = () => {
 
   return (
     <div className="inventory-page min-h-screen bg-gray-50 text-gray-800">
+      {/* 编辑弹窗 */}
+      {editingItem && (
+        <EditModal
+          item={editingItem}
+          onSave={handleEditSave}
+          onClose={() => setEditingItem(null)}
+        />
+      )}
+
       {/* —— 顶栏 —— */}
       <header className="border-b border-gray-200 bg-white">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
@@ -524,6 +678,13 @@ const InventoryPage: React.FC = () => {
                             {it.location}
                           </td>
                           <td className="px-5 py-3 text-right">
+                            <button
+                              type="button"
+                              onClick={() => setEditingItem(it)}
+                              className="mr-3 text-xs text-gray-400 transition-colors hover:text-[#5d8a6a]"
+                            >
+                              编辑
+                            </button>
                             <button
                               type="button"
                               onClick={() => handleDelete(it.id)}

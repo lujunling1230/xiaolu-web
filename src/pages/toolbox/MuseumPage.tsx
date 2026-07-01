@@ -108,9 +108,11 @@ const DEFAULT_NETS: VintageCard[] = [
 ];
 
 const DEFAULT_HONORS: HonorItem[] = [
-  { id: "honor-1", year: "2021", title: "优秀学生奖学金", description: "连续两学期专业前 5%，是对自律最好的回报。", imageUrl: "https://images.unsplash.com/photo-1523050854058-8df90110c9f1?w=800&h=600&fit=crop", reflection: "努力不会被辜负，它只是在等一个合适的时机开花。" },
-  { id: "honor-2", year: "2023", title: "首个马拉松完赛", description: "42.195 公里，是对意志力的极限测试。", imageUrl: "https://images.unsplash.com/photo-1565814329452-e1efa11c5b89?w=800&h=600&fit=crop", reflection: "慢一点也没关系，只要不停下。" },
-  { id: "honor-3", year: "2024", title: "AI 产品实习 Offer", description: "从软件工程转向 AI 产品，跨出的这一步，走对了。", imageUrl: "https://images.unsplash.com/photo-1521737604893-d14cc237f11d?w=800&h=600&fit=crop", reflection: "所有的弯路，都是为了让你在正路上走得更稳。" },
+  { id: "honor-1", year: "2021", title: "国家励志奖学金", description: "2021-2022 学年获得国家励志奖学金，是对努力学习的最好回报。", imageUrl: "", reflection: "努力不会被辜负，它只是在等一个合适的时机开花。" },
+  { id: "honor-2", year: "2022", title: "优秀志愿者", description: "获得优秀志愿者荣誉证书，用行动温暖他人。", imageUrl: "", reflection: "奉献的每一份力量，都算数。" },
+  { id: "honor-3", year: "2023", title: "数据库管理系统职业技能等级证书", description: "获得数据库管理系统职业技能等级证书，掌握数据核心技术。", imageUrl: "", reflection: "每项技能的积累，都是未来最扎实的底气。" },
+  { id: "honor-4", year: "2024", title: "网络与信息安全管理员职业技能等级证书", description: "获得网络与信息安全管理员职业技能等级证书，守护网络安全。", imageUrl: "", reflection: "技术越深入，越明白责任有多重。" },
+  { id: "honor-5", year: "2025", title: "英语四级证书", description: "通过大学英语四级考试（CET-4），语言能力迈上新台阶。", imageUrl: "", reflection: "语言是通向更大世界的桥梁。" },
 ];
 
 /* ============================================================

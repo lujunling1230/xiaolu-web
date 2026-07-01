@@ -653,56 +653,84 @@ const VintageCard: React.FC<{
     <motion.div
       className="vintage-card"
       style={{
-        backgroundImage: hasImage ? `url(${card.imageUrl})` : undefined,
-        backgroundSize: "cover",
-        backgroundPosition: "center",
-        backgroundRepeat: "no-repeat",
+        position: "relative",
+        border: isDragging ? `2px dashed #D4AF37` : undefined,
+        boxShadow: isDragging ? "0 0 16px rgba(212,175,55,0.5)" : undefined,
+        transition: "border 0.2s, box-shadow 0.2s",
+        overflow: "hidden",
       }}
-      whileHover={{ y: -4 }}
+      whileHover={{ y: -4, rotate: 0.3 }}
       onHoverStart={() => setShowActions(true)}
       onHoverEnd={() => { if (!deleteConfirm) setShowActions(false); }}
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
     >
-      {/* 图片区遮罩 */}
-      <div className="vintage-card-img-overlay"
+      {/* 大图区域 - 顶部封面 */}
+      <div
+        className="vintage-card-hero"
         onClick={() => {
-          if (hasImage) { setImagePreviewModal(card.imageUrl!); }
-          else { imageUploadRef.current?.click(); }
+          if (hasImage) {
+            setImagePreviewModal(card.imageUrl!);
+          } else {
+            imageUploadRef.current?.click();
+          }
         }}
-        style={{ cursor: "pointer" }}
+        style={{ cursor: hasImage ? "pointer" : "pointer" }}
       >
-        {/* 拖拽指示 */}
-        {isDragging && (
-          <div className="vintage-card-drag-hint">
-            <span>🖼️</span>
-            <span>放置上传</span>
-          </div>
+        {/* 已上传图片 */}
+        {hasImage && (
+          <img
+            src={card.imageUrl}
+            alt={card.title}
+            className="vintage-card-hero-img"
+          />
         )}
 
-        {/* 无图片时：牛皮纸占位 */}
-        {!hasImage && !isDragging && !isUploading && (
-          <div className="vintage-card-placeholder">
-            <img src={getPlaceholderSvg(emoji)} alt="" style={{ width: 56, height: 56, objectFit: "contain" }} />
-            <span className="vintage-card-placeholder-hint">点击上传图片</span>
+        {/* 兜底牛皮纸占位图 */}
+        {!hasImage && (
+          <div className="vintage-card-hero-placeholder">
+            <img
+              src={getPlaceholderSvg(emoji)}
+              alt="placeholder"
+              style={{ width: 60, height: 60, objectFit: "contain" }}
+            />
           </div>
         )}
 
         {/* 上传中 */}
         {isUploading && (
-          <div className="vintage-card-upload-hint"><span className="vintage-spin">🎵</span></div>
+          <div className="vintage-card-hero-loading">
+            <span className="vintage-spin">🎵</span>
+          </div>
         )}
 
-        {/* 遮罩层 */}
-        <div className="vintage-card-img-mask" />
+        {/* 拖拽指示 */}
+        {isDragging && (
+          <div className="vintage-card-hero-drag">
+            <span>🖼️</span>
+            <span style={{ fontSize: 12, marginTop: 4 }}>放置上传</span>
+          </div>
+        )}
 
-        {/* 年份标签 */}
+        {/* 渐变遮罩 - 覆盖图片下半部分 */}
+        <div className="vintage-card-hero-gradient" />
+
+        {/* 年份邮票标签（浮在图片上） */}
         <div className="vintage-year-stamp-overlay">{card.year}</div>
 
-        {/* 预览徽章 */}
+        {/* 图片右上角小徽章 */}
         {hasImage && (
-          <div className="vintage-card-hero-badge" title="点击预览">🔍</div>
+          <div className="vintage-card-hero-badge" title="点击预览">
+            🔍
+          </div>
+        )}
+
+        {/* 无图片时显示上传提示 */}
+        {!hasImage && !isUploading && (
+          <div className="vintage-card-hero-upload-hint">
+            点击上传图片
+          </div>
         )}
       </div>
 
@@ -748,7 +776,7 @@ const VintageCard: React.FC<{
         )}
       </AnimatePresence>
 
-      {/* 文字内容区（底部固定 160px） */}
+      {/* 文字内容区 */}
       <div className="vintage-card-body">
         <h4 className="vintage-card-title">{card.title}</h4>
         <div className="vintage-card-divider" />
@@ -1266,91 +1294,59 @@ const MuseumPage: React.FC = () => {
         .vintage-gallery-scroll::-webkit-scrollbar-thumb { background: rgba(139,109,79,0.4); border-radius: 3px; }
         .vintage-gallery-track { display: flex; gap: 20px; padding: 8px 4px; }
 
-        /* 时代回响卡片（背景图铺底 + 底部文字区） */
+        /* 时代回响卡片（杂志风：图片50% + 文字50%） */
         .vintage-card {
           position: relative; flex-shrink: 0; width: 280px;
-          height: 320px; background-color: #FAF8F3;
+          height: 320px; /* 固定高度：160px 图片 + 160px 文字 */
+          background: #FAF8F3;
           border: 1px solid #D7CCC8; border-radius: 12px;
           box-shadow: 0 4px 12px rgba(0,0,0,0.08);
           transition: all 0.3s ease; overflow: hidden;
           display: flex; flex-direction: column;
         }
 
-        /* 图片区遮罩容器（占上半部分） */
-        .vintage-card-img-overlay {
-          position: relative; width: 100%; height: 160px; flex-shrink: 0; overflow: hidden;
-        }
-        /* 遮罩层 */
-        .vintage-card-img-mask {
-          position: absolute; inset: 0;
-          background: rgba(0,0,0,0.08);
-          pointer-events: none;
-        }
-        /* 占位图 */
-        .vintage-card-placeholder {
-          position: absolute; inset: 0;
-          background: linear-gradient(135deg, #F5EDD8 0%, #E8D8C0 100%);
-          background-image:
-            repeating-linear-gradient(0deg, transparent, transparent 3px, rgba(139,107,79,0.04) 3px, rgba(139,107,79,0.04) 6px),
-            repeating-linear-gradient(90deg, transparent, transparent 3px, rgba(139,107,79,0.04) 3px, rgba(139,107,79,0.04) 6px);
-          display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px;
-        }
-        .vintage-card-placeholder-hint {
-          font-size: 11px; color: #6B5A4A; font-family: "Noto Serif SC, serif"; opacity: 0.7;
-        }
-        /* 拖拽指示 */
-        .vintage-card-drag-hint {
-          position: absolute; inset: 0;
-          background: rgba(212,175,55,0.2); border: 3px dashed #D4AF37;
-          display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px;
-          font-size: 12px; color: #6B5A4A; font-family: "Noto Serif SC, serif"; z-index: 5;
-        }
-        /* 上传中 */
-        .vintage-card-upload-hint {
-          position: absolute; inset: 0;
-          background: rgba(250,248,243,0.85);
-          display: flex; align-items: center; justify-content: center; z-index: 5;
-        }
-        /* 预览徽章 */
-        .vintage-card-hero-badge {
-          position: absolute; top: 8px; right: 8px; z-index: 5;
-          width: 24px; height: 24px; border-radius: 50%;
-          background: rgba(255,255,255,0.9); backdrop-filter: blur(4px);
-          border: 1px solid rgba(139,107,79,0.3); font-size: 12px;
-          display: flex; align-items: center; justify-content: center;
-          opacity: 0; transition: opacity 0.2s;
-        }
-        .vintage-card:hover .vintage-card-hero-badge { opacity: 1; }
+        /* 图片区域（50% = 160px） */
+        .vintage-card-hero { position: relative; width: 100%; height: 160px; flex-shrink: 0; overflow: hidden; border-radius: 12px 12px 0 0; }
+        .vintage-card-hero-img { width: 100%; height: 100%; object-fit: cover; filter: sepia(0.1) contrast(1.02) brightness(0.98); transition: transform 0.3s ease; }
+        .vintage-card-hero:hover .vintage-card-hero-img { transform: scale(1.04); }
+        .vintage-card-hero-placeholder { width: 100%; height: 100%; background: linear-gradient(135deg, #F5EDD8 0%, #E8D8C0 100%); background-image: repeating-linear-gradient(0deg, transparent, transparent 3px, rgba(139,107,79,0.04) 3px, rgba(139,107,79,0.04) 6px), repeating-linear-gradient(90deg, transparent, transparent 3px, rgba(139,107,79,0.04) 3px, rgba(139,107,79,0.04) 6px); display: flex; align-items: center; justify-content: center; }
+        .vintage-card-hero-loading { position: absolute; inset: 0; background: rgba(250,248,243,0.9); display: flex; align-items: center; justify-content: center; }
+        .vintage-card-hero-drag { position: absolute; inset: 0; background: rgba(212,175,55,0.15); border: 3px dashed #D4AF37; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 12px; color: #6B5A4A; font-family: "Noto Serif SC, serif"; }
+        .vintage-card-hero-gradient { position: absolute; left: 0; right: 0; bottom: 0; height: 50%; background: linear-gradient(to bottom, transparent 0%, rgba(62,39,35,0.5) 100%); pointer-events: none; }
+        .vintage-card-hero-badge { position: absolute; top: 8px; right: 8px; z-index: 5; width: 24px; height: 24px; border-radius: 50%; background: rgba(255,255,255,0.9); backdrop-filter: blur(4px); border: 1px solid rgba(139,107,79,0.3); font-size: 12px; display: flex; align-items: center; justify-content: center; opacity: 0; transition: opacity 0.2s; box-shadow: 0 2px 6px rgba(0,0,0,0.2); }
+        .vintage-card-hero:hover .vintage-card-hero-badge { opacity: 1; }
+        .vintage-card-hero-upload-hint { position: absolute; bottom: 10px; left: 50%; transform: translateX(-50%); z-index: 5; font-size: 11px; color: rgba(250,248,243,0.9); font-family: "Noto Serif SC, serif"; text-shadow: 0 1px 3px rgba(0,0,0,0.4); white-space: nowrap; }
 
-        /* 年份标签（半透明深色背景） */
-        .vintage-year-stamp-overlay {
-          position: absolute; top: 8px; left: 8px; z-index: 5;
-          padding: 4px 8px; background: rgba(0,0,0,0.45);
-          color: #fff; font-family: "Courier New", monospace; font-size: 12px;
-          font-weight: 700; letter-spacing: 0.06em; border-radius: 2px;
-          box-shadow: 0 2px 4px rgba(0,0,0,0.3);
-        }
+        /* 年份邮票标签（浮在图片左上角） */
+        .vintage-year-stamp-overlay { position: absolute; top: 8px; left: 8px; z-index: 5; padding: 4px 8px; background: #8B7355; color: #fff; font-family: "Courier New", monospace; font-size: 12px; font-weight: 700; letter-spacing: 0.06em; border-radius: 2px; box-shadow: 2px 2px 0 rgba(0,0,0,0.15), inset 0 0 0 1px rgba(255,255,255,0.15); transform: rotate(-3deg); }
 
-        /* 文字区域（底部固定 160px，米白底） */
+        /* 文字区域（紧凑杂志排版） */
         .vintage-card-body {
-          height: 160px; padding: 12px 16px;
+          height: 160px; padding: 12px 16px 12px;
           flex-shrink: 0; display: flex; flex-direction: column;
-          background: #FAF8F3;
         }
         .vintage-card-title {
           font-family: "Noto Serif SC", Georgia, serif;
           font-size: 16px; font-weight: 600; color: #3E2723;
-          margin: 0 0 6px; line-height: 1.4; flex-shrink: 0;
+          margin: 0 0 6px; line-height: 1.4;
+          flex-shrink: 0;
         }
         /* 标题下方分隔线 */
         .vintage-card-divider {
-          width: 60px; height: 1px; background: #E0D6D0; margin: 0 0 8px; flex-shrink: 0;
+          width: 60px; height: 1px; background: #E0D6D0;
+          margin: 0 0 8px; flex-shrink: 0;
         }
+        .vintage-card-desc {
+          font-family: "Noto Serif SC", Georgia, serif;
+          font-size: 13px; line-height: 1.5; color: #5D4037;
+          margin: 0; flex: 1; overflow: hidden;
+          display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+        }
+        /* 引用（带前缀符号） */
         .vintage-card-quote {
           font-family: "Noto Serif SC", Georgia, serif;
           font-size: 13px; line-height: 1.5; color: #795548;
-          margin: 0; font-style: italic; flex: 1; overflow: hidden;
-          display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical;
+          margin: 6px 0 0; font-style: italic; flex-shrink: 0;
         }
         .vintage-card-quote::before { content: "❝ "; }
         .vintage-card-quote::after { content: " ❞"; }
@@ -1467,7 +1463,7 @@ const MuseumPage: React.FC = () => {
         /* 移动端 */
         @media (max-width: 640px) {
           .vintage-card { width: 100%; max-width: 320px; height: 320px; }
-          .vintage-card-img-overlay { height: 160px; }
+          .vintage-card-hero { height: 160px; }
           .vintage-card-body { height: 160px; padding: 12px; }
           .vintage-section-header { gap: 10px; }
           .vintage-section-title { font-size: 16px; }

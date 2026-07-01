@@ -734,15 +734,44 @@ const VintageGallery: React.FC<{
 );
 
 /* ============================================================
-   荣耀成就卡片组件（增强版）
+   荣耀成就卡片组件（增强版 - 含图片上传）
    ============================================================ */
 const HonorCard: React.FC<{
   item: HonorItem;
   onEdit: (item: HonorItem) => void;
   onDelete: (id: string) => void;
-}> = ({ item, onEdit, onDelete }) => {
+  onImageUpload?: (id: string, imageUrl: string) => void;
+  onImageDelete?: (id: string) => void;
+}> = ({ item, onEdit, onDelete, onImageUpload, onImageDelete }) => {
   const [showActions, setShowActions] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
+  const [imagePreviewModal, setImagePreviewModal] = useState<string | null>(null);
+  const [imageDeleteConfirm, setImageDeleteConfirm] = useState(false);
+  const imageUploadRef = useRef<HTMLInputElement>(null);
+
+  const handleFileSelect = (file: File) => {
+    if (!file) return;
+    if (file.size > 2 * 1024 * 1024) { alert("图片大小不能超过 2MB"); return; }
+    if (!["image/jpeg", "image/png", "image/jpg"].includes(file.type)) { alert("只支持 JPG/PNG 格式"); return; }
+    setIsUploading(true);
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const result = ev.target?.result as string;
+      setIsUploading(false);
+      onImageUpload?.(item.id, result);
+    };
+    reader.onerror = () => { setIsUploading(false); alert("图片上传失败，请重试"); };
+    reader.readAsDataURL(file);
+  };
+
+  const handleFileInput = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) handleFileSelect(file);
+    e.target.value = "";
+  };
+
+  const handleImageDelete = () => { setImageDeleteConfirm(false); onImageDelete?.(item.id); };
 
   return (
     <>
@@ -763,27 +792,50 @@ const HonorCard: React.FC<{
               initial={{ opacity: 0, scale: 0.8 }}
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.8 }}
-              style={{
-                position: "absolute", top: 8, right: 8, zIndex: 20,
-                display: "flex", gap: 6,
-              }}
+              style={{ position: "absolute", top: 8, right: 8, zIndex: 20, display: "flex", gap: 6 }}
             >
-              <button
-                onClick={(e) => { e.stopPropagation(); onEdit(item); }}
-                className="honor-edit-btn"
-                title="编辑"
-              >✏️</button>
-              <button
-                onClick={(e) => { e.stopPropagation(); setDeleteConfirm(true); }}
-                className="honor-delete-btn"
-                title="删除"
-              >🗑️</button>
+              <button onClick={(e) => { e.stopPropagation(); onEdit(item); }} className="honor-edit-btn" title="编辑">✏️</button>
+              <button onClick={(e) => { e.stopPropagation(); setDeleteConfirm(true); }} className="honor-delete-btn" title="删除">🗑️</button>
+              <button onClick={(e) => { e.stopPropagation(); imageUploadRef.current?.click(); }} className="honor-upload-btn" title="上传图片" style={{ background: isUploading ? `${VINTAGE_LINK}80` : undefined }}>
+                {isUploading ? "⏳" : "🖼️"}
+              </button>
             </motion.div>
           )}
         </AnimatePresence>
 
-        {/* 图片 */}
-        <FilmImage src={item.imageUrl} alt={item.title} className="museum-honor-img" />
+        {/* 删除确认 */}
+        <AnimatePresence>
+          {deleteConfirm && (
+            <ConfirmDialog message="确定删除这条记录？不可恢复。" onConfirm={() => { onDelete(item.id); setDeleteConfirm(false); setShowActions(false); }} onCancel={() => setDeleteConfirm(false)} />
+          )}
+        </AnimatePresence>
+
+        {/* 图片预览弹窗 */}
+        <AnimatePresence>
+          {imagePreviewModal && (
+            <ImagePreviewModal src={imagePreviewModal} title={item.title} onClose={() => setImagePreviewModal(null)} onDelete={() => { setImageDeleteConfirm(true); }} />
+          )}
+          {imageDeleteConfirm && (
+            <ConfirmDialog message="确定删除图片？" onConfirm={handleImageDelete} onCancel={() => setImageDeleteConfirm(false)} />
+          )}
+        </AnimatePresence>
+
+        {/* 图片（48x48 圆角，带棕色边框） */}
+        <div style={{ flexShrink: 0, alignSelf: "flex-start", paddingTop: 16, paddingLeft: 16 }}>
+          {item.imageUrl ? (
+            <motion.img
+              src={item.imageUrl}
+              alt={item.title}
+              className="honor-card-img"
+              onClick={(e) => { e.stopPropagation(); setImagePreviewModal(item.imageUrl); }}
+              whileHover={{ scale: 1.05 }}
+              transition={{ type: "spring", stiffness: 300 }}
+              style={{ cursor: "pointer" }}
+            />
+          ) : (
+            <div className="honor-card-placeholder">🏆</div>
+          )}
+        </div>
 
         {/* 内容 */}
         <div className="museum-honor-body">
@@ -798,16 +850,8 @@ const HonorCard: React.FC<{
         </div>
       </motion.div>
 
-      {/* 删除确认 */}
-      <AnimatePresence>
-        {deleteConfirm && (
-          <ConfirmDialog
-            message="确定删除？不可恢复。"
-            onConfirm={() => { onDelete(item.id); setDeleteConfirm(false); setShowActions(false); }}
-            onCancel={() => setDeleteConfirm(false)}
-          />
-        )}
-      </AnimatePresence>
+      {/* 隐藏的文件输入 */}
+      <input ref={imageUploadRef} type="file" accept="image/jpeg,image/png,image/jpg" onChange={handleFileInput} style={{ display: "none" }} />
     </>
   );
 };
@@ -845,20 +889,6 @@ const DustParticles: React.FC = () => {
 };
 
 /* ============================================================
-   子组件：胶片显影图片
-   ============================================================ */
-const FilmImage: React.FC<{ src: string; alt: string; className?: string }> = ({ src, alt, className }) => {
-  const [loaded, setLoaded] = useState(false);
-  return (
-    <div className={className ? `museum-film-wrap ${className}` : "museum-film-wrap"}>
-      {!loaded && <div className="museum-film-placeholder" />}
-      <img src={src} alt={alt} loading="lazy" onLoad={() => setLoaded(true)} className="museum-film-img"
-        style={{ opacity: loaded ? 1 : 0, filter: loaded ? "blur(0px)" : "blur(14px)", transition: "opacity 1.2s ease, filter 1.2s ease" }} />
-    </div>
-  );
-};
-
-/* ============================================================
    悬浮添加按钮 (FAB)
    ============================================================ */
 const FAB: React.FC<{ onClick: () => void }> = ({ onClick }) => (
@@ -889,6 +919,18 @@ const MuseumPage: React.FC = () => {
   const [tvs, setTvs] = useState<VintageCard[]>(() => loadData(LS_KEYS.tvs, DEFAULT_TVS));
   const [nets, setNets] = useState<VintageCard[]>(() => loadData(LS_KEYS.nets, DEFAULT_NETS));
   const [honors, setHonors] = useState<HonorItem[]>(() => loadData(LS_KEYS.honors, DEFAULT_HONORS));
+
+  // 荣耀之路强制倒序排列（年份大的在上）
+  const sortedHonors = useMemo(() => {
+    const sorted = [...honors].sort((a, b) => {
+      const ay = parseInt(a.year) || 0;
+      const by = parseInt(b.year) || 0;
+      return by - ay;
+    });
+    // eslint-disable-next-line no-console
+    console.log("[荣耀之路] 排序后年份:", sorted.map(h => h.year));
+    return sorted;
+  }, [honors]);
 
   // 模态框状态
   const [cardModal, setCardModal] = useState<{ mode: "add" | "edit"; section: "bgm" | "tv" | "net"; data?: VintageCard } | null>(null);
@@ -949,7 +991,16 @@ const MuseumPage: React.FC = () => {
     setHonors(prev => prev.filter(h => h.id !== id));
   };
 
-  // 图片上传/删除处理
+  // 荣耀图片上传/删除
+  const handleHonorImageUpload = (id: string, imageUrl: string) => {
+    setHonors(prev => prev.map(h => h.id === id ? { ...h, imageUrl } : h));
+  };
+
+  const handleHonorImageDelete = (id: string) => {
+    setHonors(prev => prev.map(h => h.id === id ? { ...h, imageUrl: "" } : h));
+  };
+
+  // 图片上传/删除处理（时代回响）
   const handleImageUpload = (id: string, imageUrl: string, section: "bgm" | "tv" | "net") => {
     if (section === "bgm") setBgms(prev => prev.map(c => c.id === id ? { ...c, imageUrl } : c));
     else if (section === "tv") setTvs(prev => prev.map(c => c.id === id ? { ...c, imageUrl } : c));
@@ -1029,22 +1080,34 @@ const MuseumPage: React.FC = () => {
 
         {/* 垂直时间轴 */}
         <div className="museum-timeline-v">
-          {honors.map((m, i) => (
+          {sortedHonors.map((m, i) => (
             <motion.div
               key={m.id}
               className="museum-honor-row"
-              initial={{ opacity: 0, x: -24 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              viewport={{ once: true, margin: "-40px" }}
-              transition={{ duration: 0.6, delay: i * 0.1 }}
+              layout
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10, scale: 0.95 }}
+              transition={{ duration: 0.3, delay: i * 0.05 }}
             >
               <div className="museum-honor-node">
                 <span className="museum-honor-dot" />
                 <span className="museum-honor-year">{m.year}</span>
               </div>
-              <HonorCard item={m} onEdit={(item) => setHonorModal({ mode: "edit", data: item })} onDelete={handleHonorDelete} />
+              <HonorCard
+                item={m}
+                onEdit={(item) => setHonorModal({ mode: "edit", data: item })}
+                onDelete={handleHonorDelete}
+                onImageUpload={handleHonorImageUpload}
+                onImageDelete={handleHonorImageDelete}
+              />
             </motion.div>
           ))}
+          {/* 起点标注 */}
+          <div className="museum-timeline-start">
+            <span className="museum-honor-dot museum-honor-dot-start" />
+            <span className="museum-timeline-start-label">🏁 起点</span>
+          </div>
         </div>
       </section>
 
@@ -1218,6 +1281,44 @@ const MuseumPage: React.FC = () => {
         .honor-edit-btn:hover { transform: scale(1.1); }
         .honor-delete-btn { background: ${VINTAGE_DELETE_HOVER}; color: #fff; }
         .honor-delete-btn:hover { background: ${VINTAGE_DELETE}; animation: shake 0.3s ease-in-out; }
+
+        /* 荣耀上传按钮 */
+        .honor-upload-btn {
+          width: 28px; height: 28px; border: none; border-radius: 50%;
+          font-size: 13px; cursor: pointer; display: flex; align-items: center; justify-content: center;
+          box-shadow: 0 2px 8px rgba(0,0,0,0.3); transition: all 0.2s ease;
+          background: ${VINTAGE_LINK}; color: #fff;
+        }
+        .honor-upload-btn:hover { background: ${VINTAGE_BROWN}; transform: scale(1.1); }
+
+        /* 荣耀卡片图片（48x48 圆角） */
+        .honor-card-img {
+          width: 48px; height: 48px; object-fit: cover; border-radius: 8px;
+          border: 2px solid ${VINTAGE_LINK};
+          background: #f5f0e5;
+          filter: sepia(0.1) contrast(1.05);
+          box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+        }
+        .honor-card-placeholder {
+          width: 48px; height: 48px; border-radius: 8px;
+          background: rgba(245,240,229,0.9); border: 2px dashed ${VINTAGE_LINK}60;
+          display: flex; align-items: center; justify-content: center;
+          font-size: 24px;
+        }
+
+        /* 起点标注 */
+        .museum-timeline-start {
+          display: flex; align-items: center; gap: 10px;
+          margin-top: 8px; padding-left: 0;
+        }
+        .museum-honor-dot-start {
+          width: 10px; height: 10px; background: ${GOLD}; opacity: 0.5;
+          box-shadow: none;
+        }
+        .museum-timeline-start-label {
+          font-family: "Noto Serif SC", serif; font-size: 12px;
+          color: rgba(176,141,87,0.5); font-style: italic; letter-spacing: 0.08em;
+        }
 
         .museum-honor-img { width: 160px; flex-shrink: 0; height: auto; }
         .museum-honor-img .museum-film-img { height: 100%; min-height: 140px; }

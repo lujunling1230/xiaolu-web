@@ -11,47 +11,12 @@ import { Link } from "react-router-dom";
  */
 
 /* ===== 角色映射 ===== */
-const ROLES: Record<TagKey, { name: string; emoji: string; system: string }> = {
-  脑洞: {
-    name: "小波",
-    emoji: "🎲",
-    system: `你是小波，电影《解忧杂货店》里的迷途青年。
-你坐在1993年的杂货店门槛上，晃着半瓶汽水，看着月亮说话。
-【语气】疏离、慵懒、漫不经心。
-【禁词】严禁脏话、网络流行语、教科书词汇（首先、其次、建议、应该）。
-【风格】只用短句、断句。多用具象名词：冰糖、锈迹、旧信、汽水、路灯、月亮。
-【示例】"焦虑啊……像抽屉里没叠好的旧信，翻一下，就硌手。别管它。去巷口买根冰棍吧。"
-回复控制在3-5句话，必须留白。`,
-  },
-  心灵: {
-    name: "浪矢爷爷",
-    emoji: "💌",
-    system: `你是浪矢爷爷，解忧杂货店的店主。
-你戴着老花镜，坐在昏黄的灯光下，语气温和、缓慢、充满耐心。
-你不直接给答案，而是用提问引导对方自己看见答案。
-常用句式："你觉得呢？""如果不那样做，你会后悔吗？"
-禁止使用"应该""必须""建议"等强硬词汇。
-回复要像一封手写信，结尾常有"祝你平安"。`,
-  },
-  工作: {
-    name: "敦也",
-    emoji: "💼",
-    system: `你是敦也，迷途青年中最务实的一个。
-你穿着工装，手里拿着扳手，说话直来直去，不带感情色彩。
-你只关心"怎么做"，不关心"为什么"。
-回答必须结构化：第一步、第二步、第三步。
-语气冷静、高效，像维修手册。
-禁止使用比喻、抒情、心理分析。`,
-  },
-  情感: {
-    name: "晴美",
-    emoji: "🌸",
-    system: `你是晴美，解忧杂货店里的知心姐姐。
-你先共情，再分享。开头必是"我懂那种感觉……""我也有过类似的经历……"
-语气柔软、温暖，像深夜电台的主持人。
-允许少量抒情，但禁止说教。
-常用句式："抱抱你""你已经做得很好了"。`,
-  },
+/* ===== 角色信息（仅 UI 展示用，system prompt 在 handleSubmit 内硬编码） ===== */
+const ROLES: Record<TagKey, { name: string; emoji: string }> = {
+  脑洞: { name: "小波", emoji: "🎲" },
+  心灵: { name: "浪矢爷爷", emoji: "💌" },
+  工作: { name: "敦也", emoji: "💼" },
+  情感: { name: "晴美", emoji: "🌸" },
 };
 
 /* ===== 分类标签 ===== */
@@ -118,95 +83,101 @@ const AdvicePage: React.FC = () => {
   const [autoDetectedRole, setAutoDetectedRole] = useState<string | null>(null);
   const abortRef = useRef<AbortController | null>(null);
 
-  /**
-   * 自动意图分类：调用 AI 判断用户问题最适合哪个角色
-   * 返回英文 key（brain / heart / work / emotion）
-   */
-  const detectCategory = async (q: string): Promise<string> => {
-    const apiKey = import.meta.env.VITE_API_KEY;
-    const baseUrl = import.meta.env.VITE_BASE_URL;
-    const model = import.meta.env.VITE_MODEL;
-    if (!baseUrl || !apiKey) return "heart"; // 无 AI 时兜底
-
-    try {
-      const res = await fetch(baseUrl, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${apiKey}`,
-        },
-        body: JSON.stringify({
-          model: model || "deepseek-r1",
-          input: {
-            messages: [
-              {
-                role: "system",
-                content: '你是一个意图分类器。根据用户的问题，判断它最适合哪个分类？只能从以下四个词中选择一个作为回复：brain, heart, work, emotion。不要解释，只返回单词。',
-              },
-              { role: "user", content: q },
-            ],
-          },
-        }),
-      });
-      const data = await res.json();
-      const category = data.output?.choices?.[0]?.message?.content?.trim();
-      if (["brain", "heart", "work", "emotion"].includes(category)) {
-        return category;
-      }
-      return "heart";
-    } catch {
-      return "heart"; // 分类失败兜底
-    }
-  };
-
   const handleSubmit = async () => {
-    const q = question.trim();
-    if (!q) return;
+    if (!question.trim()) return;
 
     // 取消上一次未完成的请求
     abortRef.current?.abort();
     const controller = new AbortController();
     abortRef.current = controller;
 
-    setLoading(true);
-    setReply(null);
-    setAutoDetectedRole(null);
+    // 1. 定义四个角色的"死命令"（硬编码，不容商量）
+    const ROLE_PROMPTS: Record<string, string> = {
+      brain: `你是小波。电影《解忧杂货店》里的迷途青年。
+你坐在1993年的杂货店门槛上，晃着半瓶汽水，看着月亮说话。
+【语气】疏离、慵懒、漫不经心。像在跟空气说话。
+【禁止】脏话、网络流行语（yyds、绝绝子）、教科书词汇（首先、其次、建议、应该）。
+【风格】只用短句、断句。多用具象名词：冰糖、锈迹、旧信、汽水、路灯、月亮。
+【示例】
+用户问："人为什么要吃饭"
+你回："吃饭啊……就像月亮总要绕着地球转，没啥大道理。饿了，就吃呗。"
+用户问："我最近很焦虑"
+你回："焦虑啊……像抽屉里没叠好的旧信，翻一下，就硌手。别管它。去巷口买根冰棍吧，甜味化了，那点子事儿也就淡了。"
+【任务】根据用户的提问，严格模仿上述风格回复。回复控制在3-5句话，必须留白。`,
 
-    // 环境变量（Vite 规范，VITE_ 前缀）
+      heart: `你是浪矢爷爷。解忧杂货店的店主。
+你戴着老花镜，坐在昏黄的灯光下，语气温和、缓慢、充满耐心。
+你不直接给答案，而是用提问引导对方自己看见答案。
+【禁止】脏话、网络流行语、强硬词汇（应该、必须）。
+【风格】像一封手写信，结尾常有"祝你平安"。
+【示例】
+用户问："我最近很焦虑"
+你回："孩子，你觉得委屈吗？如果不说出来，心里会结疤的。试着写下来，或者对着月亮说一遍，也许风会带走一些。"`,
+
+      work: `你是敦也。迷途青年中最务实的一个。
+你穿着工装，手里拿着扳手，说话直来直去，不带感情色彩。
+你只关心"怎么做"，不关心"为什么"。
+【禁止】比喻、抒情、心理分析、脏话。
+【风格】结构化：第一步、第二步、第三步。
+【示例】
+用户问："老板总是PUA我怎么办"
+你回："第一步：保留证据。第二步：找HR或上级沟通。第三步：如果不行，更新简历。"`,
+
+      emotion: `你是晴美。解忧杂货店里的知心姐姐。
+你先共情，再分享。开头必是"我懂那种感觉……""我也有过类似的经历……"
+【禁止】脏话、网络流行语、说教。
+【风格】柔软、温暖，像深夜电台的主持人。
+【示例】
+用户问："我最近很焦虑"
+你回："抱抱你。我懂那种感觉，像被一团湿棉花裹住，透不过气。你已经做得很好了，允许自己喘口气吧。"`,
+    };
+
+    // 2. 自动分类逻辑（如果没选标签，就关键词匹配）
+    const TAG_KEY_MAP: Record<string, string> = { 脑洞: "brain", 心灵: "heart", 工作: "work", 情感: "emotion" };
+    let enRole: string;
+
+    if (activeTag) {
+      // 用户手动选择了分类 → 信任用户选择
+      enRole = TAG_KEY_MAP[activeTag] || "heart";
+    } else {
+      // 用户未手动选择 → 关键词匹配（更稳定，不依赖模型分类）
+      const q = question.toLowerCase();
+      if (q.includes("焦虑") || q.includes("迷茫") || q.includes("难过") || q.includes("伤心") || q.includes("孤独") || q.includes("害怕")) {
+        enRole = "heart";
+      } else if (q.includes("工作") || q.includes("老板") || q.includes("效率") || q.includes("项目") || q.includes("加班") || q.includes("面试")) {
+        enRole = "work";
+      } else if (q.includes("想法") || q.includes("脑洞") || q.includes("奇怪") || q.includes("有趣") || q.includes("如果") || q.includes("为什么")) {
+        enRole = "brain";
+      } else {
+        enRole = "emotion"; // 默认情感
+      }
+      setAutoDetectedRole(enRole);
+      setActiveTag(EN_TO_TAG[enRole] || "心灵");
+    }
+
+    const systemPrompt = ROLE_PROMPTS[enRole] || ROLE_PROMPTS.heart;
+    setCurrentRole(`${ROLES[EN_TO_TAG[enRole] || "心灵"]?.emoji || ""} ${ROLE_NAMES[enRole] || "浪矢爷爷"}`);
+
+    // 3. 如果没有配置 AI，使用本地回复库兜底
     const apiKey = import.meta.env.VITE_API_KEY;
     const baseUrl = import.meta.env.VITE_BASE_URL;
     const model = import.meta.env.VITE_MODEL;
 
-    let tag: TagKey;
-
-    if (activeTag) {
-      // 用户手动选择了分类 → 信任用户选择
-      tag = activeTag;
-    } else {
-      // 用户未手动选择 → 自动意图分类
-      setLoading(true);
-      const en = await detectCategory(q);
-      tag = EN_TO_TAG[en] || "心灵";
-      setAutoDetectedRole(en);
-      // 高亮自动检测到的标签
-      setActiveTag(tag);
-    }
-
-    const role = ROLES[tag];
-    setCurrentRole(`${role.emoji} ${role.name}`);
-
-    // 如果没有配置 AI，使用本地回复库兜底
     if (!baseUrl || !apiKey) {
+      setLoading(true);
+      const tag = EN_TO_TAG[enRole] || "心灵";
       window.setTimeout(() => {
-        setReply(generateReply(q, tag));
+        setReply(generateReply(question, tag));
         setLoading(false);
       }, 900);
       return;
     }
 
+    setLoading(true);
+    setReply("");
+
     try {
-      /* --- 阿里云 DashScope 兼容模式请求 --- */
-      const res = await fetch(baseUrl, {
+      const response = await fetch(baseUrl, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -216,8 +187,8 @@ const AdvicePage: React.FC = () => {
           model: model || "deepseek-r1",
           input: {
             messages: [
-              { role: "system", content: role.system },
-              { role: "user", content: q },
+              { role: "system", content: systemPrompt },
+              { role: "user", content: question },
             ],
           },
           parameters: {
@@ -227,59 +198,34 @@ const AdvicePage: React.FC = () => {
         signal: controller.signal,
       });
 
-      if (!res.ok) {
-        throw new Error(`API 返回 ${res.status}`);
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
       }
 
-      /* --- 流式读取 + 打字机效果 --- */
-      const reader = res.body?.getReader();
-      if (!reader) throw new Error("无法读取响应流");
+      // 4. 强制流式读取（fetch + reader.read()）
+      const reader = response.body?.getReader();
+      if (!reader) {
+        throw new Error("无法读取响应流");
+      }
 
-      const decoder = new TextDecoder();
-      let fullText = "";
+      const decoder = new TextDecoder("utf-8");
+      let receivedText = "";
 
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
 
         const chunk = decoder.decode(value, { stream: true });
+        receivedText += chunk;
 
-        // 解析 SSE 行：data: {...}
-        for (const line of chunk.split("\n")) {
-          const trimmed = line.trim();
-          if (!trimmed || !trimmed.startsWith("data:")) continue;
+        setReply(receivedText);
 
-          // 清理 SSE 协议字符，提取 JSON
-          const jsonStr = trimmed.slice(5).trim();
-          if (jsonStr === "[DONE]") continue;
-
-          try {
-            const parsed = JSON.parse(jsonStr);
-            // DashScope 流式格式：output.choices[0].message.content
-            const delta =
-              parsed.output?.choices?.[0]?.message?.content ||
-              parsed.choices?.[0]?.delta?.content ||
-              "";
-
-            if (delta) {
-              fullText += delta;
-              setReply(fullText); // 逐次更新，实现打字机效果
-              // 模拟打字速度，让视觉更舒适
-              await new Promise((r) => setTimeout(r, 15));
-            }
-          } catch {
-            // 忽略非 JSON 行（如空行、注释等）
-          }
-        }
+        // 打字机速度控制
+        await new Promise((resolve) => setTimeout(resolve, 20));
       }
-
-      // 如果流读完但没内容，使用本地兜底
-      if (!fullText.trim()) {
-        setReply(generateReply(q, tag));
-      }
-    } catch (err: unknown) {
-      // 用户主动取消不提示错误
-      if (err instanceof DOMException && err.name === "AbortError") return;
+    } catch (error) {
+      if (error instanceof DOMException && error.name === "AbortError") return;
+      console.error("AI 调用失败:", error);
       setReply("小波睡着了，敲敲门再试试吧。");
     } finally {
       setLoading(false);

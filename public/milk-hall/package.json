@@ -1,0 +1,18 @@
+{
+  "name": "milk-hall",
+  "version": "1.0.0",
+  "description": "解忧杂货铺 - 基于 DeepSeek 的心灵对话服务",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js"
+  },
+  "dependencies": {
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "openai": "^4.77.3"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

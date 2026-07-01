@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>解忧杂货铺</title>
+  <style>
+    /* ==================== 全局重置 & 基础 ==================== */
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Georgia', 'Noto Serif SC', 'SimSun', serif;
+      background-color: #f5f0e8;
+      background-image:
+        radial-gradient(ellipse at 20% 50%, rgba(210, 180, 140, 0.3) 0%, transparent 50%),
+        radial-gradient(ellipse at 80% 20%, rgba(210, 180, 140, 0.2) 0%, transparent 50%);
+      min-height: 100vh;
+      color: #4a3728;
+      line-height: 1.8;
+    }
+
+    /* ==================== 主容器 ==================== */
+    .container {
+      max-width: 680px;
+      margin: 0 auto;
+      padding: 40px 24px 60px;
+    }
+
+    /* ==================== 标题区 ==================== */
+    .header {
+      text-align: center;
+      margin-bottom: 36px;
+    }
+
+    .header h1 {
+      font-size: 2rem;
+      font-weight: 700;
+      color: #5c3d2e;
+      letter-spacing: 6px;
+      margin-bottom: 8px;
+    }
+
+    .header .subtitle {
+      font-size: 0.9rem;
+      color: #8b7355;
+      letter-spacing: 2px;
+    }
+
+    /* 分隔线装饰 */
+    .divider {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      margin: 24px 0;
+      color: #b8a080;
+      font-size: 0.85rem;
+    }
+
+    .divider::before,
+    .divider::after {
+      content: '';
+      flex: 1;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, #b8a080, transparent);
+    }
+
+    /* ==================== 信纸区域 ==================== */
+    .letter-paper {
+      background-color: #fdf8ef;
+      background-image:
+        repeating-linear-gradient(
+          transparent,
+          transparent 31px,
+          #e8dcc8 31px,
+          #e8dcc8 32px
+        );
+      border: 1px solid #d4c5a9;
+      border-radius: 4px;
+      padding: 32px 28px;
+      box-shadow:
+        2px 2px 8px rgba(90, 60, 30, 0.1),
+        inset 0 0 30px rgba(240, 230, 210, 0.5);
+      position: relative;
+    }
+
+    /* 信纸左侧红色竖线 */
+    .letter-paper::before {
+      content: '';
+      position: absolute;
+      left: 52px;
+      top: 0;
+      bottom: 0;
+      width: 1px;
+      background-color: rgba(200, 120, 100, 0.25);
+    }
+
+    /* ==================== 文本框 ==================== */
+    .letter-paper textarea {
+      width: 100%;
+      min-height: 140px;
+      border: none;
+      background: transparent;
+      font-family: inherit;
+      font-size: 1rem;
+      color: #4a3728;
+      line-height: 32px;
+      padding-left: 28px;
+      resize: vertical;
+      outline: none;
+    }
+
+    .letter-paper textarea::placeholder {
+      color: #b8a88a;
+      font-style: italic;
+    }
+
+    /* ==================== 分类按钮组 ==================== */
+    .category-group {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-top: 20px;
+      padding-left: 28px;
+    }
+
+    .category-btn {
+      padding: 8px 18px;
+      border: 1.5px solid #c4a882;
+      border-radius: 20px;
+      background: transparent;
+      font-family: inherit;
+      font-size: 0.88rem;
+      color: #6b5240;
+      cursor: pointer;
+      transition: all 0.25s ease;
+      user-select: none;
+    }
+
+    .category-btn:hover {
+      background-color: rgba(196, 168, 130, 0.15);
+      border-color: #a88860;
+    }
+
+    .category-btn.active {
+      background-color: #8b6914;
+      border-color: #8b6914;
+      color: #fff;
+      box-shadow: 0 2px 6px rgba(139, 105, 20, 0.3);
+    }
+
+    /* ==================== 投递按钮 ==================== */
+    .submit-area {
+      display: flex;
+      justify-content: center;
+      margin-top: 28px;
+    }
+
+    .submit-btn {
+      padding: 12px 40px;
+      background: linear-gradient(135deg, #8b6914, #6b5010);
+      border: none;
+      border-radius: 6px;
+      color: #fdf8ef;
+      font-family: inherit;
+      font-size: 1.05rem;
+      letter-spacing: 4px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      box-shadow: 0 3px 10px rgba(107, 80, 16, 0.3);
+    }
+
+    .submit-btn:hover {
+      background: linear-gradient(135deg, #a07a1a, #8b6914);
+      transform: translateY(-1px);
+      box-shadow: 0 4px 14px rgba(107, 80, 16, 0.4);
+    }
+
+    .submit-btn:active {
+      transform: translateY(0);
+    }
+
+    .submit-btn:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    /* ==================== 回信区域 ==================== */
+    .reply-section {
+      margin-top: 36px;
+      display: none;
+    }
+
+    .reply-section.visible {
+      display: block;
+    }
+
+    .reply-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 16px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid #d4c5a9;
+    }
+
+    .reply-header .role-name {
+      font-size: 1.1rem;
+      font-weight: 600;
+      color: #5c3d2e;
+    }
+
+    .reply-header .role-tag {
+      font-size: 0.78rem;
+      color: #8b7355;
+      background: rgba(196, 168, 130, 0.2);
+      padding: 2px 10px;
+      border-radius: 10px;
+    }
+
+    .reply-content {
+      background-color: #fdf8ef;
+      background-image:
+        repeating-linear-gradient(
+          transparent,
+          transparent 31px,
+          #e8dcc8 31px,
+          #e8dcc8 32px
+        );
+      border: 1px solid #d4c5a9;
+      border-radius: 4px;
+      padding: 28px 24px;
+      box-shadow:
+        2px 2px 8px rgba(90, 60, 30, 0.08),
+        inset 0 0 30px rgba(240, 230, 210, 0.5);
+      font-size: 1rem;
+      line-height: 32px;
+      min-height: 80px;
+      position: relative;
+    }
+
+    /* 回信区左侧红色竖线 */
+    .reply-content::before {
+      content: '';
+      position: absolute;
+      left: 52px;
+      top: 0;
+      bottom: 0;
+      width: 1px;
+      background-color: rgba(200, 120, 100, 0.25);
+    }
+
+    .reply-text {
+      padding-left: 20px;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    /* 打字机光标 */
+    .typing-cursor {
+      display: inline-block;
+      width: 2px;
+      height: 1.1em;
+      background-color: #8b6914;
+      vertical-align: text-bottom;
+      animation: blink 0.8s infinite;
+    }
+
+    @keyframes blink {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0; }
+    }
+
+    /* 加载状态 */
+    .loading-text {
+      color: #8b7355;
+      font-style: italic;
+      padding-left: 20px;
+    }
+
+    /* ==================== 页脚 ==================== */
+    .footer {
+      text-align: center;
+      margin-top: 48px;
+      font-size: 0.8rem;
+      color: #b8a080;
+      letter-spacing: 1px;
+    }
+
+    /* ==================== 响应式 ==================== */
+    @media (max-width: 480px) {
+      .container { padding: 24px 16px 40px; }
+      .header h1 { font-size: 1.5rem; letter-spacing: 4px; }
+      .letter-paper { padding: 20px 16px; }
+      .letter-paper::before { left: 36px; }
+      .letter-paper textarea { padding-left: 16px; }
+      .category-group { padding-left: 16px; }
+      .reply-content { padding: 20px 16px; }
+      .reply-content::before { left: 36px; }
+      .reply-text { padding-left: 12px; }
+      .category-btn { padding: 6px 14px; font-size: 0.82rem; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <!-- 标题区 -->
+  <div class="header">
+    <h1>解忧杂货铺</h1>
+    <p class="subtitle">把你的烦恼，写成一封信</p>
+  </div>
+
+  <div class="divider">✉</div>
+
+  <!-- 信纸输入区 -->
+  <div class="letter-paper">
+    <textarea id="messageInput" placeholder="写下你的烦恼..." rows="5"></textarea>
+
+    <!-- 分类选择 -->
+    <div class="category-group" id="categoryGroup">
+      <button class="category-btn active" data-category="brain">🎲 脑洞</button>
+      <button class="category-btn" data-category="heart">💌 心灵</button>
+      <button class="category-btn" data-category="work">💼 工作</button>
+      <button class="category-btn" data-category="emotion">🌸 情感</button>
+    </div>
+  </div>
+
+  <!-- 投递按钮 -->
+  <div class="submit-area">
+    <button class="submit-btn" id="submitBtn">投递信件</button>
+  </div>
+
+  <!-- 回信区域 -->
+  <div class="reply-section" id="replySection">
+    <div class="divider">📨</div>
+    <div class="reply-header">
+      <span id="roleEmoji">🎲</span>
+      <span class="role-name" id="roleName">小波</span>
+      <span class="role-tag">的回信</span>
+    </div>
+    <div class="reply-content">
+      <div class="reply-text" id="replyText"></div>
+    </div>
+  </div>
+
+  <!-- 页脚 -->
+  <div class="footer">
+    <p>深夜的杂货铺，总有人为你亮着一盏灯</p>
+  </div>
+</div>
+
+<script>
+  // ==================== DOM 元素引用 ====================
+  const messageInput = document.getElementById('messageInput');
+  const categoryGroup = document.getElementById('categoryGroup');
+  const submitBtn = document.getElementById('submitBtn');
+  const replySection = document.getElementById('replySection');
+  const roleEmoji = document.getElementById('roleEmoji');
+  const roleName = document.getElementById('roleName');
+  const replyText = document.getElementById('replyText');
+
+  // 当前选中的分类
+  let selectedCategory = 'brain';
+
+  // ==================== 分类切换 ====================
+  categoryGroup.addEventListener('click', (e) => {
+    const btn = e.target.closest('.category-btn');
+    if (!btn) return;
+
+    // 取消所有按钮的选中状态，再选中当前
+    categoryGroup.querySelectorAll('.category-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    selectedCategory = btn.dataset.category;
+  });
+
+  // ==================== 投递信件（核心逻辑） ====================
+  submitBtn.addEventListener('click', async () => {
+    const message = messageInput.value.trim();
+    if (!message) {
+      messageInput.focus();
+      return;
+    }
+
+    // 禁用按钮，显示加载状态
+    submitBtn.disabled = true;
+    submitBtn.textContent = '投递中...';
+
+    // 显示回信区，清空旧内容
+    replySection.classList.add('visible');
+    replyText.innerHTML = '<span class="typing-cursor"></span>';
+
+    try {
+      // 使用 fetch + ReadableStream 读取 SSE 流
+      const response = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message, category: selectedCategory }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`服务器返回 ${response.status}`);
+      }
+
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder('utf-8');
+      let fullText = '';
+
+      // 逐块读取流数据
+      while (true) {
+        const { value, done } = await reader.read();
+        if (done) break;
+
+        // 解码二进制块为文本
+        const chunk = decoder.decode(value, { stream: true });
+
+        // 按 SSE 协议解析：每个事件以 "data: " 开头，以 "\n\n" 结束
+        const lines = chunk.split('\n');
+
+        for (const line of lines) {
+          const trimmed = line.trim();
+          if (!trimmed.startsWith('data: ')) continue;
+
+          try {
+            const data = JSON.parse(trimmed.slice(6));
+
+            if (data.type === 'role') {
+              // 更新角色名显示
+              roleEmoji.textContent = data.emoji;
+              roleName.textContent = data.name;
+            } else if (data.type === 'content') {
+              // 追加文本内容（打字机效果）
+              fullText += data.text;
+              replyText.textContent = fullText;
+              // 保持光标在末尾
+              replyText.innerHTML = fullText.replace(/\n/g, '<br>') + '<span class="typing-cursor"></span>';
+            } else if (data.type === 'error') {
+              // 显示错误信息
+              fullText = data.text;
+              replyText.innerHTML = '<span style="color:#a04040;">' + data.text + '</span>';
+            } else if (data.type === 'done') {
+              // 移除光标
+              replyText.innerHTML = fullText.replace(/\n/g, '<br>');
+            }
+          } catch (parseErr) {
+            // 忽略无法解析的行
+          }
+        }
+      }
+    } catch (err) {
+      replyText.innerHTML = '<span style="color:#a04040;">信件投递失败了，请检查网络后重试~</span>';
+      console.error('[解忧杂货铺] 请求失败:', err);
+    } finally {
+      // 恢复按钮状态
+      submitBtn.disabled = false;
+      submitBtn.textContent = '投递信件';
+    }
+  });
+
+  // ==================== 支持 Ctrl+Enter 快捷发送 ====================
+  messageInput.addEventListener('keydown', (e) => {
+    if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+      e.preventDefault();
+      submitBtn.click();
+    }
+  });
+</script>
+
+</body>
+</html>

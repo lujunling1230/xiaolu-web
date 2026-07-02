@@ -52,8 +52,12 @@ const Footer: React.FC<FooterProps> = ({
   return (
     <footer
       id="footer"
-      className="py-12 px-6 border-t border-[#E8E6E1] bg-[#FAF9F6]"
-      style={{ fontFamily: '"Noto Serif SC", "DIN Alternate", Georgia, serif' }}
+      className="relative py-12 px-6 border-t border-[rgba(255,255,255,0.4)] backdrop-blur-[8px]"
+      style={{
+        fontFamily: '"Noto Serif SC", "DIN Alternate", Georgia, serif',
+        backgroundColor: "rgba(255, 255, 255, 0.65)",
+        boxShadow: "0 -4px 20px rgba(0, 0, 0, 0.02)",
+      }}
     >
       <div className="max-w-4xl mx-auto flex flex-col items-center gap-5 text-[13px] text-[#5A6B5C]">
         {/* ═════ 第一行：版权 ═════ */}
@@ -186,7 +190,7 @@ const Footer: React.FC<FooterProps> = ({
 
         {/* ═════ 第四行：Slogan ═════ */}
         <p
-          className="text-[#888] text-[13px] tracking-wide mt-1"
+          className="text-[#666] text-[13px] tracking-wide mt-1"
           style={{ fontFamily: '"Noto Serif SC", serif' }}
         >
           用理性架构世界，用感性记录光阴
@@ -228,6 +232,14 @@ const Footer: React.FC<FooterProps> = ({
           </div>
         )}
       </div>
+
+      {/* ═════ 右下角点缀 ═════ */}
+      <span
+        className="hidden sm:block absolute bottom-4 right-6 text-[12px] text-[#777] select-none"
+        style={{ fontFamily: '"Dancing Script", "Pacifico", "Brush Script MT", cursive' }}
+      >
+        have a nice day ~ ling
+      </span>
     </footer>
   );
 };

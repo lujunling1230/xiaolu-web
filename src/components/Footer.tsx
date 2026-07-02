@@ -1,61 +1,232 @@
 /**
- * Footer 组件 — 页脚
+ * Footer 组件 — 最终版页脚
  *
- * Copyright + 邮箱 + GitHub icon
+ * 胶片风视觉：淡米背景 + 细边框 + 衬线字体
+ * 包含：版权信息 / 邮箱复制 / 简历下载 / 社交图标 / Slogan / 回到顶部
  */
 
-const Footer: React.FC = () => {
+import { useState, useCallback } from "react";
+
+interface FooterProps {
+  /** 双击 Logo 唤出管理员密码框 */
+  onAdminTap?: () => void;
+  /** 是否处于管理员模式 */
+  adminMode?: boolean;
+  /** 发布草稿 */
+  onPublish?: () => void;
+  /** 退出编辑 */
+  onLogout?: () => void;
+}
+
+const Footer: React.FC<FooterProps> = ({
+  onAdminTap,
+  adminMode = false,
+  onPublish,
+  onLogout,
+}) => {
+  const [copied, setCopied] = useState(false);
+
+  /* ---------- 邮箱复制 ---------- */
+  const copyEmail = useCallback(async () => {
+    const realEmail = "15294705967@163.com";
+    try {
+      await navigator.clipboard.writeText(realEmail);
+    } catch {
+      // 降级方案
+      const input = document.createElement("input");
+      input.value = realEmail;
+      document.body.appendChild(input);
+      input.select();
+      document.execCommand("copy");
+      document.body.removeChild(input);
+    }
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  }, []);
+
+  /* ---------- 回到顶部 ---------- */
+  const scrollToTop = useCallback(() => {
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }, []);
+
   return (
-    <footer id="footer" className="py-12 px-6 border-t border-[#e8e0d5] bg-[#faf6f0]">
-      <div className="max-w-4xl mx-auto">
-        <div className="flex flex-col items-center gap-6">
-          {/* 装饰风铃符号 */}
-          <div className="flex items-center gap-3">
-            <span className="h-px w-16 bg-[#e8e0d5]" />
-            <span className="text-[#b88c6a] text-lg">🎐</span>
-            <span className="h-px w-16 bg-[#e8e0d5]" />
-          </div>
+    <footer
+      id="footer"
+      className="py-12 px-6 border-t border-[#E8E6E1] bg-[#FAF9F6]"
+      style={{ fontFamily: '"Noto Serif SC", "DIN Alternate", Georgia, serif' }}
+    >
+      <div className="max-w-4xl mx-auto flex flex-col items-center gap-5 text-[13px] text-[#5A6B5C]">
+        {/* ═════ 第一行：版权 ═════ */}
+        <p
+          className="text-center cursor-default select-none"
+          onClick={onAdminTap}
+        >
+          🌿 © 2026 路俊玲 · AI 产品经理作品集
+        </p>
 
-          {/* 联系方式 */}
-          <div className="flex items-center gap-6">
-            {/* 邮箱 */}
-            <a
-              href="mailto:junling@example.com"
-              className="flex items-center gap-2 text-sm text-[#6b6b6b] hover:text-[#b88c6a] transition-colors duration-300"
-            >
-              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={1.5}
-                  d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
-                />
-              </svg>
-              <span>junling@example.com</span>
-            </a>
+        {/* ═════ 第二行：邮箱 + 简历 ═════ */}
+        <div className="flex flex-wrap items-center justify-center gap-4 sm:gap-6">
+          {/* 邮箱 — 点击复制 */}
+          <button
+            onClick={copyEmail}
+            className="group relative flex items-center gap-1.5 hover:text-[#8D9A8B] transition-colors duration-300 cursor-pointer bg-transparent border-none"
+            style={{ fontFamily: "inherit" }}
+            title="点击复制邮箱"
+          >
+            <span>邮箱：lujunling[at]163.com</span>
+            {/* 已复制提示 */}
+            {copied && (
+              <span className="absolute -top-7 left-1/2 -translate-x-1/2 px-2 py-0.5 bg-[#8D9A8B] text-white text-[11px] rounded whitespace-nowrap">
+                ✓ 已复制
+              </span>
+            )}
+          </button>
 
-            {/* GitHub */}
-            <a
-              href="https://github.com"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center gap-2 text-sm text-[#6b6b6b] hover:text-[#b88c6a] transition-colors duration-300"
-            >
-              <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z" />
-              </svg>
-              <span>GitHub</span>
-            </a>
-          </div>
-
-          {/* 版权信息 */}
-          <p className="text-xs text-[#b0b0b0] tracking-wide">
-            © {new Date().getFullYear()} 路俊玲 · Built with React & Tailwind CSS
-          </p>
-          <p className="text-xs text-[#c0c0c0] italic" style={{ fontFamily: '"Noto Serif SC", serif' }}>
-            风过铃鸣，愿你被温柔以待
-          </p>
+          {/* 下载简历 */}
+          <a
+            href="/resume.pdf"
+            download
+            className="flex items-center gap-1.5 hover:text-[#8D9A8B] transition-colors duration-300"
+          >
+            <span>📄</span>
+            <span className="hidden sm:inline">下载简历 PDF</span>
+          </a>
         </div>
+
+        {/* ═════ 第三行：社交媒体图标（细线 SVG） ═════ */}
+        <div className="flex items-center gap-5 mt-1">
+          {/* GitHub */}
+          <a
+            href="https://github.com"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-[#5A6B5C] hover:text-[#8D9A8B] transition-colors duration-300"
+            aria-label="GitHub"
+          >
+            <svg
+              className="w-5 h-5"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.3"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              viewBox="0 0 24 24"
+            >
+              <path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22" />
+            </svg>
+          </a>
+
+          {/* 知乎 */}
+          <a
+            href="https://www.zhihu.com"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-[#5A6B5C] hover:text-[#8D9A8B] transition-colors duration-300"
+            aria-label="知乎"
+          >
+            <svg
+              className="w-5 h-5"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.3"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              viewBox="0 0 24 24"
+            >
+              <circle cx="12" cy="12" r="9" />
+              <path d="M9 10h6M9 14h4" />
+            </svg>
+          </a>
+
+          {/* 小红书 */}
+          <a
+            href="https://www.xiaohongshu.com"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-[#5A6B5C] hover:text-[#8D9A8B] transition-colors duration-300"
+            aria-label="小红书"
+          >
+            <svg
+              className="w-5 h-5"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.3"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              viewBox="0 0 24 24"
+            >
+              <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
+              <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
+            </svg>
+          </a>
+
+          {/* LinkedIn */}
+          <a
+            href="https://www.linkedin.com"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-[#5A6B5C] hover:text-[#8D9A8B] transition-colors duration-300"
+            aria-label="LinkedIn"
+          >
+            <svg
+              className="w-5 h-5"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.3"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              viewBox="0 0 24 24"
+            >
+              <path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z" />
+              <rect x="2" y="9" width="4" height="12" rx="1" />
+              <circle cx="4" cy="4" r="2" />
+            </svg>
+          </a>
+        </div>
+
+        {/* ═════ 第四行：Slogan ═════ */}
+        <p
+          className="text-[#888] text-[13px] tracking-wide mt-1"
+          style={{ fontFamily: '"Noto Serif SC", serif' }}
+        >
+          用理性架构世界，用感性记录光阴
+        </p>
+
+        {/* ═════ 第五行：回到顶部 ═════ */}
+        <button
+          onClick={scrollToTop}
+          className="mt-2 flex items-center gap-1 text-[#5A6B5C] hover:text-[#8D9A8B] transition-colors duration-300 cursor-pointer bg-transparent border-none"
+          style={{ fontFamily: "inherit" }}
+        >
+          <span>↑</span>
+          <span>回到顶部</span>
+        </button>
+
+        {/* ═════ 管理员入口提示 ═════ */}
+        <p
+          className="text-[11px] text-[#c0c0c0] cursor-default select-none"
+          style={{ fontFamily: "inherit" }}
+        >
+          双击唤出管理面板
+        </p>
+
+        {/* ═════ 管理员操作按钮 ═════ */}
+        {adminMode && onPublish && onLogout && (
+          <div className="flex gap-2.5 justify-center">
+            <button
+              onClick={onPublish}
+              className="px-4 py-1.5 text-xs rounded-full bg-[#8D9A8B] text-white cursor-pointer border-none hover:bg-[#7a8a7a] transition-colors"
+            >
+              发布草稿
+            </button>
+            <button
+              onClick={onLogout}
+              className="px-4 py-1.5 text-xs rounded-full bg-transparent text-[#5A6B5C] cursor-pointer border border-[rgba(90,107,92,0.25)] hover:border-[#8D9A8B] hover:text-[#8D9A8B] transition-colors"
+            >
+              退出编辑
+            </button>
+          </div>
+        )}
       </div>
     </footer>
   );

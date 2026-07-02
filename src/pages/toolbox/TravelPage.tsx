@@ -264,7 +264,7 @@ const TravelPage: React.FC = () => {
         <div className="travel-hero-grain" />
         <div className="travel-hero-content">
           <Link to="/mickey" className="travel-back">
-            ← 回到妙妙工具箱
+            ← 回到妙妙屋
           </Link>
           <motion.h1
             className="travel-hero-title"
@@ -531,7 +531,7 @@ const TravelPage: React.FC = () => {
         }
         .travel-hero-content { position: relative; z-index: 2; text-align: center; }
         .travel-back {
-          position: absolute; top: 16px; left: 16px;
+          position: absolute; top: 24px; left: 24px;
           font-size: 14px; color: rgba(255,255,255,0.8); text-decoration: none;
           letter-spacing: 0.04em; transition: color 0.25s ease;
         }

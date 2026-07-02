@@ -5,6 +5,8 @@ import SimpleNavbar from "./components/SimpleNavbar";
 import LeafBook from "./components/LeafBook";
 import DynamicBackground from "./components/DynamicBackground";
 import ButterflyCursor from "./components/ButterflyCursor";
+import Footer from "./components/Footer";
+import { initSiteData, loadAdminSession, unlockAdmin, logoutAdmin, isAdmin, publishDrafts } from "./utils/siteData";
 
 type Section = "home" | "about" | "projects" | "lab" | "film" | "mickey";
 
@@ -26,13 +28,25 @@ const AppContent: React.FC = () => {
   const [current, setCurrent] = useState<Section>("home");
   const [isFullMode, setIsFullMode] = useState(true);
   const [scrolled, setScrolled] = useState(false);
+  const [adminMode, setAdminMode] = useState(false);
+  const [showPwModal, setShowPwModal] = useState(false);
+  const [pwInput, setPwInput] = useState("");
+  const [pwError, setPwError] = useState(false);
   const openBookRef = useRef<(() => void) | null>(null);
+  const logoTapRef = useRef(0);
+
+  /* 初始化站点数据 + 管理员会话 */
+  useEffect(() => {
+    initSiteData();
+    loadAdminSession();
+    setAdminMode(isAdmin());
+  }, []);
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const pure = params.get("mode") === "pure";
     setIsFullMode(!pure);
-    document.title = pure ? "森林疗愈室" : "路俊玲 | AI 产品经理作品集";
+    document.title = pure ? "森林疗愈室" : "路俊玲 · AI 产品经理作品集";
   }, []);
 
   useEffect(() => {
@@ -67,6 +81,41 @@ const AppContent: React.FC = () => {
     });
     return () => observer.disconnect();
   }, [isFullMode]);
+
+  /* 双击右下角 Logo 唤出密码框 */
+  const handleLogoDoubleTap = () => {
+    const now = Date.now();
+    if (now - logoTapRef.current < 400) {
+      setShowPwModal(true);
+      setPwInput("");
+      setPwError(false);
+    }
+    logoTapRef.current = now;
+  };
+
+  const handleUnlock = () => {
+    if (unlockAdmin(pwInput)) {
+      setAdminMode(true);
+      setShowPwModal(false);
+      setPwInput("");
+    } else {
+      setPwError(true);
+    }
+  };
+
+  const handleLogout = () => {
+    logoutAdmin();
+    setAdminMode(false);
+  };
+
+  const handlePublish = () => {
+    const res = publishDrafts();
+    if (res.success) {
+      alert(res.merged.length > 0 ? `已发布 ${res.merged.length} 项草稿到主数据` : "没有待发布的草稿");
+    } else {
+      alert("发布失败，请确认管理员权限");
+    }
+  };
 
   const handleNavigate = (section: Section) => {
     const el = document.getElementById(section);
@@ -107,9 +156,9 @@ const AppContent: React.FC = () => {
         >
           {isFullMode ? (
             <>
-              <p className="po-eyebrow">PRODUCT MANAGER</p>
+              <p className="po-eyebrow">AI Product Manager</p>
               <h1 className="po-name">路俊玲</h1>
-              <p className="po-tagline">Building Human-Centric AI Products</p>
+              <p className="po-tagline">AI Product Manager · Digital Atelier</p>
               <p className="po-bio">
                 从软件工程的代码底座出发，走向 AI 产品的舞台。
                 在真实场景中洞察需求，把技术能力转化为可触达用户的原型与产品——
@@ -123,6 +172,28 @@ const AppContent: React.FC = () => {
                   翻阅我的作品 📖
                 </button>
               </div>
+              {/* 管理员状态角标 */}
+              {adminMode && (
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.8 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  style={{
+                    position: "absolute",
+                    top: -16,
+                    right: -16,
+                    fontSize: 12,
+                    color: "#8D9A8B",
+                    background: "rgba(255,255,255,0.15)",
+                    backdropFilter: "blur(8px)",
+                    padding: "4px 12px",
+                    borderRadius: 999,
+                    border: "1px solid rgba(141,154,139,0.3)",
+                    letterSpacing: "0.05em",
+                  }}
+                >
+                  编辑中 ✦
+                </motion.div>
+              )}
             </>
           ) : (
             <>
@@ -209,10 +280,36 @@ const AppContent: React.FC = () => {
       )}
 
       {/* 页脚 */}
-      <footer className="po-footer">
-        <p>© 2026 路俊玲 · Building Human-Centric AI Products</p>
-        <p>junling@example.com</p>
-      </footer>
+      <Footer
+        onAdminTap={handleLogoDoubleTap}
+        adminMode={adminMode}
+        onPublish={handlePublish}
+        onLogout={handleLogout}
+      />
+
+      {/* 密码框 Modal */}
+      {showPwModal && (
+        <div style={{ position: "fixed", inset: 0, zIndex: 200, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(0,0,0,0.45)", backdropFilter: "blur(4px)" }} onClick={() => setShowPwModal(false)}>
+          <div style={{ background: "#fff", borderRadius: 16, padding: 32, width: "90%", maxWidth: 320, boxShadow: "0 20px 60px rgba(0,0,0,0.2)", textAlign: "center" }} onClick={e => e.stopPropagation()}>
+            <h4 style={{ fontFamily: '"Noto Serif SC", serif', fontSize: 16, margin: "0 0 8px", color: "#4a4038" }}>管理员验证</h4>
+            <p style={{ fontSize: 12, color: "#8a8a8a", margin: "0 0 20px" }}>请输入密码进入编辑模式</p>
+            <input
+              type="password"
+              value={pwInput}
+              onChange={e => { setPwInput(e.target.value); setPwError(false); }}
+              onKeyDown={e => { if (e.key === "Enter") handleUnlock(); }}
+              placeholder="密码"
+              style={{ width: "100%", padding: "10px 14px", marginBottom: pwError ? 6 : 16, border: `1.5px solid ${pwError ? "#e57373" : "#e0ddd5"}`, borderRadius: 10, fontSize: 14, outline: "none", textAlign: "center", boxSizing: "border-box" }}
+              autoFocus
+            />
+            {pwError && <p style={{ fontSize: 11, color: "#e57373", margin: "0 0 12px" }}>密码错误</p>}
+            <div style={{ display: "flex", gap: 10 }}>
+              <button onClick={() => setShowPwModal(false)} style={{ flex: 1, padding: "9px 0", border: "1.5px solid #e0ddd5", borderRadius: 999, background: "transparent", color: "#8a7a6a", cursor: "pointer", fontSize: 13 }}>取消</button>
+              <button onClick={handleUnlock} style={{ flex: 1, padding: "9px 0", border: "none", borderRadius: 999, background: "#8D9A8B", color: "#fff", cursor: "pointer", fontSize: 13 }}>确认</button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <style>{`
         /* ===== 全局根 ===== */
@@ -449,13 +546,6 @@ const AppContent: React.FC = () => {
           transform: translateY(-2px);
           box-shadow: 0 4px 16px rgba(0,0,0,0.12);
         }
-
-        /* 页脚 */
-        .po-footer {
-          padding: 40px 24px; text-align: center;
-        }
-        .po-footer p { margin: 0; font-size: 13px; color: rgba(255,255,255,0.3); }
-        .po-footer p + p { margin-top: 4px; }
 
         /* ===== 响应式 ===== */
         @media (max-width: 768px) {

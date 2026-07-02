@@ -418,13 +418,14 @@ const QuestItem: React.FC<{
 const BreakdownModal: React.FC<{
   text: string;
   onPick: (mode: "five" | "pass" | "direct") => void;
-}> = ({ text, onPick }) => (
+  onCancel: () => void;
+}> = ({ text, onPick, onCancel }) => (
   <motion.div
     className="quest-modal-overlay"
     initial={{ opacity: 0 }}
     animate={{ opacity: 1 }}
     exit={{ opacity: 0 }}
-    onClick={() => onPick("direct")}
+    onClick={onCancel}
   >
     <motion.div
       className="quest-modal"
@@ -436,7 +437,7 @@ const BreakdownModal: React.FC<{
     >
       <button
         className="quest-modal-close"
-        onClick={() => onPick("direct")}
+        onClick={onCancel}
         aria-label="关闭"
       >
         ❌
@@ -557,6 +558,10 @@ const QuestLogPage: React.FC = () => {
     setPending(null);
   };
 
+  const handleCancel = () => {
+    setPending(null);
+  };
+
   // 统计
   const stats = useMemo(() => {
     const done = quests.filter((q) => q.completed).length;
@@ -638,7 +643,7 @@ const QuestLogPage: React.FC = () => {
       {/* 智能拆解 Modal */}
       <AnimatePresence>
         {pending && (
-          <BreakdownModal text={pending} onPick={handlePick} />
+          <BreakdownModal text={pending} onPick={handlePick} onCancel={handleCancel} />
         )}
       </AnimatePresence>
 

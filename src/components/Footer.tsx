@@ -122,7 +122,7 @@ const Footer: React.FC<FooterProps> = ({ isFullMode = true }) => {
           width: "100%",
           margin: "0 auto",
           padding: "16px 24px",
-          background: "rgba(255, 255, 255, 0.55)",
+          background: "rgba(255, 255, 255, 0.85)",
           backdropFilter: "blur(8px)",
           WebkitBackdropFilter: "blur(8px)",
           borderRadius: 8,
@@ -295,13 +295,15 @@ const Footer: React.FC<FooterProps> = ({ isFullMode = true }) => {
           }
           .footer-top {
             flex-direction: column !important;
-            align-items: flex-start !important;
+            align-items: center !important;
+            text-align: center !important;
             gap: 10px !important;
             margin-bottom: 14px !important;
           }
           .footer-bottom {
             flex-direction: column !important;
-            align-items: flex-start !important;
+            align-items: center !important;
+            text-align: center !important;
             gap: 8px !important;
           }
         }

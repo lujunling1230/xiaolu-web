@@ -77,9 +77,9 @@ const SimpleNavbar: React.FC<SimpleNavbarProps> = ({
         style={{
           height: 72,
           padding: "0 28px",
-          background: "rgba(255, 255, 255, 0.6)",
-          backdropFilter: "blur(6px)",
-          WebkitBackdropFilter: "blur(6px)",
+          background: "rgba(255, 255, 255, 0.82)",
+          backdropFilter: "blur(10px)",
+          WebkitBackdropFilter: "blur(10px)",
           borderBottom: "1px solid rgba(255, 255, 255, 0.3)",
         }}
       >
@@ -315,7 +315,7 @@ const SimpleNavbar: React.FC<SimpleNavbarProps> = ({
           bottom: 6px;
           width: 0;
           height: 2px;
-          background: #81C784;
+          background: #7cb342;
           border-radius: 1px;
           transform: translateX(-50%);
           transition: width 0.3s ease;
@@ -413,7 +413,7 @@ const MobileNavItem: React.FC<MobileNavItemProps> = ({ item, active, onNavigate 
           fontSize: 16,
           color: active ? "#3A4F3A" : "#5A6B5C",
           fontWeight: active ? 600 : 400,
-          background: active ? "rgba(129,199,132,0.08)" : "transparent",
+          background: active ? "rgba(124,179,66,0.08)" : "transparent",
           textDecoration: "none",
           letterSpacing: "0.04em",
           transition: "all 0.2s ease",

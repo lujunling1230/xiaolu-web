@@ -103,7 +103,6 @@ const DEFAULT_TVS: VintageCard[] = [
   { id: "tv-1999", year: "1999", title: "《还珠格格》（重播巅峰）", description: `每年寒暑假的必备经典，小燕子的古灵精怪和"当"的歌声，是几代人的共同记忆。`, imageUrl: "/images/tv-1999-huanzhugege.jpg" },
   { id: "tv-2005a", year: "2005", title: "《家有儿女》", description: "刘星、夏雪、夏雨一家的欢乐日常，是童年最温暖的背景音。", imageUrl: "/images/tv-2005-jiayouernv.jpg" },
   { id: "tv-2005b", year: "2005", title: "《仙剑奇侠传》", description: "李逍遥和赵灵儿的仙侠梦，配上《杀破狼》和《六月的雨》，是无数人的意难平。", imageUrl: "/images/tv-2005-xianjian.jpg" },
-  { id: "tv-2005c", year: "2005", title: "《恶作剧之吻》", description: "袁湘琴和江直树的故事，让每个女孩都幻想过自己的白马王子。", imageUrl: "/images/tv-2005c-kiss.jpg" },
   { id: "tv-2006", year: "2006", title: "《武林外传》", description: "同福客栈的屋顶，藏着江湖最柔软的角落。一群不靠谱的人，说着最扎心的话，成了我们青春里最治愈的避风港。", imageUrl: "/images/tv-2006-wulin.jpg" },
   { id: "tv-2010", year: "2010", title: "《新三国演义》", description: "烽火连天的不仅是赤壁的火，还有那些英雄辈出的梦。桃园结义的酒，至今还在历史的风烟里温热。", imageUrl: "/images/tv-2010-sanguo.jpg" },
   { id: "tv-2013", year: "2013", title: "《咱们结婚吧》", description: "大龄未婚的焦虑，被一碗热汤和一句'咱们结婚吧'悄悄融化。爱情或许会迟到，但绝不会缺席。", imageUrl: "/images/tv-2013-marry.jpg" },

@@ -434,6 +434,13 @@ const BreakdownModal: React.FC<{
       transition={{ type: "spring", stiffness: 200, damping: 18 }}
       onClick={(e) => e.stopPropagation()}
     >
+      <button
+        className="quest-modal-close"
+        onClick={() => onPick("direct")}
+        aria-label="关闭"
+      >
+        ❌
+      </button>
       <p className="quest-modal-title">这个任务看起来有点难</p>
       <p className="quest-modal-sub">「{text}」</p>
       <p className="quest-modal-ask">要不要拆解一下？</p>
@@ -816,7 +823,22 @@ const QuestLogPage: React.FC = () => {
           background: linear-gradient(160deg, #1f2937, #111827);
           border: 1px solid rgba(255,255,255,0.1);
           box-shadow: 0 24px 64px -16px rgba(0,0,0,0.6);
+          position: relative;
         }
+        .quest-modal-close {
+          position: absolute;
+          top: 12px;
+          right: 12px;
+          background: transparent;
+          border: none;
+          font-size: 18px;
+          cursor: pointer;
+          padding: 4px;
+          line-height: 1;
+          opacity: 0.6;
+          transition: opacity 0.2s;
+        }
+        .quest-modal-close:hover { opacity: 1; }
         .quest-modal-title { font-size: 17px; font-weight: 700; color: #fff; margin: 0 0 6px; }
         .quest-modal-sub { font-size: 14px; color: #fde047; margin: 0 0 4px; }
         .quest-modal-ask { font-size: 13px; color: #9ca3af; margin: 0 0 20px; }

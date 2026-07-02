@@ -121,9 +121,9 @@ const Footer: React.FC<FooterProps> = ({ isFullMode = true }) => {
           maxWidth: 1100,
           margin: "0 auto",
           padding: "16px 24px",
-          background: "rgba(255, 255, 255, 0.5)",
-          backdropFilter: "blur(6px)",
-          WebkitBackdropFilter: "blur(6px)",
+          background: "rgba(255, 255, 255, 0.55)",
+          backdropFilter: "blur(8px)",
+          WebkitBackdropFilter: "blur(8px)",
           borderRadius: 8,
         }}
       >

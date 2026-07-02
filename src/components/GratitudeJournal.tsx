@@ -26,6 +26,7 @@ interface GratitudeEntry {
   mood: string; // 天气 key
   color: string; // 心情色 key
   content: string;
+  time?: string; // HH:mm，保存时自动填入
 }
 
 interface Draft {
@@ -504,13 +505,37 @@ const DiaryPage: React.FC<DiaryPageProps> = ({
             本月记录 <span className="gj-month-history-count">{monthEntries.length}</span>
           </h4>
           <div className="gj-month-entry-list">
-            {monthEntries.map((entry) => {
+            {monthEntries.map((entry, idx) => {
               const colorInfo = MOOD_COLORS.find((c) => c.key === entry.color);
               return (
-                <div key={entry.id} className="gj-month-entry">
+                <div key={entry.id} className="gj-month-entry" style={{ position: "relative", paddingLeft: entry.time ? "24px" : undefined }}>
+                  {/* 时间轴竖线 + 圆点 */}
+                  {entry.time && (
+                    <div style={{
+                      position: "absolute",
+                      left: 0,
+                      top: 8,
+                      bottom: 8,
+                      width: 2,
+                      background: "rgba(122,154,130,0.2)",
+                      borderRadius: 1,
+                    }} />
+                  )}
+                  {entry.time && (
+                    <div style={{
+                      position: "absolute",
+                      left: -3,
+                      top: 10,
+                      width: 8,
+                      height: 8,
+                      borderRadius: "50%",
+                      background: "var(--accent)",
+                      opacity: 0.6,
+                    }} />
+                  )}
                   <div className="gj-month-entry-header">
                     <div className="gj-month-entry-date-row">
-                      <span className="gj-month-entry-date">{entry.date}</span>
+                      <span className="gj-month-entry-date">{entry.date}{entry.time ? ` ${entry.time}` : ""}</span>
                       <span className="gj-month-entry-weather" title={WEATHER_OPTIONS.find((w) => w.key === entry.mood)?.label}>
                         <WeatherGlyph name={resolveWeather(entry.mood)} size={14} />
                       </span>
@@ -590,27 +615,12 @@ const GratitudeJournal: React.FC = () => {
       setFlipDir(1);
       setView("diary");
 
-      const draft = loadDraft(m);
-      if (draft) {
-        setWeather(draft.weather);
-        setColor(draft.color);
-        setContent(draft.content);
-      } else {
-        const latest = entries
-          .filter((e) => e.month === m)
-          .sort((a, b) => (b.date > a.date ? 1 : -1))[0];
-        if (latest) {
-          setWeather(resolveWeather(latest.mood));
-          setColor(latest.color);
-          setContent(latest.content);
-        } else {
-          setWeather("sun");
-          setColor("");
-          setContent("");
-        }
-      }
+      // 切换月份时总是从空白开始
+      setWeather("sun");
+      setColor("");
+      setContent("");
     },
-    [entries]
+    []
   );
 
   /** 封面 → 目录 */
@@ -658,34 +668,33 @@ const GratitudeJournal: React.FC = () => {
     [selectedMonth, weather, content, persistDraft]
   );
 
-  /** 保存为正式记录 */
   const handleSave = useCallback(() => {
     if (!content.trim() || selectedMonth === null) return;
 
-    const todayDate = getToday();
+    const now = new Date();
+    const timeStr = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
+
     const newEntry: GratitudeEntry = {
-      id: `${todayDate}-${Date.now()}`,
-      date: todayDate,
+      id: `${Date.now()}`,
+      date: getToday(),
       month: selectedMonth,
       mood: weather,
       color,
       content: content.trim(),
+      time: timeStr,
     };
 
-    const existingIdx = entries.findIndex(
-      (e) => e.date === todayDate && e.month === selectedMonth
-    );
-
-    let updated: GratitudeEntry[];
-    if (existingIdx >= 0) {
-      updated = entries.map((e, i) => (i === existingIdx ? { ...newEntry, id: e.id } : e));
-    } else {
-      updated = [newEntry, ...entries];
-    }
-
+    // 始终追加，永不覆盖同一天的旧记录
+    const updated = [newEntry, ...entries];
     setEntries(updated);
     saveEntries(updated);
-    clearDraft(selectedMonth); // 已保存，清除草稿
+    clearDraft(selectedMonth);
+
+    // 保存后清空输入框，准备写下一条新的
+    setContent("");
+    setWeather("sun");
+    setColor("");
+
     setSavedFlash(true);
     window.setTimeout(() => setSavedFlash(false), 2000);
   }, [content, selectedMonth, weather, color, entries]);

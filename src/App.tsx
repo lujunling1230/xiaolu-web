@@ -7,6 +7,7 @@ import DynamicBackground from "./components/DynamicBackground";
 import ButterflyCursor from "./components/ButterflyCursor";
 import Footer from "./components/Footer";
 import { initSiteData, loadAdminSession } from "./utils/siteData";
+import { isElectron } from "./utils/electron";
 import SecretKnock from "./components/SecretKnock";
 
 type Section = "home" | "about" | "projects" | "lab" | "film" | "mickey";
@@ -26,6 +27,7 @@ const SKILLS = [
 
 const AppContent: React.FC = () => {
   const { isNight, toggleTheme } = useTheme();
+  const electron = isElectron();
   const [current, setCurrent] = useState<Section>("home");
   const [isFullMode, setIsFullMode] = useState(true);
   const [scrolled, setScrolled] = useState(false);

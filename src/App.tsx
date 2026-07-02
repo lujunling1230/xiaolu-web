@@ -204,13 +204,13 @@ const AppContent: React.FC = () => {
           </section>
 
           {/* ==================== 项目集 ==================== */}
-          <section id="projects" className="po-section po-section-last">
+          <section id="projects" className="po-section po-section-last po-section-projects">
             <div className="po-section-inner">
               <motion.h2 {...fadeUp} className="po-section-heading">项目集</motion.h2>
+              <motion.p {...fadeUp} className="po-projects-sub">翻开这本树叶书，每一页都是一段实践的印记。</motion.p>
 
               {/* 叶子书 */}
               <motion.div {...fadeUp} className="po-leafbook-wrap">
-                <p className="po-leafbook-sub">翻开这本树叶书，每一页都是一段实践的印记。</p>
                 <LeafBook registerOpenBook={registerOpenBook} />
               </motion.div>
             </div>
@@ -326,10 +326,13 @@ const AppContent: React.FC = () => {
 
         /* ===== 各模块通用 ===== */
         .po-section {
-          padding: 120px 0;
+          padding: 100px 0;
           border-top: 1px solid rgba(255,255,255,0.08);
         }
         .po-section-last { border-bottom: 1px solid rgba(255,255,255,0.08); }
+
+        /* 项目集模块：紧凑上移 */
+        .po-section-projects { padding-top: 60px; }
         .po-section-inner {
           max-width: 1100px; margin: 0 auto; padding: 0 48px;
         }
@@ -424,16 +427,18 @@ const AppContent: React.FC = () => {
         /* ===== 项目集 ===== */
         .po-leafbook-wrap {
           margin-bottom: 80px;
-          margin-top: -16px;
-          display: flex; flex-direction: column; align-items: center; gap: 20px;
+          margin-top: 16px;
+          display: flex; flex-direction: column; align-items: center;
         }
-        .po-leafbook-sub {
+        /* 项目集副标题：居中引言风格 */
+        .po-projects-sub {
           font-family: "Noto Serif SC", Georgia, serif;
-          font-size: 14px; color: #7a7268;
-          margin: 0; text-shadow: 0 1px 4px rgba(255,255,255,0.5);
-          letter-spacing: 0.03em;
-          padding: 0 0 12px;
-          border-bottom: 1px solid rgba(122,154,130,0.15);
+          font-size: 14px; color: #6a7a5c;
+          margin: 0 0 8px;
+          text-align: center;
+          line-height: 1.6;
+          letter-spacing: 0.04em;
+          text-shadow: 0 1px 4px rgba(255,255,255,0.5);
         }
         .po-mickey-wrap {
           display: flex; flex-direction: column; align-items: center;
@@ -470,9 +475,10 @@ const AppContent: React.FC = () => {
 
         /* ===== 响应式 ===== */
         @media (max-width: 768px) {
-          .po-section { padding: 80px 0; }
+          .po-section { padding: 70px 0; }
+          .po-section-projects { padding-top: 40px; }
           .po-section-inner { padding: 0 24px; }
-          .po-section-heading { margin-bottom: 48px; }
+          .po-section-heading { margin-bottom: 32px; }
           .po-about-left { gap: 32px; margin-bottom: 40px; }
           .po-about-right { gap: 32px; }
           .po-leafbook-wrap { margin-bottom: 60px; }

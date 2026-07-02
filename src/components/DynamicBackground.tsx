@@ -77,7 +77,10 @@ const DynamicBackground: React.FC = () => {
 
         /* ===== 基础背景图 — 12s 呼吸 ===== */
         .dyn-layer-base {
-          background: url("/forest-bg.jpg") center center / cover no-repeat;
+          background-image: url("/forest-bg.jpg");
+          background-size: cover;
+          background-position: center center;
+          background-repeat: no-repeat;
           animation: dyn-breathe 12s ease-in-out infinite;
         }
 

@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Link } from "react-router-dom";
+import { callAI } from "../../utils/aiClient";
 
 /**
  * 系统调频 · System Tuning
@@ -11,44 +12,25 @@ import { Link } from "react-router-dom";
  */
 
 /* ============================================================
-   5% 微改变回复库
+   调频师人设 & 频段库
    ============================================================ */
 interface Tune {
-  freq: string; // 调频刻度文案
-  signal: string; // 清晰后的信号（5% 改变建议）
+  freq: string;   // 调频刻度文案
+  signal: string; // 清晰后的信号（调频师回复正文）
 }
 
-const TUNES: Tune[] = [
-  {
-    freq: "FM 88.6",
-    signal:
-      "不必想清楚再开始。先把任务拆到「5 分钟就能做完」的那一格，只做这一格，其余暂时断电。",
-  },
-  {
-    freq: "FM 92.1",
-    signal:
-      "焦虑的噪音来自「全部」。试着今天只完成 5%——写一行字、读一页书。5% 也是改变，且它会被身体记住。",
-  },
-  {
-    freq: "FM 95.8",
-    signal:
-      "拖延不是懒，是启动电阻太大。降低电压：告诉自己「只做两分钟」，两分钟后允许自己停下。往往停不下来。",
-  },
-  {
-    freq: "FM 98.3",
-    signal:
-      "把「我必须搞定」调频成「我先试一次」。允许结果不完美，允许这一版只是草稿。草稿存在，就是信号。",
-  },
-  {
-    freq: "FM 103.7",
-    signal:
-      "困扰反复出现，说明旧频段卡住了。今天做一件和平时相反的小事：换个路线、换只手刷牙。5% 的扰动，会松动惯性。",
-  },
-  {
-    freq: "FM 106.5",
-    signal:
-      "不必对抗情绪，只需给它一个出口。写下「我现在感到___」，填一个词。命名本身，就是把噪音调小一档。",
-  },
+/** 调频师 System Prompt（人设） */
+const TUNER_SYSTEM_PROMPT =
+  `你是"调频师"，一位温柔、缓慢、像深夜电台主持人的老朋友。你说话不用感叹号，句子有长有短，偶尔停顿。你不用专业术语，用生活化比喻（如"卡住的拉链""生锈的门铰链"）。你先接纳情绪，再轻轻引导，绝不指责，不说"你应该"。回复控制在 3-5 句话，结尾必须署名"—— 调频师 (FM 95.8)"。`;
+
+/** 可用频段（调频刻度） */
+const FREQS: string[] = [
+  "FM 88.6",
+  "FM 92.1",
+  "FM 95.8",
+  "FM 98.3",
+  "FM 103.7",
+  "FM 106.5",
 ];
 
 /* ============================================================
@@ -125,19 +107,26 @@ const SystemTuningPage: React.FC = () => {
   const [status, setStatus] = useState<"idle" | "tuning" | "clear">("idle");
   const [tune, setTune] = useState<Tune | null>(null);
 
-  const handleTune = () => {
+  const handleTune = async () => {
     const t = trouble.trim();
     if (!t) return;
     playSweep();
     setStatus("tuning");
     setTune(null);
-    // 扫频 1.2s 后信号清晰
-    window.setTimeout(() => {
-      const pick = TUNES[(t.length + Math.floor(Math.random() * TUNES.length)) % TUNES.length];
-      setTune(pick);
-      setStatus("clear");
-      playClear();
-    }, 1200);
+
+    // 同时发起 AI 请求，保留至少 1.2s 的扫频体验
+    const startedAt = Date.now();
+    const aiSignal = await callAI(TUNER_SYSTEM_PROMPT, t);
+    const elapsed = Date.now() - startedAt;
+    const minDelay = 1200 - elapsed;
+    if (minDelay > 0) {
+      await new Promise((resolve) => setTimeout(resolve, minDelay));
+    }
+
+    const freq = FREQS[Math.floor(Math.random() * FREQS.length)];
+    setTune({ freq, signal: aiSignal });
+    setStatus("clear");
+    playClear();
   };
 
   const handleReset = () => {
@@ -274,10 +263,12 @@ const SystemTuningPage: React.FC = () => {
               <span className="tune-signal-badge">5% 微改变</span>
               <span className="tune-signal-freq">{tune.freq}</span>
             </div>
-            <p className="tune-signal-text">{tune.signal}</p>
-            <p className="tune-signal-note">
-              不必改变 100%，只需今天的 5%。信号会被身体记住。
-            </p>
+            <div className="tune-signal-text">
+              {tune.signal.split("\n").map((line, i) => {
+                if (!line.trim()) return <br key={i} />;
+                return <p key={i} className="tune-signal-para">{line}</p>;
+              })}
+            </div>
             <button type="button" className="tune-again" onClick={handleReset}>
               重新调频
             </button>
@@ -429,12 +420,16 @@ const SystemTuningPage: React.FC = () => {
           font-size: 13px; color: #d4a85a; font-family: "Courier New", monospace;
         }
         .tune-signal-text {
+          margin: 0 0 18px;
+        }
+        .tune-signal-para {
           font-family: "Noto Serif SC", Georgia, serif;
-          font-size: 17px; line-height: 2; color: #e0dcd2; margin: 0 0 18px;
+          font-size: 16px; line-height: 2; color: #e0dcd2; margin: 0;
           letter-spacing: 0.02em;
         }
         .tune-signal-note {
           font-size: 13px; color: #6a9a7a; margin: 0 0 22px; font-style: italic;
+          opacity: 0.85;
         }
         .tune-again {
           display: block; margin: 0 auto; padding: 9px 24px;

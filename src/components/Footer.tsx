@@ -213,7 +213,7 @@ const Footer: React.FC<FooterProps> = ({ isFullMode = true }) => {
             </button>
 
             <p className="po-egg-hint">
-              请输入彩蛋密码：
+              请输入访问口令：
             </p>
 
             <input

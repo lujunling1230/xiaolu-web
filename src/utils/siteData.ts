@@ -21,7 +21,7 @@
 import defaultData from "../data/defaultData.js";
 
 export const SEED_KEY = "life_film_site_seed";
-export const ADMIN_PASSWORD = "mylifefilm123";
+export const ADMIN_PASSWORD = "ling";
 
 /** 管理员状态 */
 let _isAdmin = false;
@@ -31,7 +31,7 @@ export function isAdmin(): boolean {
 }
 
 export function unlockAdmin(password: string): boolean {
-  if (password === ADMIN_PASSWORD || password.toLowerCase() === "ling") {
+  if (password === ADMIN_PASSWORD) {
     _isAdmin = true;
     try {
       localStorage.setItem("life_film_admin", "1");

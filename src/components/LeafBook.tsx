@@ -1,19 +1,21 @@
-import { useState, useRef, useCallback, useEffect } from "react";
+import { useState, useRef, useCallback, useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { projects, type Project } from "../data/projects";
 
 /**
- * LeafBook 树叶书 — 出版级实体书翻阅体验（总页码 100 版）
+ * LeafBook 树叶书 — 出版级实体书翻阅体验（spread 双页版）
  *
- * 翻页流：
- *   封皮(001) → 目录(002) → 金句A(003) → 预览A(004) → 金句B(005) → 预览B(006) → ...
+ * 翻页流（每个 spread = 翻开书后看到的双页）：
+ *   Spread 0: 封皮（单页）
+ *   Spread 1: 目录（自带双页布局）
+ *   Spread 2-11: 作品（左=卷首语, 右=详情预览）
+ *   Spread 12: 封底（左=colophon, 右=空白）
  *
  * 全书总页数固定 100，制造"厚重典籍"感。
  * 页码公式：
- *   cover  = 1
- *   toc    = 2
- *   quote  = 3 + index * 2   (003, 005, 007, ... 019)
- *   preview= 4 + index * 2   (004, 006, 008, ... 020)
+ *   spread 0  → page 1 (cover)
+ *   spread 1  → pages 2-3 (toc)
+ *   spread i  → pages (2i+1)-(2i+2) for i >= 2
  */
 
 /* ===== 常量 ===== */
@@ -69,17 +71,23 @@ const QUOTES: string[] = [
   "年轮记录了每一段风雨，它们都是勋章。",
 ];
 
-/* ===== 视图类型 ===== */
-type View = "cover" | "toc" | "quote" | "preview";
+/* ===== Spread 定义 ===== */
+/** Spread 定义：每个 spread 表示翻开书后看到的双页 */
+interface SpreadData {
+  id: string;
+  left: React.ReactNode;
+  right: React.ReactNode;
+  leftPageNum?: number;
+  rightPageNum?: number;
+  isSingle?: boolean; // true for cover, toc, origin
+}
 
-/** 页码计算：cover=1, toc=2, quote=3+i*2, preview=4+i*2 */
-const getPageNumber = (view: View, index: number): number => {
-  if (view === "cover") return 1;
-  if (view === "toc") return 2;
-  if (view === "quote") return 3 + index * 2;
-  if (view === "preview") return 4 + index * 2;
-  return 1;
-};
+/** 页码计算 */
+function getSpreadPageNums(spreadIndex: number): { left: number; right: number } {
+  // cover = page 1, toc spread = pages 2-3, each project spread = 2 pages
+  if (spreadIndex === 0) return { left: 1, right: 1 }; // cover (single)
+  return { left: 1 + spreadIndex * 2, right: 2 + spreadIndex * 2 };
+}
 
 /* ===== 翻页动画 variants（x 轴位移 + rotateY 透视） ===== */
 const pageVariants = {
@@ -110,15 +118,16 @@ const CoverPage: React.FC = () => (
   <div className="lb-page-content lb-cover">
     <div className="lb-cover-vein" />
     <div className="lb-cover-frame" />
+    <div className="lb-cover-spine" />
     <div className="lb-cover-inner">
-      <div className="lb-cover-leaf">
-        <LeafIcon size={48} />
+      <div className="lb-cover-leaf-wrap">
+        <div className="lb-cover-leaf">
+          <LeafIcon size={48} />
+        </div>
       </div>
-      <p className="lb-cover-eyebrow">A Leaf Book of Works</p>
       <h1 className="lb-cover-title">LeafBook</h1>
-      <div className="lb-cover-line" />
-      <p className="lb-cover-subtitle">一个关于秩序、疗愈与生长的目录。</p>
-      <p className="lb-cover-author">路俊玲 · 2026</p>
+      <p className="lb-cover-subtitle">路俊玲 · AI 产品实践集</p>
+      <p className="lb-cover-year">2026</p>
     </div>
     <p className="lb-cover-hint">轻触封面 · 翻开</p>
     <PageNumber current={1} />
@@ -126,151 +135,259 @@ const CoverPage: React.FC = () => (
 );
 
 /* ============================================================
-   Page 2 · 目录（长滚动列表）
+   Page 2 · 目录（真实对页书页布局）
    ============================================================ */
-const TocPage: React.FC<{ onPick: (projectIndex: number) => void }> = ({
+const TocPage: React.FC<{ onPick: (projectIndex: number) => void; onClose?: () => void }> = ({
   onPick,
-}) => (
-  <div className="lb-page-content lb-index-page">
-    <div className="lb-page-vein" />
-    <div className="lb-catalog-container">
-      <div className="lb-catalog-header">
-        <span className="lb-index-label">CONTENTS</span>
-        <h2 className="lb-index-title">目录</h2>
-        <div className="lb-index-deco" />
-        <p className="lb-index-count">共 {projects.length} 件作品 · 上下滚动浏览</p>
+  onClose,
+}) => {
+  const leftProjects = projects.slice(0, 5);
+  const rightProjects = projects.slice(5, 10);
+  return (
+    <div className="lb-page-content lb-index-page">
+      <div className="lb-page-vein" />
+      {/* 对页容器 */}
+      <div className="lb-spread">
+        {/* 左页 */}
+        <div className="lb-spread-page lb-spread-left">
+          <div className="lb-spread-page-shadow" />
+          <div className="lb-spread-inner">
+            <header className="lb-spread-header">
+              <span className="lb-spread-label">CONTENTS</span>
+              <h2 className="lb-spread-title">目录</h2>
+              <div className="lb-spread-deco-line" />
+            </header>
+            <ul className="lb-spread-list">
+              {leftProjects.map((p, i) => (
+                <motion.li
+                  key={p.id}
+                  className="lb-spread-item"
+                  initial={{ opacity: 0, y: 12 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.4, delay: i * 0.08, ease: "easeOut" }}
+                  onClick={(e) => { e.stopPropagation(); onPick(i); }}
+                  whileHover={{ x: 3, transition: { duration: 0.2 } }}
+                >
+                  <span className="lb-spread-num">{String(i + 1).padStart(2, "0")}</span>
+                  <div className="lb-spread-item-body">
+                    <span className="lb-spread-item-title">{p.title}</span>
+                    <span className="lb-spread-item-sub">{p.painPoint}</span>
+                  </div>
+                  <span className="lb-spread-item-dot">·</span>
+                </motion.li>
+              ))}
+            </ul>
+          </div>
+        </div>
+
+        {/* 书脊 */}
+        <div className="lb-spine-gap">
+          <div className="lb-spine-groove" />
+        </div>
+
+        {/* 右页 */}
+        <div className="lb-spread-page lb-spread-right">
+          <div className="lb-spread-page-shadow" />
+          <div className="lb-spread-inner">
+            <header className="lb-spread-header">
+              <span className="lb-spread-label">CONT'D</span>
+              <h2 className="lb-spread-title">续</h2>
+              <div className="lb-spread-deco-line" />
+            </header>
+            <ul className="lb-spread-list">
+              {rightProjects.map((p, i) => (
+                <motion.li
+                  key={p.id}
+                  className="lb-spread-item"
+                  initial={{ opacity: 0, y: 12 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.4, delay: (i + 5) * 0.08, ease: "easeOut" }}
+                  onClick={(e) => { e.stopPropagation(); onPick(i + 5); }}
+                  whileHover={{ x: 3, transition: { duration: 0.2 } }}
+                >
+                  <span className="lb-spread-num">{String(i + 6).padStart(2, "0")}</span>
+                  <div className="lb-spread-item-body">
+                    <span className="lb-spread-item-title">{p.title}</span>
+                    <span className="lb-spread-item-sub">{p.painPoint}</span>
+                  </div>
+                  <span className="lb-spread-item-dot">·</span>
+                </motion.li>
+              ))}
+            </ul>
+          </div>
+        </div>
       </div>
-      <ul className="lb-catalog-list">
-        {projects.map((p, i) => (
-          <li
-            key={p.id}
-            className="lb-catalog-item"
-            onClick={(e) => {
-              e.stopPropagation();
-              onPick(i);
-            }}
-          >
-            <span className="lb-catalog-num">
-              {String(i + 1).padStart(2, "0")}
-            </span>
-            <div className="lb-catalog-item-text">
-              <span className="lb-catalog-item-title">{p.title}</span>
-              <span className="lb-catalog-item-pain">{p.painPoint}</span>
-            </div>
-            <span className="lb-catalog-arrow">→</span>
-          </li>
-        ))}
-      </ul>
-      <p className="lb-catalog-foot">点击任一作品 · 翻到卷首语</p>
+
+      {/* 书签式合上书按钮 */}
+      {onClose && (
+        <motion.button
+          className="lb-bookmark-close"
+          onClick={(e) => { e.stopPropagation(); onClose(); }}
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.6, duration: 0.4 }}
+          whileHover={{ y: -3, transition: { duration: 0.2 } }}
+        >
+          <span className="lb-bookmark-ribbon" />
+          <span className="lb-bookmark-text">合上书</span>
+        </motion.button>
+      )}
+
+      <PageNumber current={2} />
     </div>
-    <PageNumber current={2} />
-  </div>
-);
+  );
+};
 
 /* ============================================================
-   Page 3 · 金句页（卷首语，点击翻到预览页）
+   QuotePage — 卷首语（左页）
    ============================================================ */
 const QuotePage: React.FC<{ project: Project; index: number }> = ({
   project,
   index,
-}) => (
-  <div className="lb-page-content lb-quote-page">
-    <div className="lb-page-vein" />
-    <div className="lb-quote-wrap">
-      <span className="lb-quote-mark">"</span>
+}) => {
+  const pn = getSpreadPageNums(index + 2);
+  return (
+    <div className="lb-page-content lb-quote-page">
+      <div className="lb-page-vein" />
+      <div className="lb-quote-wrap">
+        <span className="lb-quote-mark">"</span>
+        <motion.p
+          className="lb-quote-text"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8, delay: 0.2, ease: "easeOut" }}
+        >
+          {QUOTES[index] ?? "每一页都是新的开始。"}
+        </motion.p>
+        <span className="lb-quote-mark lb-quote-mark-end">"</span>
+        <p className="lb-quote-attribution">— {project.title}</p>
+      </div>
       <motion.p
-        className="lb-quote-text"
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.8, delay: 0.2, ease: "easeOut" }}
+        className="lb-quote-continue"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 1, duration: 0.6 }}
       >
-        {QUOTES[index] ?? "每一页都是新的开始。"}
+        点击右侧翻页
       </motion.p>
-      <span className="lb-quote-mark lb-quote-mark-end">"</span>
-      <p className="lb-quote-attribution">— {project.title}</p>
+      <PageNumber current={pn.left} />
     </div>
-    <motion.p
-      className="lb-quote-continue"
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      transition={{ delay: 1, duration: 0.6 }}
-    >
-      点击继续 · 翻到作品
-    </motion.p>
-    <PageNumber current={getPageNumber("quote", index)} />
-  </div>
-);
+  );
+};
 
 /* ============================================================
-   Page 4 · 作品预览页（截图 + 下一页按钮）
+   PreviewPage — 作品预览页（右页）
    ============================================================ */
 const PreviewPage: React.FC<{
   project: Project;
   index: number;
   onNext: () => void;
   onJump: () => void;
-}> = ({ project, index, onNext, onJump }) => (
-  <div className="lb-page-content lb-preview-page">
-    <div className="lb-page-vein" />
-    <div className="lb-preview-grid">
-      {/* 左栏 文字 */}
-      <div className="lb-preview-text">
-        <span className="lb-preview-num">
-          No. {String(index + 1).padStart(2, "0")} / {String(projects.length).padStart(2, "0")}
-        </span>
-        <h2 className="lb-preview-title">{project.title}</h2>
-        <div className="lb-preview-pain-wrap">
-          <span className="lb-preview-pain-bar" />
-          <p className="lb-preview-pain">{project.painPoint}</p>
-        </div>
-        <p className="lb-preview-desc">{project.description}</p>
-        {project.tags && project.tags.length > 0 && (
-          <div className="lb-preview-tags">
-            {project.tags.map((t) => (
-              <span key={t} className="lb-preview-tag">{t}</span>
-            ))}
+}> = ({ project, index, onNext, onJump }) => {
+  const pn = getSpreadPageNums(index + 2);
+  return (
+    <div className="lb-page-content lb-preview-page">
+      <div className="lb-page-vein" />
+      <div className="lb-preview-grid">
+        {/* 左栏 文字 */}
+        <div className="lb-preview-text">
+          <span className="lb-preview-num">
+            No. {String(index + 1).padStart(2, "0")} / {String(projects.length).padStart(2, "0")}
+          </span>
+          <h2 className="lb-preview-title">{project.title}</h2>
+          <div className="lb-preview-pain-wrap">
+            <span className="lb-preview-pain-bar" />
+            <p className="lb-preview-pain">{project.painPoint}</p>
           </div>
-        )}
-        <button
-          className="lb-preview-visit"
+          <p className="lb-preview-desc">{project.description}</p>
+          {project.tags && project.tags.length > 0 && (
+            <div className="lb-preview-tags">
+              {project.tags.map((t) => (
+                <span key={t} className="lb-preview-tag">{t}</span>
+              ))}
+            </div>
+          )}
+          <button
+            className="lb-preview-visit"
+            onClick={(e) => {
+              e.stopPropagation();
+              onJump();
+            }}
+          >
+            打开作品 ↗
+          </button>
+        </div>
+
+        {/* 右栏 截图（点击跳转） */}
+        <a
+          className="lb-preview-visual"
+          href={project.liveUrl}
+          target="_blank"
+          rel="noopener noreferrer"
           onClick={(e) => {
             e.stopPropagation();
             onJump();
           }}
         >
-          打开作品 ↗
-        </button>
+          <img src={project.imageUrl} alt={project.title} className="lb-preview-media" />
+          <span className="lb-preview-visual-overlay" />
+          <span className="lb-preview-visual-hint">点击访问 ↗</span>
+        </a>
       </div>
 
-      {/* 右栏 截图（点击跳转） */}
-      <a
-        className="lb-preview-visual"
-        href={project.liveUrl}
-        target="_blank"
-        rel="noopener noreferrer"
+      {/* 下一页按钮（右下角悬浮） */}
+      <button
+        className="lb-preview-next-btn"
         onClick={(e) => {
           e.stopPropagation();
-          onJump();
+          onNext();
         }}
       >
-        <img src={project.imageUrl} alt={project.title} className="lb-preview-media" />
-        <span className="lb-preview-visual-overlay" />
-        <span className="lb-preview-visual-hint">点击访问 ↗</span>
-      </a>
+        下一页 →
+      </button>
+
+      <PageNumber current={pn.right} />
     </div>
+  );
+};
 
-    {/* 下一页按钮（右下角悬浮） */}
-    <button
-      className="lb-preview-next-btn"
-      onClick={(e) => {
-        e.stopPropagation();
-        onNext();
-      }}
+/* ============================================================
+   OriginPage — 封底内页 / Colophon
+   ============================================================ */
+const OriginPage: React.FC = () => (
+  <div className="lb-page-content lb-origin-page">
+    <div className="lb-page-vein" />
+    {/* 底部渐变遮罩，增强文字可读性 */}
+    <div className="lb-origin-shade" />
+
+    <motion.div
+      className="lb-origin-inner"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 1.2, delay: 0.5, ease: "easeOut" }}
     >
-      下一页 →
-    </button>
+      <h2 className="lb-origin-title">关于这本 LeafBook</h2>
 
-    <PageNumber current={getPageNumber("preview", index)} />
+      <div className="lb-origin-body">
+        <p>它不是一本"完成"的书，</p>
+        <p>而是一本"正在生长"的笔记。</p>
+        <br />
+        <p>每一片叶子都独一无二，有着自己的脉络与纹理；</p>
+        <p>每一页记录都承载着思考与成长。</p>
+        <br />
+        <p>叶子会飘落，但落在书页间，便成了永恒的书签。</p>
+        <p>愿这些实践与探索，如落叶般自然地沉淀为收获。</p>
+      </div>
+
+      <p className="lb-origin-sign">—— 路俊玲 · 2026</p>
+
+      <div className="lb-origin-continued">
+        <span className="lb-origin-leaf-icon">🍃</span>
+        <span>未完待续 · 敬请期待</span>
+      </div>
+    </motion.div>
+
+    <PageNumber current={23} />
   </div>
 );
 
@@ -286,32 +403,30 @@ interface LeafBookProps {
 }
 
 const LeafBook: React.FC<LeafBookProps> = ({ registerOpenBook, flipTriggerRef, autoFlipDelay }) => {
-  const [view, setView] = useState<View>("cover");
+  /* ===== 状态 ===== */
+  const [spreadIndex, setSpreadIndex] = useState(0);
   const [direction, setDirection] = useState(0);
-  const [selectedIndex, setSelectedIndex] = useState(0);
   const [flipping, setFlipping] = useState(false);
 
-  const viewRef = useRef<View>("cover");
-  const selectedIndexRef = useRef(0);
+  const spreadIndexRef = useRef(0);
   const flippingRef = useRef(false);
   const touchStartRef = useRef<{ x: number; y: number } | null>(null);
 
   useEffect(() => {
-    viewRef.current = view;
-  }, [view]);
-  useEffect(() => {
-    selectedIndexRef.current = selectedIndex;
-  }, [selectedIndex]);
+    spreadIndexRef.current = spreadIndex;
+  }, [spreadIndex]);
 
-  /** 统一的视图切换（带方向 + 翻页锁） */
-  const goTo = useCallback(
-    (nextView: View, dir: number, opts?: { index?: number }) => {
+  /* ===== 导航函数 ===== */
+
+  /** Navigate to a spread by index */
+  const goToSpread = useCallback(
+    (targetIndex: number, dir: number) => {
       if (flippingRef.current) return;
+      if (targetIndex < 0 || targetIndex >= projects.length + 3) return;
       flippingRef.current = true;
       setFlipping(true);
       setDirection(dir);
-      if (opts?.index !== undefined) setSelectedIndex(opts.index);
-      setView(nextView);
+      setSpreadIndex(targetIndex);
       window.setTimeout(() => {
         flippingRef.current = false;
         setFlipping(false);
@@ -320,62 +435,96 @@ const LeafBook: React.FC<LeafBookProps> = ({ registerOpenBook, flipTriggerRef, a
     []
   );
 
-  /** 前进逻辑（点击右半区 / 向左滑动） */
+  /** 前进逻辑 */
   const goForward = useCallback(() => {
-    const cur = viewRef.current;
-    if (cur === "cover") {
-      goTo("toc", 1);
-    } else if (cur === "quote") {
-      // 金句页 → 预览页
-      goTo("preview", 1);
-    } else if (cur === "preview") {
-      // 预览页 → 下一个金句页（循环）
-      const nextIdx = (selectedIndexRef.current + 1) % projects.length;
-      goTo("quote", 1, { index: nextIdx });
-    }
-  }, [goTo]);
+    const next = spreadIndexRef.current + 1;
+    if (next < projects.length + 3) goToSpread(next, 1);
+  }, [goToSpread]);
 
-  /** 后退逻辑（点击左半区 / 向右滑动） */
+  /** 后退逻辑 */
   const goBackward = useCallback(() => {
-    const cur = viewRef.current;
-    if (cur === "toc") {
-      goTo("cover", -1);
-    } else if (cur === "quote") {
-      goTo("toc", -1);
-    } else if (cur === "preview") {
-      // 预览页 → 回到金句页
-      goTo("quote", -1);
-    }
-  }, [goTo]);
+    const prev = spreadIndexRef.current - 1;
+    if (prev >= 0) goToSpread(prev, -1);
+  }, [goToSpread]);
 
-  /** 点击目录项目 → 金句页 */
+  /** 点击目录项目 → 跳到对应 spread */
   const pickProject = useCallback(
-    (index: number) => {
-      goTo("quote", 1, { index });
+    (projectIndex: number) => {
+      // TOC is spread 1, projects start at spread 2
+      goToSpread(projectIndex + 2, 1);
     },
-    [goTo]
+    [goToSpread]
   );
 
   /** 预览页 → 打开作品路由（新标签页） */
   const jumpToWork = useCallback(() => {
-    const route = ROUTES[selectedIndexRef.current] ?? "/";
+    const idx = spreadIndexRef.current;
+    const projectIdx = idx <= 1 ? 0 : idx - 2;
+    const route = ROUTES[projectIdx] ?? "/";
     window.open(route, "_blank", "noopener,noreferrer");
   }, []);
 
-  /** 预览页「下一页」→ 下一个金句页（循环） */
-  const goNextFromPreview = useCallback(() => {
-    const nextIdx = (selectedIndexRef.current + 1) % projects.length;
-    goTo("quote", 1, { index: nextIdx });
-  }, [goTo]);
-
   /** 打开书（供 Hero "翻阅我的作品" 调用） */
   const openBook = useCallback(() => {
-    if (viewRef.current === "cover") goTo("toc", 1);
-    else if (viewRef.current !== "toc") {
-      goTo("toc", -1);
-    }
-  }, [goTo]);
+    if (spreadIndexRef.current === 0) goToSpread(1, 1);
+    else goToSpread(1, -1);
+  }, [goToSpread]);
 
+  /* ===== Build all spreads ===== */
+  const spreads = useMemo<SpreadData[]>(() => {
+    const result: SpreadData[] = [];
+
+    // Spread 0: Cover (single page)
+    result.push({
+      id: "cover",
+      left: <CoverPage />,
+      right: null,
+      leftPageNum: 1,
+      rightPageNum: 1,
+      isSingle: true,
+    });
+
+    // Spread 1: TOC (already dual-page internally)
+    result.push({
+      id: "toc",
+      left: <TocPage onPick={pickProject} onClose={() => goToSpread(0, -1)} />,
+      right: null, // TocPage already renders both columns internally
+      leftPageNum: 2,
+      rightPageNum: 3,
+      isSingle: true, // toc manages its own dual-page layout
+    });
+
+    // Spreads 2-11: Projects (quote left, preview right)
+    projects.forEach((project, index) => {
+      const pn = getSpreadPageNums(index + 2);
+      result.push({
+        id: `project-${index}`,
+        left: <QuotePage project={project} index={index} />,
+        right: <PreviewPage project={project} index={index} onNext={goForward} onJump={jumpToWork} />,
+        leftPageNum: pn.left,
+        rightPageNum: pn.right,
+      });
+    });
+
+    // Last spread: Origin (left) + blank (right)
+    const lastPn = getSpreadPageNums(projects.length + 2);
+    result.push({
+      id: "origin",
+      left: <OriginPage />,
+      right: null,
+      leftPageNum: lastPn.left,
+      rightPageNum: lastPn.right,
+      isSingle: true,
+    });
+
+    return result;
+  }, [pickProject, goToSpread, goForward, jumpToWork]);
+
+  /* ===== Derived values ===== */
+  const selectedIndex = spreadIndex <= 1 ? 0 : spreadIndex - 2;
+  const currentSpread = spreads[spreadIndex] ?? spreads[0];
+
+  /* ===== Effects ===== */
   useEffect(() => {
     if (registerOpenBook) registerOpenBook(openBook);
   }, [registerOpenBook, openBook]);
@@ -397,23 +546,17 @@ const LeafBook: React.FC<LeafBookProps> = ({ registerOpenBook, flipTriggerRef, a
     }
   }, [autoFlipDelay, openBook]);
 
+  /* ===== 事件处理 ===== */
+
   /** 点击书页翻页 */
   const handleBookClick = (e: React.MouseEvent) => {
-    const cur = viewRef.current;
-    if (cur === "cover") {
-      goTo("toc", 1);
+    if (spreadIndexRef.current === 0) {
+      goToSpread(1, 1);
       return;
     }
-    // 金句页 / 预览页：左半后退，右半前进
-    if (cur === "quote" || cur === "preview") {
-      const rect = e.currentTarget.getBoundingClientRect();
-      if (e.clientX - rect.left < rect.width / 2) goBackward();
-      else goForward();
-      return;
-    }
-    // 目录：仅左半区后退
     const rect = e.currentTarget.getBoundingClientRect();
     if (e.clientX - rect.left < rect.width / 2) goBackward();
+    else goForward();
   };
 
   /** 触摸滑动 */
@@ -428,38 +571,55 @@ const LeafBook: React.FC<LeafBookProps> = ({ registerOpenBook, flipTriggerRef, a
       if (dx < 0) goForward();
       else goBackward();
     } else if (Math.abs(dx) < 10 && Math.abs(dy) < 10) {
-      const cur = viewRef.current;
-      if (cur === "cover") goTo("toc", 1);
-      else if (cur === "quote") goTo("preview", 1);
+      if (spreadIndexRef.current === 0) goToSpread(1, 1);
+      else {
+        const rect = e.currentTarget.getBoundingClientRect();
+        const touchX = touchStartRef.current.x;
+        if (touchX - rect.left < rect.width / 2) goBackward();
+        else goForward();
+      }
     }
     touchStartRef.current = null;
   };
 
-  /** 渲染当前视图内容 */
-  const renderPage = (): React.ReactNode => {
-    if (view === "cover") return <CoverPage />;
-    if (view === "toc") return <TocPage onPick={pickProject} />;
-    if (view === "quote")
-      return <QuotePage project={projects[selectedIndex]} index={selectedIndex} />;
-    if (view === "preview")
-      return (
-        <PreviewPage
-          project={projects[selectedIndex]}
-          index={selectedIndex}
-          onNext={goNextFromPreview}
-          onJump={jumpToWork}
-        />
-      );
-    return null;
+  /* ===== 渲染 ===== */
+
+  /** Render current spread (dual pages) */
+  const renderSpread = (): React.ReactNode => {
+    const spread = spreads[spreadIndex];
+    if (!spread) return null;
+
+    if (spread.isSingle || !spread.right) {
+      // Single page (cover, toc, origin)
+      return spread.left;
+    }
+
+    // Dual page spread: left + right
+    return (
+      <div className="lb-spread-container">
+        <div className="lb-spread-half lb-spread-half-left">
+          {spread.left}
+        </div>
+        <div className="lb-spine-gap">
+          <div className="lb-spine-groove" />
+        </div>
+        <div className="lb-spread-half lb-spread-half-right">
+          {spread.right}
+        </div>
+      </div>
+    );
   };
 
-  const isCover = view === "cover";
+  const isSinglePage = currentSpread?.isSingle ?? true;
+  const isToc = spreadIndex === 1;
+  const isCover = spreadIndex === 0;
+  const isOrigin = spreadIndex === spreads.length - 1;
 
   return (
-    <div className="lb-wrapper">
+    <div className={`lb-wrapper ${isToc ? "lb-wrapper-spread" : ""} ${!isSinglePage ? "lb-wrapper-spread" : ""}`}>
       <div className="lb-book-stand">
         <div
-          className="lb-book"
+          className={`lb-book ${!isSinglePage ? "lb-book-spread" : ""} ${isToc ? "lb-book-spread" : ""}`}
           onClick={handleBookClick}
           onTouchStart={handleTouchStart}
           onTouchEnd={handleTouchEnd}
@@ -467,11 +627,11 @@ const LeafBook: React.FC<LeafBookProps> = ({ registerOpenBook, flipTriggerRef, a
           {/* 书脊阴影 */}
           <div className="lb-spine-shadow" />
 
-          {/* 页面 + 翻页动画 */}
+          {/* Pages */}
           <div className="lb-pages-container">
             <AnimatePresence mode="wait" custom={direction}>
               <motion.div
-                key={`${view}-${selectedIndex}`}
+                key={spreadIndex}
                 className="lb-page"
                 custom={direction}
                 variants={pageVariants}
@@ -481,27 +641,21 @@ const LeafBook: React.FC<LeafBookProps> = ({ registerOpenBook, flipTriggerRef, a
                 transition={{ duration: FLIP_MS / 1000, ease: [0.4, 0, 0.2, 1] }}
                 style={{ transformOrigin: "left center", transformStyle: "preserve-3d" }}
               >
-                {renderPage()}
+                {renderSpread()}
               </motion.div>
             </AnimatePresence>
 
-            {/* 翻页阴影叠加 */}
             {flipping && (
-              <div
-                className={`lb-flip-shadow ${
-                  direction > 0 ? "lb-flip-shadow-fwd" : "lb-flip-shadow-bwd"
-                }`}
-              />
+              <div className={`lb-flip-shadow ${direction > 0 ? "lb-flip-shadow-fwd" : "lb-flip-shadow-bwd"}`} />
             )}
           </div>
 
-          {/* 合上书 — 仅内容页（封皮不显示） */}
-          {!isCover && (
+          {!isCover && !isToc && (
             <button
               className="lb-close-btn"
               onClick={(e) => {
                 e.stopPropagation();
-                goTo("cover", -1);
+                goToSpread(0, -1);
               }}
             >
               合上书
@@ -509,22 +663,21 @@ const LeafBook: React.FC<LeafBookProps> = ({ registerOpenBook, flipTriggerRef, a
           )}
         </div>
 
-        {/* 桌面投影 */}
         <div className="lb-desk-shadow" />
       </div>
 
-      {/* 底部翻页提示 */}
+      {/* Controls hint */}
       {!isCover && (
         <div className="lb-controls">
           <span className="lb-view-label">
-            {view === "toc" && "目录"}
-            {view === "quote" && "卷首语"}
-            {view === "preview" && `作品预览 · ${selectedIndex + 1} / ${projects.length}`}
+            {isToc && "目录"}
+            {!isSinglePage && !isCover && !isToc && !isOrigin && `作品 · ${selectedIndex + 1} / ${projects.length}`}
+            {isOrigin && "封底"}
           </span>
           <span className="lb-controls-hint">
-            {view === "toc" && "上下滚动浏览 · 点击作品进入 · 左侧返回封皮"}
-            {view === "quote" && "点击右半翻到作品 · 左侧返回目录"}
-            {view === "preview" && "点击截图打开作品 · 下一页翻到下一篇金句"}
+            {isToc && "点击作品进入 · 左侧返回封皮 · 右侧进入作品"}
+            {!isSinglePage && "左页卷首语 · 右页详情 · 点击两侧翻页"}
+            {isOrigin && "最后一页 · 左侧返回"}
           </span>
         </div>
       )}
@@ -647,6 +800,25 @@ const LeafBook: React.FC<LeafBookProps> = ({ registerOpenBook, flipTriggerRef, a
           z-index: 0;
         }
 
+        /* ===== 双页展开容器 ===== */
+        .lb-spread-container {
+          display: flex;
+          width: 100%;
+          height: 100%;
+          position: relative;
+        }
+        .lb-spread-half {
+          flex: 1;
+          position: relative;
+          overflow: hidden;
+        }
+        .lb-spread-half-left {
+          box-shadow: inset -8px 0 20px -10px rgba(0,0,0,0.06);
+        }
+        .lb-spread-half-right {
+          box-shadow: inset 8px 0 20px -10px rgba(0,0,0,0.04);
+        }
+
         /* ===== 页码（右下角，所有页面统一） ===== */
         .lb-page-number {
           position: absolute;
@@ -666,78 +838,144 @@ const LeafBook: React.FC<LeafBookProps> = ({ registerOpenBook, flipTriggerRef, a
           margin: 0 1px;
         }
 
-        /* ===== 封皮 ===== */
+        /* ===== 封皮（立体书籍感） ===== */
         .lb-cover {
           display: flex;
           align-items: center;
           justify-content: center;
-          background: linear-gradient(135deg, #E8E0D0 0%, #F0EAD8 50%, #E8E0D0 100%);
+          background: #FAF9F6;
+          border-radius: 2px 6px 6px 2px;
+          padding: 60px 40px;
+          position: relative;
+          /* 立体透视：微微倾斜，斜靠桌面 */
+          transform: perspective(1200px) rotateX(1.5deg) rotateY(-2deg);
+          transform-origin: left center;
+          transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1),
+                      box-shadow 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+          /* 多层阴影：书本阴影 + 环境光 */
+          box-shadow:
+            0 20px 40px rgba(0,0,0,0.12),
+            0 0 60px rgba(0,0,0,0.04),
+            2px 2px 8px rgba(0,0,0,0.06);
+          /* 微弱的纸张凹陷感 */
+          box-shadow:
+            inset 0 0 30px rgba(0,0,0,0.02),
+            0 20px 40px rgba(0,0,0,0.12),
+            0 0 60px rgba(0,0,0,0.04);
+        }
+        /* 悬停：阴影加深，旋转微调 */
+        .lb-cover:hover {
+          transform: perspective(1200px) rotateX(0.5deg) rotateY(-0.5deg);
+          box-shadow:
+            inset 0 0 30px rgba(0,0,0,0.02),
+            0 28px 56px rgba(0,0,0,0.16),
+            0 0 80px rgba(0,0,0,0.06);
         }
         :root[data-theme="night"] .lb-cover {
-          background: linear-gradient(135deg, #1E2820 0%, #2A3328 50%, #1E2820 100%);
+          background: #1e1e1e;
         }
+        /* 叶脉纹理（极淡） */
         .lb-cover-vein {
           position: absolute;
           inset: 0;
           background-image: url("${LEAF_VEIN_TEXTURE}");
-          opacity: 0.5;
+          opacity: 0.06;
           z-index: 0;
+          border-radius: inherit;
+          pointer-events: none;
         }
+        /* 内框装饰线 */
         .lb-cover-frame {
           position: absolute;
-          inset: 22px;
-          border: 1px solid rgba(184, 140, 106, 0.3);
-          border-radius: 3px;
-          box-shadow: inset 0 0 0 6px transparent, inset 0 0 0 7px rgba(184, 140, 106, 0.12);
+          inset: 20px;
+          border: 1px solid rgba(120, 130, 100, 0.12);
+          border-radius: 4px;
           pointer-events: none;
           z-index: 1;
+        }
+        /* 书脊效果（左侧深色渐变） */
+        .lb-cover-spine {
+          position: absolute;
+          left: 0; top: 0; bottom: 0;
+          width: 14px;
+          background: linear-gradient(to right,
+            rgba(60, 50, 35, 0.10) 0%,
+            rgba(60, 50, 35, 0.04) 40%,
+            transparent 100%
+          );
+          z-index: 1;
+          pointer-events: none;
+          border-radius: 2px 0 0 2px;
         }
         .lb-cover-inner {
           position: relative;
           text-align: center;
           z-index: 2;
+          width: 100%;
+          max-width: 540px;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+        }
+        /* 叶子图标容器 */
+        .lb-cover-leaf-wrap {
+          margin-bottom: 24px;
         }
         .lb-cover-leaf {
           display: flex;
           justify-content: center;
-          margin-bottom: 18px;
-          opacity: 0.85;
+          color: #2E4037;
+          opacity: 0.75;
+          animation: lb-cover-leaf-float 3.5s ease-in-out infinite;
+          filter: drop-shadow(0 2px 4px rgba(46, 64, 55, 0.15));
         }
-        .lb-cover-eyebrow {
-          font-size: 11px;
-          color: var(--lb-text-soft);
-          letter-spacing: 0.28em;
-          text-transform: uppercase;
-          margin-bottom: 14px;
+        :root[data-theme="night"] .lb-cover-leaf {
+          color: #6a8a6a;
+          filter: drop-shadow(0 2px 4px rgba(106, 138, 106, 0.15));
         }
+        @keyframes lb-cover-leaf-float {
+          0%, 100% { transform: translateY(0); }
+          50% { transform: translateY(-4px); }
+        }
+        /* 主标题 */
         .lb-cover-title {
           font-family: "Noto Serif SC", Georgia, serif;
-          font-size: 40px;
+          font-size: 52px;
           font-weight: 700;
-          color: var(--lb-text);
-          margin: 0 0 18px;
-          letter-spacing: 0.16em;
+          color: #2d3436;
+          margin: 0 0 12px;
+          letter-spacing: 1px;
+          line-height: 1.1;
+          text-shadow: 0 1px 2px rgba(0,0,0,0.04);
         }
-        .lb-cover-line {
-          width: 44px;
-          height: 1px;
-          background: var(--lb-text-soft);
-          margin: 0 auto 16px;
-          opacity: 0.4;
+        :root[data-theme="night"] .lb-cover-title {
+          color: #e8e8e8;
+          text-shadow: none;
         }
+        /* 副标题 */
         .lb-cover-subtitle {
-          font-family: "Noto Serif SC", Georgia, serif;
-          font-size: 14px;
-          color: var(--lb-text-soft);
-          margin: 0 0 24px;
+          font-size: 16px;
+          font-weight: 400;
+          color: #5A6B5C;
+          margin: 0 0 36px;
           letter-spacing: 0.06em;
-          line-height: 1.6;
+          line-height: 1.5;
         }
-        .lb-cover-author {
-          font-size: 13px;
-          color: var(--lb-text-soft);
+        :root[data-theme="night"] .lb-cover-subtitle {
+          color: #8a9a7c;
+        }
+        /* 年份（右下角藏书章风格） */
+        .lb-cover-year {
+          font-size: 12px;
+          font-weight: 300;
+          color: #999;
+          letter-spacing: 0.1em;
+          align-self: flex-end;
+          margin-top: auto;
           font-family: "Noto Serif SC", Georgia, serif;
-          letter-spacing: 0.05em;
+        }
+        :root[data-theme="night"] .lb-cover-year {
+          color: #555;
         }
         .lb-cover-hint {
           position: absolute;
@@ -756,135 +994,450 @@ const LeafBook: React.FC<LeafBookProps> = ({ registerOpenBook, flipTriggerRef, a
           50% { opacity: 0.75; }
         }
 
-        /* ===== 目录页（长滚动） ===== */
-        .lb-index-page { display: flex; }
-        .lb-catalog-container {
+        /* ===== 目录页（真实对页书页） ===== */
+        .lb-wrapper.lb-wrapper-spread {
+          width: 100%;
+          max-width: 1100px;
+          margin: 0 auto;
+        }
+        .lb-book.lb-book-spread {
+          width: 920px;
+          max-width: 95vw;
+          height: 792px;
+          max-height: 80vh;
+          border-radius: 6px 14px 14px 6px;
+          box-shadow:
+            0 4px 24px -4px rgba(40, 35, 25, 0.2),
+            0 24px 60px -12px rgba(60, 50, 35, 0.3),
+            inset 6px 0 16px -6px rgba(0,0,0,0.12);
+          transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.5s ease;
+        }
+        .lb-index-page {
+          display: flex;
+          background: transparent;
+        }
+
+        /* 对页容器 */
+        .lb-spread {
           position: relative;
           z-index: 1;
+          display: flex;
           width: 100%;
           height: 100%;
-          overflow-y: auto;
-          scroll-behavior: smooth;
-          padding: 40px 36px 60px;
-          scrollbar-width: thin;
-          scrollbar-color: rgba(184, 140, 106, 0.3) transparent;
+          padding: 8px 12px;
+          gap: 0;
         }
-        .lb-catalog-container::-webkit-scrollbar { width: 4px; }
-        .lb-catalog-container::-webkit-scrollbar-thumb {
-          background: rgba(184, 140, 106, 0.3);
-          border-radius: 2px;
+        /* 单页 */
+        .lb-spread-page {
+          flex: 1;
+          position: relative;
+          display: flex;
+          flex-direction: column;
+          background: var(--lb-page-bg, #F5F0E4);
+          overflow: hidden;
         }
-        .lb-catalog-container::-webkit-scrollbar-track { background: transparent; }
-
-        .lb-catalog-header {
+        .lb-spread-left {
+          border-radius: 4px 0 0 4px;
+          box-shadow:
+            inset -8px 0 20px -10px rgba(0,0,0,0.08),
+            2px 0 8px -4px rgba(0,0,0,0.06);
+        }
+        .lb-spread-right {
+          border-radius: 0 10px 10px 0;
+          box-shadow:
+            inset 8px 0 20px -10px rgba(0,0,0,0.06),
+            -2px 0 8px -4px rgba(0,0,0,0.04);
+        }
+        /* 页面卷曲阴影 */
+        .lb-spread-page-shadow {
+          position: absolute;
+          inset: 0;
+          pointer-events: none;
+          z-index: 2;
+        }
+        .lb-spread-left .lb-spread-page-shadow {
+          background: linear-gradient(to right,
+            rgba(0,0,0,0.04) 0%,
+            rgba(0,0,0,0.01) 6%,
+            transparent 12%,
+            transparent 88%,
+            rgba(0,0,0,0.03) 94%,
+            rgba(0,0,0,0.08) 100%
+          );
+        }
+        .lb-spread-right .lb-spread-page-shadow {
+          background: linear-gradient(to left,
+            rgba(0,0,0,0.04) 0%,
+            rgba(0,0,0,0.01) 6%,
+            transparent 12%,
+            transparent 88%,
+            rgba(0,0,0,0.03) 94%,
+            rgba(0,0,0,0.06) 100%
+          );
+        }
+        :root[data-theme="night"] .lb-spread-left .lb-spread-page-shadow {
+          background: linear-gradient(to right,
+            rgba(0,0,0,0.15) 0%,
+            rgba(0,0,0,0.05) 6%,
+            transparent 12%,
+            transparent 88%,
+            rgba(0,0,0,0.08) 94%,
+            rgba(0,0,0,0.18) 100%
+          );
+        }
+        :root[data-theme="night"] .lb-spread-right .lb-spread-page-shadow {
+          background: linear-gradient(to left,
+            rgba(0,0,0,0.15) 0%,
+            rgba(0,0,0,0.05) 6%,
+            transparent 12%,
+            transparent 88%,
+            rgba(0,0,0,0.06) 94%,
+            rgba(0,0,0,0.12) 100%
+          );
+        }
+        /* 书脊间隙 */
+        .lb-spine-gap {
+          width: 48px;
+          flex-shrink: 0;
+          display: flex;
+          align-items: stretch;
+          justify-content: center;
+          position: relative;
+          z-index: 3;
+        }
+        .lb-spine-groove {
+          width: 2px;
+          height: 100%;
+          background: linear-gradient(to bottom,
+            transparent 0%,
+            rgba(120, 100, 70, 0.15) 10%,
+            rgba(120, 100, 70, 0.25) 50%,
+            rgba(120, 100, 70, 0.15) 90%,
+            transparent 100%
+          );
+          box-shadow:
+            -1px 0 2px rgba(255,255,255,0.3),
+            1px 0 2px rgba(0,0,0,0.08);
+        }
+        :root[data-theme="night"] .lb-spine-groove {
+          background: linear-gradient(to bottom,
+            transparent 0%,
+            rgba(0,0,0,0.3) 10%,
+            rgba(0,0,0,0.5) 50%,
+            rgba(0,0,0,0.3) 90%,
+            transparent 100%
+          );
+          box-shadow:
+            -1px 0 2px rgba(255,255,255,0.05),
+            1px 0 2px rgba(0,0,0,0.2);
+        }
+        /* 内边距区域 */
+        .lb-spread-inner {
+          position: relative;
+          z-index: 3;
+          display: flex;
+          flex-direction: column;
+          padding: 40px 32px 56px;
+          height: 100%;
+          overflow: hidden;
+        }
+        .lb-spread-right .lb-spread-inner {
+          padding: 40px 36px 56px 28px;
+        }
+        /* 页眉 */
+        .lb-spread-header {
           text-align: center;
           margin-bottom: 28px;
           padding-bottom: 18px;
-          border-bottom: 1px solid rgba(184, 140, 106, 0.15);
+          border-bottom: 1px solid rgba(140, 110, 80, 0.1);
+          position: relative;
         }
-        .lb-index-label {
-          font-size: 10px;
-          letter-spacing: 0.3em;
+        .lb-spread-header::after {
+          content: "";
+          position: absolute;
+          bottom: -1px;
+          left: 50%;
+          transform: translateX(-50%);
+          width: 40px;
+          height: 1px;
+          background: rgba(140, 110, 80, 0.25);
+        }
+        .lb-spread-label {
+          font-size: 9px;
+          letter-spacing: 0.35em;
           color: var(--lb-text-soft);
-          opacity: 0.7;
+          opacity: 0.5;
           margin-bottom: 10px;
           display: block;
-        }
-        .lb-index-title {
           font-family: "Noto Serif SC", Georgia, serif;
-          font-size: 36px;
+        }
+        .lb-spread-title {
+          font-family: "Noto Serif SC", Georgia, serif;
+          font-size: 32px;
           font-weight: 700;
-          color: var(--lb-text);
-          letter-spacing: 0.1em;
+          color: #4a3f2e;
+          letter-spacing: 0.12em;
           margin: 0;
+          line-height: 1.2;
         }
-        .lb-index-deco {
-          width: 28px;
+        :root[data-theme="night"] .lb-spread-title {
+          color: #c9bfb0;
+        }
+        .lb-spread-deco-line {
+          width: 32px;
           height: 1px;
-          background: var(--accent);
-          opacity: 0.6;
-          margin: 14px auto;
+          background: rgba(140, 110, 80, 0.35);
+          margin: 12px auto 0;
         }
-        .lb-index-count {
-          font-size: 12px;
-          color: var(--lb-text-soft);
-          letter-spacing: 0.05em;
-          margin: 0;
-        }
-        .lb-catalog-list {
+        /* 列表 */
+        .lb-spread-list {
           list-style: none;
           margin: 0;
           padding: 0;
           display: flex;
           flex-direction: column;
-          gap: 4px;
+          gap: 0;
+          overflow-y: auto;
+          scrollbar-width: thin;
+          scrollbar-color: rgba(140, 110, 80, 0.15) transparent;
         }
-        .lb-catalog-item {
+        .lb-spread-list::-webkit-scrollbar { width: 3px; }
+        .lb-spread-list::-webkit-scrollbar-thumb {
+          background: rgba(140, 110, 80, 0.15);
+          border-radius: 2px;
+        }
+        .lb-spread-list::-webkit-scrollbar-track { background: transparent; }
+        /* 每一项 */
+        .lb-spread-item {
           display: flex;
-          align-items: center;
+          align-items: flex-start;
           gap: 14px;
-          padding: 13px 14px;
-          border-radius: 10px;
+          padding: 14px 10px;
           cursor: pointer;
-          transition: transform 0.28s ease, background 0.28s ease, box-shadow 0.28s ease;
-          border: 1px solid transparent;
+          transition: background 0.25s ease, transform 0.25s ease;
+          border-radius: 4px;
+          border-bottom: 1px solid rgba(140, 110, 80, 0.06);
+          position: relative;
         }
-        .lb-catalog-item:hover {
-          transform: translateX(6px);
-          background: rgba(184, 140, 106, 0.08);
-          border-color: rgba(184, 140, 106, 0.2);
-          box-shadow: 0 4px 16px -8px rgba(184, 140, 106, 0.25);
+        .lb-spread-item:last-child {
+          border-bottom: none;
         }
-        .lb-catalog-item:active {
-          transform: translateX(6px) scale(0.99);
+        .lb-spread-item:hover {
+          background: rgba(140, 110, 80, 0.04);
+          transform: translateY(-1px);
         }
-        .lb-catalog-num {
+        .lb-spread-item:active {
+          transform: translateY(0) scale(0.995);
+        }
+        /* 序号 - 页码风格 */
+        .lb-spread-num {
           font-family: "Noto Serif SC", Georgia, serif;
-          font-size: 14px;
-          color: var(--accent);
-          opacity: 0.7;
+          font-size: 11px;
+          color: rgba(140, 110, 80, 0.5);
           font-variant-numeric: tabular-nums;
-          min-width: 24px;
+          min-width: 22px;
+          padding-top: 2px;
+          letter-spacing: 0.04em;
+          font-weight: 600;
         }
-        .lb-catalog-item-text {
+        :root[data-theme="night"] .lb-spread-num {
+          color: rgba(180, 170, 150, 0.4);
+        }
+        /* 文字区域 */
+        .lb-spread-item-body {
           display: flex;
           flex-direction: column;
           gap: 3px;
           flex: 1;
           min-width: 0;
         }
-        .lb-catalog-item-title {
+        .lb-spread-item-title {
           font-family: "Noto Serif SC", Georgia, serif;
-          font-size: 16px;
+          font-size: 15px;
           font-weight: 600;
-          color: var(--lb-text);
+          color: #3d3528;
+          line-height: 1.4;
+          letter-spacing: 0.02em;
         }
-        .lb-catalog-item-pain {
+        :root[data-theme="night"] .lb-spread-item-title {
+          color: #d4c9b8;
+        }
+        .lb-spread-item-sub {
           font-size: 11px;
-          color: var(--lb-text-soft);
-          opacity: 0.85;
+          color: rgba(140, 110, 80, 0.55);
+          line-height: 1.45;
           white-space: nowrap;
           overflow: hidden;
           text-overflow: ellipsis;
+          font-weight: 400;
         }
-        .lb-catalog-arrow {
-          font-size: 14px;
-          color: var(--lb-text-soft);
+        :root[data-theme="night"] .lb-spread-item-sub {
+          color: rgba(180, 170, 150, 0.4);
+        }
+        /* 装饰点 */
+        .lb-spread-item-dot {
+          font-size: 20px;
+          color: rgba(140, 110, 80, 0.25);
+          line-height: 1;
+          padding-top: 2px;
+          transition: color 0.25s ease, transform 0.25s ease;
+          font-weight: 300;
+        }
+        .lb-spread-item:hover .lb-spread-item-dot {
+          color: rgba(140, 110, 80, 0.6);
+          transform: scale(1.2);
+        }
+        :root[data-theme="night"] .lb-spread-item-dot {
+          color: rgba(180, 170, 150, 0.2);
+        }
+        :root[data-theme="night"] .lb-spread-item:hover .lb-spread-item-dot {
+          color: rgba(180, 170, 150, 0.5);
+        }
+
+        /* 书签式合上书按钮 — 右上角 */
+        .lb-bookmark-close {
+          position: absolute;
+          top: 20px;
+          right: 20px;
+          z-index: 20;
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          background: transparent;
+          border: none;
+          cursor: pointer;
+          padding: 0;
+          filter: drop-shadow(0 2px 6px rgba(0,0,0,0.12));
+          transition: filter 0.25s ease;
+        }
+        .lb-bookmark-close:hover {
+          filter: drop-shadow(0 4px 10px rgba(0,0,0,0.18));
+        }
+        .lb-bookmark-ribbon {
+          width: 28px;
+          height: 40px;
+          background: linear-gradient(180deg, #a08060 0%, #8a6d4f 100%);
+          clip-path: polygon(0 0, 100% 0, 100% 100%, 50% 82%, 0 100%);
+          position: relative;
+          display: block;
+          transform: rotate(2deg);
+        }
+        :root[data-theme="night"] .lb-bookmark-ribbon {
+          background: linear-gradient(180deg, #6a5540 0%, #544332 100%);
+        }
+        .lb-bookmark-ribbon::after {
+          content: "";
+          position: absolute;
+          inset: 2px;
+          background: linear-gradient(180deg, #b89470 0%, #9a7b5a 100%);
+          clip-path: polygon(0 0, 100% 0, 100% 100%, 50% 82%, 0 100%);
           opacity: 0.5;
-          transition: transform 0.28s ease, opacity 0.28s ease, color 0.28s ease;
         }
-        .lb-catalog-item:hover .lb-catalog-arrow {
-          transform: translateX(4px);
-          opacity: 1;
-          color: var(--accent);
+        :root[data-theme="night"] .lb-bookmark-ribbon::after {
+          background: linear-gradient(180deg, #7a6350 0%, #63503e 100%);
         }
-        .lb-catalog-foot {
+        .lb-bookmark-text {
+          font-family: "Noto Serif SC", Georgia, serif;
+          font-size: 11px;
+          color: #5a4a38;
+          margin-top: 6px;
+          letter-spacing: 0.08em;
+          writing-mode: horizontal-tb;
+        }
+        :root[data-theme="night"] .lb-bookmark-text {
+          color: #b0a08c;
+        }
+
+        /* ===== 封底内页 ===== */
+        .lb-origin-page {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          background: var(--lb-page-bg, #F5F0E4);
+          position: relative;
+        }
+        /* 极淡的竖向渐变遮罩，增强文字可读性 */
+        .lb-origin-shade {
+          position: absolute;
+          inset: 0;
+          background: linear-gradient(
+            180deg,
+            rgba(255,255,255,0) 0%,
+            rgba(255,255,255,0.35) 30%,
+            rgba(255,255,255,0.35) 70%,
+            rgba(255,255,255,0) 100%
+          );
+          z-index: 1;
+          pointer-events: none;
+        }
+        .lb-origin-inner {
+          position: relative;
+          z-index: 2;
+          max-width: 520px;
+          padding: 40px 48px;
+          text-align: left;
+        }
+        .lb-origin-title {
+          font-family: "Noto Serif SC", Georgia, serif;
+          font-size: 22px;
+          font-weight: 500;
+          color: #3A4F3A;
+          margin: 0 0 28px;
+          letter-spacing: 0.04em;
+        }
+        :root[data-theme="night"] .lb-origin-title {
+          color: #8a9a7a;
+        }
+        .lb-origin-body {
+          font-family: "Noto Serif SC", Georgia, serif;
+          font-size: 15px;
+          line-height: 1.8;
+          color: #4A5A4A;
+          margin: 0 0 32px;
+        }
+        :root[data-theme="night"] .lb-origin-body {
+          color: #b0b8a8;
+        }
+        .lb-origin-body p {
+          margin: 0 0 0.8em;
+        }
+        .lb-origin-body br {
+          display: block;
+          content: "";
+          margin-top: 1em;
+        }
+        .lb-origin-sign {
+          text-align: right;
+          font-style: italic;
+          font-size: 14px;
+          color: #5A6B5C;
+          margin: 0 0 40px;
+          font-family: "Noto Serif SC", Georgia, serif;
+        }
+        :root[data-theme="night"] .lb-origin-sign {
+          color: #8a9a7a;
+        }
+        .lb-origin-continued {
           text-align: center;
-          font-size: 10px;
-          letter-spacing: 0.18em;
-          color: var(--lb-text-soft);
-          opacity: 0.45;
-          margin-top: 24px;
+          font-size: 13px;
+          font-weight: 300;
+          color: #5A6B5C;
+          opacity: 0.7;
+          letter-spacing: 0.06em;
+          font-family: "Noto Sans SC", system-ui, sans-serif;
+        }
+        :root[data-theme="night"] .lb-origin-continued {
+          color: #8a9a7a;
+        }
+        /* 浮动动画 */
+        .lb-origin-leaf-icon {
+          display: inline-block;
+          margin-right: 6px;
+          animation: lb-leaf-float 3s ease-in-out infinite;
+        }
+        @keyframes lb-leaf-float {
+          0%, 100% { transform: translateY(0); }
+          50% { transform: translateY(-3px); }
         }
 
         /* ===== 金句页 ===== */
@@ -1138,13 +1691,6 @@ const LeafBook: React.FC<LeafBookProps> = ({ registerOpenBook, flipTriggerRef, a
           transform: translateY(-1px);
         }
 
-        /* 预览页时合上书按钮上移，避开下一页按钮 */
-        .lb-preview-page ~ .lb-close-btn,
-        .lb-book:has(.lb-preview-page) .lb-close-btn {
-          bottom: auto;
-          top: 16px;
-        }
-
         /* ===== 底部控制 ===== */
         .lb-controls {
           display: flex;
@@ -1173,14 +1719,82 @@ const LeafBook: React.FC<LeafBookProps> = ({ registerOpenBook, flipTriggerRef, a
             height: 424px;
             max-height: 68vh;
           }
-          .lb-catalog-container { padding: 28px 20px 50px; }
-          .lb-index-title { font-size: 26px; }
-          .lb-catalog-item { padding: 10px 12px; gap: 10px; }
-          .lb-catalog-item-title { font-size: 14px; }
-          .lb-catalog-item-pain { font-size: 10px; }
-          .lb-catalog-num { font-size: 12px; min-width: 20px; }
-          .lb-cover-title { font-size: 30px; }
-          .lb-cover-subtitle { font-size: 12px; }
+          .lb-book.lb-book-spread {
+            width: 340px;
+            max-width: 92vw;
+            height: 520px;
+            max-height: 72vh;
+          }
+          /* 目录对页：移动端改为单页堆叠 */
+          .lb-spread {
+            flex-direction: column;
+            padding: 6px;
+            overflow-y: auto;
+            scrollbar-width: thin;
+            scrollbar-color: rgba(140, 110, 80, 0.15) transparent;
+          }
+          .lb-spread::-webkit-scrollbar { width: 3px; }
+          .lb-spread::-webkit-scrollbar-thumb {
+            background: rgba(140, 110, 80, 0.15);
+            border-radius: 2px;
+          }
+          .lb-spread-page {
+            border-radius: 6px;
+            margin-bottom: 8px;
+            box-shadow: 0 2px 8px -2px rgba(0,0,0,0.1);
+          }
+          .lb-spread-left {
+            border-radius: 6px;
+            box-shadow: inset 0 -4px 12px -6px rgba(0,0,0,0.06), 0 2px 6px -2px rgba(0,0,0,0.08);
+          }
+          .lb-spread-right {
+            border-radius: 6px;
+            box-shadow: inset 0 4px 12px -6px rgba(0,0,0,0.06), 0 2px 6px -2px rgba(0,0,0,0.08);
+          }
+          .lb-spine-gap { display: none; }
+          .lb-spread-inner {
+            padding: 20px 18px 32px;
+          }
+          .lb-spread-right .lb-spread-inner {
+            padding: 20px 18px 32px;
+          }
+          .lb-spread-header {
+            margin-bottom: 16px;
+            padding-bottom: 12px;
+          }
+          .lb-spread-title { font-size: 22px; }
+          .lb-spread-item { padding: 10px 8px; gap: 10px; }
+          .lb-spread-item-title { font-size: 13px; }
+          .lb-spread-item-sub { font-size: 10px; }
+          .lb-spread-num { font-size: 10px; min-width: 20px; }
+          .lb-bookmark-close {
+            bottom: 12px;
+            right: 14px;
+          }
+          .lb-bookmark-ribbon {
+            width: 28px;
+            height: 38px;
+          }
+          .lb-bookmark-text {
+            font-size: 10px;
+            margin-top: 4px;
+          }
+          .lb-cover {
+            padding: 40px 20px;
+            transform: perspective(1200px) rotateX(0.5deg) rotateY(-1deg);
+            box-shadow:
+              inset 0 0 20px rgba(0,0,0,0.02),
+              0 12px 24px rgba(0,0,0,0.10),
+              0 0 40px rgba(0,0,0,0.03);
+          }
+          .lb-cover:hover {
+            transform: perspective(1200px) rotateX(0deg) rotateY(0deg);
+          }
+          .lb-cover-title { font-size: 36px; }
+          .lb-cover-subtitle { font-size: 15px; margin-bottom: 24px; }
+          .lb-cover-leaf-wrap { margin-bottom: 16px; }
+          .lb-cover-intro { font-size: 13px; max-width: 100%; padding: 0 8px; margin-bottom: 20px; }
+          .lb-cover-year { font-size: 11px; }
           /* 金句页 */
           .lb-quote-page { padding: 36px 28px; }
           .lb-quote-text { font-size: 17px; line-height: 1.75; }
@@ -1197,10 +1811,26 @@ const LeafBook: React.FC<LeafBookProps> = ({ registerOpenBook, flipTriggerRef, a
           .lb-preview-desc { font-size: 11px; line-height: 1.65; margin-bottom: 10px; }
           .lb-preview-tags { margin-bottom: 10px; }
           .lb-preview-visit { font-size: 11px; padding: 6px 12px; }
+          /* 起名来源页移动端 */
+          .lb-origin-title { font-size: 20px; margin-bottom: 20px; }
+          .lb-origin-inner { padding: 32px 24px; max-width: 100%; }
+          .lb-origin-body { font-size: 14px; }
+          .lb-origin-sign { font-size: 13px; margin-bottom: 32px; }
+          .lb-origin-continued { font-size: 12px; }
           /* 按钮 */
           .lb-close-btn { bottom: 12px; right: 12px; padding: 6px 12px; font-size: 11px; }
           .lb-preview-next-btn { padding: 6px 16px; font-size: 12px; }
           .lb-page-number { font-size: 10px; bottom: 10px; right: 14px; }
+          /* 双页展开容器：移动端改为单列 */
+          .lb-spread-container {
+            flex-direction: column;
+          }
+          .lb-spread-half-left {
+            box-shadow: none;
+          }
+          .lb-spread-half-right {
+            box-shadow: none;
+          }
         }
       `}</style>
     </div>

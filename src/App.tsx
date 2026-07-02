@@ -18,12 +18,6 @@ const fadeUp = {
   transition: { duration: 0.7, ease: "easeOut" as const },
 };
 
-const SKILLS = [
-  "产品规划", "用户研究", "需求分析", "原型设计",
-  "数据分析", "AI 应用", "项目管理",
-  "跨部门协作", "竞品分析", "增长策略",
-];
-
 const AppContent: React.FC = () => {
   const { isNight, toggleTheme } = useTheme();
   const electron = isElectron();
@@ -78,11 +72,11 @@ const AppContent: React.FC = () => {
     return () => observer.disconnect();
   }, [isFullMode]);
 
-  const handleNavigate = (section: Section) => {
+  const handleNavigate = (section: Section, openBook = false) => {
     const el = document.getElementById(section);
     if (el) el.scrollIntoView({ behavior: "smooth" });
-    // 项目集：滚动到位后翻开树叶书
-    if (section === "projects") {
+    // 项目集：仅当明确要求时才翻开树叶书（如"翻阅我的作品"按钮）
+    if (section === "projects" && openBook) {
       setTimeout(() => { if (openBookRef.current) openBookRef.current(); }, 700);
     }
   };
@@ -119,17 +113,18 @@ const AppContent: React.FC = () => {
             <>
               <p className="po-eyebrow">AI Product Manager</p>
               <h1 className="po-name">路俊玲</h1>
-              <p className="po-tagline">AI Product Manager · Digital Atelier</p>
+              <p className="po-tagline">AI 产品经理 | 软件工程背景 | Digital Atelier</p>
               <p className="po-bio">
-                从软件工程的代码底座出发，走向 AI 产品的舞台。
-                在真实场景中洞察需求，把技术能力转化为可触达用户的原型与产品——
-                相信好的产品源自对人的理解，技术是手段，温柔才是底色。
+                从技术底座走向产品价值。具备扎实的软件工程思维与代码实现能力，
+                擅长在技术与人性之间寻找平衡点。我致力于将复杂的技术能力，
+                转化为可触达用户的 AI 原型与产品——相信好的产品不仅懂需求，
+                更懂背后的逻辑与温度。
               </p>
               <div className="po-hero-btns">
                 <button onClick={() => handleNavigate("about")} className="po-btn po-btn-primary">
                   了解更多
                 </button>
-                <button onClick={() => handleNavigate("projects")} className="po-btn po-btn-ghost">
+                <button onClick={() => handleNavigate("projects", true)} className="po-btn po-btn-ghost">
                   翻阅我的作品 📖
                 </button>
               </div>
@@ -163,19 +158,42 @@ const AppContent: React.FC = () => {
               <div className="po-about-left">
                 <motion.div {...fadeUp} className="po-text-block">
                   <h3 className="po-block-title">我的专业能力</h3>
+                  <p className="po-block-meta">AI 产品实践者 | 软件工程背景</p>
                   <p className="po-block-body">
-                    专注于 AI 产品落地与人性化设计。从需求洞察到产品上线，
-                    擅长将复杂技术转化为用户可感知的价值。
+                    专注 AI 产品落地与人性化设计。依托软件工程的专业底色，
+                    我将技术逻辑转化为清晰的产品路径。擅长从真实场景洞察需求，
+                    通过工程化思维推动 AI 产品从 0 到 1 的落地，创造可感知的用户价值。
                   </p>
-                  <p className="po-block-meta">AI Product Manager · 3 年+ 经验</p>
+                  <p className="po-block-meta">AI 产品探索者 · 持续实践中</p>
                 </motion.div>
 
                 <motion.div {...fadeUp} className="po-text-block">
                   <h3 className="po-block-title">核心技能</h3>
-                  <div className="po-skill-cloud">
-                    {SKILLS.map((s) => (
-                      <span key={s} className="po-skill-tag">{s}</span>
-                    ))}
+                  <div className="po-skill-groups">
+                    <div className="po-skill-group">
+                      <span className="po-skill-group-label">AI & 算法</span>
+                      <div className="po-skill-cloud">
+                        {["大模型应用设计", "Prompt 工程", "RAG 架构", "AI 工作流设计"].map(s => (
+                          <span key={s} className="po-skill-tag po-skill-tag--ai">{s}</span>
+                        ))}
+                      </div>
+                    </div>
+                    <div className="po-skill-group">
+                      <span className="po-skill-group-label">产品能力</span>
+                      <div className="po-skill-cloud">
+                        {["需求分析", "原型设计", "项目管理", "数据分析", "用户研究"].map(s => (
+                          <span key={s} className="po-skill-tag">{s}</span>
+                        ))}
+                      </div>
+                    </div>
+                    <div className="po-skill-group">
+                      <span className="po-skill-group-label">工程优势</span>
+                      <div className="po-skill-cloud">
+                        {["软件开发", "敏捷迭代", "数据埋点", "代码实现"].map(s => (
+                          <span key={s} className="po-skill-tag po-skill-tag--eng">{s}</span>
+                        ))}
+                      </div>
+                    </div>
                   </div>
                 </motion.div>
               </div>
@@ -207,7 +225,6 @@ const AppContent: React.FC = () => {
           <section id="projects" className="po-section po-section-last po-section-projects">
             <div className="po-section-inner">
               <motion.h2 {...fadeUp} className="po-section-heading">项目集</motion.h2>
-              <motion.p {...fadeUp} className="po-projects-sub">翻开这本树叶书，每一页都是一段实践的印记。</motion.p>
 
               {/* 叶子书 */}
               <motion.div {...fadeUp} className="po-leafbook-wrap">
@@ -247,7 +264,8 @@ const AppContent: React.FC = () => {
         .po-hero {
           position: relative;
           min-height: 100vh;
-          display: flex; align-items: center; justify-content: center;
+          display: flex; align-items: flex-start; justify-content: center;
+          padding-top: 22vh;
           overflow: hidden;
         }
         .po-hero::after {
@@ -326,13 +344,13 @@ const AppContent: React.FC = () => {
 
         /* ===== 各模块通用 ===== */
         .po-section {
-          padding: 100px 0;
+          padding: 40px 0 100px;
           border-top: 1px solid rgba(255,255,255,0.08);
         }
         .po-section-last { border-bottom: 1px solid rgba(255,255,255,0.08); }
 
         /* 项目集模块：紧凑上移 */
-        .po-section-projects { padding-top: 60px; }
+        .po-section-projects { padding-top: 0; }
         .po-section-inner {
           max-width: 1100px; margin: 0 auto; padding: 0 48px;
         }
@@ -402,16 +420,48 @@ const AppContent: React.FC = () => {
         .po-edu-school { font-size: 15px; font-weight: 500; color: #4a4038; }
         .po-edu-degree { font-size: 13px; color: #7a7268; }
 
+        /* 技能分组 */
+        .po-skill-groups { display: flex; flex-direction: column; gap: 16px; }
+        .po-skill-group { display: flex; flex-direction: column; gap: 8px; }
+        .po-skill-group-label {
+          font-size: 12px; font-weight: 600;
+          color: #5a6a4c; letter-spacing: 0.08em;
+          text-transform: uppercase;
+        }
+
         /* 技能标签：淡黄绿填充 */
         .po-skill-cloud { display: flex; flex-wrap: wrap; gap: 8px; }
         .po-skill-tag {
-          padding: 6px 14px; font-size: 13px;
+          padding: 5px 12px; font-size: 12px;
           border-radius: 999px;
           background: rgba(168, 190, 120, 0.2);
           border: 1px solid rgba(168, 190, 120, 0.45);
           color: #3a4a2c;
           cursor: default;
           text-shadow: 0 1px 3px rgba(255,255,255,0.6);
+          transition: all 0.2s ease;
+        }
+        .po-skill-tag:hover {
+          background: rgba(168, 190, 120, 0.3);
+          border-color: rgba(168, 190, 120, 0.6);
+        }
+        .po-skill-tag--ai {
+          background: rgba(93, 138, 106, 0.12);
+          border-color: rgba(93, 138, 106, 0.35);
+          color: #4a6a4a;
+        }
+        .po-skill-tag--ai:hover {
+          background: rgba(93, 138, 106, 0.22);
+          border-color: rgba(93, 138, 106, 0.5);
+        }
+        .po-skill-tag--eng {
+          background: rgba(176, 120, 50, 0.1);
+          border-color: rgba(176, 120, 50, 0.3);
+          color: #6a4a2a;
+        }
+        .po-skill-tag--eng:hover {
+          background: rgba(176, 120, 50, 0.18);
+          border-color: rgba(176, 120, 50, 0.45);
         }
 
         /* 宣言引言：数字造物场 — 背景水印风格 */
@@ -432,13 +482,15 @@ const AppContent: React.FC = () => {
         }
         /* 项目集副标题：居中引言风格 */
         .po-projects-sub {
-          font-family: "Noto Serif SC", Georgia, serif;
-          font-size: 14px; color: #6a7a5c;
-          margin: 0 0 8px;
+          font-size: 16px;
+          color: #888;
+          font-style: italic;
           text-align: center;
           line-height: 1.6;
-          letter-spacing: 0.04em;
-          text-shadow: 0 1px 4px rgba(255,255,255,0.5);
+          max-width: 600px;
+          margin: 0 auto 20px;
+          padding: 20px 0;
+          letter-spacing: 0.02em;
         }
         .po-mickey-wrap {
           display: flex; flex-direction: column; align-items: center;
@@ -475,8 +527,8 @@ const AppContent: React.FC = () => {
 
         /* ===== 响应式 ===== */
         @media (max-width: 768px) {
-          .po-section { padding: 70px 0; }
-          .po-section-projects { padding-top: 40px; }
+          .po-section { padding: 32px 0 70px; }
+          .po-section-projects { padding-top: 0; }
           .po-section-inner { padding: 0 24px; }
           .po-section-heading { margin-bottom: 32px; }
           .po-about-left { gap: 32px; margin-bottom: 40px; }

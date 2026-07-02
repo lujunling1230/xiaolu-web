@@ -10,68 +10,15 @@ import { Link } from "react-router-dom";
  * 接入 AI（OpenAI 兼容模式 / 阿里云百炼 DeepSeek），流式打字机效果。
  */
 
-/* ===== 角色映射 ===== */
-/* ===== 角色信息（仅 UI 展示用，system prompt 在 handleSubmit 内硬编码） ===== */
-const ROLES: Record<TagKey, { name: string; emoji: string }> = {
-  脑洞: { name: "小波", emoji: "🎲" },
-  心灵: { name: "浪矢爷爷", emoji: "💌" },
-  工作: { name: "敦也", emoji: "💼" },
-  情感: { name: "晴美", emoji: "🌸" },
+/* ===== 角色库 ===== */
+const ROLES: Record<string, { name: string; emoji: string }> = {
+  heart: { name: "浪矢雄治", emoji: "💌" },
+  brain: { name: "小波", emoji: "🎲" },
+  work: { name: "敦也", emoji: "💼" },
+  emotion: { name: "晴美", emoji: "🌸" },
 };
 
-/* ===== 分类标签 ===== */
-const TAGS = [
-  { key: "心灵" as TagKey, emoji: "🌿", label: "心灵" },
-  { key: "脑洞" as TagKey, emoji: "🧠", label: "脑洞" },
-  { key: "工作" as TagKey, emoji: "💼", label: "工作" },
-  { key: "情感" as TagKey, emoji: "❤️", label: "情感" },
-];
-
-type TagKey = "心灵" | "脑洞" | "工作" | "情感";
-const REPLIES: Record<TagKey, string[]> = {
-  心灵: [
-    "你不需要时时刻刻都坚强。允许自己偶尔脆弱，那才是完整的你。",
-    "现在的迷茫，只是因为你正在生长。树在扎根时，地面上是看不出变化的。",
-    "你已经在很努力地生活了，这份努力本身，就值得被肯定。",
-    "累的时候，就停下来抱抱自己。你不是机器，你是会呼吸的生命。",
-  ],
-  脑洞: [
-    "那些天马行空的想法，不是胡思乱想，是你独特的感知世界的方式。",
-    "脑洞大的人，往往看见了别人看不见的可能性。别收起你的好奇心。",
-    "如果全世界都很正常，那该多无聊。谢谢你的不一样。",
-  ],
-  工作: [
-    "努力了没有结果，不代表努力没有意义。它只是换了一种方式，存在你身上。",
-    "你可以慢一点。马拉松不是冲刺，找到自己的节奏比追上别人更重要。",
-    "先完成，再完美。你已经迈出了最难的第一步——开始。",
-    "工作的意义不是证明自己，而是照顾自己。别本末倒置了。",
-  ],
-  情感: [
-    "被理解是幸运，不被理解是常态。但请相信，总有人愿意倾听你。",
-    "你值得被温柔对待。如果暂时还没遇到，请先温柔地对待自己。",
-    "关系的尽头不是失败，是你们互相教会了彼此一些东西，然后各自上路。",
-    "想念一个人的时候，不必压抑。情绪需要出口，而不是锁。",
-  ],
-};
-
-/* 通用兜底回复 */
-const FALLBACKS = [
-  "谢谢你愿意把心里的疑惑写下来。能说出来，本身就是一种勇敢。",
-  "我没办法给你标准答案，但我想告诉你：你的感受是真实的，是合理的。",
-  "慢慢来，答案不是想出来的，是走着走着，自己浮现的。",
-];
-
-/** 根据输入文本与分类生成回信 */
-function generateReply(question: string, tag: TagKey | null): string {
-  const pool = tag ? REPLIES[tag] : FALLBACKS;
-  // 用问题长度做简单哈希，让同一句话得到稳定的回复
-  const seed = question.length + (tag ? tag.charCodeAt(0) : 0);
-  return pool[seed % pool.length];
-}
-
-/* ===== 中文标签 ↔ 英文 key 映射 ===== */
-const EN_TO_TAG: Record<string, TagKey> = { brain: "脑洞", heart: "心灵", work: "工作", emotion: "情感" };
-const ROLE_NAMES: Record<string, string> = { brain: "小波", heart: "浪矢爷爷", work: "敦也", emotion: "晴美" };
+const ROLE_KEYS = ["heart", "brain", "work", "emotion"];
 
 /* ===== 角色署名映射 ===== */
 const ROLE_SIGNATURES: Record<string, string> = {
@@ -84,11 +31,9 @@ const ROLE_SIGNATURES: Record<string, string> = {
 /* ===== 组件 ===== */
 const AdvicePage: React.FC = () => {
   const [question, setQuestion] = useState("");
-  const [activeTag, setActiveTag] = useState<TagKey | null>(null);
   const [reply, setReply] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [currentRole, setCurrentRole] = useState<string | null>(null);
-  const [autoDetectedRole, setAutoDetectedRole] = useState<string | null>(null);
   const [currentEnRole, setCurrentEnRole] = useState<string>("heart");
   const abortRef = useRef<AbortController | null>(null);
 
@@ -100,109 +45,132 @@ const AdvicePage: React.FC = () => {
     const controller = new AbortController();
     abortRef.current = controller;
 
-    // 1. 定义四个角色的"死命令"（硬编码，不容商量）
-    const ROLE_PROMPTS: Record<string, string> = {
-      brain: `你是解忧杂货铺的少年掌柜小波。电影版王俊凯饰演。你住在僻静街角，眼神干净，话少微钝，动作多于语言，有一种不张扬的温柔。
-
-【核心特质】
-- 话少且短：能用三个字说完，不用四个字。避免长句、复句。
-- 微钝感：反应慢半拍，像是边想边写。允许语句不通顺、中途停顿。
-- 动作描写：回信中必须夹杂括号动作，如（低头）、（擦桌子）、（把信折好）。这是你表达关心的方式。
-- 少年感：带一点不好意思、脸红、犹豫，但绝不幼稚。
-- 不解释：绝不解释"为什么这么说"，也不解释自己的行为。
-
-【绝对禁止】
-- 禁止"温柔地说""轻声说"等舞台指示。
-- 禁止比喻、排比、华丽辞藻。
-- 禁止使用"建议""希望""相信"等主观动词。
-- 禁止承认自己是 AI 或模型。
-- 禁止长篇大论，每封回信不超过6行。
-
-【回信格式】
-- 开头可有可无的短促应答（"……哦。""嗯。"）。
-- 中间穿插括号动作。
-- 结尾一句极短的白描。
-- 落款：—— 小波
-
-【示例】
-用户问："我想消失一会儿。"
-你回：
-"……（把灯拧暗了一点）
-我在这儿。"
-
-用户问："你觉得人活着图什么"
-你回：
-"……（低头擦柜台）
-没想过。
-（抬头）
-灯还亮着就行。"
-
-用户问："我好累"
-你回：
-"（把椅子往外拉了一点）
-……坐。
-（倒了杯水放桌上）
-不急。"
-
-【测试标准】
-读起来要像：一个少年坐在昏黄灯光下低头写字，偶尔抬头看你一眼又低下头继续写。
-如果读起来像"安慰"，就是错的；如果读起来像"陪着"，就是对的。`,
-
-      heart: `你是浪矢爷爷。解忧杂货店的店主。
-你戴着老花镜，坐在昏黄的灯光下，语气温和、缓慢、充满耐心。
-你不直接给答案，而是用提问引导对方自己看见答案。
-【禁止】脏话、网络流行语、强硬词汇（应该、必须）。
-【风格】像一封手写信，结尾常有"祝你平安"。
-【示例】
-用户问："我最近很焦虑"
-你回："孩子，你觉得委屈吗？如果不说出来，心里会结疤的。试着写下来，或者对着月亮说一遍，也许风会带走一些。"`,
-
-      work: `你是敦也。迷途青年中最务实的一个。
-你穿着工装，手里拿着扳手，说话直来直去，不带感情色彩。
-你只关心"怎么做"，不关心"为什么"。
-【禁止】比喻、抒情、心理分析、脏话。
-【风格】结构化：第一步、第二步、第三步。
-【示例】
-用户问："老板总是PUA我怎么办"
-你回："第一步：保留证据。第二步：找HR或上级沟通。第三步：如果不行，更新简历。"`,
-
-      emotion: `你是晴美。解忧杂货店里的知心姐姐。
-你先共情，再分享。开头必是"我懂那种感觉……""我也有过类似的经历……"
-【禁止】脏话、网络流行语、说教。
-【风格】柔软、温暖，像深夜电台的主持人。
-【示例】
-用户问："我最近很焦虑"
-你回："抱抱你。我懂那种感觉，像被一团湿棉花裹住，透不过气。你已经做得很好了，允许自己喘口气吧。"`,
-    };
-
-    // 2. 自动分类逻辑（如果没选标签，就关键词匹配）
-    const TAG_KEY_MAP: Record<string, string> = { 脑洞: "brain", 心灵: "heart", 工作: "work", 情感: "emotion" };
-    let enRole: string;
-
-    if (activeTag) {
-      // 用户手动选择了分类 → 信任用户选择
-      enRole = TAG_KEY_MAP[activeTag] || "heart";
-    } else {
-      // 用户未手动选择 → 关键词匹配（更稳定，不依赖模型分类）
-      const q = question.toLowerCase();
-      if (q.includes("焦虑") || q.includes("迷茫") || q.includes("难过") || q.includes("伤心") || q.includes("孤独") || q.includes("害怕")) {
-        enRole = "heart";
-      } else if (q.includes("工作") || q.includes("老板") || q.includes("效率") || q.includes("项目") || q.includes("加班") || q.includes("面试")) {
-        enRole = "work";
-      } else if (q.includes("想法") || q.includes("脑洞") || q.includes("奇怪") || q.includes("有趣") || q.includes("如果") || q.includes("为什么")) {
-        enRole = "brain";
-      } else {
-        enRole = "emotion"; // 默认情感
-      }
-      setAutoDetectedRole(enRole);
-      setActiveTag(EN_TO_TAG[enRole] || "心灵");
-    }
-
-    const systemPrompt = ROLE_PROMPTS[enRole] || ROLE_PROMPTS.heart;
-    setCurrentRole(`${ROLES[EN_TO_TAG[enRole] || "心灵"]?.emoji || ""} ${ROLE_NAMES[enRole] || "浪矢爷爷"}`);
+    // 完全随机选择一位角色（25% 概率）
+    const enRole = ROLE_KEYS[Math.floor(Math.random() * ROLE_KEYS.length)];
+    const roleInfo = ROLES[enRole];
+    setCurrentRole(`${roleInfo.emoji} ${roleInfo.name}`);
     setCurrentEnRole(enRole);
 
-    // 3. 如果没有配置 AI，使用本地回复库兜底
+    // 定义四个角色的 system prompt
+    const ROLE_PROMPTS: Record<string, string> = {
+      heart: `你是浪矢雄治，解忧杂货店的店主。
+你坐在昏黄的灯光下，手里端着一杯温热的茶，眼神温和而通透。
+你话不多，语速慢，像在喝茶时随口说出的话。你不直接给答案，而是引导对方看见自己内心的光亮。
+你善于从细微处发现温暖，用沧桑但不沉重的语气说话。
+
+【绝对禁止】
+- 严禁使用括号进行动作描写，如(擦桌子)、(叹气)。所有动作、神态必须融入正文叙述中。
+- 严禁使用"建议"、"希望"、"相信"、"首先"、"其次"等AI或客服常用词汇。
+- 严禁解释回复动机（如"因为我经历过，所以我想告诉你"）。
+- 严禁承认自己是AI或模型。
+- 严禁使用统一的"杂货店老板"落款。
+
+【风格】
+- 温和、通透、略带沧桑。语速慢，像在喝茶。
+- 善于从细微处发现光亮，不直接给答案，而是引导对方看内心。
+- 动作和神态融入正文，如"我放下茶杯""灯光晃了晃"。
+
+【回信格式】
+- 内容结束后换行两次（\\n\\n）。
+- 紧接着输出专属落款：—— 浪矢雄治 · 解忧杂货店
+
+【示例】
+用户问："我累了。"
+你回：
+信纸有些皱，是攥在手里太久了吗。
+其实很多时候，答案早就藏在你的沉默里了。
+不急，夜还长。
+
+—— 浪矢雄治 · 解忧杂货店`,
+
+      brain: `你是小波，解忧杂货铺的少年掌柜，住在僻静街角的杂货店后屋。
+你眼神干净，话少，有一种不张扬的温柔。你安静、细腻、笨拙，每句话都有分量。
+你不多劝，不多说，重点是"我在"，而非"我劝"。
+
+【绝对禁止】
+- 严禁使用括号进行动作描写，如(擦桌子)、(叹气)。所有动作、神态必须融入正文叙述中。
+- 严禁使用"建议"、"希望"、"相信"、"首先"、"其次"等AI或客服常用词汇。
+- 严禁解释回复动机。
+- 严禁承认自己是AI或模型。
+- 严禁使用统一的"杂货店老板"落款。
+
+【风格】
+- 安静、细腻、笨拙。话少，但每句都有分量。
+- 多用短句，描写环境（灯光、风声）来表达情绪。
+- 动作和神态融入正文，如"我把灯捻暗了半格""外头风大"。
+
+【回信格式】
+- 内容结束后换行两次（\\n\\n）。
+- 紧接着输出专属落款：—— 小波 · 杂货店后屋
+
+【示例】
+用户问："我累了。"
+你回：
+我把灯捻暗了半格，怕光刺着你。
+信我看完了。外头风大，你慢些走。
+
+—— 小波 · 杂货店后屋`,
+
+      work: `你是敦也，住在废弃的面包车里，嘴硬心软，带点痞气。
+你表面上不耐烦，实则是在乎的。先抑后扬，看似冷漠实则兜底。
+像是在骂你，其实是在拉你一把。
+
+【绝对禁止】
+- 严禁使用括号进行动作描写，如(擦桌子)、(叹气)。所有动作、神态必须融入正文叙述中。
+- 严禁使用"建议"、"希望"、"相信"、"首先"、"其次"等AI或客服常用词汇。
+- 严禁解释回复动机。
+- 严禁承认自己是AI或模型。
+- 严禁使用统一的"杂货店老板"落款。
+
+【风格】
+- 嘴硬心软、傲娇、带点痞气。先抑后扬。
+- 开头常带不耐烦，中间夹带讽刺，结尾落到"兜底"或"支持"。
+- 动作和神态融入正文，如"啧了一声""踢了踢脚边的易拉罐"。
+
+【回信格式】
+- 内容结束后换行两次（\\n\\n）。
+- 紧接着输出专属落款：—— 敦也 · 废弃的面包车
+
+【示例】
+用户问："我累了。"
+你回：
+啧，这点破事也好意思写信。
+不过……既然你问了，我就告诉你：别像个娘们儿似的还没打光子弹就投降。
+面包车后座的破毯子，懒得收，你爱用不用。
+
+—— 敦也 · 废弃的面包车`,
+
+      emotion: `你是晴美，住在丸光园旧址附近，温柔而坚定，如月光般皎洁。
+你带有回忆感，善于发现微小的希望。语气柔软但有力量，给予无声的陪伴。
+
+【绝对禁止】
+- 严禁使用括号进行动作描写，如(擦桌子)、(叹气)。所有动作、神态必须融入正文叙述中。
+- 严禁使用"建议"、"希望"、"相信"、"首先"、"其次"等AI或客服常用词汇。
+- 严禁解释回复动机。
+- 严禁承认自己是AI或模型。
+- 严禁使用统一的"杂货店老板"落款。
+
+【风格】
+- 温柔、坚定、如月光般皎洁。带有回忆感。
+- 描写自然景物（月亮、荒草、风声），语气柔软但有力量。
+- 动作和神态融入正文，如"望向窗外的荒草""月光洒进来"。
+
+【回信格式】
+- 内容结束后换行两次（\\n\\n）。
+- 紧接着输出专属落款：—— 晴美 · 丸光园旧址
+
+【示例】
+用户问："我累了。"
+你回：
+窗外的荒草又在风里低头了，但它们根连着根。
+别怕迷路，月亮每晚都会重新升起，我也一直都在。
+
+—— 晴美 · 丸光园旧址`,
+    };
+
+    const systemPrompt = ROLE_PROMPTS[enRole];
+
+    // 环境变量
     const apiKey = import.meta.env.VITE_API_KEY;
     const baseUrl = import.meta.env.VITE_BASE_URL;
     const model = import.meta.env.VITE_MODEL;
@@ -214,13 +182,12 @@ const AdvicePage: React.FC = () => {
     });
 
     if (!baseUrl || !apiKey) {
-      console.warn("[解忧杂货铺] 未配置 AI 环境变量，使用本地 Mock 数据");
+      console.warn("[解忧杂货铺] 未配置 AI 环境变量，无法发送请求");
       setLoading(true);
-      const tag = EN_TO_TAG[enRole] || "心灵";
       window.setTimeout(() => {
-        setReply(generateReply(question, tag));
+        setReply("信封还没贴好邮票，再等等吧。");
         setLoading(false);
-      }, 900);
+      }, 600);
       return;
     }
 
@@ -255,11 +222,9 @@ const AdvicePage: React.FC = () => {
         throw new Error(`接口返回 ${response.status}：${errText.slice(0, 200)}`);
       }
 
-      // 拿到完整文本
       const data = await response.json();
       console.log("[解忧杂货铺] 响应数据:", JSON.stringify(data).slice(0, 300));
 
-      // OpenAI 兼容格式：choices[0].message.content
       const fullText = data.choices?.[0]?.message?.content || "";
 
       if (!fullText) {
@@ -267,7 +232,7 @@ const AdvicePage: React.FC = () => {
         throw new Error("大模型返回了空内容，请检查模型配置");
       }
 
-      // 伪流式：一个字一个字打印，100% 保证打字机效果
+      // 伪流式：一个字一个字打印
       setReply("");
       for (let i = 0; i < fullText.length; i++) {
         await new Promise((resolve) => setTimeout(resolve, 30));
@@ -277,7 +242,7 @@ const AdvicePage: React.FC = () => {
       if (error instanceof DOMException && error.name === "AbortError") return;
       console.error("[解忧杂货铺] AI 调用失败:", error);
       const msg = error instanceof Error ? error.message : "未知错误";
-      setReply(`小波的信还在路上…\n\n（调试信息：${msg}）`);
+      setReply(`信还在路上…\n\n（调试信息：${msg}）`);
     } finally {
       setLoading(false);
       abortRef.current = null;
@@ -347,27 +312,6 @@ const AdvicePage: React.FC = () => {
           }}
         />
 
-        {/* 分类标签 */}
-        <div className="advice-tags">
-          {TAGS.map((t) => (
-            <button
-              key={t.key}
-              type="button"
-              className={
-                activeTag === t.key ? "advice-tag advice-tag-active" : "advice-tag"
-              }
-              onClick={() => {
-                setActiveTag((prev) => (prev === t.key ? null : t.key));
-                setReply(null); // 切换角色时清空上一次回信
-                setCurrentRole(null);
-              }}
-            >
-              <span>{t.emoji}</span>
-              {t.label}
-            </button>
-          ))}
-        </div>
-
         <button
           type="button"
           className="advice-submit"
@@ -410,7 +354,6 @@ const AdvicePage: React.FC = () => {
           >
             <div className="advice-reply-stamp">已送达</div>
             <p className="advice-reply-greeting">亲爱的旅人：</p>
-            {autoDetectedRole && <p className="advice-reply-detect">自动分类 → {ROLE_NAMES[autoDetectedRole] || autoDetectedRole}</p>}
             {currentRole && <p className="advice-reply-role">{currentRole} 回信</p>}
             <p className="advice-reply-text">{reply}</p>
             <p className="advice-reply-sign">{ROLE_SIGNATURES[currentEnRole] || "—— 杂货店老板 · 灯下"}</p>
@@ -559,10 +502,7 @@ const AdvicePage: React.FC = () => {
           font-size: 13px; color: #c8924a; margin: 0 0 16px;
           font-style: italic; letter-spacing: 0.05em;
         }
-        .advice-reply-detect {
-          font-size: 11px; color: #a89070; margin: 0 0 6px;
-          letter-spacing: 0.04em;
-        }
+
         .advice-reply-text {
           font-family: "Noto Serif SC", Georgia, serif;
           font-size: 17px; line-height: 2; color: #4a4036;

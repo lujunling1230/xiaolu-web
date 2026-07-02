@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
  * MessageBoard 留言板
  *
  * - 4 条预设种子评价（破冰引导）
- * - 「留下你的感受」表单：昵称（可选）+ 留言文本域 + 提交按钮
+ * - 「留下你的感受」表单：昵称（可选）+ 星级评分 + 留言文本域 + 提交按钮
  * - 提交后留言实时展示在列表顶部（useState 管理，无后端）
  * - 样式沿用现有卡片风格，背景柔和
  */
@@ -30,7 +30,7 @@ const SEED_REVIEWS: Review[] = [
 /** 用户留言随机头像池 */
 const USER_AVATARS = ["🍃", "🌸", "🦋", "🍄", "🌱", "🌷", "🐦", "🦉"];
 
-/** 星级渲染 */
+/** 星级渲染（只读） */
 const Stars: React.FC<{ count: number }> = ({ count }) => (
   <span className="mb-stars">
     {[1, 2, 3, 4, 5].map((i) => (
@@ -39,12 +39,33 @@ const Stars: React.FC<{ count: number }> = ({ count }) => (
   </span>
 );
 
+/** 可点击评分组件 */
+const StarRating: React.FC<{ value: number; onChange: (v: number) => void }> = ({ value, onChange }) => {
+  const [hover, setHover] = useState(0);
+  return (
+    <span className="mb-star-rating">
+      {[1, 2, 3, 4, 5].map((i) => (
+        <span
+          key={i}
+          className={i <= (hover || value) ? "mb-star-filled" : "mb-star-empty"}
+          onClick={() => onChange(i)}
+          onMouseEnter={() => setHover(i)}
+          onMouseLeave={() => setHover(0)}
+        >
+          ★
+        </span>
+      ))}
+    </span>
+  );
+};
+
 const MessageBoard: React.FC = () => {
   // 留言列表：种子评价 + 用户提交的留言
   const [messages, setMessages] = useState<Review[]>(SEED_REVIEWS);
   // 表单状态
   const [nickname, setNickname] = useState("");
   const [content, setContent] = useState("");
+  const [userStars, setUserStars] = useState(5);
   const [submitted, setSubmitted] = useState(false);
 
   /** 提交留言 */
@@ -57,41 +78,52 @@ const MessageBoard: React.FC = () => {
       id: Date.now(),
       avatar,
       nickname: nickname.trim() || "匿名访客",
-      stars: 0, // 用户留言不显示星级
+      stars: userStars,
       content: content.trim(),
     };
 
     setMessages((prev) => [newMessage, ...prev]);
     setContent("");
     setNickname("");
+    setUserStars(5);
     setSubmitted(true);
     window.setTimeout(() => setSubmitted(false), 2500);
   };
 
   return (
     <div className="mb-container">
-      {/* ===== 留言表单 ===== */}
+      {/* ===== 留言表单（一体化框） ===== */}
       <form className="mb-form" onSubmit={handleSubmit}>
-        <h4 className="mb-form-title">留下你的感受</h4>
-        <p className="mb-form-desc">你的只言片语，可能是某个人森林里的一束光。</p>
+        <div className="mb-form-header">
+          <div>
+            <h4 className="mb-form-title">留下你的感受</h4>
+            <p className="mb-form-desc">你的只言片语，可能是某个人森林里的一束光。</p>
+          </div>
+          <div className="mb-form-rating">
+            <span className="mb-rating-label">评分</span>
+            <StarRating value={userStars} onChange={setUserStars} />
+          </div>
+        </div>
 
-        <input
-          type="text"
-          className="mb-input"
-          placeholder="昵称（可选，留空即匿名）"
-          value={nickname}
-          onChange={(e) => setNickname(e.target.value)}
-          maxLength={20}
-        />
+        <div className="mb-form-body">
+          <input
+            type="text"
+            className="mb-input"
+            placeholder="昵称（可选，留空即匿名）"
+            value={nickname}
+            onChange={(e) => setNickname(e.target.value)}
+            maxLength={20}
+          />
 
-        <textarea
-          className="mb-textarea"
-          placeholder="写下你想说的话…"
-          value={content}
-          onChange={(e) => setContent(e.target.value)}
-          maxLength={200}
-          rows={3}
-        />
+          <textarea
+            className="mb-textarea"
+            placeholder="写下你想说的话…"
+            value={content}
+            onChange={(e) => setContent(e.target.value)}
+            maxLength={200}
+            rows={3}
+          />
+        </div>
 
         <div className="mb-form-footer">
           <span className="mb-char-count">{content.length}/200</span>
@@ -161,7 +193,7 @@ const MessageBoard: React.FC = () => {
           gap: 20px;
         }
 
-        /* ===== 留言表单 ===== */
+        /* ===== 留言表单（一体化框） ===== */
         .mb-form {
           padding: 24px;
           border-radius: 16px;
@@ -169,10 +201,17 @@ const MessageBoard: React.FC = () => {
           border: 1px solid var(--border);
           display: flex;
           flex-direction: column;
-          gap: 12px;
+          gap: 14px;
         }
         [data-theme="night"] .mb-form {
           background: rgba(255, 255, 255, 0.03);
+        }
+        .mb-form-header {
+          display: flex;
+          align-items: flex-start;
+          justify-content: space-between;
+          gap: 16px;
+          flex-wrap: wrap;
         }
         .mb-form-title {
           font-family: "Noto Serif SC", Georgia, serif;
@@ -184,8 +223,37 @@ const MessageBoard: React.FC = () => {
         .mb-form-desc {
           font-size: 12px;
           color: var(--text-soft);
-          margin: 0 0 4px;
+          margin: 4px 0 0;
           line-height: 1.6;
+        }
+        .mb-form-rating {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          flex-shrink: 0;
+        }
+        .mb-rating-label {
+          font-size: 12px;
+          color: var(--text-soft);
+          letter-spacing: 0.05em;
+        }
+        .mb-star-rating {
+          display: flex;
+          gap: 2px;
+          font-size: 18px;
+          cursor: pointer;
+        }
+        .mb-star-rating span {
+          transition: transform 0.15s ease;
+          user-select: none;
+        }
+        .mb-star-rating span:hover {
+          transform: scale(1.2);
+        }
+        .mb-form-body {
+          display: flex;
+          flex-direction: column;
+          gap: 10px;
         }
         .mb-input {
           width: 100%;
@@ -373,6 +441,10 @@ const MessageBoard: React.FC = () => {
         @media (max-width: 640px) {
           .mb-reviews-grid {
             grid-template-columns: 1fr;
+          }
+          .mb-form-header {
+            flex-direction: column;
+            gap: 10px;
           }
         }
       `}</style>

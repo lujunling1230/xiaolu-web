@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
+import { useAdminGuard } from "../../hooks/useAdminGuard";
 
 /**
  * 物资管家 · Inventory Prophet
@@ -283,6 +284,7 @@ const EditModal: React.FC<{
    主组件
    ============================================================ */
 const InventoryPage: React.FC = () => {
+  const { isAdmin: adminMode, verifyAdmin, AdminGuardUI } = useAdminGuard();
   const [items, setItems] = useState<InventoryItem[]>(() => loadItems());
   const [filter, setFilter] = useState<FilterKey>("all");
   const [deletingIds, setDeletingIds] = useState<Set<string>>(new Set());
@@ -368,23 +370,27 @@ const InventoryPage: React.FC = () => {
 
   /* —— 编辑保存 —— */
   const handleEditSave = (updatedItem: InventoryItem) => {
-    setItems((prev) =>
-      prev.map((it) => (it.id === updatedItem.id ? updatedItem : it))
-    );
-    setEditingItem(null);
+    verifyAdmin(() => {
+      setItems((prev) =>
+        prev.map((it) => (it.id === updatedItem.id ? updatedItem : it))
+      );
+      setEditingItem(null);
+    });
   };
 
   /* —— 删除（带淡出动画） —— */
   const handleDelete = (id: string) => {
-    setDeletingIds((prev) => new Set(prev).add(id));
-    window.setTimeout(() => {
-      setItems((prev) => prev.filter((it) => it.id !== id));
-      setDeletingIds((prev) => {
-        const next = new Set(prev);
-        next.delete(id);
-        return next;
-      });
-    }, 300);
+    verifyAdmin(() => {
+      setDeletingIds((prev) => new Set(prev).add(id));
+      window.setTimeout(() => {
+        setItems((prev) => prev.filter((it) => it.id !== id));
+        setDeletingIds((prev) => {
+          const next = new Set(prev);
+          next.delete(id);
+          return next;
+        });
+      }, 300);
+    });
   };
 
   const earliestDays = earliest
@@ -733,6 +739,26 @@ const InventoryPage: React.FC = () => {
           </section>
         </main>
       </div>
+
+      {/* 浮动管理员入口 🔒 */}
+      <button
+        onClick={() => verifyAdmin(() => {})}
+        title={adminMode ? "管理面板" : "管理员登录"}
+        style={{
+          position: "fixed", bottom: 28, right: 28, zIndex: 20,
+          width: 44, height: 44, border: "none", borderRadius: "50%",
+          background: adminMode ? "rgba(141,154,139,0.3)" : "rgba(255,255,255,0.5)",
+          backdropFilter: "blur(10px)",
+          boxShadow: "0 2px 12px rgba(0,0,0,0.08)",
+          cursor: "pointer", fontSize: 18,
+          display: "flex", alignItems: "center", justifyContent: "center",
+          transition: "all 0.25s ease",
+        }}
+      >
+        {adminMode ? "⚙" : "🔒"}
+      </button>
+
+      <AdminGuardUI />
     </div>
   );
 };

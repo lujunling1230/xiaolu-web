@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Link } from "react-router-dom";
+import { legacyLoad, legacySave } from "../../utils/siteData";
+import { useAdminGuard } from "../../hooks/useAdminGuard";
 
 /**
  * 通关清单 · Quest Log
@@ -25,6 +27,7 @@ interface Quest {
 }
 
 const STORAGE_KEY = "quest_log_data";
+const XP_KEY = "quest_log_xp";
 const XP_PER_LEVEL = 100;
 // 各难度完成后获得的经验值（风险越高、收益越高）
 const XP_REWARD: Record<Difficulty, number> = { easy: 5, normal: 60, hard: 100 };
@@ -55,24 +58,12 @@ function genId(): string {
 }
 
 function loadQuests(): Quest[] {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return DEFAULT_QUESTS;
-    const parsed = JSON.parse(raw);
-    if (!Array.isArray(parsed)) return DEFAULT_QUESTS;
-    return parsed as Quest[];
-  } catch {
-    return DEFAULT_QUESTS;
-  }
+  return legacyLoad<Quest[]>(STORAGE_KEY, DEFAULT_QUESTS) || DEFAULT_QUESTS;
 }
 
 function loadXP(): number {
-  try {
-    const raw = localStorage.getItem("quest_log_xp");
-    return raw ? Math.max(0, Number(raw) || 0) : 0;
-  } catch {
-    return 0;
-  }
+  const raw = legacyLoad<string>(XP_KEY, "0");
+  return raw ? Math.max(0, Number(raw) || 0) : 0;
 }
 
 /* 预设数据 */
@@ -485,6 +476,7 @@ const BreakdownModal: React.FC<{
    主组件
    ============================================================ */
 const QuestLogPage: React.FC = () => {
+  const { isAdmin: adminMode, verifyAdmin, AdminGuardUI } = useAdminGuard();
   const [quests, setQuests] = useState<Quest[]>(() => loadQuests());
   const [xp, setXp] = useState<number>(() => loadXP());
   const [input, setInput] = useState("");
@@ -495,19 +487,11 @@ const QuestLogPage: React.FC = () => {
 
   // 持久化
   useEffect(() => {
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(quests));
-    } catch {
-      /* ignore */
-    }
+    legacySave(STORAGE_KEY, quests);
   }, [quests]);
 
   useEffect(() => {
-    try {
-      localStorage.setItem("quest_log_xp", String(xp));
-    } catch {
-      /* ignore */
-    }
+    legacySave(XP_KEY, String(xp));
   }, [xp]);
 
   // 完成回调
@@ -522,12 +506,16 @@ const QuestLogPage: React.FC = () => {
   };
 
   const handleDelete = (id: string) => {
-    setQuests((prev) => prev.filter((q) => q.id !== id));
+    verifyAdmin(() => {
+      setQuests((prev) => prev.filter((q) => q.id !== id));
+    });
   };
 
   const handleEdit = (updated: Quest) => {
-    setQuests((prev) => prev.map(q => q.id === updated.id ? updated : q));
-    setEditingQuest(null);
+    verifyAdmin(() => {
+      setQuests((prev) => prev.map(q => q.id === updated.id ? updated : q));
+      setEditingQuest(null);
+    });
   };
 
   const handleAdd = () => {
@@ -933,6 +921,26 @@ const QuestLogPage: React.FC = () => {
           .quest-edit-difficulty { flex-direction: column; }
         }
       `}</style>
+
+      {/* 浮动管理员入口 🔒 */}
+      <button
+        onClick={() => verifyAdmin(() => {})}
+        title={adminMode ? "管理面板" : "管理员登录"}
+        style={{
+          position: "fixed", bottom: 28, right: 28, zIndex: 20,
+          width: 44, height: 44, border: "none", borderRadius: "50%",
+          background: adminMode ? "rgba(141,154,139,0.3)" : "rgba(255,255,255,0.5)",
+          backdropFilter: "blur(10px)",
+          boxShadow: "0 2px 12px rgba(0,0,0,0.08)",
+          cursor: "pointer", fontSize: 18,
+          display: "flex", alignItems: "center", justifyContent: "center",
+          transition: "all 0.25s ease",
+        }}
+      >
+        {adminMode ? "⚙" : "🔒"}
+      </button>
+
+      <AdminGuardUI />
     </div>
   );
 };

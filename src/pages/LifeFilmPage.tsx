@@ -1,5 +1,12 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
+import { legacyLoad, legacySave, publishDrafts } from "../utils/siteData";
+import { useAdminGuard } from "../hooks/useAdminGuard";
+
+/* ====== 触屏设备检测 ====== */
+const _IS_TOUCH = typeof window !== "undefined"
+  ? window.matchMedia("(hover: none) and (pointer: coarse)").matches
+  : false;
 
 /* ====== localStorage Keys ====== */
 const LS_KEYS = {
@@ -9,8 +16,37 @@ const LS_KEYS = {
   sports: "lf_sports",
   meditations: "lf_meditations",
   dramas: "lf_dramas",
+  customModules: "lf_custom_modules",
 } as const;
-type ModuleType = "reading" | "photo" | "music" | "sport" | "meditation" | "drama" | null;
+type BuiltinModuleType = "reading" | "photo" | "music" | "sport" | "meditation" | "drama";
+type ModuleType = BuiltinModuleType | `custom_${string}` | "__add__" | null;
+
+/* ====== 自定义模块 ====== */
+interface CustomModuleDef {
+  id: string;
+  emoji: string;
+  name: string;
+  tint: string;
+}
+interface CustomModuleRecord {
+  id: string;
+  title: string;
+  content: string;
+  date: string;
+}
+const loadCustomModules = (): CustomModuleDef[] => {
+  return legacyLoad<CustomModuleDef[]>(LS_KEYS.customModules, []) ?? [];
+};
+const saveCustomModules = (mods: CustomModuleDef[]) => {
+  legacySave(LS_KEYS.customModules, mods);
+};
+const getCustomModuleRecordsKey = (id: string) => `lf_custom_records_${id}`;
+const loadCustomRecords = (id: string): CustomModuleRecord[] => {
+  return legacyLoad<CustomModuleRecord[]>(getCustomModuleRecordsKey(id), []) ?? [];
+};
+const saveCustomRecords = (id: string, records: CustomModuleRecord[]) => {
+  legacySave(getCustomModuleRecordsKey(id), records);
+};
 
 /* ====== 数据模型 ====== */
 interface Book { id: string; title: string; author: string; cover: string; quote: string; date: string; }
@@ -70,15 +106,10 @@ const MOCK_DRAMAS: Drama[] = [
 
 /* ====== localStorage 工具函数 ====== */
 function loadData<T>(key: string, fallback: T[]): T[] {
-  try {
-    const raw = localStorage.getItem(key);
-    if (!raw) return fallback;
-    const parsed = JSON.parse(raw);
-    return Array.isArray(parsed) ? parsed : fallback;
-  } catch { return fallback; }
+  return legacyLoad<T[]>(key, fallback) ?? fallback;
 }
-function saveData<T>(key: string, data: T[]) {
-  try { localStorage.setItem(key, JSON.stringify(data)); } catch {}
+function saveData<T>(key: string, data: T[]): void {
+  legacySave(key, data);
 }
 function genId() { return Date.now().toString(36) + Math.random().toString(36).slice(2); }
 function fileToDataUrl(file: File): Promise<string> {
@@ -192,10 +223,13 @@ const UploadModal: React.FC<{
   moduleType: UploadModuleType;
   onSubmit: (data: Record<string, string>, files: Record<string, string[]>) => void;
   onClose: () => void;
-}> = ({ moduleType, onSubmit, onClose }) => {
+  initialData?: Record<string, string>;
+  initialFiles?: Record<string, string[]>;
+  title?: string;
+}> = ({ moduleType, onSubmit, onClose, initialData, initialFiles, title }) => {
   const fields = UPLOAD_FIELDS[moduleType];
-  const [values, setValues] = useState<Record<string, string>>({});
-  const [filePreviews, setFilePreviews] = useState<Record<string, string[]>>({});
+  const [values, setValues] = useState<Record<string, string>>(initialData || {});
+  const [filePreviews, setFilePreviews] = useState<Record<string, string[]>>(initialFiles || {});
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   const handleFileChange = async (key: string, files: FileList | null) => {
@@ -239,7 +273,7 @@ const UploadModal: React.FC<{
         animation: "lf-slideup 0.35s ease",
       }} onClick={e => e.stopPropagation()}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24 }}>
-          <h3 style={{ fontFamily: "Noto Serif SC, serif", fontSize: 20, fontWeight: 600, color: HEALING_COLORS.text, margin: 0, letterSpacing: "0.04em" }}>{UPLOAD_TITLES[moduleType]}</h3>
+          <h3 style={{ fontFamily: "Noto Serif SC, serif", fontSize: 20, fontWeight: 600, color: HEALING_COLORS.text, margin: 0, letterSpacing: "0.04em" }}>{title || UPLOAD_TITLES[moduleType]}</h3>
           <button onClick={onClose} style={{ width: 36, height: 36, border: "none", borderRadius: "50%", background: HEALING_COLORS.woodLight, color: HEALING_COLORS.textLight, fontSize: 18, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", transition: "all 0.2s" }}
             onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = HEALING_COLORS.woodBorder; }}
             onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = HEALING_COLORS.woodLight; }}>×</button>
@@ -436,29 +470,47 @@ const DeleteBtn: React.FC<{ onClick: () => void }> = ({ onClick }) => (
   <button
     onClick={e => { e.stopPropagation(); onClick(); }}
     title="删除"
+    className="lf-action-btn lf-delete-btn"
     style={{
       position: "absolute", top: 6, right: 6, width: 22, height: 22, border: "none", borderRadius: "50%",
       background: "rgba(0,0,0,0.18)", color: "rgba(255,255,255,0.85)", fontSize: 13,
       cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center",
-      opacity: 0, transition: "opacity 0.2s, background 0.2s",
+      opacity: _IS_TOUCH ? 0.55 : 0, transition: "opacity 0.2s, background 0.2s",
     }}
     onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = "rgba(180,80,80,0.6)"; (e.currentTarget as HTMLButtonElement).style.opacity = "1"; }}
-    onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = "rgba(0,0,0,0.18)"; (e.currentTarget as HTMLButtonElement).style.opacity = "0"; }}
+    onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = "rgba(0,0,0,0.18)"; (e.currentTarget as HTMLButtonElement).style.opacity = _IS_TOUCH ? "0.55" : "0"; }}
   >×</button>
 );
 
 /* ====== 阅读模块 ====== */
-const ReadingModal: React.FC<{ onClose: () => void; onUpload: () => void }> = ({ onClose, onUpload }) => {
+const ReadingModal: React.FC<{ onClose: () => void; onUpload: () => void; verifyAdmin: (cb: () => void) => void }> = ({ onClose, onUpload, verifyAdmin }) => {
   const [books, setBooks] = useState<Book[]>(() => loadData<Book>(LS_KEYS.reading, MOCK_BOOKS));
   const [selected, setSelected] = useState<Book | null>(null);
   const [deleting, setDeleting] = useState<string | null>(null);
   const [showUpload, setShowUpload] = useState(false);
+  const [editing, setEditing] = useState<Book | null>(null);
 
   const handleDelete = (id: string) => {
     const updated = books.filter(b => b.id !== id);
     setBooks(updated);
     saveData(LS_KEYS.reading, updated);
     setDeleting(null);
+  };
+
+  const handleEditSubmit = (data: Record<string, string>, files: Record<string, string[]>) => {
+    if (!editing) return;
+    const updated = books.map(b => b.id === editing.id ? {
+      ...b,
+      title: data.title || b.title,
+      author: data.author || b.author,
+      cover: files["cover"]?.[0] || b.cover,
+      quote: data.quote || b.quote,
+      date: data.date || b.date,
+    } : b);
+    setBooks(updated);
+    saveData(LS_KEYS.reading, updated);
+    setEditing(null);
+    onUpload();
   };
 
   return (
@@ -484,7 +536,10 @@ const ReadingModal: React.FC<{ onClose: () => void; onUpload: () => void }> = ({
                 onClick={() => setSelected(book)}
                 onMouseEnter={e => (e.currentTarget.style.transform = "translateY(-4px)")}
                 onMouseLeave={e => (e.currentTarget.style.transform = "translateY(0)")}>
-                <DeleteBtn onClick={() => setDeleting(book.id)} />
+                <DeleteBtn onClick={() => verifyAdmin(() => setDeleting(book.id))} />
+                <button onClick={e => { e.stopPropagation(); verifyAdmin(() => setEditing(book)); }} style={{ position: "absolute", top: 6, left: 6, width: 22, height: 22, border: "none", borderRadius: "50%", background: "rgba(0,0,0,0.18)", color: "rgba(255,255,255,0.85)", fontSize: 12, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", opacity: _IS_TOUCH ? 0.55 : 0, transition: "opacity 0.2s", zIndex: 2 }}
+                  onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.opacity = "1"; }}
+                  onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.opacity = _IS_TOUCH ? "0.55" : "0"; }}>✎</button>
                 <img src={book.cover} alt={book.title} style={{ width: "100%", height: 160, objectFit: "cover", borderRadius: 8, boxShadow: "0 2px 8px rgba(0,0,0,0.1)", marginBottom: 8 }} />
                 <p style={{ fontSize: 12, color: "#5a5248", margin: 0, fontWeight: 500 }}>{book.title}</p>
                 <p style={{ fontSize: 11, color: "#b0a090", margin: "2px 0 0" }}>{book.author}</p>
@@ -506,16 +561,24 @@ const ReadingModal: React.FC<{ onClose: () => void; onUpload: () => void }> = ({
           setShowUpload(false); onUpload();
         }} onClose={() => setShowUpload(false)} />
       )}
+      {editing && (
+        <UploadModal moduleType="reading" title="编辑书籍"
+          initialData={{ title: editing.title, author: editing.author, quote: editing.quote, date: editing.date }}
+          initialFiles={{ cover: [editing.cover] }}
+          onSubmit={handleEditSubmit}
+          onClose={() => setEditing(null)} />
+      )}
     </>
   );
 };
 
 /* ====== 摄影模块（疗愈系） ====== */
-const PhotoModal: React.FC<{ onClose: () => void; onUpload: () => void }> = ({ onClose, onUpload }) => {
+const PhotoModal: React.FC<{ onClose: () => void; onUpload: () => void; verifyAdmin: (cb: () => void) => void }> = ({ onClose, onUpload, verifyAdmin }) => {
   const [photos, setPhotos] = useState<Photo[]>(() => loadData<Photo>(LS_KEYS.photos, MOCK_PHOTOS));
   const [idx, setIdx] = useState(0);
   const [showUpload, setShowUpload] = useState(false);
   const [deleting, setDeleting] = useState<string | null>(null);
+  const [editing, setEditing] = useState<Photo | null>(null);
 
   if (photos.length > 0 && idx >= photos.length) setIdx(0);
   const p = photos[idx] || null;
@@ -524,6 +587,19 @@ const PhotoModal: React.FC<{ onClose: () => void; onUpload: () => void }> = ({ o
     const updated = photos.filter(x => x.id !== id);
     setPhotos(updated); saveData(LS_KEYS.photos, updated);
     setDeleting(null);
+  };
+
+  const handleEditSubmit = (data: Record<string, string>, files: Record<string, string[]>) => {
+    if (!editing) return;
+    const updated = photos.map(ph => ph.id === editing.id ? {
+      ...ph,
+      src: files["photos"]?.[0] || ph.src,
+      title: data.desc?.split("·")[0]?.trim() || ph.title,
+      date: data.date || ph.date,
+      desc: data.desc || ph.desc,
+    } : ph);
+    setPhotos(updated); saveData(LS_KEYS.photos, updated);
+    setEditing(null); onUpload();
   };
 
   return (
@@ -543,7 +619,8 @@ const PhotoModal: React.FC<{ onClose: () => void; onUpload: () => void }> = ({ o
               {p && <>
                 <div style={{ position: "relative" }}>
                   <img src={p.src} alt={p.title} style={{ width: "100%", height: 340, objectFit: "cover", display: "block" }} />
-                  <DeleteBtn onClick={() => setDeleting(p.id)} />
+                  <DeleteBtn onClick={() => verifyAdmin(() => setDeleting(p.id))} />
+                  <button onClick={e => { e.stopPropagation(); verifyAdmin(() => setEditing(p)); }} style={{ position: "absolute", top: 6, left: 6, width: 28, height: 28, border: "none", borderRadius: "50%", background: "rgba(0,0,0,0.25)", color: "rgba(255,255,255,0.85)", fontSize: 14, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 2, opacity: _IS_TOUCH ? 0.55 : 0 }}>✎</button>
                 </div>
                 <div style={{ position: "absolute", bottom: 0, left: 0, right: 0, padding: "32px 20px 16px", background: "linear-gradient(transparent, rgba(0,0,0,0.6))" }}>
                   <p style={{ color: "#fff", fontSize: 16, margin: 0, fontWeight: 500, fontFamily: "Noto Serif SC, serif" }}>{p.title}</p>
@@ -599,17 +676,25 @@ const PhotoModal: React.FC<{ onClose: () => void; onUpload: () => void }> = ({ o
           setShowUpload(false); onUpload();
         }} onClose={() => setShowUpload(false)} />
       )}
+      {editing && (
+        <UploadModal moduleType="photo" title="编辑照片"
+          initialData={{ desc: editing.desc, date: editing.date }}
+          initialFiles={{ photos: [editing.src] }}
+          onSubmit={handleEditSubmit}
+          onClose={() => setEditing(null)} />
+      )}
     </>
   );
 };
 
 /* ====== 音乐/播客模块（疗愈系黑胶唱片） ====== */
-const MusicModal: React.FC<{ onClose: () => void; onUpload: () => void }> = ({ onClose, onUpload }) => {
+const MusicModal: React.FC<{ onClose: () => void; onUpload: () => void; verifyAdmin: (cb: () => void) => void }> = ({ onClose, onUpload, verifyAdmin }) => {
   const [tracks, setTracks] = useState<Track[]>(() => loadData<Track>(LS_KEYS.tracks, MOCK_TRACKS));
   const [playing, setPlaying] = useState<string | null>(null);
   const [progress, setProgress] = useState(0);
   const [showUpload, setShowUpload] = useState(false);
   const [deleting, setDeleting] = useState<string | null>(null);
+  const [editing, setEditing] = useState<Track | null>(null);
   const [showNotes, setShowNotes] = useState(false);
   const timerRef = useRef<ReturnType<typeof setInterval>>(undefined);
 
@@ -647,6 +732,21 @@ const MusicModal: React.FC<{ onClose: () => void; onUpload: () => void }> = ({ o
     const updated = tracks.filter(t => t.id !== id);
     setTracks(updated); saveData(LS_KEYS.tracks, updated);
     setDeleting(null);
+  };
+
+  const handleEditSubmit = (data: Record<string, string>, _files: Record<string, string[]>) => {
+    if (!editing) return;
+    const updated = tracks.map(t => t.id === editing.id ? {
+      ...t,
+      title: data.title || t.title,
+      type: data.type?.replace(/[^音乐播客]/g, "") || t.type,
+      date: data.date || t.date,
+      cover: t.cover,
+    } : t);
+    setTracks(updated);
+    saveData(LS_KEYS.tracks, updated);
+    setEditing(null);
+    onUpload();
   };
 
   const NOTE_EMOJIS = ["♪", "♫", "♬", "🎵"];
@@ -737,9 +837,12 @@ const MusicModal: React.FC<{ onClose: () => void; onUpload: () => void }> = ({ o
                 onClick={() => handlePlay(t.id)}
                 onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.transform = "translateY(-4px)"; (e.currentTarget as HTMLDivElement).style.boxShadow = `0 8px 24px rgba(0,0,0,0.1), 0 0 0 1px ${HEALING_COLORS.woodBorder}`; }}
                 onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.transform = "translateY(0)"; (e.currentTarget as HTMLDivElement).style.boxShadow = "none"; }}>
-                <button onClick={e => { e.stopPropagation(); setDeleting(t.id); }} style={{ position: "absolute", top: 6, right: 6, width: 20, height: 20, border: "none", borderRadius: "50%", background: "rgba(0,0,0,0.08)", color: "rgba(0,0,0,0.3)", fontSize: 12, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", opacity: 0, transition: "opacity 0.2s" }}
+                <button onClick={e => { e.stopPropagation(); verifyAdmin(() => setEditing(t)); }} style={{ position: "absolute", top: 6, left: 6, width: 20, height: 20, border: "none", borderRadius: "50%", background: "rgba(0,0,0,0.18)", color: "rgba(255,255,255,0.85)", fontSize: 12, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", opacity: _IS_TOUCH ? 0.55 : 0, transition: "opacity 0.2s", zIndex: 2 }}
                   onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.opacity = "1"; }}
-                  onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.opacity = "0"; }}>×</button>
+                  onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.opacity = _IS_TOUCH ? "0.55" : "0"; }}>✎</button>
+                <button onClick={e => { e.stopPropagation(); verifyAdmin(() => setDeleting(t.id)); }} style={{ position: "absolute", top: 6, right: 6, width: 20, height: 20, border: "none", borderRadius: "50%", background: "rgba(0,0,0,0.08)", color: "rgba(0,0,0,0.3)", fontSize: 12, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", opacity: _IS_TOUCH ? 0.55 : 0, transition: "opacity 0.2s" }}
+                  onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.opacity = "1"; }}
+                  onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.opacity = _IS_TOUCH ? "0.55" : "0"; }}>×</button>
                 {/* 黑胶唱片图标 - 木纹质感 */}
                 <div style={{ width: 48, height: 48, borderRadius: "50%", background: `linear-gradient(135deg, #4a4038 0%, #3a3028 40%, #4a4038 60%, #2a2018 100%)`, display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "inset 0 2px 4px rgba(0,0,0,0.5), 0 2px 8px rgba(0,0,0,0.2)", flexShrink: 0, position: "relative" }}>
                   <div style={{ position: "absolute", width: "100%", height: "100%", borderRadius: "50%", background: "repeating-conic-gradient(from 0deg, rgba(255,255,255,0.02) 0deg 3deg, transparent 3deg 6deg)" }} />
@@ -764,21 +867,45 @@ const MusicModal: React.FC<{ onClose: () => void; onUpload: () => void }> = ({ o
           setShowUpload(false); onUpload();
         }} onClose={() => setShowUpload(false)} />
       )}
+      {editing && (
+        <UploadModal moduleType="music" title="编辑音乐/播客"
+          initialData={{ title: editing.title, type: editing.type + " / " + editing.type, date: editing.date }}
+          initialFiles={{}}
+          onSubmit={handleEditSubmit}
+          onClose={() => setEditing(null)} />
+      )}
     </>
   );
 };
 
 /* ====== 运动模块 ====== */
-const SportModal: React.FC<{ onClose: () => void; onUpload: () => void }> = ({ onClose, onUpload }) => {
+const SportModal: React.FC<{ onClose: () => void; onUpload: () => void; verifyAdmin: (cb: () => void) => void }> = ({ onClose, onUpload, verifyAdmin }) => {
   const [sports, setSports] = useState<Sport[]>(() => loadData<Sport>(LS_KEYS.sports, MOCK_SPORTS));
   const [showUpload, setShowUpload] = useState(false);
   const [deleting, setDeleting] = useState<string | null>(null);
+  const [editing, setEditing] = useState<Sport | null>(null);
   const [hoveredCard, setHoveredCard] = useState<string | null>(null);
 
   const handleDelete = (id: string) => {
     const updated = sports.filter(s => s.id !== id);
     setSports(updated); saveData(LS_KEYS.sports, updated);
     setDeleting(null);
+  };
+
+  const handleEditSubmit = (data: Record<string, string>, _files: Record<string, string[]>) => {
+    if (!editing) return;
+    const updated = sports.map(s => s.id === editing.id ? {
+      ...s,
+      icon: data.icon?.split(" ")[0] || s.icon,
+      name: data.name || s.name,
+      date: data.date || s.date,
+      time: data.time || s.time,
+      note: data.note || s.note,
+    } : s);
+    setSports(updated);
+    saveData(LS_KEYS.sports, updated);
+    setEditing(null);
+    onUpload();
   };
 
   const totalRuns = sports.filter(s => s.icon === "🏃").length;
@@ -891,9 +1018,13 @@ const SportModal: React.FC<{ onClose: () => void; onUpload: () => void }> = ({ o
                 onMouseEnter={() => setHoveredCard(s.id)}
                 onMouseLeave={() => setHoveredCard(null)}>
 
+                {/* 编辑按钮 */}
+                <button onClick={e => { e.stopPropagation(); verifyAdmin(() => setEditing(s)); }}
+                  style={{ position: "absolute", top: 8, left: 8, width: 20, height: 20, border: "none", borderRadius: "50%", background: "rgba(0,0,0,0.06)", color: "rgba(0,0,0,0.3)", fontSize: 12, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", opacity: _IS_TOUCH ? 0.55 : (hoveredCard === s.id ? 1 : 0), transition: "opacity 0.2s" }}>✎</button>
+
                 {/* 删除按钮 */}
-                <button onClick={() => setDeleting(s.id)}
-                  style={{ position: "absolute", top: 8, right: 8, width: 20, height: 20, border: "none", borderRadius: "50%", background: "rgba(0,0,0,0.06)", color: "rgba(0,0,0,0.3)", fontSize: 12, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", opacity: hoveredCard === s.id ? 1 : 0, transition: "opacity 0.2s" }}>×</button>
+                <button onClick={() => verifyAdmin(() => setDeleting(s.id))}
+                  style={{ position: "absolute", top: 8, right: 8, width: 20, height: 20, border: "none", borderRadius: "50%", background: "rgba(0,0,0,0.06)", color: "rgba(0,0,0,0.3)", fontSize: 12, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", opacity: _IS_TOUCH ? 0.55 : (hoveredCard === s.id ? 1 : 0), transition: "opacity 0.2s" }}>×</button>
 
                 {/* 左侧图标 */}
                 <div style={{ width: 44, height: 44, borderRadius: "50%", background: `linear-gradient(135deg, ${HEALING_COLORS.grayGreen}22, ${HEALING_COLORS.grayGreen}11)`, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
@@ -933,17 +1064,25 @@ const SportModal: React.FC<{ onClose: () => void; onUpload: () => void }> = ({ o
           setShowUpload(false); onUpload();
         }} onClose={() => setShowUpload(false)} />
       )}
+      {editing && (
+        <UploadModal moduleType="sport" title="编辑运动记录"
+          initialData={{ icon: editing.icon + " " + editing.name.split(" ")[0], name: editing.name, date: editing.date, time: editing.time, note: editing.note }}
+          initialFiles={{}}
+          onSubmit={handleEditSubmit}
+          onClose={() => setEditing(null)} />
+      )}
     </>
   );
 };
 
 /* ====== 冥想模块 ====== */
-const MeditationModal: React.FC<{ onClose: () => void; onUpload: () => void }> = ({ onClose, onUpload }) => {
+const MeditationModal: React.FC<{ onClose: () => void; onUpload: () => void; verifyAdmin: (cb: () => void) => void }> = ({ onClose, onUpload, verifyAdmin }) => {
   const [meditations, setMeditations] = useState<Meditation[]>(() => loadData<Meditation>(LS_KEYS.meditations, MOCK_MEDITATIONS));
   const [playing, setPlaying] = useState(false);
   const [p, setP] = useState(0);
   const [showUpload, setShowUpload] = useState(false);
   const [deleting, setDeleting] = useState<string | null>(null);
+  const [editing, setEditing] = useState<Meditation | null>(null);
   const timer = useRef<ReturnType<typeof setInterval>>(undefined);
 
   useEffect(() => {
@@ -970,6 +1109,21 @@ const MeditationModal: React.FC<{ onClose: () => void; onUpload: () => void }> =
     setDeleting(null);
   };
 
+  const handleEditSubmit = (data: Record<string, string>, _files: Record<string, string[]>) => {
+    if (!editing) return;
+    const updated = meditations.map(m => m.id === editing.id ? {
+      ...m,
+      theme: data.theme || m.theme,
+      duration: data.duration || m.duration,
+      date: data.date || m.date,
+      insight: data.insight || m.insight,
+    } : m);
+    setMeditations(updated);
+    saveData(LS_KEYS.meditations, updated);
+    setEditing(null);
+    onUpload();
+  };
+
   return (
     <>
       <ModalOverlay onClose={onClose} showFab fabOnClick={() => setShowUpload(true)}>
@@ -991,9 +1145,12 @@ const MeditationModal: React.FC<{ onClose: () => void; onUpload: () => void }> =
           <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
             {meditations.map(m => (
               <div key={m.id} style={{ position: "relative", padding: "14px 16px", borderRadius: 12, background: "rgba(255,255,255,0.6)", borderLeft: "3px solid #6a8a6a" }}>
-                <button onClick={() => setDeleting(m.id)} style={{ position: "absolute", top: 8, right: 8, width: 18, height: 18, border: "none", borderRadius: "50%", background: "rgba(0,0,0,0.06)", color: "rgba(0,0,0,0.3)", fontSize: 12, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", opacity: 0, transition: "opacity 0.2s" }}
+                <button onClick={e => { e.stopPropagation(); verifyAdmin(() => setEditing(m)); }} style={{ position: "absolute", top: 8, left: 8, width: 18, height: 18, border: "none", borderRadius: "50%", background: "rgba(0,0,0,0.06)", color: "rgba(0,0,0,0.3)", fontSize: 12, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", opacity: _IS_TOUCH ? 0.55 : 0, transition: "opacity 0.2s", zIndex: 2 }}
                   onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.opacity = "1"; }}
-                  onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.opacity = "0"; }}>×</button>
+                  onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.opacity = _IS_TOUCH ? "0.55" : "0"; }}>✎</button>
+                <button onClick={() => verifyAdmin(() => setDeleting(m.id))} style={{ position: "absolute", top: 8, right: 8, width: 18, height: 18, border: "none", borderRadius: "50%", background: "rgba(0,0,0,0.06)", color: "rgba(0,0,0,0.3)", fontSize: 12, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", opacity: _IS_TOUCH ? 0.55 : 0, transition: "opacity 0.2s" }}
+                  onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.opacity = "1"; }}
+                  onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.opacity = _IS_TOUCH ? "0.55" : "0"; }}>×</button>
                 <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
                   <p style={{ fontSize: 14, fontWeight: 600, color: "#4a4038", margin: 0 }}>{m.theme}</p>
                   <span style={{ fontSize: 11, color: "#b0a090" }}>{m.duration} · {m.date}</span>
@@ -1016,21 +1173,45 @@ const MeditationModal: React.FC<{ onClose: () => void; onUpload: () => void }> =
           setShowUpload(false); onUpload();
         }} onClose={() => setShowUpload(false)} />
       )}
+      {editing && (
+        <UploadModal moduleType="meditation" title="编辑冥想记录"
+          initialData={{ theme: editing.theme, duration: editing.duration, date: editing.date, insight: editing.insight }}
+          initialFiles={{}}
+          onSubmit={handleEditSubmit}
+          onClose={() => setEditing(null)} />
+      )}
     </>
   );
 };
 
 /* ====== 追剧模块 ====== */
-const DramaModal: React.FC<{ onClose: () => void; onUpload: () => void }> = ({ onClose, onUpload }) => {
+const DramaModal: React.FC<{ onClose: () => void; onUpload: () => void; verifyAdmin: (cb: () => void) => void }> = ({ onClose, onUpload, verifyAdmin }) => {
   const [dramas, setDramas] = useState<Drama[]>(() => loadData<Drama>(LS_KEYS.dramas, MOCK_DRAMAS));
   const [selected, setSelected] = useState<Drama | null>(null);
   const [showUpload, setShowUpload] = useState(false);
   const [deleting, setDeleting] = useState<string | null>(null);
+  const [editing, setEditing] = useState<Drama | null>(null);
 
   const handleDelete = (id: string) => {
     const updated = dramas.filter(d => d.id !== id);
     setDramas(updated); saveData(LS_KEYS.dramas, updated);
     setDeleting(null);
+  };
+
+  const handleEditSubmit = (data: Record<string, string>, files: Record<string, string[]>) => {
+    if (!editing) return;
+    const updated = dramas.map(d => d.id === editing.id ? {
+      ...d,
+      title: data.title || d.title,
+      season: data.season || d.season,
+      date: data.date || d.date,
+      cover: files["cover"]?.[0] || d.cover,
+      quote: data.quote || d.quote,
+    } : d);
+    setDramas(updated);
+    saveData(LS_KEYS.dramas, updated);
+    setEditing(null);
+    onUpload();
   };
 
   return (
@@ -1055,9 +1236,12 @@ const DramaModal: React.FC<{ onClose: () => void; onUpload: () => void }> = ({ o
                 onClick={() => setSelected(d)}
                 onMouseEnter={e => (e.currentTarget.style.transform = "translateY(-4px)")}
                 onMouseLeave={e => (e.currentTarget.style.transform = "translateY(0)")}>
-                <button onClick={e => { e.stopPropagation(); setDeleting(d.id); }} style={{ position: "absolute", top: 6, right: 6, width: 22, height: 22, border: "none", borderRadius: "50%", background: "rgba(0,0,0,0.25)", color: "rgba(255,255,255,0.85)", fontSize: 13, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 2, opacity: 0, transition: "opacity 0.2s" }}
+                <button onClick={e => { e.stopPropagation(); verifyAdmin(() => setEditing(d)); }} style={{ position: "absolute", top: 6, left: 6, width: 22, height: 22, border: "none", borderRadius: "50%", background: "rgba(0,0,0,0.25)", color: "rgba(255,255,255,0.85)", fontSize: 13, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 2, opacity: _IS_TOUCH ? 0.55 : 0, transition: "opacity 0.2s" }}
                   onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.opacity = "1"; }}
-                  onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.opacity = "0"; }}>×</button>
+                  onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.opacity = _IS_TOUCH ? "0.55" : "0"; }}>✎</button>
+                <button onClick={e => { e.stopPropagation(); verifyAdmin(() => setDeleting(d.id)); }} style={{ position: "absolute", top: 6, right: 6, width: 22, height: 22, border: "none", borderRadius: "50%", background: "rgba(0,0,0,0.25)", color: "rgba(255,255,255,0.85)", fontSize: 13, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 2, opacity: _IS_TOUCH ? 0.55 : 0, transition: "opacity 0.2s" }}
+                  onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.opacity = "1"; }}
+                  onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.opacity = _IS_TOUCH ? "0.55" : "0"; }}>×</button>
                 <img src={d.cover} alt={d.title} style={{ width: "100%", height: 140, objectFit: "cover", display: "block" }} />
                 <div style={{ padding: "10px 12px" }}>
                   <p style={{ fontSize: 13, fontWeight: 600, color: "#4a4038", margin: "0 0 2px" }}>{d.title}</p>
@@ -1081,12 +1265,148 @@ const DramaModal: React.FC<{ onClose: () => void; onUpload: () => void }> = ({ o
           setShowUpload(false); onUpload();
         }} onClose={() => setShowUpload(false)} />
       )}
+      {editing && (
+        <UploadModal moduleType="drama" title="编辑追剧记录"
+          initialData={{ title: editing.title, season: editing.season, date: editing.date, quote: editing.quote }}
+          initialFiles={{ cover: [editing.cover] }}
+          onSubmit={handleEditSubmit}
+          onClose={() => setEditing(null)} />
+      )}
     </>
   );
 };
 
+/* ====== 自定义模块弹窗 ====== */
+const CustomModuleModal: React.FC<{
+  moduleDef: CustomModuleDef;
+  onClose: () => void;
+  onUpload: () => void;
+  verifyAdmin: (cb: () => void) => void;
+}> = ({ moduleDef, onClose, onUpload, verifyAdmin }) => {
+  const [records, setRecords] = useState<CustomModuleRecord[]>(() => loadCustomRecords(moduleDef.id));
+  const [showAdd, setShowAdd] = useState(false);
+  const [title, setTitle] = useState("");
+  const [content, setContent] = useState("");
+  const [date, setDate] = useState("");
+  const [deleting, setDeleting] = useState<string | null>(null);
+
+  const handleAdd = () => {
+    if (!title.trim()) return;
+    const newRecord: CustomModuleRecord = {
+      id: genId(),
+      title: title.trim(),
+      content: content.trim(),
+      date: date.trim() || new Date().toISOString().slice(0, 10),
+    };
+    const updated = [newRecord, ...records];
+    setRecords(updated);
+    saveCustomRecords(moduleDef.id, updated);
+    setTitle(""); setContent(""); setDate("");
+    setShowAdd(false);
+    onUpload();
+  };
+
+  const handleDelete = (id: string) => {
+    const updated = records.filter(r => r.id !== id);
+    setRecords(updated);
+    saveCustomRecords(moduleDef.id, updated);
+    setDeleting(null);
+  };
+
+  return (
+    <ModalOverlay onClose={onClose} showFab fabOnClick={() => setShowAdd(true)}>
+      <button style={{ position: "absolute", top: 16, right: 16, width: 32, height: 32, border: "none", borderRadius: "50%", background: "rgba(0,0,0,0.06)", color: "#888", fontSize: 18, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }} onClick={onClose}>×</button>
+      <h3 style={{ fontFamily: "Noto Serif SC, serif", fontSize: 20, fontWeight: 600, color: "#4a4038", margin: "0 0 20px", textAlign: "center", letterSpacing: "0.04em" }}>{moduleDef.emoji} {moduleDef.name}</h3>
+
+      {records.length === 0 ? (
+        <EmptyState emoji={moduleDef.emoji} />
+      ) : (
+        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+          {records.map(r => (
+            <div key={r.id} style={{ position: "relative", padding: "14px 16px", borderRadius: 12, background: "rgba(255,255,255,0.6)", borderLeft: `3px solid ${moduleDef.tint}` }}>
+              <button onClick={() => verifyAdmin(() => setDeleting(r.id))} style={{ position: "absolute", top: 8, right: 8, width: 18, height: 18, border: "none", borderRadius: "50%", background: "rgba(0,0,0,0.06)", color: "rgba(0,0,0,0.3)", fontSize: 12, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", opacity: _IS_TOUCH ? 0.55 : 0, transition: "opacity 0.2s" }}
+                onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.opacity = "1"; }}
+                onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.opacity = _IS_TOUCH ? "0.55" : "0"; }}>×</button>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
+                <p style={{ fontSize: 14, fontWeight: 600, color: "#4a4038", margin: 0 }}>{r.title}</p>
+                <span style={{ fontSize: 11, color: "#b0a090" }}>{r.date}</span>
+              </div>
+              {r.content && <p style={{ fontSize: 12, color: "#7a7268", margin: 0, lineHeight: 1.6 }}>{r.content}</p>}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {showAdd && (
+        <div style={{ position: "fixed", inset: 0, zIndex: 200, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(0,0,0,0.35)" }} onClick={() => setShowAdd(false)}>
+          <div style={{ background: "#fff", borderRadius: 16, padding: 24, width: "90%", maxWidth: 400 }} onClick={e => e.stopPropagation()}>
+            <h4 style={{ fontFamily: "Noto Serif SC, serif", fontSize: 16, margin: "0 0 16px", color: "#4a4038" }}>新增记录</h4>
+            <input placeholder="标题" value={title} onChange={e => setTitle(e.target.value)} style={{ width: "100%", padding: "10px 12px", marginBottom: 10, border: "1px solid #e0ddd5", borderRadius: 8, fontSize: 13, outline: "none", boxSizing: "border-box" }} />
+            <textarea placeholder="内容（可选）" value={content} onChange={e => setContent(e.target.value)} rows={3} style={{ width: "100%", padding: "10px 12px", marginBottom: 10, border: "1px solid #e0ddd5", borderRadius: 8, fontSize: 13, outline: "none", resize: "vertical", boxSizing: "border-box" }} />
+            <input placeholder="日期（可选）" type="date" value={date} onChange={e => setDate(e.target.value)} style={{ width: "100%", padding: "10px 12px", marginBottom: 16, border: "1px solid #e0ddd5", borderRadius: 8, fontSize: 13, outline: "none", boxSizing: "border-box" }} />
+            <div style={{ display: "flex", gap: 10 }}>
+              <button onClick={() => setShowAdd(false)} style={{ flex: 1, padding: "10px 0", border: "1.5px solid #e0ddd5", borderRadius: 999, background: "transparent", color: "#8a7a6a", cursor: "pointer" }}>取消</button>
+              <button onClick={handleAdd} style={{ flex: 1, padding: "10px 0", border: "none", borderRadius: 999, background: "#6a8a6a", color: "#fff", cursor: "pointer" }}>添加</button>
+            </div>
+          </div>
+        </div>
+      )}
+      {deleting && <ConfirmDialog message="确定要删除这条记录吗？" onConfirm={() => handleDelete(deleting)} onCancel={() => setDeleting(null)} />}
+    </ModalOverlay>
+  );
+};
+
+/* ====== 添加自定义模块弹窗 ====== */
+const AddCustomModuleModal: React.FC<{ onClose: () => void; onAdd: (m: CustomModuleDef) => void }> = ({ onClose, onAdd }) => {
+  const [emoji, setEmoji] = useState("📝");
+  const [name, setName] = useState("");
+  const [tint, setTint] = useState("#DDD0B8");
+
+  const TINT_OPTIONS = ["#DDD0B8", "#C8D8C0", "#DCC8C0", "#D8C8A8", "#C0D0CC", "#D0C8C0", "#E8D8C8", "#C8D0D8"];
+
+  const handleSubmit = () => {
+    if (!name.trim()) return;
+    const newMod: CustomModuleDef = {
+      id: `custom_${Date.now()}`,
+      emoji: emoji.trim() || "📝",
+      name: name.trim(),
+      tint,
+    };
+    onAdd(newMod);
+    onClose();
+  };
+
+  return (
+    <div style={{ position: "fixed", inset: 0, zIndex: 250, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(0,0,0,0.35)" }} onClick={onClose}>
+      <div style={{ background: "#fff", borderRadius: 16, padding: 28, width: "90%", maxWidth: 360, boxShadow: "0 20px 60px rgba(0,0,0,0.2)" }} onClick={e => e.stopPropagation()}>
+        <h4 style={{ fontFamily: "Noto Serif SC, serif", fontSize: 18, margin: "0 0 20px", color: "#4a4038", textAlign: "center" }}>新增模块</h4>
+        <div style={{ marginBottom: 14 }}>
+          <label style={{ fontSize: 12, color: "#8a7a6a", display: "block", marginBottom: 6 }}>图标</label>
+          <input value={emoji} onChange={e => setEmoji(e.target.value)} style={{ width: "100%", padding: "10px 12px", border: "1px solid #e0ddd5", borderRadius: 8, fontSize: 16, textAlign: "center", outline: "none", boxSizing: "border-box" }} />
+        </div>
+        <div style={{ marginBottom: 14 }}>
+          <label style={{ fontSize: 12, color: "#8a7a6a", display: "block", marginBottom: 6 }}>名称 *</label>
+          <input placeholder="如：旅行、手账、咖啡…" value={name} onChange={e => setName(e.target.value)} style={{ width: "100%", padding: "10px 12px", border: "1px solid #e0ddd5", borderRadius: 8, fontSize: 13, outline: "none", boxSizing: "border-box" }} />
+        </div>
+        <div style={{ marginBottom: 20 }}>
+          <label style={{ fontSize: 12, color: "#8a7a6a", display: "block", marginBottom: 6 }}>主题色</label>
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+            {TINT_OPTIONS.map(c => (
+              <button key={c} onClick={() => setTint(c)} style={{ width: 28, height: 28, borderRadius: "50%", background: c, border: tint === c ? "2px solid #4a4038" : "2px solid transparent", cursor: "pointer" }} />
+            ))}
+          </div>
+        </div>
+        <div style={{ display: "flex", gap: 10 }}>
+          <button onClick={onClose} style={{ flex: 1, padding: "10px 0", border: "1.5px solid #e0ddd5", borderRadius: 999, background: "transparent", color: "#8a7a6a", cursor: "pointer" }}>取消</button>
+          <button onClick={handleSubmit} disabled={!name.trim()} style={{ flex: 1, padding: "10px 0", border: "none", borderRadius: 999, background: name.trim() ? "#6a8a6a" : "#ccc", color: "#fff", cursor: name.trim() ? "pointer" : "not-allowed" }}>创建</button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 /* ====== 胶片帧数据 ====== */
-const FRAMES = [
+const BUILTIN_FRAMES = [
   { id: "reading" as ModuleType, emoji: "📖", name: "阅读", tint: "#DDD0B8" },
   { id: "photo" as ModuleType, emoji: "📷", name: "摄影", tint: "#C8D8C0" },
   { id: "music" as ModuleType, emoji: "🎧", name: "音乐/播客", tint: "#DCC8C0" },
@@ -1096,16 +1416,41 @@ const FRAMES = [
 ];
 
 /* ====== 拖拽胶片条 ====== */
-interface FilmStripProps { onOpen: (m: ModuleType) => void; }
-const FilmStrip: React.FC<FilmStripProps> = ({ onOpen }) => {
+interface FilmStripProps {
+  onOpen: (m: ModuleType) => void;
+  customModules: CustomModuleDef[];
+  onAddModule: () => void;
+}
+const FilmStrip: React.FC<FilmStripProps> = ({ onOpen, customModules, onAddModule }) => {
   const trackRef = useRef<HTMLDivElement>(null);
+  const wrapRef = useRef<HTMLDivElement>(null);
   const [tx, setTx] = useState(0);
   const [dragging, setDragging] = useState(false);
   const startX = useRef(0);
   const startTX = useRef(0);
   const frameW = 130; const gap = 8;
-  const totalW = FRAMES.length * (frameW + gap) + gap;
-  const minTX = Math.min(0, -(totalW - 680));
+
+  const allFrames = [
+    ...BUILTIN_FRAMES,
+    ...customModules.map(m => ({ id: m.id as ModuleType, emoji: m.emoji, name: m.name, tint: m.tint })),
+    { id: "__add__" as ModuleType, emoji: "+", name: "新增", tint: "#E8E0D5" },
+  ];
+  const totalW = allFrames.length * (frameW + gap) + gap;
+  const [containerW, setContainerW] = useState(680);
+
+  useEffect(() => {
+    const el = wrapRef.current;
+    if (!el) return;
+    const ro = new ResizeObserver(entries => {
+      for (const entry of entries) {
+        setContainerW(entry.contentRect.width);
+      }
+    });
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+
+  const minTX = Math.min(0, -(totalW - containerW));
 
   const clamp = (v: number, min: number, max: number) => Math.max(min, Math.min(max, v));
   const snap = (v: number) => Math.round(v / (frameW + gap)) * (frameW + gap);
@@ -1153,23 +1498,23 @@ const FilmStrip: React.FC<FilmStripProps> = ({ onOpen }) => {
         </div>
         <div style={{ fontSize: 7, letterSpacing: "0.15em", color: "#b0a090", textTransform: "uppercase" }}>KODAK 200</div>
       </div>
-      <div style={{ flex: 1, overflow: "hidden", padding: "8px 0", cursor: dragging ? "grabbing" : "grab" }}>
+      <div ref={wrapRef} style={{ flex: 1, overflow: "hidden", padding: "8px 0", cursor: dragging ? "grabbing" : "grab" }}>
         <div ref={trackRef} onMouseDown={onMouseDown} onTouchStart={onTouchStart} style={{ display: "flex", flexDirection: "column", transition: "transform 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94)" }}>
           <div style={{ display: "flex", gap: 6, padding: "0 4px", marginBottom: 6 }}>
-            {FRAMES.map(() => <span key={Math.random()} style={{ display: "block", flexShrink: 0, width: 10, height: 8, borderRadius: 2, background: "rgba(180,160,130,0.35)", border: "1px solid rgba(160,140,110,0.25)" }} />)}
+            {allFrames.map((_, i) => <span key={`t-${i}`} style={{ display: "block", flexShrink: 0, width: 10, height: 8, borderRadius: 2, background: "rgba(180,160,130,0.35)", border: "1px solid rgba(160,140,110,0.25)" }} />)}
           </div>
           <div style={{ display: "flex", gap: 8, padding: "0 4px" }}>
-            {FRAMES.map(f => (
-              <div key={f.name} onClick={() => onOpen(f.id)} style={{ position: "relative", flexShrink: 0, width: 120, height: 90, borderRadius: 12, background: f.tint, boxShadow: "0 4px 12px rgba(0,0,0,0.08)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 4, overflow: "hidden", cursor: "pointer", transition: "transform 0.2s ease, box-shadow 0.2s ease" }}
+            {allFrames.map(f => (
+              <div key={f.id} onClick={() => f.id === "__add__" ? onAddModule() : onOpen(f.id)} style={{ position: "relative", flexShrink: 0, width: 120, height: 90, borderRadius: 12, background: f.tint, boxShadow: "0 4px 12px rgba(0,0,0,0.08)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 4, overflow: "hidden", cursor: "pointer", transition: "transform 0.2s ease, box-shadow 0.2s ease" }}
                 onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.transform = "translateY(-4px) scale(1.04)"; (e.currentTarget as HTMLDivElement).style.boxShadow = "0 8px 20px rgba(0,0,0,0.14)"; }}
                 onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.transform = "translateY(0) scale(1)"; (e.currentTarget as HTMLDivElement).style.boxShadow = "0 4px 12px rgba(0,0,0,0.08)"; }}>
-                <span style={{ fontSize: 28, filter: "sepia(0.08) contrast(0.95)" }}>{f.emoji}</span>
+                <span style={{ fontSize: f.id === "__add__" ? 32 : 28, filter: f.id === "__add__" ? "none" : "sepia(0.08) contrast(0.95)", color: f.id === "__add__" ? "#8a7a6a" : "inherit", fontWeight: f.id === "__add__" ? 300 : "normal" }}>{f.emoji}</span>
                 <span style={{ fontSize: 12, color: "rgba(60,50,40,0.75)", fontWeight: 500, letterSpacing: "0.05em" }}>{f.name}</span>
               </div>
             ))}
           </div>
           <div style={{ display: "flex", gap: 6, padding: "0 4px", marginTop: 6 }}>
-            {FRAMES.map(() => <span key={Math.random()} style={{ display: "block", flexShrink: 0, width: 10, height: 8, borderRadius: 2, background: "rgba(180,160,130,0.35)", border: "1px solid rgba(160,140,110,0.25)" }} />)}
+            {allFrames.map((_, i) => <span key={`b-${i}`} style={{ display: "block", flexShrink: 0, width: 10, height: 8, borderRadius: 2, background: "rgba(180,160,130,0.35)", border: "1px solid rgba(160,140,110,0.25)" }} />)}
           </div>
         </div>
       </div>
@@ -1195,6 +1540,10 @@ const LifeFilmPage: React.FC = () => {
   const [volume, setVolume] = useState(1);
   const [openModule, setOpenModule] = useState<ModuleType>(null);
   const [toast, setToast] = useState<string | null>(null);
+  const [customModules, setCustomModules] = useState<CustomModuleDef[]>(() => loadCustomModules());
+  const [showAddCustom, setShowAddCustom] = useState(false);
+  const [activeCustomModule, setActiveCustomModule] = useState<CustomModuleDef | null>(null);
+  const { isAdmin: adminMode, verifyAdmin, AdminGuardUI } = useAdminGuard();
 
   useEffect(() => {
     const t = setTimeout(() => {
@@ -1218,11 +1567,46 @@ const LifeFilmPage: React.FC = () => {
 
   const showToast = (msg: string) => { setToast(msg); };
 
-  const MODALS: Record<Exclude<ModuleType, null>, React.FC<{ onClose: () => void; onUpload: () => void }>> = {
+  const isBuiltin = (m: ModuleType): m is Exclude<BuiltinModuleType, null> =>
+    m !== null && !m.startsWith("custom_") && m !== "__add__";
+
+  const isCustom = (m: ModuleType): m is `custom_${string}` =>
+    m !== null && m.startsWith("custom_");
+
+  const handleOpenModule = (m: ModuleType) => {
+    if (m === "__add__") {
+      setShowAddCustom(true);
+      return;
+    }
+    if (isCustom(m)) {
+      const found = customModules.find(cm => cm.id === m);
+      if (found) setActiveCustomModule(found);
+      return;
+    }
+    setOpenModule(m);
+  };
+
+  const handleAddCustomModule = (mod: CustomModuleDef) => {
+    const updated = [...customModules, mod];
+    setCustomModules(updated);
+    saveCustomModules(updated);
+  };
+
+  const MODALS: Record<BuiltinModuleType, React.FC<{ onClose: () => void; onUpload: () => void; verifyAdmin: (cb: () => void) => void }>> = {
     reading: ReadingModal, photo: PhotoModal, music: MusicModal,
     sport: SportModal, meditation: MeditationModal, drama: DramaModal,
   };
-  const ActiveModal = openModule ? MODALS[openModule] : null;
+  const ActiveModal = openModule && isBuiltin(openModule) ? MODALS[openModule] : null;
+
+  /* 管理员 */
+  const handlePublish = () => {
+    const res = publishDrafts();
+    if (res.success) {
+      alert(res.merged.length > 0 ? `已发布 ${res.merged.length} 项草稿到主数据` : "没有待发布的草稿");
+    } else {
+      alert("发布失败，请确认管理员权限");
+    }
+  };
 
   return (
     <div style={{ position: "relative", minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center", overflow: "hidden" }}>
@@ -1259,13 +1643,61 @@ const LifeFilmPage: React.FC = () => {
           </div>
         </div>
         <div style={{ position: "relative", display: "flex", alignItems: "center", width: "100%", maxWidth: 760 }}>
-          <FilmStrip onOpen={setOpenModule} />
+          <FilmStrip onOpen={handleOpenModule} customModules={customModules} onAddModule={() => verifyAdmin(() => setShowAddCustom(true))} />
         </div>
         <p style={{ fontSize: 12, color: "rgba(120,110,100,0.5)", margin: 0, letterSpacing: "0.06em" }}>← 点击模块探索内容 · 拖动胶卷滚动 →</p>
       </div>
 
-      {ActiveModal && <ActiveModal onClose={handleClose} onUpload={() => showToast("已记录这一刻 ✨")} />}
+      {ActiveModal && <ActiveModal onClose={handleClose} onUpload={() => showToast("已记录这一刻 ✨")} verifyAdmin={verifyAdmin} />}
+      {activeCustomModule && (
+        <CustomModuleModal
+          moduleDef={activeCustomModule}
+          onClose={() => setActiveCustomModule(null)}
+          onUpload={() => showToast("已记录这一刻 ✨")}
+          verifyAdmin={verifyAdmin}
+        />
+      )}
+      {showAddCustom && (
+        <AddCustomModuleModal
+          onClose={() => setShowAddCustom(false)}
+          onAdd={handleAddCustomModule}
+        />
+      )}
       {toast && <Toast message={toast} onDone={() => setToast(null)} />}
+
+
+
+      {/* 浮动管理员入口 🔒 */}
+      <button
+        onClick={() => verifyAdmin(() => {})}
+        title={adminMode ? "管理面板" : "管理员登录"}
+        style={{
+          position: "fixed", bottom: 28, right: 28, zIndex: 20,
+          width: 44, height: 44, border: "none", borderRadius: "50%",
+          background: adminMode ? "rgba(141,154,139,0.3)" : "rgba(255,255,255,0.5)",
+          backdropFilter: "blur(10px)",
+          boxShadow: "0 2px 12px rgba(0,0,0,0.08)",
+          cursor: "pointer", fontSize: 18,
+          display: "flex", alignItems: "center", justifyContent: "center",
+          transition: "all 0.25s ease",
+        }}
+        onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = "rgba(141,154,139,0.5)"; }}
+        onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = adminMode ? "rgba(141,154,139,0.3)" : "rgba(255,255,255,0.5)"; }}
+      >
+        {adminMode ? "⚙" : "🔒"}
+      </button>
+
+      {/* 管理员发布/退出按钮（编辑模式可见） */}
+      {adminMode && (
+        <div style={{ position: "fixed", bottom: 28, right: 88, zIndex: 20, display: "flex", gap: 8 }}>
+          <button onClick={handlePublish} style={{ padding: "8px 16px", fontSize: 12, border: "none", borderRadius: 999, background: "#8D9A8B", color: "#fff", cursor: "pointer", boxShadow: "0 2px 8px rgba(0,0,0,0.1)" }}>
+            发布草稿
+          </button>
+        </div>
+      )}
+
+      {/* 管理员密码框 */}
+      <AdminGuardUI />
 
       <style>{`
         @media (max-width: 600px) {

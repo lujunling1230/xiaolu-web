@@ -168,7 +168,7 @@ const MusicPage: React.FC = () => {
         <span className="mp-topbar-meta">Withered Wood Sings</span>
       </header>
 
-      {/* 主视觉：黑胶 + 嫩芽 + 音符 */}
+      {/* 主视觉：黑胶 + 嫩芽 + 音符 + 树枝落下 */}
       <section className="mp-hero">
         {/* 飘动音符 */}
         <div className="mp-notes">
@@ -193,6 +193,49 @@ const MusicPage: React.FC = () => {
               onMouseLeave={() => setHoveredNote(null)}
             >
               <NoteIcon />
+            </motion.div>
+          ))}
+        </div>
+
+        {/* 树枝落下 */}
+        <div className="mp-branches">
+          {[0, 1, 2].map((i) => (
+            <motion.div
+              key={`branch-${i}`}
+              className="mp-branch"
+              style={{
+                left: `${15 + i * 35}%`,
+                width: `${60 + i * 20}px`,
+                animationDelay: `${i * 1.2}s`,
+              }}
+              initial={{ y: -100, opacity: 0, rotate: -20 + i * 15 }}
+              animate={vinylSpinning ? {
+                y: [-100, 20, 0],
+                opacity: [0, 0.6, 0.35],
+                rotate: [-20 + i * 15, -10 + i * 10, -15 + i * 12],
+              } : {
+                y: -100,
+                opacity: 0,
+              }}
+              transition={{
+                duration: 2.5,
+                delay: i * 0.6,
+                repeat: vinylSpinning ? Infinity : 0,
+                repeatDelay: 4,
+                ease: "easeInOut",
+              }}
+            >
+              <svg viewBox="0 0 80 20" fill="none" style={{ width: "100%" }}>
+                <path
+                  d={`M0 12 Q${20 + i * 5} 4 ${40 + i * 3} 10 T80 8`}
+                  stroke="#7a6a5a"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  opacity="0.5"
+                />
+                <circle cx={20 + i * 5} cy={6} r="2" fill="#8aaa7a" opacity="0.6" />
+                <circle cx={50 + i * 3} cy={8} r="1.5" fill="#9aba8a" opacity="0.5" />
+              </svg>
             </motion.div>
           ))}
         </div>
@@ -395,6 +438,17 @@ const MusicPage: React.FC = () => {
         .mp-note {
           position: absolute; pointer-events: auto;
           opacity: 0.4;
+        }
+
+        /* 树枝落下 */
+        .mp-branches {
+          position: absolute; inset: 0; pointer-events: none; z-index: 1;
+          overflow: hidden;
+        }
+        .mp-branch {
+          position: absolute;
+          top: 0;
+          pointer-events: none;
         }
 
         /* 黑胶唱片 */

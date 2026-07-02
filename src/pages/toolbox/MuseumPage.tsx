@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Link } from "react-router-dom";
+import { siteLoad, legacyLoad, legacySave } from "../../utils/siteData";
+import { useAdminGuard } from "../../hooks/useAdminGuard";
 
 /**
  * 时光博物馆 · Museum of Memories
@@ -14,11 +16,11 @@ import { Link } from "react-router-dom";
 /* ============================================================
    localStorage 工具
    ============================================================ */
-const LS_KEYS = {
+const SEED_KEYS = {
   bgms: "museum_bgms",
-  tvs: "museum_tvs",
-  nets: "museum_nets",
   honors: "museum_honors",
+  nets: "museum_nets",
+  tvs: "museum_tvs",
 } as const;
 
 function genId(): string {
@@ -30,9 +32,8 @@ function genId(): string {
 
 function loadData<T extends { id: string; imageUrl?: string }>(key: string, fallback: T[]): T[] {
   try {
-    const raw = localStorage.getItem(key);
-    if (!raw) return fallback;
-    const parsed = JSON.parse(raw);
+    const parsed = legacyLoad<T[]>(key);
+    if (parsed === undefined || parsed === null) return fallback;
     if (!Array.isArray(parsed)) return fallback;
     // 迁移：补全旧数据中缺少的 imageUrl
     let migrated = false;
@@ -54,7 +55,7 @@ function loadData<T extends { id: string; imageUrl?: string }>(key: string, fall
 
 function saveData<T>(key: string, data: T[]): void {
   try {
-    localStorage.setItem(key, JSON.stringify(data));
+    legacySave(key, data);
   } catch {
     // ignore
   }
@@ -633,7 +634,8 @@ const VintageCard: React.FC<{
   onDelete: (id: string) => void;
   onImageUpload?: (id: string, imageUrl: string) => void;
   onImageDelete?: (id: string) => void;
-}> = ({ card, emoji, onEdit, onDelete, onImageUpload, onImageDelete }) => {
+  verifyAdmin?: (cb: () => void) => void;
+}> = ({ card, emoji, onEdit, onDelete, onImageUpload, onImageDelete, verifyAdmin }) => {
   const [showActions, setShowActions] = useState(false);
   const [showPlayer, setShowPlayer] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState(false);
@@ -766,8 +768,8 @@ const VintageCard: React.FC<{
             exit={{ opacity: 0, scale: 0.8 }}
             style={{ position: "absolute", top: 8, right: 8, zIndex: 20, display: "flex", gap: 5 }}
           >
-            <button onClick={(e) => { e.stopPropagation(); onEdit(card); }} className="museum-edit-btn" title="编辑">✏️</button>
-            <button onClick={(e) => { e.stopPropagation(); setDeleteConfirm(true); }} className="museum-delete-btn" title="删除">🗑️</button>
+            <button onClick={(e) => { e.stopPropagation(); verifyAdmin?.(() => onEdit(card)); }} className="museum-edit-btn" title="编辑">✏️</button>
+            <button onClick={(e) => { e.stopPropagation(); verifyAdmin?.(() => setDeleteConfirm(true)); }} className="museum-delete-btn" title="删除">🗑️</button>
             <button onClick={(e) => { e.stopPropagation(); imageUploadRef.current?.click(); }} className="museum-upload-btn" title="上传图片" style={{ background: isUploading ? `${VINTAGE_LINK}80` : undefined }}>
               {isUploading ? "⏳" : "🖼️"}
             </button>
@@ -824,13 +826,14 @@ const VintageGallery: React.FC<{
   onDelete: (id: string) => void;
   onImageUpload?: (id: string, imageUrl: string) => void;
   onImageDelete?: (id: string) => void;
-}> = ({ title, emoji, cards, onAdd, onEdit, onDelete, onImageUpload, onImageDelete }) => (
+  verifyAdmin?: (cb: () => void) => void;
+}> = ({ title, emoji, cards, onAdd, onEdit, onDelete, onImageUpload, onImageDelete, verifyAdmin }) => (
   <div className="vintage-section">
     <div className="vintage-section-header">
       <span className="vintage-section-emoji">{emoji}</span>
       <h3 className="vintage-section-title">{title}</h3>
       <button
-        onClick={() => onAdd({ year: "", title: "", description: "" })}
+        onClick={() => verifyAdmin?.(() => onAdd({ year: "", title: "", description: "" }))}
         className="museum-add-btn"
       >+ 添加</button>
     </div>
@@ -839,7 +842,7 @@ const VintageGallery: React.FC<{
         <AnimatePresence mode="popLayout">
           {cards.map(card => (
             <motion.div key={card.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, scale: 0.8 }} transition={{ duration: 0.3 }}>
-              <VintageCard card={card} emoji={emoji} onEdit={onEdit} onDelete={onDelete} onImageUpload={onImageUpload} onImageDelete={onImageDelete} />
+              <VintageCard card={card} emoji={emoji} onEdit={onEdit} onDelete={onDelete} onImageUpload={onImageUpload} onImageDelete={onImageDelete} verifyAdmin={verifyAdmin} />
             </motion.div>
           ))}
         </AnimatePresence>
@@ -857,7 +860,8 @@ const HonorCard: React.FC<{
   onDelete: (id: string) => void;
   onImageUpload?: (id: string, imageUrl: string) => void;
   onImageDelete?: (id: string) => void;
-}> = ({ item, onEdit, onDelete, onImageUpload, onImageDelete }) => {
+  verifyAdmin?: (cb: () => void) => void;
+}> = ({ item, onEdit, onDelete, onImageUpload, onImageDelete, verifyAdmin }) => {
   const [showActions, setShowActions] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
@@ -909,9 +913,9 @@ const HonorCard: React.FC<{
               exit={{ opacity: 0, scale: 0.8 }}
               style={{ position: "absolute", top: 8, right: 8, zIndex: 20, display: "flex", gap: 6 }}
             >
-              <button onClick={(e) => { e.stopPropagation(); onEdit(item); }} className="honor-edit-btn" title="编辑">✏️</button>
-              <button onClick={(e) => { e.stopPropagation(); setDeleteConfirm(true); }} className="honor-delete-btn" title="删除">🗑️</button>
-              <button onClick={(e) => { e.stopPropagation(); imageUploadRef.current?.click(); }} className="honor-upload-btn" title="上传图片" style={{ background: isUploading ? `${VINTAGE_LINK}80` : undefined }}>
+              <button onClick={(e) => { e.stopPropagation(); verifyAdmin?.(() => onEdit(item)); }} className="honor-edit-btn" title="编辑">✏️</button>
+              <button onClick={(e) => { e.stopPropagation(); verifyAdmin?.(() => setDeleteConfirm(true)); }} className="honor-delete-btn" title="删除">🗑️</button>
+              <button onClick={(e) => { e.stopPropagation(); verifyAdmin?.(() => imageUploadRef.current?.click()); }} className="honor-upload-btn" title="上传图片" style={{ background: isUploading ? `${VINTAGE_LINK}80` : undefined }}>
                 {isUploading ? "⏳" : "🖼️"}
               </button>
             </motion.div>
@@ -1030,10 +1034,24 @@ const FAB: React.FC<{ onClick: () => void }> = ({ onClick }) => (
    ============================================================ */
 const MuseumPage: React.FC = () => {
   // 状态管理
-  const [bgms, setBgms] = useState<VintageCard[]>(() => loadData(LS_KEYS.bgms, DEFAULT_BGMS));
-  const [tvs, setTvs] = useState<VintageCard[]>(() => loadData(LS_KEYS.tvs, DEFAULT_TVS));
-  const [nets, setNets] = useState<VintageCard[]>(() => loadData(LS_KEYS.nets, DEFAULT_NETS));
-  const [honors, setHonors] = useState<HonorItem[]>(() => loadData(LS_KEYS.honors, DEFAULT_HONORS));
+  const [bgms, setBgms] = useState<VintageCard[]>(() => loadData(SEED_KEYS.bgms, DEFAULT_BGMS));
+  const [tvs, setTvs] = useState<VintageCard[]>(() => loadData(SEED_KEYS.tvs, DEFAULT_TVS));
+  const [nets, setNets] = useState<VintageCard[]>(() => loadData(SEED_KEYS.nets, DEFAULT_NETS));
+  const [honors, setHonors] = useState<HonorItem[]>(() => loadData(SEED_KEYS.honors, DEFAULT_HONORS));
+
+  const { isAdmin: adminMode, verifyAdmin, AdminGuardUI } = useAdminGuard();
+
+  // 迁移：如果旧 key 不存在，尝试从 life_film_site_seed 读取
+  useEffect(() => {
+    Object.values(SEED_KEYS).forEach(key => {
+      if (localStorage.getItem(key) === null) {
+        const seedVal = siteLoad(key);
+        if (seedVal !== undefined) {
+          localStorage.setItem(key, JSON.stringify(seedVal));
+        }
+      }
+    });
+  }, []);
 
   // 时代回响强制升序排列（年份小的在前）
   const sortedBgms = useMemo(() => [...bgms].sort((a, b) => (parseInt(a.year) || 0) - (parseInt(b.year) || 0)), [bgms]);
@@ -1053,10 +1071,10 @@ const MuseumPage: React.FC = () => {
   const [honorModal, setHonorModal] = useState<{ mode: "add" | "edit"; data?: HonorItem } | null>(null);
 
   // 持久化
-  useEffect(() => { saveData(LS_KEYS.bgms, bgms); }, [bgms]);
-  useEffect(() => { saveData(LS_KEYS.tvs, tvs); }, [tvs]);
-  useEffect(() => { saveData(LS_KEYS.nets, nets); }, [nets]);
-  useEffect(() => { saveData(LS_KEYS.honors, honors); }, [honors]);
+  useEffect(() => { saveData(SEED_KEYS.bgms, bgms); }, [bgms]);
+  useEffect(() => { saveData(SEED_KEYS.tvs, tvs); }, [tvs]);
+  useEffect(() => { saveData(SEED_KEYS.nets, nets); }, [nets]);
+  useEffect(() => { saveData(SEED_KEYS.honors, honors); }, [honors]);
 
   // 锁定背景滚动
   useEffect(() => {
@@ -1065,7 +1083,7 @@ const MuseumPage: React.FC = () => {
     return () => { document.body.style.overflow = ""; };
   }, [cardModal, honorModal]);
 
-  // CRUD 操作 - 卡片
+  // CRUD 操作 - 卡片（add 不需密码，edit 需密码）
   const handleCardSubmit = (data: CardFormData) => {
     if (!cardModal) return;
     const { section, mode, data: editData } = cardModal;
@@ -1075,21 +1093,25 @@ const MuseumPage: React.FC = () => {
       else if (section === "tv") setTvs(prev => [newCard, ...prev]);
       else setNets(prev => [newCard, ...prev]);
     } else if (mode === "edit" && editData) {
-      const updated = { ...editData, ...data };
-      if (section === "bgm") setBgms(prev => prev.map(c => c.id === updated.id ? updated : c));
-      else if (section === "tv") setTvs(prev => prev.map(c => c.id === updated.id ? updated : c));
-      else setNets(prev => prev.map(c => c.id === updated.id ? updated : c));
+      verifyAdmin(() => {
+        const updated = { ...editData, ...data };
+        if (section === "bgm") setBgms(prev => prev.map(c => c.id === updated.id ? updated : c));
+        else if (section === "tv") setTvs(prev => prev.map(c => c.id === updated.id ? updated : c));
+        else setNets(prev => prev.map(c => c.id === updated.id ? updated : c));
+      });
     }
     setCardModal(null);
   };
 
   const handleCardDelete = (id: string, section: "bgm" | "tv" | "net") => {
-    if (section === "bgm") setBgms(prev => prev.filter(c => c.id !== id));
-    else if (section === "tv") setTvs(prev => prev.filter(c => c.id !== id));
-    else setNets(prev => prev.filter(c => c.id !== id));
+    verifyAdmin(() => {
+      if (section === "bgm") setBgms(prev => prev.filter(c => c.id !== id));
+      else if (section === "tv") setTvs(prev => prev.filter(c => c.id !== id));
+      else setNets(prev => prev.filter(c => c.id !== id));
+    });
   };
 
-  // CRUD 操作 - 荣耀
+  // CRUD 操作 - 荣耀（add 不需密码，edit 需密码）
   const handleHonorSubmit = (data: HonorFormData) => {
     if (!honorModal) return;
     const { mode, data: editData } = honorModal;
@@ -1097,26 +1119,32 @@ const MuseumPage: React.FC = () => {
       const newHonor: HonorItem = { id: genId(), ...data };
       setHonors(prev => [...prev, newHonor]);
     } else if (mode === "edit" && editData) {
-      const updated: HonorItem = { ...editData, ...data };
-      setHonors(prev => prev.map(h => h.id === updated.id ? updated : h));
+      verifyAdmin(() => {
+        const updated: HonorItem = { ...editData, ...data };
+        setHonors(prev => prev.map(h => h.id === updated.id ? updated : h));
+      });
     }
     setHonorModal(null);
   };
 
   const handleHonorDelete = (id: string) => {
-    setHonors(prev => prev.filter(h => h.id !== id));
+    verifyAdmin(() => {
+      setHonors(prev => prev.filter(h => h.id !== id));
+    });
   };
 
-  // 荣耀图片上传/删除
+  // 荣耀图片上传（add 操作，不需密码）
   const handleHonorImageUpload = (id: string, imageUrl: string) => {
     setHonors(prev => prev.map(h => h.id === id ? { ...h, imageUrl } : h));
   };
 
   const handleHonorImageDelete = (id: string) => {
-    setHonors(prev => prev.map(h => h.id === id ? { ...h, imageUrl: "" } : h));
+    verifyAdmin(() => {
+      setHonors(prev => prev.map(h => h.id === id ? { ...h, imageUrl: "" } : h));
+    });
   };
 
-  // 图片上传/删除处理（时代回响）
+  // 图片上传（add 操作，不需密码）
   const handleImageUpload = (id: string, imageUrl: string, section: "bgm" | "tv" | "net") => {
     if (section === "bgm") setBgms(prev => prev.map(c => c.id === id ? { ...c, imageUrl } : c));
     else if (section === "tv") setTvs(prev => prev.map(c => c.id === id ? { ...c, imageUrl } : c));
@@ -1124,9 +1152,11 @@ const MuseumPage: React.FC = () => {
   };
 
   const handleImageDelete = (id: string, section: "bgm" | "tv" | "net") => {
-    if (section === "bgm") setBgms(prev => prev.map(c => c.id === id ? { ...c, imageUrl: undefined } : c));
-    else if (section === "tv") setTvs(prev => prev.map(c => c.id === id ? { ...c, imageUrl: undefined } : c));
-    else setNets(prev => prev.map(c => c.id === id ? { ...c, imageUrl: undefined } : c));
+    verifyAdmin(() => {
+      if (section === "bgm") setBgms(prev => prev.map(c => c.id === id ? { ...c, imageUrl: undefined } : c));
+      else if (section === "tv") setTvs(prev => prev.map(c => c.id === id ? { ...c, imageUrl: undefined } : c));
+      else setNets(prev => prev.map(c => c.id === id ? { ...c, imageUrl: undefined } : c));
+    });
   };
 
   // 获取 section 标题和 emoji
@@ -1172,21 +1202,24 @@ const MuseumPage: React.FC = () => {
           onEdit={(card) => setCardModal({ mode: "edit", section: "bgm", data: card })}
           onDelete={(id) => handleCardDelete(id, "bgm")}
           onImageUpload={(id, url) => handleImageUpload(id, url, "bgm")}
-          onImageDelete={(id) => handleImageDelete(id, "bgm")} />
+          onImageDelete={(id) => handleImageDelete(id, "bgm")}
+          verifyAdmin={verifyAdmin} />
 
         <VintageGallery title="电视里的乌托邦" emoji="📺" cards={sortedTvs}
           onAdd={(data) => setCardModal({ mode: "add", section: "tv", data: { ...data, id: "", year: data.year || String(new Date().getFullYear()) } })}
           onEdit={(card) => setCardModal({ mode: "edit", section: "tv", data: card })}
           onDelete={(id) => handleCardDelete(id, "tv")}
           onImageUpload={(id, url) => handleImageUpload(id, url, "tv")}
-          onImageDelete={(id) => handleImageDelete(id, "tv")} />
+          onImageDelete={(id) => handleImageDelete(id, "tv")}
+          verifyAdmin={verifyAdmin} />
 
         <VintageGallery title="网络初现时的印记" emoji="📱" cards={sortedNets}
           onAdd={(data) => setCardModal({ mode: "add", section: "net", data: { ...data, id: "", year: data.year || String(new Date().getFullYear()) } })}
           onEdit={(card) => setCardModal({ mode: "edit", section: "net", data: card })}
           onDelete={(id) => handleCardDelete(id, "net")}
           onImageUpload={(id, url) => handleImageUpload(id, url, "net")}
-          onImageDelete={(id) => handleImageDelete(id, "net")} />
+          onImageDelete={(id) => handleImageDelete(id, "net")}
+          verifyAdmin={verifyAdmin} />
       </section>
 
       {/* ===== 展厅二：荣耀之路 ===== */}
@@ -1221,6 +1254,7 @@ const MuseumPage: React.FC = () => {
                 onDelete={handleHonorDelete}
                 onImageUpload={handleHonorImageUpload}
                 onImageDelete={handleHonorImageDelete}
+                verifyAdmin={verifyAdmin}
               />
             </motion.div>
           ))}
@@ -1236,7 +1270,7 @@ const MuseumPage: React.FC = () => {
       <footer className="museum-foot"><span>时光不语，静待花开。</span></footer>
 
       {/* 悬浮添加按钮 */}
-      <FAB onClick={() => setHonorModal({ mode: "add" })} />
+      <FAB onClick={() => verifyAdmin(() => setHonorModal({ mode: "add" }))} />
 
       {/* 模态框 */}
       <AnimatePresence>
@@ -1262,6 +1296,26 @@ const MuseumPage: React.FC = () => {
           />
         )}
       </AnimatePresence>
+
+      {/* 管理员密码框 */}
+      <AdminGuardUI />
+
+      {/* 浮动管理员入口 */}
+      <button
+        onClick={() => verifyAdmin(() => {})}
+        title={adminMode ? "管理面板" : "管理员登录"}
+        style={{
+          position: "fixed", bottom: 28, right: 28, zIndex: 20,
+          width: 44, height: 44, border: "none", borderRadius: "50%",
+          background: adminMode ? "rgba(141,154,139,0.3)" : "rgba(255,255,255,0.5)",
+          backdropFilter: "blur(10px)",
+          boxShadow: "0 2px 12px rgba(0,0,0,0.08)",
+          cursor: "pointer", fontSize: 18,
+          display: "flex", alignItems: "center", justifyContent: "center",
+        }}
+      >
+        {adminMode ? "⚙" : "🔒"}
+      </button>
 
       <style>{`
         .museum-page,

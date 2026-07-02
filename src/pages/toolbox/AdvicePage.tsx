@@ -73,6 +73,14 @@ function generateReply(question: string, tag: TagKey | null): string {
 const EN_TO_TAG: Record<string, TagKey> = { brain: "脑洞", heart: "心灵", work: "工作", emotion: "情感" };
 const ROLE_NAMES: Record<string, string> = { brain: "小波", heart: "浪矢爷爷", work: "敦也", emotion: "晴美" };
 
+/* ===== 角色署名映射 ===== */
+const ROLE_SIGNATURES: Record<string, string> = {
+  heart: "—— 浪矢雄治 · 解忧杂货店",
+  brain: "—— 小波 · 杂货店后屋",
+  work: "—— 敦也 · 废弃的面包车",
+  emotion: "—— 晴美 · 丸光园旧址",
+};
+
 /* ===== 组件 ===== */
 const AdvicePage: React.FC = () => {
   const [question, setQuestion] = useState("");
@@ -81,6 +89,7 @@ const AdvicePage: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [currentRole, setCurrentRole] = useState<string | null>(null);
   const [autoDetectedRole, setAutoDetectedRole] = useState<string | null>(null);
+  const [currentEnRole, setCurrentEnRole] = useState<string>("heart");
   const abortRef = useRef<AbortController | null>(null);
 
   const handleSubmit = async () => {
@@ -191,6 +200,7 @@ const AdvicePage: React.FC = () => {
 
     const systemPrompt = ROLE_PROMPTS[enRole] || ROLE_PROMPTS.heart;
     setCurrentRole(`${ROLES[EN_TO_TAG[enRole] || "心灵"]?.emoji || ""} ${ROLE_NAMES[enRole] || "浪矢爷爷"}`);
+    setCurrentEnRole(enRole);
 
     // 3. 如果没有配置 AI，使用本地回复库兜底
     const apiKey = import.meta.env.VITE_API_KEY;
@@ -403,7 +413,7 @@ const AdvicePage: React.FC = () => {
             {autoDetectedRole && <p className="advice-reply-detect">自动分类 → {ROLE_NAMES[autoDetectedRole] || autoDetectedRole}</p>}
             {currentRole && <p className="advice-reply-role">{currentRole} 回信</p>}
             <p className="advice-reply-text">{reply}</p>
-            <p className="advice-reply-sign">—— 杂货店老板 · 灯下</p>
+            <p className="advice-reply-sign">{ROLE_SIGNATURES[currentEnRole] || "—— 杂货店老板 · 灯下"}</p>
             <button
               type="button"
               className="advice-again"

@@ -273,15 +273,22 @@ const AppContent: React.FC = () => {
           color: #fff; margin: 0 0 16px; line-height: 1.05;
           letter-spacing: 0.04em;
           text-shadow: 0 4px 20px rgba(0,0,0,0.35);
+          /* 微渐变下划线 */
+          background: linear-gradient(90deg, transparent 0%, rgba(200,220,200,0.6) 50%, transparent 100%);
+          background-size: 100% 3px;
+          background-position: 0 100%;
+          background-repeat: no-repeat;
+          padding-bottom: 8px;
         }
         .po-tagline {
+          font-family: "Noto Serif SC", Georgia, serif;
           font-size: clamp(15px, 2.5vw, 18px);
           color: rgba(255,255,255,0.85); margin: 0 0 28px;
           font-weight: 400; letter-spacing: 0.04em;
           text-shadow: 0 2px 12px rgba(0,0,0,0.35);
         }
         .po-bio {
-          font-size: 14px; line-height: 2.2; color: rgba(255,255,255,0.72);
+          font-size: 14px; line-height: 1.8; color: rgba(255,255,255,0.72);
           margin: 0 0 40px; max-width: 560px;
           text-shadow: 0 2px 12px rgba(0,0,0,0.35);
           letter-spacing: 0.02em;
@@ -296,14 +303,14 @@ const AppContent: React.FC = () => {
           letter-spacing: 0.03em;
         }
         .po-btn-primary {
-          border: none;
-          background: var(--accent); color: #fff;
-          box-shadow: 0 4px 16px -4px rgba(122,154,130,0.45);
+          border: 1.5px solid transparent;
+          background: #4a7a5a; color: #fff;  /* 深森林绿 */
+          box-shadow: 0 4px 16px -4px rgba(74,122,90,0.45);
         }
         .po-btn-primary:hover {
-          background: var(--accent-hover);
-          transform: translateY(-2px);
-          box-shadow: 0 8px 24px -4px rgba(122,154,130,0.55);
+          background: #3a6a4a;
+          transform: scale(1.05);
+          box-shadow: 0 8px 24px -4px rgba(74,122,90,0.55);
         }
         .po-btn-ghost {
           border: 1.5px solid rgba(255,255,255,0.35);
@@ -314,7 +321,7 @@ const AppContent: React.FC = () => {
         .po-btn-ghost:hover {
           border-color: rgba(255,255,255,0.6);
           background: rgba(255,255,255,0.18);
-          transform: translateY(-2px);
+          transform: scale(1.05);
         }
 
         /* ===== 各模块通用 ===== */
@@ -351,15 +358,15 @@ const AppContent: React.FC = () => {
           .po-about-right > * { flex: 1; }
         }
 
-        /* 漂浮文字块：半透明浅色背景 + 内边距 */
+        /* 漂浮文字块：极简毛玻璃，弱化卡片感 */
         .po-text-block {
           position: relative;
           padding: 28px 24px;
-          background: rgba(255, 252, 245, 0.72);
-          backdrop-filter: blur(10px);
-          -webkit-backdrop-filter: blur(10px);
+          background: rgba(255, 252, 245, 0.15);
+          backdrop-filter: blur(5px);
+          -webkit-backdrop-filter: blur(5px);
           border-radius: 16px;
-          box-shadow: 0 4px 20px rgba(0,0,0,0.06);
+          border: 1px solid rgba(255,255,255,0.2);
         }
         .po-text-block::after {
           display: none;
@@ -373,10 +380,10 @@ const AppContent: React.FC = () => {
           letter-spacing: 0.04em;
           text-shadow: 0 1px 4px rgba(255,255,255,0.6);
         }
-        /* 正文：深灰白，更强阴影 */
+        /* 正文：深橄榄绿，清晰可读 */
         .po-block-body {
-          font-size: 13px; line-height: 2; color: #5a5248;
-          margin: 0 0 8px;
+          font-size: 13px; line-height: 1.8; color: #3a4a2c;
+          margin: 0 0 12px;
           text-shadow: 0 1px 3px rgba(255,255,255,0.5);
           letter-spacing: 0.02em;
         }
@@ -392,14 +399,14 @@ const AppContent: React.FC = () => {
         .po-edu-school { font-size: 15px; font-weight: 500; color: #4a4038; }
         .po-edu-degree { font-size: 13px; color: #7a7268; }
 
-        /* 技能标签 */
+        /* 技能标签：淡黄绿填充 */
         .po-skill-cloud { display: flex; flex-wrap: wrap; gap: 8px; }
         .po-skill-tag {
           padding: 6px 14px; font-size: 13px;
           border-radius: 999px;
-          background: rgba(122,154,130,0.15);
-          border: 1px solid rgba(122,154,130,0.3);
-          color: #5a7a5a;
+          background: rgba(168, 190, 120, 0.2);
+          border: 1px solid rgba(168, 190, 120, 0.45);
+          color: #3a4a2c;
           cursor: default;
           text-shadow: 0 1px 3px rgba(255,255,255,0.6);
         }
@@ -418,13 +425,15 @@ const AppContent: React.FC = () => {
         .po-leafbook-wrap {
           margin-bottom: 80px;
           margin-top: -16px;
-          display: flex; flex-direction: column; align-items: center; gap: 28px;
+          display: flex; flex-direction: column; align-items: center; gap: 20px;
         }
         .po-leafbook-sub {
           font-family: "Noto Serif SC", Georgia, serif;
           font-size: 14px; color: #7a7268;
           margin: 0; text-shadow: 0 1px 4px rgba(255,255,255,0.5);
           letter-spacing: 0.03em;
+          padding: 0 0 12px;
+          border-bottom: 1px solid rgba(122,154,130,0.15);
         }
         .po-mickey-wrap {
           display: flex; flex-direction: column; align-items: center;

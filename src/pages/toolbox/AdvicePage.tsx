@@ -153,7 +153,14 @@ const AdvicePage: React.FC = () => {
     const baseUrl = import.meta.env.VITE_BASE_URL;
     const model = import.meta.env.VITE_MODEL;
 
+    console.log("[解忧杂货铺] 环境变量检查:", {
+      hasApiKey: !!apiKey,
+      baseUrl,
+      model,
+    });
+
     if (!baseUrl || !apiKey) {
+      console.warn("[解忧杂货铺] 未配置 AI 环境变量，使用本地 Mock 数据");
       setLoading(true);
       const tag = EN_TO_TAG[enRole] || "心灵";
       window.setTimeout(() => {
@@ -167,6 +174,8 @@ const AdvicePage: React.FC = () => {
     setReply("");
 
     try {
+      console.log("[解忧杂货铺] 正在发送请求到:", baseUrl);
+
       const response = await fetch(baseUrl, {
         method: "POST",
         headers: {
@@ -187,11 +196,24 @@ const AdvicePage: React.FC = () => {
         signal: controller.signal,
       });
 
-      if (!response.ok) throw new Error("请求失败");
+      console.log("[解忧杂货铺] 响应状态:", response.status, response.statusText);
+
+      if (!response.ok) {
+        const errText = await response.text().catch(() => "");
+        console.error("[解忧杂货铺] 请求失败:", response.status, errText);
+        throw new Error(`接口返回 ${response.status}：${errText.slice(0, 200)}`);
+      }
 
       // 拿到完整文本
       const data = await response.json();
+      console.log("[解忧杂货铺] 响应数据:", JSON.stringify(data).slice(0, 300));
+
       const fullText = data.output?.choices?.[0]?.message?.content || "";
+
+      if (!fullText) {
+        console.error("[解忧杂货铺] 响应为空，原始数据:", data);
+        throw new Error("大模型返回了空内容，请检查模型配置");
+      }
 
       // 伪流式：一个字一个字打印，100% 保证打字机效果
       setReply("");
@@ -201,8 +223,9 @@ const AdvicePage: React.FC = () => {
       }
     } catch (error) {
       if (error instanceof DOMException && error.name === "AbortError") return;
-      console.error("AI 调用失败:", error);
-      setReply("小波睡着了，敲敲门再试试吧。");
+      console.error("[解忧杂货铺] AI 调用失败:", error);
+      const msg = error instanceof Error ? error.message : "未知错误";
+      setReply(`小波的信还在路上…\n\n（调试信息：${msg}）`);
     } finally {
       setLoading(false);
       abortRef.current = null;

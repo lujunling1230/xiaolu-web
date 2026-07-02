@@ -184,14 +184,11 @@ const AdvicePage: React.FC = () => {
         },
         body: JSON.stringify({
           model: model || "deepseek-r1",
-          input: {
-            messages: [
-              { role: "system", content: systemPrompt },
-              { role: "user", content: question },
-            ],
-          },
-          // 强制关闭 stream，前端自己拆字实现打字机
-          parameters: { stream: false },
+          messages: [
+            { role: "system", content: systemPrompt },
+            { role: "user", content: question },
+          ],
+          stream: false,
         }),
         signal: controller.signal,
       });
@@ -208,7 +205,8 @@ const AdvicePage: React.FC = () => {
       const data = await response.json();
       console.log("[解忧杂货铺] 响应数据:", JSON.stringify(data).slice(0, 300));
 
-      const fullText = data.output?.choices?.[0]?.message?.content || "";
+      // OpenAI 兼容格式：choices[0].message.content
+      const fullText = data.choices?.[0]?.message?.content || "";
 
       if (!fullText) {
         console.error("[解忧杂货铺] 响应为空，原始数据:", data);

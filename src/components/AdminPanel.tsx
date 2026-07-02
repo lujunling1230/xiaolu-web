@@ -1,10 +1,11 @@
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { logoutAdmin, siteLoad, saveDraft, publishDrafts, getSeedData } from "../utils/siteData";
 
 /* ============================================================
  * AdminPanel 组件
  * 滑出式管理员面板：模块列表、可视化/JSON 编辑、发布草稿
+ * 图片字段支持文件上传（base64 存储）
  * ============================================================ */
 
 /** 模块定义 */
@@ -24,6 +25,170 @@ const MODULES: ModuleDef[] = [
   { key: "museum_tvs", name: "时代回响 · 影视", icon: "📺", description: "屏幕里的时光机" },
   { key: "museum_honors", name: "荣耀之路", icon: "🏆", description: "荣誉与成长印记" },
 ];
+
+/* -----------------------------------------------------------
+ * ImageUploader 图片上传子组件
+ * 支持点击选择、拖拽上传、base64 存储、预览、删除
+ * ----------------------------------------------------------- */
+interface ImageUploaderProps {
+  value: string; // base64 字符串或 URL
+  onChange: (base64: string) => void;
+}
+
+const ImageUploader: React.FC<ImageUploaderProps> = ({ value, onChange }) => {
+  const inputRef = useRef<HTMLInputElement>(null);
+  const [dragOver, setDragOver] = useState(false);
+  const [loading, setLoading] = useState(false);
+
+  /** 将文件读取为 base64 */
+  const readFile = useCallback(
+    (file: File) => {
+      if (!file.type.startsWith("image/")) {
+        alert("请选择图片文件");
+        return;
+      }
+      // 限制 5MB
+      if (file.size > 5 * 1024 * 1024) {
+        alert("图片大小不能超过 5MB");
+        return;
+      }
+      setLoading(true);
+      const reader = new FileReader();
+      reader.onload = () => {
+        onChange(reader.result as string);
+        setLoading(false);
+      };
+      reader.onerror = () => {
+        alert("读取图片失败，请重试");
+        setLoading(false);
+      };
+      reader.readAsDataURL(file);
+    },
+    [onChange]
+  );
+
+  const handleFileChange = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      if (file) readFile(file);
+    },
+    [readFile]
+  );
+
+  /** 拖拽事件 */
+  const handleDragOver = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    setDragOver(true);
+  }, []);
+
+  const handleDragLeave = useCallback((e: React.DragEvent) => {
+    e.preventDefault();
+    setDragOver(false);
+  }, []);
+
+  const handleDrop = useCallback(
+    (e: React.DragEvent) => {
+      e.preventDefault();
+      setDragOver(false);
+      const file = e.dataTransfer.files?.[0];
+      if (file) readFile(file);
+    },
+    [readFile]
+  );
+
+  return (
+    <div style={{ marginTop: 8 }}>
+      {/* 已有图片：显示预览 */}
+      {value && (
+        <div
+          style={{
+            position: "relative",
+            width: "100%",
+            marginBottom: 8,
+            borderRadius: 8,
+            overflow: "hidden",
+          }}
+        >
+          <img
+            src={value}
+            alt="预览"
+            style={{
+              width: "100%",
+              maxHeight: 180,
+              objectFit: "cover",
+              display: "block",
+              borderRadius: 8,
+              border: "1px solid #E8E6E1",
+            }}
+          />
+          <button
+            onClick={() => onChange("")}
+            style={{
+              position: "absolute",
+              top: 6,
+              right: 6,
+              width: 28,
+              height: 28,
+              borderRadius: 999,
+              border: "none",
+              background: "rgba(0,0,0,0.45)",
+              color: "#fff",
+              cursor: "pointer",
+              fontSize: 14,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              lineHeight: 1,
+              backdropFilter: "blur(4px)",
+            }}
+          >
+            ×
+          </button>
+        </div>
+      )}
+
+      {/* 上传区域 */}
+      {!value && (
+        <label
+          onDragOver={handleDragOver}
+          onDragLeave={handleDragLeave}
+          onDrop={handleDrop}
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "center",
+            width: "100%",
+            height: 100,
+            border: `1.5px dashed ${dragOver ? "#8D9A8B" : "#d5cfc4"}`,
+            borderRadius: 10,
+            background: dragOver ? "rgba(141,154,139,0.06)" : "#FAF9F6",
+            cursor: "pointer",
+            transition: "all 0.25s ease",
+          }}
+        >
+          {loading ? (
+            <span style={{ fontSize: 13, color: "#8D9A8B" }}>读取中...</span>
+          ) : (
+            <>
+              <span style={{ fontSize: 22, marginBottom: 4, opacity: 0.5 }}>📷</span>
+              <span style={{ fontSize: 12, color: "#a8a39b" }}>
+                点击或拖拽上传图片（5MB 以内）
+              </span>
+            </>
+          )}
+          <input
+            ref={inputRef}
+            type="file"
+            accept="image/*"
+            onChange={handleFileChange}
+            style={{ display: "none" }}
+          />
+        </label>
+      )}
+    </div>
+  );
+};
 
 /* -----------------------------------------------------------
  * ModuleEditor 子组件
@@ -172,27 +337,15 @@ const ModuleEditor: React.FC<ModuleEditorProps> = ({ module, onClose }) => {
                 lineHeight: 1.6,
               }}
             />
-            <input
-              type="text"
+            {/* 图片上传区域 */}
+            <ImageUploader
               value={item.imageUrl || item.cover || ""}
-              onChange={(e) => {
+              onChange={(base64: string) => {
                 const newData = [...data];
-                const key = "imageUrl" in item ? "imageUrl" : "cover";
-                newData[idx] = { ...newData[idx], [key]: e.target.value };
+                const imgKey = "imageUrl" in item ? "imageUrl" : "cover";
+                newData[idx] = { ...newData[idx], [imgKey]: base64 };
                 setData(newData);
                 setJsonText(JSON.stringify(newData, null, 2));
-              }}
-              placeholder="图片 URL（可选）"
-              style={{
-                width: "100%",
-                marginTop: 8,
-                padding: "8px 10px",
-                border: "1px solid #E8E6E1",
-                borderRadius: 8,
-                fontSize: 12,
-                outline: "none",
-                boxSizing: "border-box",
-                color: "#5a5248",
               }}
             />
           </div>

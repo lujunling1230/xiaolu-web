@@ -118,7 +118,8 @@ const Footer: React.FC<FooterProps> = ({ isFullMode = true }) => {
       <div
         className="footer-inner"
         style={{
-          maxWidth: 1100,
+          maxWidth: 800,
+          width: "100%",
           margin: "0 auto",
           padding: "16px 24px",
           background: "rgba(255, 255, 255, 0.55)",
@@ -289,16 +290,19 @@ const Footer: React.FC<FooterProps> = ({ isFullMode = true }) => {
       <style>{`
         @media (max-width: 768px) {
           .footer-inner {
-            padding: 28px 24px 20px !important;
+            padding: 12px 16px !important;
+            border-radius: 6px !important;
           }
           .footer-top {
             flex-direction: column !important;
             align-items: flex-start !important;
-            gap: 14px !important;
+            gap: 10px !important;
+            margin-bottom: 14px !important;
           }
           .footer-bottom {
             flex-direction: column !important;
             align-items: flex-start !important;
+            gap: 8px !important;
           }
         }
       `}</style>

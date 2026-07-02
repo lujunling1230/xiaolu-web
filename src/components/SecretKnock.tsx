@@ -281,6 +281,7 @@ const SecretKnock: React.FC = () => {
               <div style={{ position: "relative", marginBottom: errorMsg ? 10 : 18 }}>
                 <input
                   ref={inputRef}
+                  key={`sk-input-${shakeKey}`}
                   type="text"
                   value={input}
                   onChange={(e) => {

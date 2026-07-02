@@ -1,9 +1,12 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { isAdmin, unlockAdmin } from "../utils/siteData";
+import AdminPanel from "./AdminPanel";
 
 /* ============================================================
  * Footer 组件
  * 作品集页脚：版权信息、邮箱复制、简历下载、社交图标、Slogan、回到顶部
+ * 内嵌暗号彩蛋入口 "have a nice day～ling"
  * ============================================================ */
 
 /** GitHub SVG 图标 */
@@ -24,9 +27,7 @@ const LinkedInIcon = () => (
 const ZhihuIcon = () => (
   <svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor">
     <circle cx="12" cy="12" r="11" stroke="currentColor" strokeWidth="1.5" fill="none" />
-    <text x="12" y="16" textAnchor="middle" fontSize="10" fontWeight="bold" fill="currentColor">
-      知
-    </text>
+    <text x="12" y="16" textAnchor="middle" fontSize="10" fontWeight="bold" fill="currentColor">知</text>
   </svg>
 );
 
@@ -40,20 +41,58 @@ const XiaohongshuIcon = () => (
   </svg>
 );
 
+/* -----------------------------------------------------------
+ * 落叶动画（复用 SecretKnock 的逻辑）
+ * ----------------------------------------------------------- */
+const createLeaf = () => {
+  const el = document.createElement("div");
+  el.textContent = ["🍂", "🍁", "🍃"][Math.floor(Math.random() * 3)];
+  const size = Math.random() * 12 + 16;
+  const dur = 2.4 + Math.random() * 1.6;
+  Object.assign(el.style, {
+    position: "fixed",
+    left: Math.random() * 100 + "vw",
+    top: "-40px",
+    fontSize: size + "px",
+    opacity: "0",
+    zIndex: "9998",
+    pointerEvents: "none",
+    willChange: "transform, opacity",
+    transition: `top ${dur}s ease-in, transform ${dur}s ease-in-out, opacity ${dur}s ease`,
+  });
+  document.body.appendChild(el);
+  requestAnimationFrame(() => {
+    el.style.top = "105vh";
+    el.style.transform = `rotate(${Math.random() * 720 - 360}deg) translateX(${Math.random() * 100 - 50}px)`;
+    el.style.opacity = "0.8";
+    setTimeout(() => { el.style.opacity = "0"; }, dur * 700);
+  });
+  setTimeout(() => { if (el.parentNode) el.parentNode.removeChild(el); }, dur * 1000 + 500);
+};
+
+const triggerLeafFall = () => {
+  let i = 0;
+  const id = setInterval(() => { createLeaf(); if (++i >= 18) clearInterval(id); }, 180);
+};
+
+/* -----------------------------------------------------------
+ * Footer 主组件
+ * ----------------------------------------------------------- */
+
+type Phase = "closed" | "input" | "success";
+
 interface FooterProps {
   isFullMode?: boolean;
 }
 
 const Footer: React.FC<FooterProps> = ({ isFullMode = true }) => {
+  /* ---- 常规状态 ---- */
   const [toast, setToast] = useState<string | null>(null);
-
-  /** 显示 Toast，2 秒后自动消失 */
   const showToast = useCallback((msg: string) => {
     setToast(msg);
     setTimeout(() => setToast(null), 2000);
   }, []);
 
-  /** 复制邮箱到剪贴板 */
   const copyEmail = useCallback(() => {
     const email = "15294705967@163.com";
     if (navigator.clipboard) {
@@ -69,246 +108,334 @@ const Footer: React.FC<FooterProps> = ({ isFullMode = true }) => {
     }
   }, [showToast]);
 
-  /** 平滑回到顶部 */
   const scrollToTop = useCallback(() => {
     window.scrollTo({ top: 0, behavior: "smooth" });
   }, []);
 
-  /* 纯净模式不渲染页脚 */
+  /* ---- 彩蛋状态 ---- */
+  const [eggPhase, setEggPhase] = useState<Phase>("closed");
+  const [eggInput, setEggInput] = useState("");
+  const [eggError, setEggError] = useState(false);
+  const [eggErrorMsg, setEggErrorMsg] = useState("");
+  const [shakeKey, setShakeKey] = useState(0);
+  const [showAdmin, setShowAdmin] = useState(false);
+  const eggInputRef = useRef<HTMLInputElement>(null);
+
+  /* ESC 关闭 */
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && eggPhase === "input") {
+        setEggPhase("closed");
+        setEggInput("");
+        setEggError(false);
+        setEggErrorMsg("");
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [eggPhase]);
+
+  const handleEggClick = useCallback(() => {
+    if (isAdmin()) {
+      setShowAdmin(true);
+    } else {
+      setEggPhase("input");
+      setEggInput("");
+      setEggError(false);
+      setEggErrorMsg("");
+    }
+  }, []);
+
+  const handleEggVerify = useCallback(() => {
+    if (!eggInput) return;
+    if (eggInput === "ling") {
+      unlockAdmin("ling");
+      setEggPhase("success");
+      triggerLeafFall();
+      setTimeout(() => {
+        setEggPhase("closed");
+        setShowAdmin(true);
+      }, 2500);
+    } else {
+      setEggError(true);
+      setEggErrorMsg("再想想嘛，这是我们的秘密呀～");
+      setShakeKey((k) => k + 1);
+      setEggInput("");
+      setTimeout(() => { setEggError(false); setEggErrorMsg(""); }, 500);
+    }
+  }, [eggInput]);
+
+  const handleCloseAdmin = useCallback(() => setShowAdmin(false), []);
+
+  /* 纯净模式不渲染 */
   if (!isFullMode) return null;
 
   return (
-    <footer
-      style={{
-        background: "transparent",
-        borderTop: "1px solid rgba(255, 255, 255, 0.3)",
-        boxShadow: "0 -4px 15px rgba(0, 0, 0, 0.02)",
-        position: "relative",
-        zIndex: 10,
-      }}
-    >
-      {/* Toast 提示 */}
-      <AnimatePresence>
-        {toast && (
-          <motion.div
-            initial={{ opacity: 0, y: 12, x: "-50%" }}
-            animate={{ opacity: 1, y: 0, x: "-50%" }}
-            exit={{ opacity: 0, y: 8, x: "-50%" }}
-            transition={{ duration: 0.3, ease: "easeOut" }}
-            style={{
-              position: "fixed",
-              bottom: 100,
-              left: "50%",
-              background: "#8D9A8B",
-              color: "#fff",
-              padding: "8px 20px",
-              borderRadius: 999,
-              fontSize: 13,
-              fontWeight: 500,
-              letterSpacing: "0.04em",
-              zIndex: 9999,
-              boxShadow: "0 4px 16px rgba(141,154,139,0.35)",
-            }}
-          >
-            {toast}
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      <div
-        className="footer-inner"
+    <>
+      <footer
         style={{
-          maxWidth: 800,
-          width: "100%",
-          margin: "0 auto",
-          padding: "16px 24px",
-          background: "rgba(255, 255, 255, 0.85)",
-          backdropFilter: "blur(8px)",
-          WebkitBackdropFilter: "blur(8px)",
-          borderRadius: 8,
+          background: "transparent",
+          borderTop: "1px solid rgba(255, 255, 255, 0.3)",
+          boxShadow: "0 -4px 15px rgba(0, 0, 0, 0.02)",
+          position: "relative",
+          zIndex: 10,
         }}
       >
-        {/* 上部：左 / 中 / 右 */}
+        {/* Toast 提示 */}
+        <AnimatePresence>
+          {toast && (
+            <motion.div
+              initial={{ opacity: 0, y: 12, x: "-50%" }}
+              animate={{ opacity: 1, y: 0, x: "-50%" }}
+              exit={{ opacity: 0, y: 8, x: "-50%" }}
+              transition={{ duration: 0.3, ease: "easeOut" }}
+              style={{
+                position: "fixed",
+                bottom: 100,
+                left: "50%",
+                background: "#8D9A8B",
+                color: "#fff",
+                padding: "8px 20px",
+                borderRadius: 999,
+                fontSize: 13,
+                fontWeight: 500,
+                letterSpacing: "0.04em",
+                zIndex: 9999,
+                boxShadow: "0 4px 16px rgba(141,154,139,0.35)",
+              }}
+            >
+              {toast}
+            </motion.div>
+          )}
+        </AnimatePresence>
+
         <div
-          className="footer-top"
+          className="footer-inner"
           style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            flexWrap: "wrap",
-            gap: 20,
-            marginBottom: 28,
+            maxWidth: 800,
+            width: "100%",
+            margin: "0 auto",
+            padding: "16px 24px",
+            background: "rgba(255, 255, 255, 0.85)",
+            backdropFilter: "blur(8px)",
+            WebkitBackdropFilter: "blur(8px)",
+            borderRadius: 8,
           }}
         >
-          {/* 左侧：版权 */}
+          {/* 上部：左 / 中 / 右 */}
           <div
-            style={{
-              fontSize: 13,
-              color: "#5A6B5C",
-              letterSpacing: "0.04em",
-              whiteSpace: "nowrap",
-            }}
-          >
-            🌿 © 2026 路俊玲 · AI 产品经理作品集
-          </div>
-
-          {/* 中部：邮箱 + 简历 */}
-          <div
+            className="footer-top"
             style={{
               display: "flex",
               alignItems: "center",
-              gap: 20,
+              justifyContent: "space-between",
               flexWrap: "wrap",
+              gap: 20,
+              marginBottom: 28,
             }}
           >
+            <div style={{ fontSize: 13, color: "#5A6B5C", letterSpacing: "0.04em", whiteSpace: "nowrap" }}>
+              🌿 © 2026 路俊玲 · AI 产品经理作品集
+            </div>
+
+            <div style={{ display: "flex", alignItems: "center", gap: 20, flexWrap: "wrap" }}>
+              <button
+                onClick={copyEmail}
+                className="footer-link"
+                style={{ fontSize: 13, color: "#5A6B5C", background: "none", border: "none", cursor: "pointer", padding: 0, letterSpacing: "0.02em", transition: "color 0.3s ease", whiteSpace: "nowrap" }}
+                onMouseEnter={(e) => (e.currentTarget.style.color = "#8D9A8B")}
+                onMouseLeave={(e) => (e.currentTarget.style.color = "#5A6B5C")}
+              >
+                邮箱：lujunling[at]163.com
+              </button>
+              <a
+                href="/resume.pdf"
+                download
+                className="footer-link"
+                style={{ fontSize: 13, color: "#5A6B5C", textDecoration: "none", letterSpacing: "0.02em", transition: "color 0.3s ease", display: "inline-flex", alignItems: "center", gap: 4, whiteSpace: "nowrap" }}
+                onMouseEnter={(e) => (e.currentTarget.style.color = "#8D9A8B")}
+                onMouseLeave={(e) => (e.currentTarget.style.color = "#5A6B5C")}
+              >
+                📄 下载简历 PDF
+              </a>
+            </div>
+
+            <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+              {[
+                { icon: <GitHubIcon />, label: "GitHub", href: "https://github.com" },
+                { icon: <ZhihuIcon />, label: "知乎", href: "https://zhihu.com" },
+                { icon: <XiaohongshuIcon />, label: "小红书", href: "https://xiaohongshu.com" },
+                { icon: <LinkedInIcon />, label: "LinkedIn", href: "https://linkedin.com" },
+              ].map(({ icon, label, href }) => (
+                <a
+                  key={label}
+                  href={href}
+                  aria-label={label}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="social-icon"
+                  style={{ color: "rgba(90, 107, 92, 0.7)", transition: "color 0.3s ease, transform 0.3s ease", display: "inline-flex" }}
+                  onMouseEnter={(e) => { e.currentTarget.style.color = "#8D9A8B"; e.currentTarget.style.transform = "translateY(-2px)"; }}
+                  onMouseLeave={(e) => { e.currentTarget.style.color = "rgba(90, 107, 92, 0.7)"; e.currentTarget.style.transform = "translateY(0)"; }}
+                >
+                  {icon}
+                </a>
+              ))}
+            </div>
+          </div>
+
+          {/* 分隔线 */}
+          <div style={{ height: 1, background: "rgba(255, 255, 255, 0.25)", marginBottom: 14 }} />
+
+          {/* 下部：Slogan + 暗号彩蛋 + 回到顶部 */}
+          <div
+            className="footer-bottom"
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              flexWrap: "wrap",
+              gap: 12,
+            }}
+          >
+            <p style={{ margin: 0, fontSize: 12, color: "#666", letterSpacing: "0.08em", fontFamily: '"Noto Serif SC", Georgia, serif' }}>
+              用理性架构世界，用感性记录光阴
+            </p>
+
+            {/* ★★★ 暗号彩蛋入口 — 嵌在页脚内，滚动到底即可见 ★★★ */}
             <button
-              onClick={copyEmail}
-              className="footer-link"
+              onClick={handleEggClick}
               style={{
-                fontSize: 13,
-                color: "#5A6B5C",
+                fontSize: 11,
+                color: "rgba(120, 120, 120, 0.7)",
                 background: "none",
                 border: "none",
                 cursor: "pointer",
-                padding: 0,
-                letterSpacing: "0.02em",
+                padding: "4px 0",
+                fontFamily: '"KaiTi", "STKaiti", "Noto Serif SC", serif',
+                letterSpacing: "0.04em",
                 transition: "color 0.3s ease",
-                whiteSpace: "nowrap",
               }}
-              onMouseEnter={(e) => (e.currentTarget.style.color = "#8D9A8B")}
-              onMouseLeave={(e) => (e.currentTarget.style.color = "#5A6B5C")}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.color = "rgba(120, 120, 120, 1)";
+                e.currentTarget.style.textDecoration = "underline";
+                e.currentTarget.style.textDecorationStyle = "dotted";
+                e.currentTarget.style.textUnderlineOffset = "3px";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.color = "rgba(120, 120, 120, 0.7)";
+                e.currentTarget.style.textDecoration = "none";
+              }}
             >
-              邮箱：lujunling[at]163.com
+              have a nice day～ling
             </button>
-            <a
-              href="/resume.pdf"
-              download
+
+            <button
+              onClick={scrollToTop}
               className="footer-link"
-              style={{
-                fontSize: 13,
-                color: "#5A6B5C",
-                textDecoration: "none",
-                letterSpacing: "0.02em",
-                transition: "color 0.3s ease",
-                display: "inline-flex",
-                alignItems: "center",
-                gap: 4,
-                whiteSpace: "nowrap",
-              }}
+              style={{ fontSize: 12, color: "#5A6B5C", background: "none", border: "none", cursor: "pointer", padding: "4px 8px", letterSpacing: "0.04em", transition: "color 0.3s ease", display: "inline-flex", alignItems: "center", gap: 4 }}
               onMouseEnter={(e) => (e.currentTarget.style.color = "#8D9A8B")}
               onMouseLeave={(e) => (e.currentTarget.style.color = "#5A6B5C")}
             >
-              📄 下载简历 PDF
-            </a>
-          </div>
-
-          {/* 右侧：社交图标 */}
-          <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-            {[
-              { icon: <GitHubIcon />, label: "GitHub", href: "https://github.com" },
-              { icon: <ZhihuIcon />, label: "知乎", href: "https://zhihu.com" },
-              { icon: <XiaohongshuIcon />, label: "小红书", href: "https://xiaohongshu.com" },
-              { icon: <LinkedInIcon />, label: "LinkedIn", href: "https://linkedin.com" },
-            ].map(({ icon, label, href }) => (
-              <a
-                key={label}
-                href={href}
-                aria-label={label}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="social-icon"
-                style={{
-                  color: "rgba(90, 107, 92, 0.7)",
-                  transition: "color 0.3s ease, transform 0.3s ease",
-                  display: "inline-flex",
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.color = "#8D9A8B";
-                  e.currentTarget.style.transform = "translateY(-2px)";
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.color = "rgba(90, 107, 92, 0.7)";
-                  e.currentTarget.style.transform = "translateY(0)";
-                }}
-              >
-                {icon}
-              </a>
-            ))}
+              ↑ 回到顶部
+            </button>
           </div>
         </div>
 
-        {/* 分隔线 */}
-        <div style={{ height: 1, background: "rgba(255, 255, 255, 0.25)", marginBottom: 14 }} />
+        {/* 移动端响应式 */}
+        <style>{`
+          @media (max-width: 768px) {
+            .footer-inner { padding: 12px 16px !important; border-radius: 6px !important; }
+            .footer-top { flex-direction: column !important; align-items: center !important; text-align: center !important; gap: 10px !important; margin-bottom: 14px !important; }
+            .footer-bottom { flex-direction: column !important; align-items: center !important; text-align: center !important; gap: 8px !important; }
+          }
+        `}</style>
+      </footer>
 
-        {/* 下部：Slogan + 回到顶部 */}
+      {/* ============ 彩蛋弹窗（输入阶段） ============ */}
+      {eggPhase === "input" && (
         <div
-          className="footer-bottom"
+          style={{ position: "fixed", inset: 0, zIndex: 9999, display: "flex", alignItems: "center", justifyContent: "center" }}
+          onClick={() => { setEggPhase("closed"); setEggInput(""); }}
+        >
+          <div
+            style={{ position: "relative", width: "90%", maxWidth: 320, padding: "24px 0", textAlign: "center" }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* ❌ 关闭 */}
+            <button
+              onClick={() => { setEggPhase("closed"); setEggInput(""); setEggError(false); setEggErrorMsg(""); }}
+              style={{ position: "absolute", top: -4, right: 0, background: "none", border: "none", cursor: "pointer", fontSize: 14, color: "rgba(100,100,100,0.4)", padding: "4px 8px", transition: "color 0.3s ease", lineHeight: 1 }}
+              onMouseEnter={(e) => (e.currentTarget.style.color = "#b06a6a")}
+              onMouseLeave={(e) => (e.currentTarget.style.color = "rgba(100,100,100,0.4)")}
+            >
+              ❌
+            </button>
+
+            <p style={{ margin: "0 0 20px", fontSize: 14, color: "rgba(80,80,80,0.7)", fontFamily: '"Noto Serif SC", Georgia, serif', letterSpacing: "0.06em" }}>
+              请输入彩蛋密码：
+            </p>
+
+            <input
+              key={`egg-${shakeKey}`}
+              ref={eggInputRef}
+              type="text"
+              value={eggInput}
+              onChange={(e) => setEggInput(e.target.value)}
+              onKeyDown={(e) => { if (e.key === "Enter") handleEggVerify(); }}
+              autoFocus
+              style={{
+                width: "100%", padding: "8px 4px", border: "none",
+                borderBottom: `1px solid ${eggError ? "#e57373" : "rgba(100,100,100,0.25)"}`,
+                borderRadius: 0, outline: "none", background: "transparent",
+                fontSize: 18, color: "#4a4038", textAlign: "center",
+                letterSpacing: "0.1em", fontFamily: '"Noto Serif SC", Georgia, serif',
+                boxSizing: "border-box", transition: "border-color 0.3s ease",
+                animation: eggError ? "sk-shake 0.5s ease" : "none",
+              }}
+            />
+
+            {eggErrorMsg && (
+              <p style={{ marginTop: 12, fontSize: 13, color: "#e57373", fontFamily: '"Noto Serif SC", serif', letterSpacing: "0.04em" }}>
+                {eggErrorMsg}
+              </p>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* ============ 成功文案 ============ */}
+      {eggPhase === "success" && (
+        <motion.div
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
           style={{
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            flexWrap: "wrap",
-            gap: 12,
+            position: "fixed", top: "38%", left: "50%", transform: "translate(-50%, -50%)",
+            zIndex: 10000, fontSize: 20, color: "#5a7a5a",
+            fontFamily: '"Noto Serif SC", Georgia, serif', letterSpacing: "0.04em",
+            pointerEvents: "none", whiteSpace: "nowrap",
+            textShadow: "0 1px 4px rgba(90, 122, 90, 0.15)",
           }}
         >
-          <p
-            style={{
-              margin: 0,
-              fontSize: 12,
-              color: "#666",
-              letterSpacing: "0.08em",
-              fontFamily: '"Noto Serif SC", Georgia, serif',
-            }}
-          >
-            用理性架构世界，用感性记录光阴
-          </p>
-          <button
-            onClick={scrollToTop}
-            className="footer-link"
-            style={{
-              fontSize: 12,
-              color: "#5A6B5C",
-              background: "none",
-              border: "none",
-              cursor: "pointer",
-              padding: "4px 8px",
-              letterSpacing: "0.04em",
-              transition: "color 0.3s ease",
-              display: "inline-flex",
-              alignItems: "center",
-              gap: 4,
-            }}
-            onMouseEnter={(e) => (e.currentTarget.style.color = "#8D9A8B")}
-            onMouseLeave={(e) => (e.currentTarget.style.color = "#5A6B5C")}
-          >
-            ↑ 回到顶部
-          </button>
-        </div>
-      </div>
+          我就知道是你啊 ling ✨🌿
+        </motion.div>
+      )}
 
-      {/* 移动端响应式 */}
+      {/* ============ 管理员面板 ============ */}
+      {showAdmin && <AdminPanel onClose={handleCloseAdmin} />}
+
+      {/* Shake 动画 */}
       <style>{`
-        @media (max-width: 768px) {
-          .footer-inner {
-            padding: 12px 16px !important;
-            border-radius: 6px !important;
-          }
-          .footer-top {
-            flex-direction: column !important;
-            align-items: center !important;
-            text-align: center !important;
-            gap: 10px !important;
-            margin-bottom: 14px !important;
-          }
-          .footer-bottom {
-            flex-direction: column !important;
-            align-items: center !important;
-            text-align: center !important;
-            gap: 8px !important;
-          }
+        @keyframes sk-shake {
+          0%, 100% { transform: translateX(0); }
+          15%  { transform: translateX(-8px); }
+          30%  { transform: translateX(7px); }
+          45%  { transform: translateX(-5px); }
+          60%  { transform: translateX(4px); }
+          75%  { transform: translateX(-2px); }
         }
       `}</style>
-    </footer>
+    </>
   );
 };
 

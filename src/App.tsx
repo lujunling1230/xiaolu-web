@@ -8,7 +8,6 @@ import ButterflyCursor from "./components/ButterflyCursor";
 import Footer from "./components/Footer";
 import { initSiteData, loadAdminSession } from "./utils/siteData";
 import { isElectron } from "./utils/electron";
-import SecretKnock from "./components/SecretKnock";
 
 type Section = "home" | "about" | "projects" | "lab" | "film" | "mickey";
 
@@ -222,8 +221,7 @@ const AppContent: React.FC = () => {
       {/* 页脚 */}
       <Footer isFullMode={isFullMode} />
 
-      {/* 管理员彩蛋入口 */}
-      <SecretKnock />
+
 
       <style>{`
         /* ===== 全局根 ===== */

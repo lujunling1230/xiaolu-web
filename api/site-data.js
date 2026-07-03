@@ -1,20 +1,15 @@
 /**
- * Projects API
- * GET  /api/projects    -> 从 GitHub 拉取最新 projects.json
- * POST /api/projects    -> 验证密码后更新 GitHub 上的 projects.json
+ * Site Data API
+ * GET  /api/site-data   -> 从 GitHub 拉取最新 site-data.json
+ * POST /api/site-data   -> 验证密码后更新 GitHub 上的 site-data.json
  */
 
-import type { VercelRequest, VercelResponse } from "@vercel/node";
-import { getGitHubFile, updateGitHubFile } from "./lib/github.js";
+const { getGitHubFile, updateGitHubFile } = require("./lib/github");
 
-const FILE_PATH = "data/projects.json";
+const FILE_PATH = "data/site-data.json";
 const ADMIN_PASSWORD = "ling";
 
-export default async function handler(
-  req: VercelRequest,
-  res: VercelResponse
-) {
-  // 允许跨域（方便本地调试）
+module.exports = async function handler(req, res) {
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "GET, POST, OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type");
@@ -28,42 +23,42 @@ export default async function handler(
       const file = await getGitHubFile(FILE_PATH);
       if (file === null) {
         return res.status(404).json({
-          error: "数据文件尚未初始化，请管理员先发布一次项目数据",
+          error: "数据文件尚未初始化，请管理员先发布一次站点数据",
         });
       }
       return res.status(200).json(file.data);
-    } catch (err: any) {
-      console.error("[api/projects] GET error:", err);
+    } catch (err) {
+      console.error("[api/site-data] GET error:", err);
       return res.status(500).json({ error: err.message || "服务器错误" });
     }
   }
 
   if (req.method === "POST") {
-    const { password, projects } = req.body || {};
+    const { password, data } = req.body || {};
 
     if (password !== ADMIN_PASSWORD) {
       return res.status(403).json({ error: "密码错误，无权操作" });
     }
 
-    if (!Array.isArray(projects)) {
-      return res.status(400).json({ error: "projects 必须是数组" });
+    if (typeof data !== "object" || data === null) {
+      return res.status(400).json({ error: "data 必须是对象" });
     }
 
     try {
       const file = await getGitHubFile(FILE_PATH);
-      const sha = file?.sha ?? null;
+      const sha = file ? file.sha : null;
       await updateGitHubFile(
         FILE_PATH,
-        projects,
+        data,
         sha,
-        `update projects.json via admin panel (${new Date().toISOString()})`
+        `update site-data.json via admin panel (${new Date().toISOString()})`
       );
       return res.status(200).json({ success: true });
-    } catch (err: any) {
-      console.error("[api/projects] POST error:", err);
+    } catch (err) {
+      console.error("[api/site-data] POST error:", err);
       return res.status(500).json({ error: err.message || "保存失败" });
     }
   }
 
   return res.status(405).json({ error: "Method Not Allowed" });
-}
+};

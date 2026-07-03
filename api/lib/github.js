@@ -17,20 +17,13 @@ if (!GITHUB_TOKEN || !GITHUB_REPO) {
   );
 }
 
-interface GitHubFileResponse {
-  content: string;
-  sha: string;
-}
-
 /** 从 GitHub 获取文件内容 */
-export async function getGitHubFile(
-  path: string
-): Promise<{ data: unknown; sha: string } | null> {
+async function getGitHubFile(filePath) {
   if (!GITHUB_TOKEN || !GITHUB_REPO) {
     throw new Error("GitHub 环境变量未配置");
   }
 
-  const url = `https://api.github.com/repos/${GITHUB_REPO}/contents/${path}?ref=${BRANCH}`;
+  const url = `https://api.github.com/repos/${GITHUB_REPO}/contents/${filePath}?ref=${BRANCH}`;
   const res = await fetch(url, {
     headers: {
       Authorization: `token ${GITHUB_TOKEN}`,
@@ -45,27 +38,22 @@ export async function getGitHubFile(
 
   if (!res.ok) {
     const text = await res.text();
-    throw new Error(`GitHub GET ${path} 失败: ${res.status} ${text}`);
+    throw new Error(`GitHub GET ${filePath} 失败: ${res.status} ${text}`);
   }
 
-  const json = (await res.json()) as GitHubFileResponse;
+  const json = await res.json();
   const decoded = Buffer.from(json.content, "base64").toString("utf-8");
   return { data: JSON.parse(decoded), sha: json.sha };
 }
 
 /** 更新 GitHub 文件内容 */
-export async function updateGitHubFile(
-  path: string,
-  content: unknown,
-  sha: string | null,
-  message: string
-): Promise<void> {
+async function updateGitHubFile(filePath, content, sha, message) {
   if (!GITHUB_TOKEN || !GITHUB_REPO) {
     throw new Error("GitHub 环境变量未配置");
   }
 
-  const url = `https://api.github.com/repos/${GITHUB_REPO}/contents/${path}`;
-  const body: Record<string, string> = {
+  const url = `https://api.github.com/repos/${GITHUB_REPO}/contents/${filePath}`;
+  const body = {
     message,
     content: Buffer.from(JSON.stringify(content, null, 2)).toString("base64"),
     branch: BRANCH,
@@ -87,6 +75,8 @@ export async function updateGitHubFile(
 
   if (!res.ok) {
     const text = await res.text();
-    throw new Error(`GitHub PUT ${path} 失败: ${res.status} ${text}`);
+    throw new Error(`GitHub PUT ${filePath} 失败: ${res.status} ${text}`);
   }
 }
+
+module.exports = { getGitHubFile, updateGitHubFile };

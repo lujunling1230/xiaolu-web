@@ -7,7 +7,6 @@ import DynamicBackground from "./components/DynamicBackground";
 import ButterflyCursor from "./components/ButterflyCursor";
 import Footer from "./components/Footer";
 import { initSiteData, loadAdminSession, fetchSiteData } from "./utils/siteData";
-import { fetchProjects } from "./utils/projectStore";
 import { isElectron } from "./utils/electron";
 
 type Section = "home" | "about" | "projects" | "lab" | "film" | "mickey";
@@ -32,7 +31,6 @@ const AppContent: React.FC = () => {
     initSiteData();
     loadAdminSession();
     // 启动时静默拉取服务端最新数据，更新本地缓存
-    fetchProjects().catch(() => {});
     fetchSiteData().catch(() => {});
   }, []);
 

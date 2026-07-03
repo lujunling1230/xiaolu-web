@@ -2,7 +2,7 @@ import { useState, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Link } from "react-router-dom";
 import { callAI } from "../../utils/aiClient";
-import { CHARACTERS, getCharacter, detectGroupChat, resolveGroupChat, type Character } from "../../data/characters";
+import { CHARACTERS, getCharacter, resolveGroupChat, CHARACTER_FEEDS, type Character } from "../../data/characters";
 
 /**
  * 爱情公寓·元宇宙客厅
@@ -851,73 +851,6 @@ const SystemTuningPage: React.FC = () => {
     setGroupTyping(null);
   };
 
-  /** 发起群聊（从客厅大厅，支持 @提及 + 接力） */
-  const startGroupChat = async (text: string, charIds: string[]) => {
-    const userMsg: ChatMessage = {
-      id: uid(),
-      role: "user",
-      content: text,
-      timestamp: Date.now(),
-    };
-    let currentMessages: ChatMessage[] = [userMsg];
-    setMessages(currentMessages);
-    setInputText("");
-    setIsLoading(true);
-    setView("groupchat");
-    setSelectedCharId(charIds[0]); // 用第一个角色作为界面主题
-    playGroupBell();
-    scrollToBottom();
-
-    // 从文本中检测 @提及
-    const mentionId = resolveGroupChat(text).mentionedId;
-
-    for (const charId of charIds) {
-      const char = getCharacter(charId);
-      if (!char) continue;
-      setGroupTyping(char.name);
-      scrollToBottom();
-
-      // 构建历史消息上下文（含前文所有角色回复）
-      const historyMsgs = currentMessages.map((m) => ({
-        role: m.role === "user" ? "user" : "assistant",
-        content: m.role === "user" ? m.content : `${getCharacter(m.characterId!)?.name}说：${m.content}`,
-      }));
-
-      // 构建 prompt：基础人设 + 群聊接话指令 + @提及指令
-      const isMentioned = mentionId === charId;
-      const mentionHint = isMentioned
-        ? `\n\n【重要】用户直接@了你（${char.name}），请你优先回应用户的问题/话题，态度自然。`
-        : "";
-      const relayHint = charIds.length > 1
-        ? `\n\n你是群聊中的一员。前面已有其他室友发言，请你自然地“接话”或“补刀”，不要重复别人说过的话。可以调侃、吐槽、附和，保持轻松氛围。`
-        : "";
-      const fullPrompt = `${char.systemPrompt}${mentionHint}${relayHint}`;
-
-      const reply = await callAI(fullPrompt, historyMsgs, { maxTokens: 180 });
-
-      const charMsg: ChatMessage = {
-        id: uid(),
-        role: "character",
-        characterId: charId,
-        content: reply,
-        timestamp: Date.now(),
-      };
-      currentMessages = [...currentMessages, charMsg];
-      setMessages(currentMessages);
-      playConnect();
-      scrollToBottom();
-
-      // 随机延迟 800-1500ms，模拟真人打字
-      const delay = 800 + Math.floor(Math.random() * 700);
-      await new Promise((r) => setTimeout(r, delay));
-    }
-
-    // 保存群聊历史到第一个角色
-    saveChatHistory(charIds[0], currentMessages);
-    setGroupTyping(null);
-    setIsLoading(false);
-  };
-
   /** 发送消息（单聊或触发群聊） */
   const sendMessage = async () => {
     const text = inputText.trim();
@@ -1117,11 +1050,12 @@ const SystemTuningPage: React.FC = () => {
                   whileTap={{ backgroundColor: "#e5e5e5" }}
                   onClick={() => {
                     if (item.type === "group") {
-                      // 群聊：弹出群聊输入提示
-                      const text = "有人在吗？出来聊聊~";
-                      const shuffled = [...CHARACTERS].sort(() => Math.random() - 0.5);
-                      const picks = shuffled.slice(0, 3 + Math.floor(Math.random() * 2));
-                      startGroupChat(text, picks.map((c) => c.id));
+                      // 进入空群聊，用户自己发消息
+                      setView("groupchat");
+                      setSelectedCharId(null);
+                      setMessages([]);
+                      setInputText("");
+                      setGroupTyping(null);
                     } else {
                       enterChat(item.id);
                     }

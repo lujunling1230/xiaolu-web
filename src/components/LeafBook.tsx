@@ -84,9 +84,9 @@ interface SpreadData {
 
 /** 页码计算 */
 function getSpreadPageNums(spreadIndex: number): { left: number; right: number } {
-  // cover = page 1, toc spread = pages 2-3, each project spread = 2 pages
-  if (spreadIndex === 0) return { left: 1, right: 1 }; // cover (single)
-  return { left: 1 + spreadIndex * 2, right: 2 + spreadIndex * 2 };
+  // cover = no page number, toc spread = pages 1-2, each project spread = 2 pages
+  if (spreadIndex === 0) return { left: 0, right: 0 }; // cover (no page num)
+  return { left: spreadIndex * 2 - 1, right: spreadIndex * 2 };
 }
 
 /* ===== 翻页动画 variants（x 轴位移 + rotateY 透视） ===== */
@@ -105,11 +105,14 @@ const pageVariants = {
 };
 
 /** 页码显示组件（右下角） */
-const PageNumber: React.FC<{ current: number }> = ({ current }) => (
-  <span className="lb-page-number">
-    {String(current).padStart(3, "0")} <span className="lb-page-number-slash">/</span> {TOTAL_PAGES}
-  </span>
-);
+const PageNumber: React.FC<{ current: number }> = ({ current }) => {
+  if (!current) return null;
+  return (
+    <span className="lb-page-number">
+      {String(current).padStart(3, "0")} <span className="lb-page-number-slash">/</span> {TOTAL_PAGES}
+    </span>
+  );
+};
 
 /* ============================================================
    Page 1 · 封皮
@@ -130,7 +133,6 @@ const CoverPage: React.FC = () => (
       <p className="lb-cover-year">2026</p>
     </div>
     <p className="lb-cover-hint">轻触封面 · 翻开</p>
-    <PageNumber current={1} />
   </div>
 );
 
@@ -233,7 +235,7 @@ const TocPage: React.FC<{ onPick: (projectIndex: number) => void; onClose?: () =
         </motion.button>
       )}
 
-      <PageNumber current={2} />
+      <PageNumber current={1} />
     </div>
   );
 };
@@ -334,17 +336,6 @@ const PreviewPage: React.FC<{
           <span className="lb-preview-visual-hint">点击访问 ↗</span>
         </a>
       </div>
-
-      {/* 下一页按钮（右下角悬浮） */}
-      <button
-        className="lb-preview-next-btn"
-        onClick={(e) => {
-          e.stopPropagation();
-          onNext();
-        }}
-      >
-        下一页 →
-      </button>
 
       <PageNumber current={pn.right} />
     </div>
@@ -494,8 +485,8 @@ const LeafBook: React.FC<LeafBookProps> = ({ registerOpenBook, flipTriggerRef, a
       id: "cover",
       left: <CoverPage />,
       right: null,
-      leftPageNum: 1,
-      rightPageNum: 1,
+      leftPageNum: 0,
+      rightPageNum: 0,
       isSingle: true,
     });
 
@@ -1761,36 +1752,6 @@ const LeafBook: React.FC<LeafBookProps> = ({ registerOpenBook, flipTriggerRef, a
           opacity: 0.85;
         }
 
-        /* 预览页「下一页」按钮（右下角悬浮） */
-        .lb-preview-next-btn {
-          position: absolute;
-          bottom: 16px;
-          left: 50%;
-          transform: translateX(-50%);
-          z-index: 20;
-          padding: 8px 22px;
-          font-size: 13px;
-          font-family: "Noto Sans SC", sans-serif;
-          color: var(--accent);
-          font-weight: 500;
-          background: rgba(245, 240, 228, 0.85);
-          border: 1px solid rgba(184, 140, 106, 0.35);
-          border-radius: 999px;
-          cursor: pointer;
-          backdrop-filter: blur(8px);
-          letter-spacing: 0.05em;
-          box-shadow: 0 4px 16px -6px rgba(0,0,0,0.15);
-          transition: transform 0.25s ease, box-shadow 0.25s ease, background 0.25s ease;
-        }
-        :root[data-theme="night"] .lb-preview-next-btn {
-          background: rgba(42, 48, 40, 0.85);
-        }
-        .lb-preview-next-btn:hover {
-          transform: translateX(-50%) translateY(-2px);
-          box-shadow: 0 6px 20px -6px rgba(184, 140, 106, 0.35);
-          background: rgba(184, 140, 106, 0.12);
-        }
-
         /* ===== 合上书按钮 ===== */
         .lb-close-btn {
           position: absolute;
@@ -1946,7 +1907,6 @@ const LeafBook: React.FC<LeafBookProps> = ({ registerOpenBook, flipTriggerRef, a
           .lb-origin-continued { font-size: 12px; }
           /* 按钮 */
           .lb-close-btn { bottom: 12px; right: 12px; padding: 6px 12px; font-size: 11px; }
-          .lb-preview-next-btn { padding: 6px 16px; font-size: 12px; }
           .lb-page-number { font-size: 10px; bottom: 10px; right: 14px; }
           /* 双页展开容器：移动端改为单列 */
           .lb-spread-container {

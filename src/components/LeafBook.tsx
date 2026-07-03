@@ -392,6 +392,21 @@ const OriginPage: React.FC = () => (
 );
 
 /* ============================================================
+   BlankPage — 空白装饰页（封底右页）
+   ============================================================ */
+const BlankPage: React.FC = () => (
+  <div className="lb-page-content lb-blank-page">
+    <div className="lb-page-vein" />
+    <div className="lb-blank-inner">
+      <div className="lb-blank-leaf">
+        <LeafIcon size={28} />
+      </div>
+      <p className="lb-blank-text">LeafBook</p>
+    </div>
+  </div>
+);
+
+/* ============================================================
    主组件
    ============================================================ */
 interface LeafBookProps {
@@ -503,6 +518,7 @@ const LeafBook: React.FC<LeafBookProps> = ({ registerOpenBook, flipTriggerRef, a
         right: <PreviewPage project={project} index={index} onNext={goForward} onJump={jumpToWork} />,
         leftPageNum: pn.left,
         rightPageNum: pn.right,
+        isSingle: false,
       });
     });
 
@@ -511,10 +527,10 @@ const LeafBook: React.FC<LeafBookProps> = ({ registerOpenBook, flipTriggerRef, a
     result.push({
       id: "origin",
       left: <OriginPage />,
-      right: null,
+      right: <BlankPage />,
       leftPageNum: lastPn.left,
       rightPageNum: lastPn.right,
-      isSingle: true,
+      isSingle: false,
     });
 
     return result;
@@ -737,6 +753,11 @@ const LeafBook: React.FC<LeafBookProps> = ({ registerOpenBook, flipTriggerRef, a
           background: radial-gradient(ellipse, rgba(60,50,40,0.15) 0%, transparent 70%);
           border-radius: 50%;
         }
+        .lb-book-spread ~ .lb-desk-shadow {
+          width: 1100px;
+          max-width: 88vw;
+          height: 28px;
+        }
 
         /* 书脊阴影 */
         .lb-spine-shadow {
@@ -800,7 +821,7 @@ const LeafBook: React.FC<LeafBookProps> = ({ registerOpenBook, flipTriggerRef, a
           z-index: 0;
         }
 
-        /* ===== 双页展开容器 ===== */
+        /* ===== 双页展开容器（卷首语+详情） ===== */
         .lb-spread-container {
           display: flex;
           width: 100%;
@@ -811,12 +832,94 @@ const LeafBook: React.FC<LeafBookProps> = ({ registerOpenBook, flipTriggerRef, a
           flex: 1;
           position: relative;
           overflow: hidden;
+          min-width: 0;
+          background: var(--lb-page-bg, #F5F0E4);
         }
+        /* Ensure page-content fills the half properly */
+        .lb-spread-half > .lb-page-content {
+          position: absolute;
+          inset: 0;
+          width: 100%;
+          height: 100%;
+        }
+        /* 左半页：书脊内侧阴影 + 外缘暗角 */
         .lb-spread-half-left {
-          box-shadow: inset -8px 0 20px -10px rgba(0,0,0,0.06);
+          border-radius: 4px 0 0 4px;
+          box-shadow:
+            inset -12px 0 24px -10px rgba(0,0,0,0.08),
+            inset 0 0 60px rgba(0,0,0,0.02),
+            2px 0 8px -4px rgba(0,0,0,0.06);
         }
+        .lb-spread-half-left::after {
+          content: "";
+          position: absolute;
+          inset: 0;
+          pointer-events: none;
+          z-index: 3;
+          background: linear-gradient(to right,
+            rgba(0,0,0,0.04) 0%,
+            rgba(0,0,0,0.01) 6%,
+            transparent 15%,
+            transparent 85%,
+            rgba(0,0,0,0.03) 94%,
+            rgba(0,0,0,0.07) 100%
+          );
+        }
+        /* 右半页：书脊内侧阴影 + 外缘暗角 */
         .lb-spread-half-right {
-          box-shadow: inset 8px 0 20px -10px rgba(0,0,0,0.04);
+          border-radius: 0 10px 10px 0;
+          box-shadow:
+            inset 12px 0 24px -10px rgba(0,0,0,0.06),
+            inset 0 0 60px rgba(0,0,0,0.02),
+            -2px 0 8px -4px rgba(0,0,0,0.04);
+        }
+        .lb-spread-half-right::after {
+          content: "";
+          position: absolute;
+          inset: 0;
+          pointer-events: none;
+          z-index: 3;
+          background: linear-gradient(to left,
+            rgba(0,0,0,0.04) 0%,
+            rgba(0,0,0,0.01) 6%,
+            transparent 15%,
+            transparent 85%,
+            rgba(0,0,0,0.03) 94%,
+            rgba(0,0,0,0.05) 100%
+          );
+        }
+        /* 夜间模式双页阴影加深 */
+        :root[data-theme="night"] .lb-spread-half-left {
+          box-shadow:
+            inset -12px 0 24px -10px rgba(0,0,0,0.18),
+            inset 0 0 60px rgba(0,0,0,0.06),
+            2px 0 8px -4px rgba(0,0,0,0.12);
+        }
+        :root[data-theme="night"] .lb-spread-half-left::after {
+          background: linear-gradient(to right,
+            rgba(0,0,0,0.15) 0%,
+            rgba(0,0,0,0.05) 6%,
+            transparent 15%,
+            transparent 85%,
+            rgba(0,0,0,0.08) 94%,
+            rgba(0,0,0,0.18) 100%
+          );
+        }
+        :root[data-theme="night"] .lb-spread-half-right {
+          box-shadow:
+            inset 12px 0 24px -10px rgba(0,0,0,0.14),
+            inset 0 0 60px rgba(0,0,0,0.06),
+            -2px 0 8px -4px rgba(0,0,0,0.08);
+        }
+        :root[data-theme="night"] .lb-spread-half-right::after {
+          background: linear-gradient(to left,
+            rgba(0,0,0,0.15) 0%,
+            rgba(0,0,0,0.05) 6%,
+            transparent 15%,
+            transparent 85%,
+            rgba(0,0,0,0.06) 94%,
+            rgba(0,0,0,0.12) 100%
+          );
         }
 
         /* ===== 页码（右下角，所有页面统一） ===== */
@@ -843,7 +946,7 @@ const LeafBook: React.FC<LeafBookProps> = ({ registerOpenBook, flipTriggerRef, a
           display: flex;
           align-items: center;
           justify-content: center;
-          background: #FAF9F6;
+          background: var(--lb-page-bg, #F5F0E4);
           border-radius: 2px 6px 6px 2px;
           padding: 60px 40px;
           position: relative;
@@ -872,7 +975,7 @@ const LeafBook: React.FC<LeafBookProps> = ({ registerOpenBook, flipTriggerRef, a
             0 0 80px rgba(0,0,0,0.06);
         }
         :root[data-theme="night"] .lb-cover {
-          background: #1e1e1e;
+          background: var(--lb-page-bg);
         }
         /* 叶脉纹理（极淡） */
         .lb-cover-vein {
@@ -997,14 +1100,14 @@ const LeafBook: React.FC<LeafBookProps> = ({ registerOpenBook, flipTriggerRef, a
         /* ===== 目录页（真实对页书页） ===== */
         .lb-wrapper.lb-wrapper-spread {
           width: 100%;
-          max-width: 1100px;
+          max-width: 1400px;
           margin: 0 auto;
         }
         .lb-book.lb-book-spread {
-          width: 920px;
-          max-width: 95vw;
-          height: 792px;
-          max-height: 80vh;
+          width: 1200px;
+          max-width: 92vw;
+          height: 750px;
+          max-height: 85vh;
           border-radius: 6px 14px 14px 6px;
           box-shadow:
             0 4px 24px -4px rgba(40, 35, 25, 0.2),
@@ -1440,6 +1543,29 @@ const LeafBook: React.FC<LeafBookProps> = ({ registerOpenBook, flipTriggerRef, a
           50% { transform: translateY(-3px); }
         }
 
+        /* ===== 空白装饰页（封底右页） ===== */
+        .lb-blank-page {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          background: var(--lb-page-bg);
+        }
+        .lb-blank-inner {
+          text-align: center;
+          opacity: 0.25;
+        }
+        .lb-blank-leaf {
+          color: var(--lb-text-soft);
+          margin-bottom: 8px;
+        }
+        .lb-blank-text {
+          font-family: "Noto Serif SC", Georgia, serif;
+          font-size: 14px;
+          color: var(--lb-text-soft);
+          letter-spacing: 0.12em;
+          margin: 0;
+        }
+
         /* ===== 金句页 ===== */
         .lb-quote-page {
           display: flex;
@@ -1768,6 +1894,7 @@ const LeafBook: React.FC<LeafBookProps> = ({ registerOpenBook, flipTriggerRef, a
           .lb-spread-item-sub { font-size: 10px; }
           .lb-spread-num { font-size: 10px; min-width: 20px; }
           .lb-bookmark-close {
+            top: auto;
             bottom: 12px;
             right: 14px;
           }
@@ -1825,11 +1952,21 @@ const LeafBook: React.FC<LeafBookProps> = ({ registerOpenBook, flipTriggerRef, a
           .lb-spread-container {
             flex-direction: column;
           }
-          .lb-spread-half-left {
-            box-shadow: none;
+          .lb-spread-half {
+            border-radius: 6px;
+            margin-bottom: 8px;
+            box-shadow: 0 2px 8px -2px rgba(0,0,0,0.1);
           }
+          .lb-spread-half:last-child {
+            margin-bottom: 0;
+          }
+          .lb-spread-half-left,
           .lb-spread-half-right {
-            box-shadow: none;
+            box-shadow: inset 0 0 30px rgba(0,0,0,0.02), 0 2px 8px -2px rgba(0,0,0,0.1);
+          }
+          .lb-spread-half-left::after,
+          .lb-spread-half-right::after {
+            display: none;
           }
         }
       `}</style>

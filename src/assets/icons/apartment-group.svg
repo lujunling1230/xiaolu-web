@@ -1,0 +1,64 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width="48" height="48">
+  <defs>
+    <!-- 外圈暖黄光晕 -->
+    <radialGradient id="glow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#FFF3D6" stop-opacity="1"/>
+      <stop offset="70%" stop-color="#FFE4B5" stop-opacity="0.9"/>
+      <stop offset="100%" stop-color="#FFD700" stop-opacity="0.3"/>
+    </radialGradient>
+    <!-- 身体渐变 -->
+    <linearGradient id="bodyGrad" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="currentColor" stop-opacity="0.35"/>
+      <stop offset="100%" stop-color="currentColor" stop-opacity="0.1"/>
+    </linearGradient>
+  </defs>
+
+  <!-- 外圈暖黄底 -->
+  <circle cx="24" cy="24" r="23" fill="url(#glow)"/>
+  <circle cx="24" cy="24" r="23" fill="none" stroke="#FFD700" stroke-width="0.5" opacity="0.25"/>
+
+  <!-- 角色组：围绕中心均匀分布 -->
+  <g id="characters">
+    <!-- 一菲（正上，酒红） -->
+    <g transform="translate(24, 10)">
+      <circle cx="0" cy="0" r="4.2" fill="#C41E3A"/>
+      <path d="M -3.5,2 Q 0,5.5 3.5,2 L 3.5,6 Q 0,8 -3.5,6 Z" fill="#C41E3A" opacity="0.4"/>
+    </g>
+    <!-- 子乔（右上，蓝紫） -->
+    <g transform="translate(34, 14)">
+      <circle cx="0" cy="0" r="4" fill="#5B4FC4"/>
+      <path d="M -3.3,1.8 Q 0,5 3.3,1.8 L 3.3,5.5 Q 0,7.5 -3.3,5.5 Z" fill="#5B4FC4" opacity="0.4"/>
+    </g>
+    <!-- 美嘉（右中，紫） -->
+    <g transform="translate(37, 24)">
+      <circle cx="0" cy="0" r="4" fill="#9B59B6"/>
+      <path d="M -3.3,1.8 Q 0,5 3.3,1.8 L 3.3,5.5 Q 0,7.5 -3.3,5.5 Z" fill="#9B59B6" opacity="0.4"/>
+    </g>
+    <!-- 小贤（右下，天蓝） -->
+    <g transform="translate(34, 34)">
+      <circle cx="0" cy="0" r="4" fill="#4A90D9"/>
+      <path d="M -3.3,1.8 Q 0,5 3.3,1.8 L 3.3,5.5 Q 0,7.5 -3.3,5.5 Z" fill="#4A90D9" opacity="0.4"/>
+    </g>
+    <!-- 悠悠（左下，橙金） -->
+    <g transform="translate(14, 34)">
+      <circle cx="0" cy="0" r="4" fill="#E8A838"/>
+      <path d="M -3.3,1.8 Q 0,5 3.3,1.8 L 3.3,5.5 Q 0,7.5 -3.3,5.5 Z" fill="#E8A838" opacity="0.4"/>
+    </g>
+    <!-- 关谷（左中，棕） -->
+    <g transform="translate(11, 24)">
+      <circle cx="0" cy="0" r="4" fill="#8B5A2B"/>
+      <path d="M -3.3,1.8 Q 0,5 3.3,1.8 L 3.3,5.5 Q 0,7.5 -3.3,5.5 Z" fill="#8B5A2B" opacity="0.4"/>
+    </g>
+    <!-- 张伟（左上，深紫） -->
+    <g transform="translate(14, 14)">
+      <circle cx="0" cy="0" r="4" fill="#6B2D5C"/>
+      <path d="M -3.3,1.8 Q 0,5 3.3,1.8 L 3.3,5.5 Q 0,7.5 -3.3,5.5 Z" fill="#6B2D5C" opacity="0.4"/>
+    </g>
+  </g>
+
+  <!-- 第8位房客：中心金色小爱心 -->
+  <g transform="translate(24, 24)">
+    <path d="M 0,-3.2 C -2,-5.5 -6,-3 -6,-0.5 C -6,2.5 0,6 0,6 C 0,6 6,2.5 6,-0.5 C 6,-3 2,-5.5 0,-3.2 Z" fill="#FFD700" opacity="0.95"/>
+    <circle cx="0" cy="0" r="7" fill="none" stroke="#FFD700" stroke-width="0.6" opacity="0.35"/>
+  </g>
+</svg>

@@ -51,11 +51,28 @@ const MendingHeartIcon: React.FC = () => (
   </svg>
 );
 
+/* ===== 爱情公寓图标：八人 Q 版群像 ===== */
+const ApartmentIcon: React.FC = () => (
+  <img
+    src="/src/assets/icons/apartment-group.svg"
+    alt="爱情公寓"
+    width={48}
+    height={48}
+    style={{
+      borderRadius: "50%",
+      width: 48,
+      height: 48,
+      boxShadow: "0 2px 12px rgba(255, 200, 80, 0.4)",
+      display: "block",
+    }}
+  />
+);
+
 const tools: Tool[] = [
   { name: "森林疗愈室", slogan: "调节呼吸与情绪", icon: "🌲", url: "/healing", glow: true, hoverHint: "深呼吸" },
-  { name: "系统调频", slogan: "校准频率，让信号重新清晰。", icon: "📻", url: "/toolbox/answer", glow: true, hoverHint: "调一下频" },
+  { name: "爱情公寓", slogan: "3601·3602·3603 全员在线", icon: <ApartmentIcon />, url: "/toolbox/answer", glow: true, hoverHint: "聊聊呗" },
   { name: "通关清单", slogan: "把人生变成一场 RPG。", icon: "🎯", url: "/toolbox/quests", glow: true, hoverHint: "命中目标！" },
-  { name: "物资管家", slogan: "库存与保质期管理", icon: "🏠", url: "/toolbox/supplies", glow: true, hoverHint: "清点一下" },
+  { name: "物资管家", slogan: "库存与保质期管理", icon: "📦", url: "/toolbox/supplies", glow: true, hoverHint: "清点一下" },
   { name: "解忧杂货铺", slogan: "总有一句话，能解开你的心结。", icon: "🕯️", url: "/toolbox/advice", glow: true, hoverHint: "进来坐坐？" },
   { name: "漫游指南", slogan: "走过的路，看过的云。", icon: "🗺️", url: "/toolbox/travel", glow: true, hoverHint: "出发吧" },
   { name: "回血清单", slogan: "允许一切崩塌，只做一件极小的事。", icon: "🔋", url: "/toolbox/recharge", glow: true, hoverHint: "充一会儿电" },

@@ -3,7 +3,6 @@ import { motion, AnimatePresence } from "framer-motion";
 import GratitudeJournal from "./GratitudeJournal";
 import BreathingGuide from "./BreathingGuide";
 import MeditationTimer from "./MeditationTimer";
-import MessageBoard from "./MessageBoard";
 
 /**
  * Lab 疗愈室 — 四大交互模块
@@ -14,7 +13,7 @@ import MessageBoard from "./MessageBoard";
  * 数据：仅 localStorage，无后端
  */
 
-type ModuleId = "journal" | "breathing" | "meditation" | "board";
+type ModuleId = "journal" | "breathing" | "meditation";
 
 interface NavItem {
   id: ModuleId;
@@ -48,19 +47,12 @@ const MeditationIcon = () => (
   </svg>
 );
 
-const BoardIcon = () => (
-  <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-    <rect x="3" y="3" width="14" height="12" rx="2" stroke="currentColor" strokeWidth="1.4" />
-    <path d="M7 15V18M13 15V18" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
-    <path d="M6 8H14M6 11H11" stroke="currentColor" strokeWidth="1" opacity="0.5" strokeLinecap="round" />
-  </svg>
-);
+
 
 const NAV_ITEMS: NavItem[] = [
   { id: "journal", label: "感恩日记", subtitle: "Gratitude Journal", icon: <JournalIcon /> },
   { id: "breathing", label: "呼吸引导", subtitle: "Breathing Guide", icon: <BreathingIcon /> },
   { id: "meditation", label: "冥想空间", subtitle: "Meditation Space", icon: <MeditationIcon /> },
-  { id: "board", label: "留言板", subtitle: "Message Board", icon: <BoardIcon /> },
 ];
 
 const Lab: React.FC = () => {
@@ -107,7 +99,6 @@ const Lab: React.FC = () => {
               {activeModule === "journal" && <GratitudeJournal />}
               {activeModule === "breathing" && <BreathingGuide />}
               {activeModule === "meditation" && <MeditationTimer />}
-              {activeModule === "board" && <MessageBoard />}
             </motion.div>
           </AnimatePresence>
         </div>

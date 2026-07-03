@@ -10,15 +10,15 @@ export interface CallAIOptions {
 }
 
 /**
- * 调用 AI 接口
+ * 调用 AI 接口（支持历史上下文）
  * @param systemPrompt - 系统人设（system role）
- * @param userMessage - 用户输入（user role）
+ * @param messages - 历史消息数组 {role, content}[]
  * @param options - 可选参数
  * @returns AI 回复文本，失败时返回兜底文案
  */
 export async function callAI(
   systemPrompt: string,
-  userMessage: string,
+  messages: { role: string; content: string }[],
   options: CallAIOptions = {}
 ): Promise<string> {
   const apiUrl = import.meta.env.VITE_AI_API_URL;
@@ -46,7 +46,7 @@ export async function callAI(
         model,
         messages: [
           { role: "system", content: systemPrompt },
-          { role: "user", content: userMessage },
+          ...messages,
         ],
         temperature,
         max_tokens: maxTokens,

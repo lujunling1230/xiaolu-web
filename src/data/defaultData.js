@@ -308,9 +308,6 @@ const defaultData = {
   /* ====== 回血清单 ====== */
   recharge_count: "3",
 
-  /* ====== 留言板 ====== */
-  guestbook_messages: [],
-
   /* ====== 库存管理 ====== */
   inventory_items: [],
 

@@ -4,7 +4,6 @@ import { motion, AnimatePresence } from "framer-motion";
 import GratitudeJournal from "../components/GratitudeJournal";
 import BreathingGuide from "../components/BreathingGuide";
 import MeditationTimer from "../components/MeditationTimer";
-import MessageBoard from "../components/MessageBoard";
 
 /* ===== 图标 ===== */
 const JournalIcon = () => (
@@ -26,21 +25,14 @@ const MeditationIcon = () => (
     <path d="M6 11L4 8M14 11L16 8" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" opacity="0.5" />
   </svg>
 );
-const BoardIcon = () => (
-  <svg width="18" height="18" viewBox="0 0 20 20" fill="none">
-    <rect x="3" y="3" width="14" height="12" rx="2" stroke="currentColor" strokeWidth="1.4" />
-    <path d="M7 15V18M13 15V18" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
-    <path d="M6 8H14M6 11H11" stroke="currentColor" strokeWidth="1" opacity="0.5" strokeLinecap="round" />
-  </svg>
-);
 
-type ModuleId = "welcome" | "journal" | "breathing" | "meditation" | "board";
+
+type ModuleId = "welcome" | "journal" | "breathing" | "meditation";
 
 const NAV_ITEMS = [
   { id: "journal" as ModuleId, label: "感恩日记", subtitle: "Gratitude Journal", icon: <JournalIcon /> },
   { id: "breathing" as ModuleId, label: "呼吸引导", subtitle: "Breathing Guide", icon: <BreathingIcon /> },
   { id: "meditation" as ModuleId, label: "冥想空间", subtitle: "Meditation Space", icon: <MeditationIcon /> },
-  { id: "board" as ModuleId, label: "留言板", subtitle: "Message Board", icon: <BoardIcon /> },
 ];
 
 /* ===== 欢迎卡片 ===== */
@@ -66,7 +58,6 @@ const HealingRoomPage: React.FC = () => {
       case "journal": return <GratitudeJournal />;
       case "breathing": return <BreathingGuide />;
       case "meditation": return <MeditationTimer />;
-      case "board": return <MessageBoard />;
       default: return <WelcomeCard />;
     }
   };

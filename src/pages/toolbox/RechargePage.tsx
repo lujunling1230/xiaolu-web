@@ -323,7 +323,7 @@ const EnergyNodeItem: React.FC<NodeProps> = ({ node, index, done, onToggle }) =>
 };
 
 /* ============================================================
-   第101个隐藏电源弹窗
+   第101个隐藏电源弹窗 — 叶之书的微光
    ============================================================ */
 const HiddenPopup: React.FC<{ onClose: () => void }> = ({ onClose }) => (
   <motion.div
@@ -331,17 +331,18 @@ const HiddenPopup: React.FC<{ onClose: () => void }> = ({ onClose }) => (
     initial={{ opacity: 0 }}
     animate={{ opacity: 1 }}
     exit={{ opacity: 0 }}
+    transition={{ duration: 0.3 }}
     onClick={onClose}
   >
     <motion.div
       className="hidden-popup"
-      initial={{ scale: 0.9, y: 20 }}
-      animate={{ scale: 1, y: 0 }}
-      exit={{ scale: 0.9, y: 20 }}
-      transition={{ type: "spring", stiffness: 280, damping: 24 }}
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: 20 }}
+      transition={{ duration: 0.5, ease: "easeOut" }}
       onClick={(e) => e.stopPropagation()}
     >
-      <button className="hidden-close" onClick={onClose}>×</button>
+      <button className="hidden-close" onClick={onClose}>🌿</button>
       <h2 className="hidden-title">第101个电源</h2>
       <p className="hidden-text">允许自己永远充不满电。</p>
       <div className="hidden-deco" />
@@ -768,39 +769,41 @@ const RechargePage: React.FC = () => {
         .recharge-counter-text { font-size: 13px; color: #6b5e50; letter-spacing: 0.03em; }
         .recharge-counter-text b { color: #4cba4c; font-size: 15px; }
 
-        /* ===== 第101弹窗 ===== */
+        /* ===== 第101弹窗 — 叶之书的微光 ===== */
         .hidden-overlay {
           position: fixed; inset: 0; z-index: 200;
           display: flex; align-items: center; justify-content: center; padding: 24px;
-          background: rgba(20,20,20,0.4); backdrop-filter: blur(8px);
+          background: rgba(200, 195, 185, 0.25);
+          backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
         }
         .hidden-popup {
-          position: relative; max-width: 320px; width: 100%; padding: 36px 28px;
-          border-radius: 18px; text-align: center;
-          background: rgba(255,255,255,0.15);
-          backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
-          border: 1px solid rgba(255,255,255,0.25);
-          box-shadow: 0 24px 64px -16px rgba(0,0,0,0.3);
+          position: relative; max-width: 420px; width: 100%; padding: 40px 48px;
+          border-radius: 20px; text-align: center;
+          background: rgba(245, 250, 247, 0.85);
+          backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+          border: 1px solid rgba(180, 220, 190, 0.4);
+          box-shadow: 0 2px 8px rgba(160, 180, 150, 0.06), 0 8px 28px rgba(0,0,0,0.03), 0 18px 52px rgba(0,0,0,0.025), 0 0 24px rgba(180, 220, 190, 0.12);
         }
         .hidden-close {
-          position: absolute; top: 12px; right: 14px;
-          width: 28px; height: 28px; border: none; border-radius: 50%;
-          background: rgba(255,255,255,0.15); color: #fff; font-size: 16px;
-          display: flex; align-items: center; justify-content: center;
+          position: absolute; top: 16px; right: 20px;
+          font-size: 13px; color: #9aaa9a; letter-spacing: 0.05em;
+          background: none; border: none; padding: 4px 8px;
+          cursor: pointer; transition: color 0.3s ease;
+          font-family: "Noto Sans SC", system-ui, sans-serif;
         }
+        .hidden-close:hover { color: #4a9a6a; }
         .hidden-title {
           font-family: "Noto Serif SC", Georgia, serif;
-          font-size: 24px; font-weight: 700; color: #fff;
-          margin: 0 0 12px; letter-spacing: 0.08em;
-          text-shadow: 0 0 16px rgba(255,255,255,0.4);
+          font-size: 26px; font-weight: 600; color: #3a3a3a;
+          margin: 0 0 16px; letter-spacing: 0.1em;
         }
         .hidden-text {
-          font-size: 14px; color: rgba(255,255,255,0.65); margin: 0 0 20px;
-          line-height: 1.7; letter-spacing: 0.04em;
+          font-size: 15px; color: #666; margin: 0 0 8px;
+          line-height: 1.8; letter-spacing: 0.08em;
         }
         .hidden-deco {
-          width: 40px; height: 2px; margin: 0 auto;
-          background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+          width: 40px; height: 1px; margin: 20px auto 0;
+          background: linear-gradient(90deg, transparent, rgba(180, 220, 190, 0.6), transparent);
         }
 
         /* ===== 移动端 ===== */
@@ -812,6 +815,10 @@ const RechargePage: React.FC = () => {
           .energy-battery-body { width: 18px; height: 10px; }
           .station-cat-wrap { right: 5%; }
           .recharge-counter { bottom: 16px; right: 16px; padding: 8px 14px; }
+          .hidden-popup { padding: 32px 28px; border-radius: 16px; }
+          .hidden-title { font-size: 22px; letter-spacing: 0.08em; }
+          .hidden-text { font-size: 14px; line-height: 1.8; }
+          .hidden-close { top: 12px; right: 14px; font-size: 12px; }
         }
       `}</style>
     </div>

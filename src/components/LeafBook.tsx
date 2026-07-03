@@ -104,12 +104,12 @@ const pageVariants = {
   }),
 };
 
-/** 页码显示组件（右下角） */
+/** 页码显示组件（正下方居中） */
 const PageNumber: React.FC<{ current: number }> = ({ current }) => {
   if (!current) return null;
   return (
     <span className="lb-page-number">
-      {String(current).padStart(3, "0")} <span className="lb-page-number-slash">/</span> {TOTAL_PAGES}
+      {current}
     </span>
   );
 };
@@ -180,6 +180,7 @@ const TocPage: React.FC<{ onPick: (projectIndex: number) => void; onClose?: () =
               ))}
             </ul>
           </div>
+          <PageNumber current={1} />
         </div>
 
         {/* 书脊 */}
@@ -217,6 +218,7 @@ const TocPage: React.FC<{ onPick: (projectIndex: number) => void; onClose?: () =
               ))}
             </ul>
           </div>
+          <PageNumber current={2} />
         </div>
       </div>
 
@@ -234,8 +236,6 @@ const TocPage: React.FC<{ onPick: (projectIndex: number) => void; onClose?: () =
           <span className="lb-bookmark-text">合上书</span>
         </motion.button>
       )}
-
-      <PageNumber current={1} />
     </div>
   );
 };

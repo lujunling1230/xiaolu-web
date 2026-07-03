@@ -1,6 +1,7 @@
 import { useState, useRef, useCallback, useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { projects, type Project } from "../data/projects";
+import { type Project } from "../data/projects";
+import { useProjects } from "../hooks/useProjects";
 
 /**
  * LeafBook 树叶书 — 出版级实体书翻阅体验（spread 双页版）
@@ -141,8 +142,9 @@ const TocPage: React.FC<{ onPick: (projectIndex: number) => void; onClose?: () =
   onPick,
   onClose,
 }) => {
-  const leftProjects = projects.slice(0, 5);
-  const rightProjects = projects.slice(5, 10);
+  const allProjects = getProjects();
+  const leftProjects = allProjects.slice(0, 5);
+  const rightProjects = allProjects.slice(5, 10);
   return (
     <div className="lb-page-content lb-index-page">
       <div className="lb-page-vein" />
@@ -281,9 +283,10 @@ const QuotePage: React.FC<{ project: Project; index: number }> = ({
 const PreviewPage: React.FC<{
   project: Project;
   index: number;
+  total: number;
   onNext: () => void;
   onJump: () => void;
-}> = ({ project, index, onNext, onJump }) => {
+}> = ({ project, index, total, onNext, onJump }) => {
   const pn = getSpreadPageNums(index + 2);
   return (
     <div className="lb-page-content lb-preview-page">
@@ -292,7 +295,7 @@ const PreviewPage: React.FC<{
         {/* 左栏 文字 */}
         <div className="lb-preview-text">
           <span className="lb-preview-num">
-            No. {String(index + 1).padStart(2, "0")} / {String(projects.length).padStart(2, "0")}
+            No. {String(index + 1).padStart(2, "0")} / {String(total).padStart(2, "0")}
           </span>
           <h2 className="lb-preview-title">{project.title}</h2>
           <div className="lb-preview-pain-wrap">
@@ -418,6 +421,9 @@ interface LeafBookProps {
 }
 
 const LeafBook: React.FC<LeafBookProps> = ({ registerOpenBook, flipTriggerRef, autoFlipDelay }) => {
+  /* ===== 数据 ===== */
+  const projects = useProjects();
+
   /* ===== 状态 ===== */
   const [spreadIndex, setSpreadIndex] = useState(0);
   const [direction, setDirection] = useState(0);
@@ -515,7 +521,7 @@ const LeafBook: React.FC<LeafBookProps> = ({ registerOpenBook, flipTriggerRef, a
       result.push({
         id: `project-${index}`,
         left: <QuotePage project={project} index={index} />,
-        right: <PreviewPage project={project} index={index} onNext={goForward} onJump={jumpToWork} />,
+        right: <PreviewPage project={project} index={index} total={projects.length} onNext={goForward} onJump={jumpToWork} />,
         leftPageNum: pn.left,
         rightPageNum: pn.right,
         isSingle: false,

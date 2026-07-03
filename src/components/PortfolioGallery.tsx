@@ -1,18 +1,21 @@
 import { useState, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { projects, type Project } from "../data/projects";
+import { type Project } from "../data/projects";
+import { deleteProject, updateProject, pushProjects } from "../utils/projectStore";
+import { useProjects } from "../hooks/useProjects";
 import AddProjectModal from "./AddProjectModal";
 
 /**
  * PortfolioGallery 森林图鉴式项目展示区
  *
- * 数据来源：src/data/projects.ts（集中管理，方便扩展）
+ * 数据来源：projectStore（localStorage，可 CRUD）
  * 响应式 Grid 布局（大屏 2 列，小屏 1 列），毛玻璃卡片。
  * 每张卡片像明信片：封面区（图片/视频）+ 标题 + 标签 + 描述。
  * Hover 微浮 + 阴影加深；点击弹出详情 Modal。
  * 视频卡片：封面显示缩略图 + 播放按钮，点击在卡片内播放。
  *
  * Admin 彩蛋：右下角极小叶片图标，hover 显形，点击弹出添加项目表单。
+ * 卡片 hover 显示编辑/删除按钮。
  */
 
 /* 播放按钮图标 */
@@ -48,7 +51,8 @@ const ProjectCard: React.FC<{
   item: Project;
   index: number;
   onClick: (item: Project) => void;
-}> = ({ item, index, onClick }) => {
+  onEdit: (item: Project) => void;
+}> = ({ item, index, onClick, onEdit }) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [videoPlaying, setVideoPlaying] = useState(false);
   const hasVideo = !!item.videoUrl;
@@ -80,6 +84,57 @@ const ProjectCard: React.FC<{
     >
       {/* ① 封面区 */}
       <div className="gallery-media">
+        {/* 图片上方操作栏 */}
+        <div className="gallery-media-actions">
+          <button
+            className="gallery-media-btn"
+            onClick={(e) => { e.stopPropagation(); onEdit(item); }}
+            title="编辑"
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+            编辑
+          </button>
+          <label className="gallery-media-btn" onClick={(e) => e.stopPropagation()}>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+            换图
+            <input
+              type="file"
+              accept="image/*"
+              style={{ display: "none" }}
+              onChange={async (e) => {
+                e.stopPropagation();
+                const file = e.target.files?.[0];
+                if (!file) return;
+                const reader = new FileReader();
+                reader.onload = async (ev) => {
+                  const base64 = ev.target?.result as string;
+                  if (base64) {
+                    updateProject(item.id, { imageUrl: base64 });
+                    await pushProjects("ling");
+                    window.location.reload();
+                  }
+                };
+                reader.readAsDataURL(file);
+              }}
+            />
+          </label>
+          <button
+            className="gallery-media-btn gallery-media-btn-delete"
+            onClick={async (e) => {
+              e.stopPropagation();
+              if (confirm("确定删除此项目？")) {
+                deleteProject(item.id);
+                await pushProjects("ling");
+                window.location.reload();
+              }
+            }}
+            title="删除"
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
+            删除
+          </button>
+        </div>
+
         {hasVideo ? (
           <>
             <video
@@ -137,18 +192,22 @@ const ProjectCard: React.FC<{
 const PortfolioGallery: React.FC = () => {
   const [selected, setSelected] = useState<Project | null>(null);
   const [addOpen, setAddOpen] = useState(false);
+  const [editProject, setEditProject] = useState<Project | null>(null);
+  const [editOpen, setEditOpen] = useState(false);
 
+  const projectsList = useProjects();
   const selectedTags = selected?.tags || [];
 
   return (
     <>
       <div className="gallery-grid">
-        {projects.map((item, index) => (
+        {projectsList.map((item, index) => (
           <ProjectCard
             key={item.id}
             item={item}
             index={index}
             onClick={setSelected}
+            onEdit={(p) => { setEditProject(p); setEditOpen(true); }}
           />
         ))}
       </div>
@@ -230,7 +289,24 @@ const PortfolioGallery: React.FC = () => {
         <LeafIcon />
       </button>
 
-      <AddProjectModal open={addOpen} onClose={() => setAddOpen(false)} />
+      <AddProjectModal
+        open={addOpen}
+        onClose={() => setAddOpen(false)}
+        mode="add"
+      />
+      <AddProjectModal
+        open={editOpen}
+        onClose={() => { setEditOpen(false); setEditProject(null); }}
+        mode="edit"
+        initialData={editProject || undefined}
+        onDelete={async () => {
+          if (editProject) {
+            deleteProject(editProject.id);
+            await pushProjects("ling");
+            window.location.reload();
+          }
+        }}
+      />
 
       <style>{`
         /* ===== Gallery Grid 布局 ===== */
@@ -262,6 +338,51 @@ const PortfolioGallery: React.FC = () => {
         .gallery-card:hover {
           transform: translateY(-5px);
           box-shadow: 0 16px 40px -12px rgba(60, 80, 60, 0.2);
+        }
+
+        /* 图片上方操作栏 */
+        .gallery-media-actions {
+          position: absolute;
+          top: 0;
+          left: 0;
+          right: 0;
+          display: flex;
+          gap: 1px;
+          opacity: 0;
+          transition: opacity 0.2s;
+          z-index: 5;
+          background: linear-gradient(to bottom, rgba(0,0,0,0.35) 0%, rgba(0,0,0,0.1) 70%, transparent 100%);
+          padding: 6px 8px 18px;
+        }
+        .gallery-media:hover .gallery-media-actions,
+        .gallery-card:hover .gallery-media-actions {
+          opacity: 1;
+        }
+        .gallery-media-btn {
+          display: inline-flex;
+          align-items: center;
+          gap: 4px;
+          padding: 5px 10px;
+          font-size: 11px;
+          font-weight: 500;
+          border-radius: 6px;
+          border: none;
+          cursor: pointer;
+          transition: all 0.15s ease;
+          background: rgba(255,255,255,0.88);
+          color: #3a4a3a;
+          backdrop-filter: blur(8px);
+        }
+        .gallery-media-btn:hover {
+          background: #fff;
+          transform: translateY(-1px);
+        }
+        .gallery-media-btn-delete {
+          background: rgba(217, 119, 87, 0.9);
+          color: #fff;
+        }
+        .gallery-media-btn-delete:hover {
+          background: rgba(200, 100, 70, 1);
         }
 
         /* ===== 封面区 ===== */

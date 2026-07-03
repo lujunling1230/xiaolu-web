@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { logoutAdmin, siteLoad, saveDraft, publishDrafts, getSeedData } from "../utils/siteData";
+import { logoutAdmin, siteLoad, saveDraft, publishDrafts, getSeedData, pushSiteData } from "../utils/siteData";
 
 /* ============================================================
  * AdminPanel 组件
@@ -594,18 +594,24 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onClose, onLogout }) => {
   const [publishStatus, setPublishStatus] = useState("");
 
   /** 发布草稿到主站 */
-  const handlePublish = useCallback(() => {
+  const handlePublish = useCallback(async () => {
     const res = publishDrafts();
     if (res.success) {
-      setPublishStatus(
-        res.merged.length > 0
-          ? `已发布 ${res.merged.length} 项草稿到主站`
-          : "没有待发布的草稿"
-      );
+      // 同步到远程服务端
+      const pushed = await pushSiteData("ling");
+      if (pushed) {
+        setPublishStatus(
+          res.merged.length > 0
+            ? `发布成功，访客将看到最新内容（已同步 ${res.merged.length} 项）`
+            : "发布成功，访客将看到最新内容"
+        );
+      } else {
+        setPublishStatus("本地草稿已合并，但远程同步失败，请检查网络后重试");
+      }
     } else {
       setPublishStatus("发布失败，请确认管理员权限");
     }
-    setTimeout(() => setPublishStatus(""), 3000);
+    setTimeout(() => setPublishStatus(""), 5000);
   }, []);
 
   /** 退出管理员 */

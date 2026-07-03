@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Link } from "react-router-dom";
-import { siteLoad, legacyLoad, legacySave } from "../../utils/siteData";
+import { siteLoad, legacyLoad, legacySave, fetchSiteData } from "../../utils/siteData";
 import { useAdminGuard } from "../../hooks/useAdminGuard";
 
 /**
@@ -1051,6 +1051,26 @@ const MuseumPage: React.FC = () => {
         }
       }
     });
+  }, []);
+
+  // 页面加载时同步远程最新数据
+  useEffect(() => {
+    let cancelled = false;
+    fetchSiteData().then((remote) => {
+      if (cancelled || !remote) return;
+      // 用远程 seed 数据覆盖本地 key，确保 legacyLoad 读取到最新内容
+      Object.values(SEED_KEYS).forEach((k) => {
+        const seedVal = (remote as any)[k];
+        if (seedVal !== undefined) {
+          localStorage.setItem(k, JSON.stringify(seedVal));
+        }
+      });
+      setBgms(loadData(SEED_KEYS.bgms, DEFAULT_BGMS));
+      setTvs(loadData(SEED_KEYS.tvs, DEFAULT_TVS));
+      setNets(loadData(SEED_KEYS.nets, DEFAULT_NETS));
+      setHonors(loadData(SEED_KEYS.honors, DEFAULT_HONORS));
+    });
+    return () => { cancelled = true; };
   }, []);
 
   // 时代回响强制升序排列（年份小的在前）

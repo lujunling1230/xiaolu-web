@@ -260,3 +260,58 @@ export function publishDrafts(): { success: boolean; merged: string[] } {
     return { success: false, merged };
   }
 }
+
+/* ================================================================
+ * 远程同步层（Serverless API -> GitHub）
+ * ================================================================ */
+
+const API_URL = "/api/site-data";
+
+/**
+ * 从服务端拉取最新站点数据，成功后更新 localStorage 缓存
+ * @returns 远程 seed 对象或 null（失败时）
+ */
+export async function fetchSiteData(): Promise<Record<string, unknown> | null> {
+  try {
+    const res = await fetch(API_URL, { method: "GET" });
+    if (!res.ok) {
+      if (res.status === 404) {
+        console.info("[siteData] 远程数据尚未初始化，使用本地默认值");
+        return null;
+      }
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error || `HTTP ${res.status}`);
+    }
+    const data = (await res.json()) as Record<string, unknown>;
+    localStorage.setItem(SEED_KEY, JSON.stringify(data));
+    return data;
+  } catch (e) {
+    console.warn("[siteData] fetchSiteData failed:", e);
+    return null;
+  }
+}
+
+/**
+ * 将当前 localStorage 中的站点 seed 数据推送到服务端
+ * 管理员发布操作后调用
+ * @param password 管理员密码
+ */
+export async function pushSiteData(password: string): Promise<boolean> {
+  try {
+    const seedRaw = localStorage.getItem(SEED_KEY);
+    const data = seedRaw ? JSON.parse(seedRaw) : {};
+    const res = await fetch(API_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ password, data }),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error || `HTTP ${res.status}`);
+    }
+    return true;
+  } catch (e) {
+    console.warn("[siteData] pushSiteData failed:", e);
+    return false;
+  }
+}

@@ -1,17 +1,20 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import type { Project } from "../data/projects";
+import { addProject, updateProject, pushProjects } from "../utils/projectStore";
 
 /**
- * AddProjectModal 添加新项目 Modal（Admin 彩蛋）
+ * AddProjectModal 添加/编辑项目 Modal（Admin 彩蛋）
  *
- * 纯前端表单，提交后生成格式化 JSON，提示用户复制粘贴到 src/data/projects.ts。
- * 不涉及任何后端或文件写入。
+ * 纯前端表单，支持图片上传（base64）和直接保存到 localStorage。
  */
 
 interface AddProjectModalProps {
   open: boolean;
   onClose: () => void;
+  mode?: "add" | "edit";
+  initialData?: Project;
+  onDelete?: () => void;
 }
 
 interface FormData {
@@ -43,15 +46,83 @@ const CloseIcon = () => (
   </svg>
 );
 
-const AddProjectModal: React.FC<AddProjectModalProps> = ({ open, onClose }) => {
+const AddProjectModal: React.FC<AddProjectModalProps> = ({
+  open,
+  onClose,
+  mode = "add",
+  initialData,
+  onDelete,
+}) => {
+  const isEdit = mode === "edit" && !!initialData;
+
   const [form, setForm] = useState<FormData>(emptyForm);
   const [errors, setErrors] = useState<Partial<Record<keyof FormData, string>>>({});
-  const [generated, setGenerated] = useState<string | null>(null);
-  const [copied, setCopied] = useState(false);
+  const [preview, setPreview] = useState<string | null>(null);
+  const [dragOver, setDragOver] = useState(false);
+  const [saved, setSaved] = useState(false);
+
+  // Prefill form when editing
+  useEffect(() => {
+    if (isEdit && initialData) {
+      setForm({
+        title: initialData.title,
+        tag: initialData.tag,
+        painPoint: initialData.painPoint,
+        description: initialData.description,
+        imageUrl: initialData.imageUrl,
+        videoUrl: initialData.videoUrl || "",
+        link: initialData.link || "",
+        liveUrl: initialData.liveUrl,
+      });
+      setPreview(initialData.imageUrl || null);
+    } else {
+      setForm(emptyForm);
+      setPreview(null);
+    }
+    setErrors({});
+    setSaved(false);
+  }, [isEdit, initialData, open]);
 
   const update = (key: keyof FormData, value: string) => {
     setForm((prev) => ({ ...prev, [key]: value }));
     if (errors[key]) setErrors((prev) => ({ ...prev, [key]: undefined }));
+  };
+
+  const handleImageFile = (file: File) => {
+    if (!file.type.startsWith("image/")) {
+      setErrors((prev) => ({ ...prev, imageUrl: "请选择图片文件" }));
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const result = e.target?.result as string;
+      if (result) {
+        setPreview(result);
+        setForm((prev) => ({ ...prev, imageUrl: result }));
+        setErrors((prev) => ({ ...prev, imageUrl: undefined }));
+      }
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const onFileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) handleImageFile(file);
+  };
+
+  const onDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    setDragOver(true);
+  };
+  const onDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    setDragOver(false);
+  };
+  const onDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setDragOver(false);
+    const file = e.dataTransfer.files?.[0];
+    if (file) handleImageFile(file);
   };
 
   const validate = (): boolean => {
@@ -60,19 +131,16 @@ const AddProjectModal: React.FC<AddProjectModalProps> = ({ open, onClose }) => {
     if (!form.tag.trim()) newErrors.tag = "请输入标签";
     if (!form.painPoint.trim()) newErrors.painPoint = "请输入痛点定位";
     if (!form.description.trim()) newErrors.description = "请输入描述";
-    if (!form.imageUrl.trim()) newErrors.imageUrl = "请输入封面图路径";
+    if (!form.imageUrl.trim()) newErrors.imageUrl = "请上传或输入封面图";
     if (!form.liveUrl.trim()) newErrors.liveUrl = "请输入独立部署链接";
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (!validate()) return;
 
-    const id = form.title.trim().toLowerCase().replace(/\s+/g, "-").replace(/[^\w-]/g, "");
-
-    const newProject: Project = {
-      id,
+    const trimmed = {
       title: form.title.trim(),
       tag: form.tag.trim(),
       painPoint: form.painPoint.trim(),
@@ -80,39 +148,55 @@ const AddProjectModal: React.FC<AddProjectModalProps> = ({ open, onClose }) => {
       imageUrl: form.imageUrl.trim(),
       liveUrl: form.liveUrl.trim(),
     };
-    if (form.videoUrl.trim()) newProject.videoUrl = form.videoUrl.trim();
-    if (form.link.trim()) newProject.link = form.link.trim();
 
-    // 生成格式化 JSON（与 projects.ts 中的对象格式一致）
-    const json = JSON.stringify(newProject, null, 2);
-    setGenerated(json);
-    setCopied(false);
+    if (isEdit && initialData) {
+      const updates: Partial<Project> = {
+        ...trimmed,
+      };
+      if (form.videoUrl.trim()) updates.videoUrl = form.videoUrl.trim();
+      else updates.videoUrl = undefined;
+      if (form.link.trim()) updates.link = form.link.trim();
+      else updates.link = undefined;
+      // Preserve tags
+      updates.tags = initialData.tags;
+
+      updateProject(initialData.id, updates);
+    } else {
+      const id = trimmed.title.toLowerCase().replace(/\s+/g, "-").replace(/[^\w-]/g, "");
+
+      const newProject: Project = {
+        id,
+        ...trimmed,
+      };
+      if (form.videoUrl.trim()) newProject.videoUrl = form.videoUrl.trim();
+      if (form.link.trim()) newProject.link = form.link.trim();
+
+      addProject(newProject);
+    }
+
+    // 同步到远程服务端
+    const ok = await pushProjects("ling");
+    setSaved(true);
+
+    setTimeout(() => {
+      if (ok) {
+        window.location.reload();
+      }
+    }, 600);
   };
 
-  const handleCopy = async () => {
-    if (!generated) return;
-    try {
-      await navigator.clipboard.writeText(generated);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    } catch {
-      // 降级方案
-      const textarea = document.createElement("textarea");
-      textarea.value = generated;
-      document.body.appendChild(textarea);
-      textarea.select();
-      document.execCommand("copy");
-      document.body.removeChild(textarea);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
+  const handleDelete = () => {
+    if (!isEdit || !initialData) return;
+    if (confirm("确定删除此项目？此操作不可恢复。")) {
+      onDelete?.();
     }
   };
 
   const handleClose = () => {
     setForm(emptyForm);
     setErrors({});
-    setGenerated(null);
-    setCopied(false);
+    setPreview(null);
+    setSaved(false);
     onClose();
   };
 
@@ -140,11 +224,13 @@ const AddProjectModal: React.FC<AddProjectModalProps> = ({ open, onClose }) => {
               <CloseIcon />
             </button>
 
-            {!generated ? (
+            {!saved ? (
               <>
                 {/* 表单 */}
-                <h2 className="apm-title">添加新项目</h2>
-                <p className="apm-subtitle">填写项目信息，提交后复制 JSON 粘贴到数据文件</p>
+                <h2 className="apm-title">{isEdit ? "编辑项目" : "添加新项目"}</h2>
+                <p className="apm-subtitle">
+                  {isEdit ? "修改项目信息，保存后立即生效" : "填写项目信息，保存后直接写入存储"}
+                </p>
 
                 <div className="apm-form">
                   <label className="apm-field">
@@ -155,7 +241,9 @@ const AddProjectModal: React.FC<AddProjectModalProps> = ({ open, onClose }) => {
                       value={form.title}
                       onChange={(e) => update("title", e.target.value)}
                       placeholder="例如：智能手环商城"
+                      disabled={isEdit}
                     />
+                    {isEdit && <span className="apm-hint">项目名称不可修改（影响 ID）</span>}
                     {errors.title && <span className="apm-error">{errors.title}</span>}
                   </label>
 
@@ -195,17 +283,44 @@ const AddProjectModal: React.FC<AddProjectModalProps> = ({ open, onClose }) => {
                     {errors.description && <span className="apm-error">{errors.description}</span>}
                   </label>
 
-                  <label className="apm-field">
-                    <span className="apm-label">封面图路径 <span className="apm-required">*</span></span>
+                  {/* 封面图：上传 + 输入 */}
+                  <div className="apm-field">
+                    <span className="apm-label">封面图 <span className="apm-required">*</span></span>
+                    <div
+                      className={`apm-dropzone ${dragOver ? "apm-dropzone-active" : ""}`}
+                      onDragOver={onDragOver}
+                      onDragLeave={onDragLeave}
+                      onDrop={onDrop}
+                    >
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={onFileInputChange}
+                        className="apm-file-input"
+                        id="apm-image-upload"
+                      />
+                      <label htmlFor="apm-image-upload" className="apm-file-label">
+                        点击上传或拖拽图片到此处
+                      </label>
+                    </div>
+                    {preview && (
+                      <div className="apm-preview">
+                        <img src={preview} alt="预览" />
+                      </div>
+                    )}
                     <input
                       className="apm-input"
                       type="text"
                       value={form.imageUrl}
-                      onChange={(e) => update("imageUrl", e.target.value)}
-                      placeholder='传图到 /public/images/ 后填 "/images/文件名.png"'
+                      onChange={(e) => {
+                        update("imageUrl", e.target.value);
+                        setPreview(e.target.value || null);
+                      }}
+                      placeholder='或输入图片 URL，如 "/images/photo.png"'
+                      style={{ marginTop: 8 }}
                     />
                     {errors.imageUrl && <span className="apm-error">{errors.imageUrl}</span>}
-                  </label>
+                  </div>
 
                   <label className="apm-field">
                     <span className="apm-label">视频路径 <span className="apm-optional">（可选）</span></span>
@@ -241,27 +356,22 @@ const AddProjectModal: React.FC<AddProjectModalProps> = ({ open, onClose }) => {
                     {errors.liveUrl && <span className="apm-error">{errors.liveUrl}</span>}
                   </label>
 
-                  <button className="apm-submit" onClick={handleSubmit}>
-                    添加到项目集
-                  </button>
+                  <div className="apm-actions">
+                    {isEdit && (
+                      <button className="apm-delete" onClick={handleDelete} type="button">
+                        删除项目
+                      </button>
+                    )}
+                    <button className="apm-submit" onClick={handleSubmit}>
+                      {isEdit ? "保存修改" : "添加到项目集"}
+                    </button>
+                  </div>
                 </div>
               </>
             ) : (
               <>
-                {/* 生成结果 */}
-                <h2 className="apm-title">项目已生成</h2>
-                <p className="apm-subtitle">复制此对象，粘贴进 <code className="apm-code-inline">src/data/projects.ts</code> 的数组即可</p>
-
-                <pre className="apm-pre">{generated}</pre>
-
-                <div className="apm-result-actions">
-                  <button className="apm-submit" onClick={handleCopy}>
-                    {copied ? "已复制 ✓" : "复制 JSON"}
-                  </button>
-                  <button className="apm-secondary" onClick={handleClose}>
-                    完成
-                  </button>
-                </div>
+                <h2 className="apm-title">已保存</h2>
+                <p className="apm-subtitle">正在刷新页面…</p>
               </>
             )}
           </motion.div>
@@ -284,8 +394,8 @@ const AddProjectModal: React.FC<AddProjectModalProps> = ({ open, onClose }) => {
         .apm-modal {
           position: relative;
           width: 100%;
-          max-width: 480px;
-          max-height: 85vh;
+          max-width: 520px;
+          max-height: 90vh;
           overflow-y: auto;
           border-radius: 20px;
           padding: 32px;
@@ -348,6 +458,11 @@ const AddProjectModal: React.FC<AddProjectModalProps> = ({ open, onClose }) => {
           opacity: 0.6;
           font-weight: 300;
         }
+        .apm-hint {
+          font-size: 12px;
+          color: var(--text-soft);
+          opacity: 0.6;
+        }
         .apm-input {
           padding: 10px 14px;
           font-size: 14px;
@@ -370,6 +485,10 @@ const AddProjectModal: React.FC<AddProjectModalProps> = ({ open, onClose }) => {
           color: var(--text-soft);
           opacity: 0.5;
         }
+        .apm-input:disabled {
+          opacity: 0.6;
+          cursor: not-allowed;
+        }
         .apm-textarea {
           resize: vertical;
           min-height: 70px;
@@ -378,6 +497,64 @@ const AddProjectModal: React.FC<AddProjectModalProps> = ({ open, onClose }) => {
         .apm-error {
           font-size: 12px;
           color: #d97757;
+        }
+
+        /* 拖拽上传区 */
+        .apm-dropzone {
+          position: relative;
+          padding: 20px;
+          border: 2px dashed var(--border);
+          border-radius: 12px;
+          background: rgba(255,255,255,0.3);
+          text-align: center;
+          transition: border-color 0.2s ease, background 0.2s ease;
+          cursor: pointer;
+        }
+        [data-theme="night"] .apm-dropzone {
+          background: rgba(30,41,59,0.3);
+        }
+        .apm-dropzone-active,
+        .apm-dropzone:hover {
+          border-color: var(--accent);
+          background: rgba(122, 154, 130, 0.06);
+        }
+        .apm-file-input {
+          position: absolute;
+          inset: 0;
+          width: 100%;
+          height: 100%;
+          opacity: 0;
+          cursor: pointer;
+        }
+        .apm-file-label {
+          font-size: 13px;
+          color: var(--text-soft);
+          pointer-events: none;
+        }
+
+        /* 图片预览 */
+        .apm-preview {
+          margin-top: 10px;
+          border-radius: 10px;
+          overflow: hidden;
+          border: 1px solid var(--border);
+          background: rgba(0,0,0,0.03);
+        }
+        .apm-preview img {
+          display: block;
+          max-height: 200px;
+          width: auto;
+          max-width: 100%;
+          margin: 0 auto;
+          object-fit: contain;
+        }
+
+        .apm-actions {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          gap: 12px;
+          margin-top: 4px;
         }
         .apm-submit {
           padding: 11px 24px;
@@ -394,48 +571,20 @@ const AddProjectModal: React.FC<AddProjectModalProps> = ({ open, onClose }) => {
           background: var(--accent-hover);
           transform: scale(1.02);
         }
-        .apm-secondary {
-          padding: 11px 24px;
+        .apm-delete {
+          padding: 11px 20px;
           font-size: 14px;
           font-weight: 500;
-          border: 1px solid var(--border);
+          border: 1px solid #d97757;
           border-radius: 10px;
           background: transparent;
-          color: var(--text-soft);
+          color: #d97757;
           cursor: pointer;
-          transition: background 0.2s ease;
+          transition: background 0.2s ease, color 0.2s ease;
         }
-        .apm-secondary:hover {
-          background: rgba(0,0,0,0.04);
-        }
-        .apm-code-inline {
-          font-family: "Courier New", monospace;
-          font-size: 12px;
-          padding: 2px 6px;
-          border-radius: 4px;
-          background: rgba(122, 154, 130, 0.1);
-          color: var(--accent);
-        }
-        .apm-pre {
-          margin: 0 0 20px;
-          padding: 16px;
-          font-family: "Courier New", monospace;
-          font-size: 13px;
-          line-height: 1.7;
-          background: rgba(0,0,0,0.04);
-          border: 1px solid var(--border);
-          border-radius: 12px;
-          color: var(--text);
-          overflow-x: auto;
-          white-space: pre-wrap;
-          word-break: break-all;
-        }
-        [data-theme="night"] .apm-pre {
-          background: rgba(0,0,0,0.2);
-        }
-        .apm-result-actions {
-          display: flex;
-          gap: 12px;
+        .apm-delete:hover {
+          background: #d97757;
+          color: #fff;
         }
       `}</style>
     </AnimatePresence>

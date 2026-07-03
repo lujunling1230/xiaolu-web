@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { legacyLoad, legacySave, publishDrafts } from "../utils/siteData";
+import { legacyLoad, legacySave, publishDrafts, pushSiteData, fetchSiteData } from "../utils/siteData";
 import { useAdminGuard } from "../hooks/useAdminGuard";
 
 /* ====== 触屏设备检测 ====== */
@@ -1598,11 +1598,41 @@ const LifeFilmPage: React.FC = () => {
   };
   const ActiveModal = openModule && isBuiltin(openModule) ? MODALS[openModule] : null;
 
+  /* 页面加载时同步远程最新数据 */
+  useEffect(() => {
+    let cancelled = false;
+    fetchSiteData().then((remote) => {
+      if (cancelled || !remote) return;
+      // 清除可能覆盖 seed 的本地 key，确保 legacyLoad 回退到远程 seed
+      Object.values(LS_KEYS).forEach((k) => {
+        localStorage.removeItem(k);
+        localStorage.removeItem(`draft_${k}`);
+      });
+      setBooks(loadData<Book>(LS_KEYS.reading, MOCK_BOOKS));
+      setPhotos(loadData<Photo>(LS_KEYS.photos, MOCK_PHOTOS));
+      setTracks(loadData<Track>(LS_KEYS.tracks, MOCK_TRACKS));
+      setSports(loadData<Sport>(LS_KEYS.sports, MOCK_SPORTS));
+      setMeditations(loadData<Meditation>(LS_KEYS.meditations, MOCK_MEDITATIONS));
+      setDramas(loadData<Drama>(LS_KEYS.dramas, MOCK_DRAMAS));
+      setCustomModules(loadCustomModules());
+    });
+    return () => { cancelled = true; };
+  }, []);
+
   /* 管理员 */
-  const handlePublish = () => {
+  const handlePublish = async () => {
     const res = publishDrafts();
     if (res.success) {
-      alert(res.merged.length > 0 ? `已发布 ${res.merged.length} 项草稿到主数据` : "没有待发布的草稿");
+      const pushed = await pushSiteData("ling");
+      if (pushed) {
+        alert(
+          res.merged.length > 0
+            ? `发布成功，访客将看到最新内容（已同步 ${res.merged.length} 项）`
+            : "发布成功，访客将看到最新内容"
+        );
+      } else {
+        alert("本地草稿已合并，但远程同步失败，请检查网络后重试");
+      }
     } else {
       alert("发布失败，请确认管理员权限");
     }

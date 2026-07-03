@@ -6,7 +6,8 @@ import LeafBook from "./components/LeafBook";
 import DynamicBackground from "./components/DynamicBackground";
 import ButterflyCursor from "./components/ButterflyCursor";
 import Footer from "./components/Footer";
-import { initSiteData, loadAdminSession } from "./utils/siteData";
+import { initSiteData, loadAdminSession, fetchSiteData } from "./utils/siteData";
+import { fetchProjects } from "./utils/projectStore";
 import { isElectron } from "./utils/electron";
 
 type Section = "home" | "about" | "projects" | "lab" | "film" | "mickey";
@@ -26,10 +27,13 @@ const AppContent: React.FC = () => {
   const [scrolled, setScrolled] = useState(false);
   const openBookRef = useRef<(() => void) | null>(null);
 
-  /* 初始化站点数据 + 恢复管理员会话 */
+  /* 初始化站点数据 + 恢复管理员会话 + 异步拉取远程最新数据 */
   useEffect(() => {
     initSiteData();
     loadAdminSession();
+    // 启动时静默拉取服务端最新数据，更新本地缓存
+    fetchProjects().catch(() => {});
+    fetchSiteData().catch(() => {});
   }, []);
 
   useEffect(() => {

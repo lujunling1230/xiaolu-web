@@ -1,23 +1,12 @@
 /**
  * GitHub API 工具函数
  * 通过 GitHub Contents API 读写仓库文件，实现无数据库持久化。
- *
- * 环境变量要求：
- * - GITHUB_TOKEN: 具有 repo 权限的 GitHub Personal Access Token
- * - GITHUB_REPO: 仓库名，格式 "owner/repo"
  */
 
 const GITHUB_TOKEN = process.env.GITHUB_TOKEN;
 const GITHUB_REPO = process.env.GITHUB_REPO;
 const BRANCH = process.env.GITHUB_BRANCH || "main";
 
-if (!GITHUB_TOKEN || !GITHUB_REPO) {
-  console.warn(
-    "[github] 环境变量 GITHUB_TOKEN 或 GITHUB_REPO 未设置，API 将无法正常工作"
-  );
-}
-
-/** 从 GitHub 获取文件内容 */
 async function getGitHubFile(filePath) {
   if (!GITHUB_TOKEN || !GITHUB_REPO) {
     throw new Error("GitHub 环境变量未配置");
@@ -33,7 +22,7 @@ async function getGitHubFile(filePath) {
   });
 
   if (res.status === 404) {
-    return null; // 文件不存在
+    return null;
   }
 
   if (!res.ok) {
@@ -46,7 +35,6 @@ async function getGitHubFile(filePath) {
   return { data: JSON.parse(decoded), sha: json.sha };
 }
 
-/** 更新 GitHub 文件内容 */
 async function updateGitHubFile(filePath, content, sha, message) {
   if (!GITHUB_TOKEN || !GITHUB_REPO) {
     throw new Error("GitHub 环境变量未配置");

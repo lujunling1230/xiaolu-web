@@ -4,7 +4,7 @@
  * POST /api/site-data   -> 验证密码后更新 GitHub 上的 site-data.json
  */
 
-const { getGitHubFile, updateGitHubFile } = require("./lib/github");
+const { getGitHubFile, updateGitHubFile } = require("./lib/github.js");
 
 const FILE_PATH = "data/site-data.json";
 const ADMIN_PASSWORD = "ling";

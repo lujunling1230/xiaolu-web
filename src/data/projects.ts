@@ -26,7 +26,7 @@ export interface Project {
   tags?: string[];      // 可选 技术标签
 }
 
-export const projects: Project[] = [
+export const DEFAULT_PROJECTS: Project[] = [
   {
     id: "forest-healing",
     title: "森林疗愈室",

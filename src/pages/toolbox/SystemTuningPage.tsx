@@ -2,7 +2,7 @@ import { useState, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Link } from "react-router-dom";
 import { callAI } from "../../utils/aiClient";
-import { CHARACTERS, getCharacter, detectGroupChat, CHARACTER_FEEDS, type Character } from "../../data/characters";
+import { CHARACTERS, getCharacter, detectGroupChat, resolveGroupChat, type Character } from "../../data/characters";
 
 /**
  * 爱情公寓·元宇宙客厅
@@ -851,7 +851,7 @@ const SystemTuningPage: React.FC = () => {
     setGroupTyping(null);
   };
 
-  /** 发起群聊（从客厅大厅） */
+  /** 发起群聊（从客厅大厅，支持 @提及 + 接力） */
   const startGroupChat = async (text: string, charIds: string[]) => {
     const userMsg: ChatMessage = {
       id: uid(),
@@ -868,19 +868,30 @@ const SystemTuningPage: React.FC = () => {
     playGroupBell();
     scrollToBottom();
 
+    // 从文本中检测 @提及
+    const mentionId = resolveGroupChat(text).mentionedId;
+
     for (const charId of charIds) {
       const char = getCharacter(charId);
       if (!char) continue;
       setGroupTyping(char.name);
       scrollToBottom();
 
-      // 构建历史消息上下文
+      // 构建历史消息上下文（含前文所有角色回复）
       const historyMsgs = currentMessages.map((m) => ({
         role: m.role === "user" ? "user" : "assistant",
         content: m.role === "user" ? m.content : `${getCharacter(m.characterId!)?.name}说：${m.content}`,
       }));
 
-      const fullPrompt = `${char.systemPrompt}\n\n你是群聊中的一员，请自然接话，不要重复别人的话。`;
+      // 构建 prompt：基础人设 + 群聊接话指令 + @提及指令
+      const isMentioned = mentionId === charId;
+      const mentionHint = isMentioned
+        ? `\n\n【重要】用户直接@了你（${char.name}），请你优先回应用户的问题/话题，态度自然。`
+        : "";
+      const relayHint = charIds.length > 1
+        ? `\n\n你是群聊中的一员。前面已有其他室友发言，请你自然地“接话”或“补刀”，不要重复别人说过的话。可以调侃、吐槽、附和，保持轻松氛围。`
+        : "";
+      const fullPrompt = `${char.systemPrompt}${mentionHint}${relayHint}`;
 
       const reply = await callAI(fullPrompt, historyMsgs, { maxTokens: 180 });
 
@@ -895,7 +906,10 @@ const SystemTuningPage: React.FC = () => {
       setMessages(currentMessages);
       playConnect();
       scrollToBottom();
-      await new Promise((r) => setTimeout(r, 600));
+
+      // 随机延迟 800-1500ms，模拟真人打字
+      const delay = 800 + Math.floor(Math.random() * 700);
+      await new Promise((r) => setTimeout(r, delay));
     }
 
     // 保存群聊历史到第一个角色
@@ -922,27 +936,37 @@ const SystemTuningPage: React.FC = () => {
     scrollToBottom();
 
     // 检测是否触发群聊（仅在从群聊页面发送时检测）
-    const groupChars = (view === "groupchat") ? detectGroupChat(text) : null;
+    const groupResult = (view === "groupchat") ? resolveGroupChat(text) : null;
 
-    if (groupChars && groupChars.length > 0) {
-      // ===== 群聊模式 =====
+    if (groupResult && groupResult.responders.length > 0) {
+      // ===== 群聊模式（@提及 + 接力） =====
       setView("groupchat");
       playGroupBell();
 
       let currentMsgs = [...updatedMessages];
 
-      for (const charId of groupChars) {
+      for (const charId of groupResult.responders) {
         const char = getCharacter(charId);
         if (!char) continue;
         setGroupTyping(char.name);
         scrollToBottom();
 
+        // 构建历史消息上下文（含前文所有角色回复）
         const historyMsgs = currentMsgs.map((m) => ({
           role: m.role === "user" ? "user" : "assistant",
           content: m.role === "user" ? m.content : `${getCharacter(m.characterId!)?.name}说：${m.content}`,
         }));
 
-        const fullPrompt = `${char.systemPrompt}\n\n你是群聊中的一员，请自然接话，不要重复别人的话。`;
+        // 构建 prompt：基础人设 + 群聊接话指令 + @提及指令
+        const isMentioned = groupResult.mentionedId === charId;
+        const mentionHint = isMentioned
+          ? `\n\n【重要】用户直接@了你（${char.name}），请你优先回应用户的问题/话题，态度自然。`
+          : "";
+        const relayHint = groupResult.responders.length > 1
+          ? `\n\n你是群聊中的一员。前面已有其他室友发言，请你自然地“接话”或“补刀”，不要重复别人说过的话。可以调侃、吐槽、附和，保持轻松氛围。`
+          : "";
+        const fullPrompt = `${char.systemPrompt}${mentionHint}${relayHint}`;
+
         const reply = await callAI(fullPrompt, historyMsgs, { maxTokens: 180 });
 
         const charMsg: ChatMessage = {
@@ -956,10 +980,13 @@ const SystemTuningPage: React.FC = () => {
         setMessages(currentMsgs);
         playConnect();
         scrollToBottom();
-        await new Promise((r) => setTimeout(r, 600));
+
+        // 随机延迟 800-1500ms，模拟真人打字
+        const delay = 800 + Math.floor(Math.random() * 700);
+        await new Promise((r) => setTimeout(r, delay));
       }
 
-      saveChatHistory(groupChars[0], currentMsgs);
+      saveChatHistory(groupResult.responders[0], currentMsgs);
       setGroupTyping(null);
       setIsLoading(false);
     } else if (selectedChar) {
@@ -2115,7 +2142,7 @@ const SystemTuningPage: React.FC = () => {
             <div className="apt-chat-inputbar">
               <textarea
                 className="apt-chat-input"
-                placeholder={selectedChar.ui.placeholder}
+                placeholder={view === "groupchat" ? "输入你的近况，看看谁第一个抢话…" : selectedChar.ui.placeholder}
                 value={inputText}
                 onChange={(e) => setInputText(e.target.value)}
                 onKeyDown={(e) => {

@@ -249,6 +249,20 @@ export const NEW_ROOMMATE = {
   intro: "刚搬进爱情公寓 3603 的神秘新住户，据说是个做互联网的产品经理。",
 };
 
+/** 角色名称 -> ID 映射（支持 @提及 识别） */
+const CHARACTER_NAME_MAP: Record<string, string> = {
+  "曾小贤": "zeng", "小贤": "zeng",
+  "胡一菲": "fei", "一菲": "fei",
+  "吕子乔": "lv", "子乔": "lv",
+  "陈美嘉": "meijia", "美嘉": "meijia",
+  "关谷神奇": "guangu", "关谷": "guangu",
+  "唐悠悠": "youyou", "悠悠": "youyou",
+  "张伟": "zhangwei",
+};
+
+/** 所有角色 ID */
+const ALL_CHAR_IDS = ["zeng", "fei", "lv", "meijia", "guangu", "youyou", "zhangwei"];
+
 /** 群聊触发词 -> 可能触发的角色ID列表 */
 export const GROUP_CHAT_MAP: Record<string, string[]> = {
   "吵架": ["fei", "zeng", "lv"],
@@ -260,18 +274,72 @@ export const GROUP_CHAT_MAP: Record<string, string[]> = {
   "bug": ["guangu", "fei", "zhangwei"],
 };
 
-/** 根据输入文本检测是否触发群聊，返回触发的角色ID列表 */
-export function detectGroupChat(text: string): string[] | null {
+export interface GroupChatResult {
+  /** 被 @ 强制响应的角色 ID（若有） */
+  mentionedId: string | null;
+  /** 参与回复的角色 ID 列表（已排序） */
+  responders: string[];
+}
+
+/**
+ * 解析群聊输入，识别 @提及 并决定哪些角色参与接力回复
+ * @param text 用户输入文本
+ * @returns { mentionedId, responders } — mentionedId 为被@的角色，responders 为全部回复者（已排序，被@者优先）
+ */
+export function resolveGroupChat(text: string): GroupChatResult {
+  // 1. 检测 @提及
+  const mentionedId = extractMention(text);
+
+  // 2. 先尝试关键词触发
   const lower = text.toLowerCase();
+  let pool: string[] | null = null;
   for (const [keyword, chars] of Object.entries(GROUP_CHAT_MAP)) {
     if (lower.includes(keyword)) {
-      // 随机选 2-3 个角色
-      const count = 2 + Math.floor(Math.random() * 2);
-      const shuffled = [...chars].sort(() => Math.random() - 0.5);
-      return shuffled.slice(0, Math.min(count, shuffled.length));
+      pool = chars;
+      break;
     }
   }
+
+  // 3. 无关键词时从全部角色中随机选
+  if (!pool) {
+    pool = [...ALL_CHAR_IDS];
+  }
+
+  // 4. 决定回复人数：3~4 人
+  const count = 3 + Math.floor(Math.random() * 2);
+
+  // 5. 构建回复者列表
+  let responders: string[];
+  if (mentionedId) {
+    // 被@者必须参与，再随机补几个
+    const others = pool.filter((id) => id !== mentionedId);
+    const shuffled = others.sort(() => Math.random() - 0.5);
+    const picks = shuffled.slice(0, Math.min(count - 1, others.length));
+    responders = [mentionedId, ...picks];
+  } else {
+    const shuffled = pool.sort(() => Math.random() - 0.5);
+    responders = shuffled.slice(0, Math.min(count, pool.length));
+  }
+
+  return { mentionedId, responders };
+}
+
+/** 从文本中提取 @提及 的角色 ID */
+function extractMention(text: string): string | null {
+  const atRegex = /@([^\s@,，.。!！?？]+)/g;
+  let match: RegExpExecArray | null;
+  while ((match = atRegex.exec(text)) !== null) {
+    const name = match[1].trim();
+    const id = CHARACTER_NAME_MAP[name];
+    if (id) return id;
+  }
   return null;
+}
+
+/** 兼容旧接口：仅返回角色列表 */
+export function detectGroupChat(text: string): string[] | null {
+  const result = resolveGroupChat(text);
+  return result.responders.length > 0 ? result.responders : null;
 }
 
 /** 根据角色ID获取角色配置 */

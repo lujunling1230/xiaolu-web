@@ -223,6 +223,57 @@ const SystemTuningPage: React.FC = () => {
     setGroupTyping(null);
   };
 
+  /** 发起群聊（从客厅大厅） */
+  const startGroupChat = async (text: string, charIds: string[]) => {
+    const userMsg: ChatMessage = {
+      id: uid(),
+      role: "user",
+      content: text,
+      timestamp: Date.now(),
+    };
+    setMessages([userMsg]);
+    setInputText("");
+    setIsLoading(true);
+    setView("groupchat");
+    setSelectedCharId(charIds[0]); // 用第一个角色作为界面主题
+    playGroupBell();
+    scrollToBottom();
+
+    for (const charId of charIds) {
+      const char = getCharacter(charId);
+      if (!char) continue;
+      setGroupTyping(char.name);
+      scrollToBottom();
+
+      const context = messages
+        .filter((m) => m.role === "character")
+        .slice(-2)
+        .map((m) => `${getCharacter(m.characterId!)?.name}说：${m.content}`)
+        .join("\n");
+
+      const fullPrompt = context
+        ? `${char.systemPrompt}\n\n当前群聊上下文：\n${context}\n\n现在轮到你了，请接上话。`
+        : char.systemPrompt;
+
+      const reply = await callAI(fullPrompt, text, { maxTokens: 180 });
+
+      const charMsg: ChatMessage = {
+        id: uid(),
+        role: "character",
+        characterId: charId,
+        content: reply,
+        timestamp: Date.now(),
+      };
+      setMessages((prev) => [...prev, charMsg]);
+      playConnect();
+      scrollToBottom();
+      await new Promise((r) => setTimeout(r, 600));
+    }
+
+    setGroupTyping(null);
+    setIsLoading(false);
+  };
+
   /** 发送消息（单聊或触发群聊） */
   const sendMessage = async () => {
     const text = inputText.trim();
@@ -350,9 +401,42 @@ const SystemTuningPage: React.FC = () => {
               >
                 你住在 {NEW_ROOMMATE.room}，{NEW_ROOMMATE.title}。
                 <br />
-                点击任意房客，开始插科打诨、解决人生 Bug。
+                点击任意房客私聊，或发起群叫上大家一起吐槽。
               </motion.p>
             </section>
+
+            {/* 发起群聊区 */}
+            <motion.div
+              className="apt-group-start"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.3 }}
+            >
+              <textarea
+                className="apt-group-input"
+                placeholder="有啥事儿想叫大家一起聊聊？写在这儿…"
+                value={inputText}
+                onChange={(e) => setInputText(e.target.value)}
+                rows={2}
+              />
+              <motion.button
+                className="apt-group-btn"
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                onClick={() => {
+                  const t = inputText.trim();
+                  if (!t) return;
+                  // 随机选 3-4 个角色
+                  const shuffled = [...CHARACTERS].sort(() => Math.random() - 0.5);
+                  const picks = shuffled.slice(0, 3 + Math.floor(Math.random() * 2));
+                  const groupCharIds = picks.map((c) => c.id);
+                  startGroupChat(t, groupCharIds);
+                }}
+                disabled={!inputText.trim()}
+              >
+                📢 发起群聊
+              </motion.button>
+            </motion.div>
 
             {/* 角色网格 */}
             <section className="apt-chars">
@@ -490,9 +574,8 @@ const SystemTuningPage: React.FC = () => {
       <style>{`
         .apt-page {
           min-height: 100vh;
-          background:
-            radial-gradient(120% 80% at 50% 0%, #2a2620 0%, #1c1916 50%, #14110f 100%);
-          color: #e8e4dc;
+          background: #F5F1E8;
+          color: #3D3830;
           font-family: "Noto Sans SC", system-ui, sans-serif;
           padding: 0 24px 60px;
         }
@@ -507,36 +590,66 @@ const SystemTuningPage: React.FC = () => {
           gap: 12px;
         }
         .apt-back {
-          font-size: 14px; color: #8a8478; text-decoration: none;
+          font-size: 14px; color: #8A8378; text-decoration: none;
           letter-spacing: 0.04em; transition: color 0.25s ease, transform 0.25s ease;
           background: none; border: none; padding: 0;
         }
-        .apt-back:hover { color: #d4a85a; transform: translateX(-3px); }
-        .apt-back-ghost { color: #6a6258; }
-        .apt-back-ghost:hover { color: #9a9488; }
+        .apt-back:hover { color: #A08050; transform: translateX(-3px); }
+        .apt-back-ghost { color: #9A9488; }
+        .apt-back-ghost:hover { color: #7A7568; }
 
         /* ===== 客厅大厅 ===== */
         .apt-lobby {
           max-width: 720px; margin: 0 auto;
         }
         .apt-hero {
-          text-align: center; padding: 32px 0 36px;
+          text-align: center; padding: 32px 0 28px;
         }
         .apt-hero-badge {
           display: inline-block; padding: 6px 16px; border-radius: 999px;
-          font-size: 13px; color: #d4a85a;
-          background: rgba(212,168,90,0.08); border: 1px solid rgba(212,168,90,0.2);
+          font-size: 13px; color: #A08050;
+          background: rgba(160,128,80,0.08); border: 1px solid rgba(160,128,80,0.2);
           letter-spacing: 0.06em; margin-bottom: 18px;
         }
         .apt-hero-title {
           font-family: "Noto Serif SC", Georgia, serif;
           font-size: clamp(26px, 4.5vw, 38px); font-weight: 600;
-          color: #e8e4dc; margin: 0 0 12px; letter-spacing: 0.06em;
+          color: #3D3830; margin: 0 0 12px; letter-spacing: 0.06em;
         }
         .apt-hero-sub {
-          font-size: 14px; color: #9a9488; margin: 0; line-height: 1.8;
+          font-size: 14px; color: #7A7568; margin: 0; line-height: 1.8;
           letter-spacing: 0.03em;
         }
+
+        /* 发起群聊区 */
+        .apt-group-start {
+          background: #FFFFFF;
+          border: 1px solid #E8E2D4;
+          border-radius: 16px;
+          padding: 18px;
+          margin-bottom: 24px;
+          box-shadow: 0 2px 12px -4px rgba(0,0,0,0.06);
+        }
+        .apt-group-input {
+          width: 100%; background: #FAF8F3; border: 1px solid #E8E2D4;
+          border-radius: 12px; padding: 12px 14px; color: #3D3830;
+          font-size: 14px; line-height: 1.6; resize: none; outline: none;
+          font-family: inherit; box-sizing: border-box;
+          margin-bottom: 12px;
+        }
+        .apt-group-input::placeholder { color: #B0A898; }
+        .apt-group-input:focus { border-color: #C8B898; }
+        .apt-group-btn {
+          display: block; width: 100%; padding: 12px;
+          border: none; border-radius: 12px;
+          font-size: 15px; font-weight: 600; color: #FFFFFF;
+          font-family: inherit; letter-spacing: 0.06em;
+          background: linear-gradient(135deg, #A08060, #8A6D4F);
+          box-shadow: 0 4px 16px -6px rgba(160,128,96,0.35);
+          transition: opacity 0.2s ease, transform 0.2s ease;
+        }
+        .apt-group-btn:hover:not(:disabled) { transform: translateY(-1px); }
+        .apt-group-btn:disabled { opacity: 0.45; cursor: not-allowed; }
 
         /* 角色网格 */
         .apt-chars {
@@ -549,12 +662,13 @@ const SystemTuningPage: React.FC = () => {
           display: flex; flex-direction: column; align-items: center;
           padding: 20px 14px; border-radius: 16px;
           border: 1px solid;
-          background: linear-gradient(160deg, rgba(255,255,255,0.03), transparent);
-          transition: box-shadow 0.3s ease;
+          background: #FFFFFF;
+          transition: box-shadow 0.3s ease, transform 0.3s ease;
           text-align: center;
+          box-shadow: 0 2px 8px -4px rgba(0,0,0,0.06);
         }
         .apt-char-card:hover {
-          box-shadow: 0 8px 24px -8px rgba(0,0,0,0.4);
+          box-shadow: 0 8px 24px -8px rgba(0,0,0,0.12);
         }
         .apt-char-emoji {
           width: 52px; height: 52px; border-radius: 50%;
@@ -568,10 +682,10 @@ const SystemTuningPage: React.FC = () => {
           font-size: 15px; font-weight: 600; letter-spacing: 0.03em;
         }
         .apt-char-title {
-          font-size: 11px; color: #8a8478; letter-spacing: 0.04em;
+          font-size: 11px; color: #8A8378; letter-spacing: 0.04em;
         }
         .apt-char-room {
-          font-size: 10px; color: #5a5448; letter-spacing: 0.08em;
+          font-size: 10px; color: #B0A898; letter-spacing: 0.08em;
           margin-top: 2px;
         }
         .apt-char-freq {
@@ -580,7 +694,7 @@ const SystemTuningPage: React.FC = () => {
         }
 
         .apt-hint {
-          text-align: center; font-size: 12px; color: #6a6258;
+          text-align: center; font-size: 12px; color: #B0A898;
           letter-spacing: 0.03em; padding: 8px 16px;
         }
 
@@ -593,7 +707,7 @@ const SystemTuningPage: React.FC = () => {
         }
         .apt-chat-header {
           display: flex; align-items: center; justify-content: space-between;
-          padding: 16px 4px; border-bottom: 1px solid;
+          padding: 16px 4px; border-bottom: 1px solid #E8E2D4;
           flex-shrink: 0;
         }
         .apt-chat-header-left {
@@ -611,7 +725,7 @@ const SystemTuningPage: React.FC = () => {
           font-size: 15px; font-weight: 600; letter-spacing: 0.03em;
         }
         .apt-chat-meta {
-          font-size: 11px; color: #6a6258; letter-spacing: 0.04em;
+          font-size: 11px; color: #B0A898; letter-spacing: 0.04em;
         }
         .apt-chat-status {
           font-size: 11px; letter-spacing: 0.08em;
@@ -623,11 +737,11 @@ const SystemTuningPage: React.FC = () => {
           flex: 1; overflow-y: auto; padding: 20px 4px;
           display: flex; flex-direction: column; gap: 14px;
           scrollbar-width: thin;
-          scrollbar-color: rgba(255,255,255,0.08) transparent;
+          scrollbar-color: rgba(0,0,0,0.06) transparent;
         }
         .apt-chat-scroll::-webkit-scrollbar { width: 4px; }
         .apt-chat-scroll::-webkit-scrollbar-thumb {
-          background: rgba(255,255,255,0.08); border-radius: 2px;
+          background: rgba(0,0,0,0.06); border-radius: 2px;
         }
 
         .apt-chat-empty {
@@ -636,11 +750,11 @@ const SystemTuningPage: React.FC = () => {
         .apt-chat-empty-emoji { font-size: 48px; display: block; margin-bottom: 14px; }
         .apt-chat-empty-text {
           font-family: "Noto Serif SC", Georgia, serif;
-          font-size: 18px; color: #d4a85a; margin: 0 0 8px;
+          font-size: 18px; color: #A08050; margin: 0 0 8px;
           letter-spacing: 0.04em;
         }
         .apt-chat-empty-hint {
-          font-size: 13px; color: #6a6258; margin: 0; line-height: 1.6;
+          font-size: 13px; color: #B0A898; margin: 0; line-height: 1.6;
         }
 
         /* 消息气泡 */
@@ -666,6 +780,7 @@ const SystemTuningPage: React.FC = () => {
         }
         .apt-bubble-user .apt-bubble-body {
           border-bottom-right-radius: 4px;
+          background: #E8E2D4; color: #3D3830;
         }
         .apt-bubble-char .apt-bubble-body {
           border-bottom-left-radius: 4px;
@@ -684,7 +799,7 @@ const SystemTuningPage: React.FC = () => {
         }
         .apt-typing-dot {
           width: 6px; height: 6px; border-radius: 50%;
-          background: #6a6258; animation: apt-typing-bounce 1.2s infinite ease-in-out;
+          background: #C8B898; animation: apt-typing-bounce 1.2s infinite ease-in-out;
         }
         .apt-typing-dot:nth-child(2) { animation-delay: 0.15s; }
         .apt-typing-dot:nth-child(3) { animation-delay: 0.3s; }
@@ -693,28 +808,28 @@ const SystemTuningPage: React.FC = () => {
           30% { transform: translateY(-4px); }
         }
         .apt-typing-name {
-          font-size: 11px; color: #6a6258; margin-left: 4px;
+          font-size: 11px; color: #B0A898; margin-left: 4px;
           letter-spacing: 0.04em;
         }
 
         /* 输入区 */
         .apt-chat-inputbar {
           display: flex; gap: 10px; padding: 12px 4px 0;
-          border-top: 1px solid #2a241e;
+          border-top: 1px solid #E8E2D4;
           flex-shrink: 0;
         }
         .apt-chat-input {
-          flex: 1; background: #1a1714; border: 1px solid #2a241e;
-          border-radius: 12px; padding: 10px 14px; color: #d8d4cc;
+          flex: 1; background: #FFFFFF; border: 1px solid #E8E2D4;
+          border-radius: 12px; padding: 10px 14px; color: #3D3830;
           font-size: 14px; line-height: 1.6; resize: none; outline: none;
           font-family: inherit;
         }
-        .apt-chat-input::placeholder { color: #5a5448; }
-        .apt-chat-input:focus { border-color: #3a342c; }
+        .apt-chat-input::placeholder { color: #B0A898; }
+        .apt-chat-input:focus { border-color: #C8B898; }
         .apt-chat-input:disabled { opacity: 0.5; }
         .apt-chat-send {
           padding: 10px 20px; border: none; border-radius: 12px;
-          font-size: 14px; font-weight: 600; color: #1c1916;
+          font-size: 14px; font-weight: 600; color: #FFFFFF;
           font-family: inherit; letter-spacing: 0.06em;
           transition: opacity 0.2s ease, transform 0.2s ease;
           flex-shrink: 0; align-self: flex-end;

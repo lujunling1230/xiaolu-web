@@ -1,8 +1,7 @@
-import { useRef, useState, useMemo } from "react";
+import { useRef, useState } from "react";
 import { motion } from "framer-motion";
 import LeafBook from "../components/LeafBook";
-import { Project } from "../data/projects";
-import { getProjects } from "../utils/projectStore";
+import { projects, Project } from "../data/projects";
 import { useAdminGuard } from "../hooks/useAdminGuard";
 
 const FOREWORD_KEY = "projects_foreword";
@@ -40,7 +39,6 @@ const ProjectsPage: React.FC = () => {
 
   // 作品网格：点击滚动到对应位置（或打开链接）
   const [hoveredProject, setHoveredProject] = useState<string | null>(null);
-  const projectsList = useMemo(() => getProjects(), []);
 
   const { isAdmin: adminMode, verifyAdmin, AdminGuardUI } = useAdminGuard();
 
@@ -223,7 +221,7 @@ const ProjectsPage: React.FC = () => {
           gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))",
           gap: 20,
         }}>
-          {projectsList.map((project: Project, index: number) => (
+          {projects.map((project: Project, index: number) => (
             <motion.a
               key={project.id}
               href={project.liveUrl}

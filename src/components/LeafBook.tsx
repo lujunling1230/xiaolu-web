@@ -287,6 +287,7 @@ const PreviewPage: React.FC<{
   onJump: () => void;
 }> = ({ project, index, onNext, onJump }) => {
   const pn = getSpreadPageNums(index + 2);
+  const [imageUrl, setImageUrl] = useState(project.imageUrl);
   return (
     <div className="lb-page-content lb-preview-page">
       <div className="lb-page-vein" />
@@ -309,32 +310,43 @@ const PreviewPage: React.FC<{
               ))}
             </div>
           )}
-          <button
-            className="lb-preview-visit"
-            onClick={(e) => {
-              e.stopPropagation();
-              onJump();
-            }}
-          >
-            打开作品 ↗
-          </button>
+          <div className="lb-preview-btns">
+            <button
+              className="lb-preview-visit"
+              onClick={(e) => {
+                e.stopPropagation();
+                onJump();
+              }}
+            >
+              打开作品 ↗
+            </button>
+            <label className="lb-preview-upload" onClick={(e) => e.stopPropagation()}>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+              上传图片
+              <input
+                type="file"
+                accept="image/*"
+                style={{ display: "none" }}
+                onChange={(e) => {
+                  e.stopPropagation();
+                  const file = e.target.files?.[0];
+                  if (!file) return;
+                  const reader = new FileReader();
+                  reader.onload = (ev) => {
+                    const base64 = ev.target?.result as string;
+                    if (base64) setImageUrl(base64);
+                  };
+                  reader.readAsDataURL(file);
+                }}
+              />
+            </label>
+          </div>
         </div>
 
-        {/* 右栏 截图（点击跳转） */}
-        <a
-          className="lb-preview-visual"
-          href={project.liveUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          onClick={(e) => {
-            e.stopPropagation();
-            onJump();
-          }}
-        >
-          <img src={project.imageUrl} alt={project.title} className="lb-preview-media" />
-          <span className="lb-preview-visual-overlay" />
-          <span className="lb-preview-visual-hint">点击访问 ↗</span>
-        </a>
+        {/* 右栏 截图 */}
+        <div className="lb-preview-visual">
+          <img src={imageUrl} alt={project.title} className="lb-preview-media" />
+        </div>
       </div>
 
       <PageNumber current={pn.right} />
@@ -913,11 +925,12 @@ const LeafBook: React.FC<LeafBookProps> = ({ registerOpenBook, flipTriggerRef, a
           );
         }
 
-        /* ===== 页码（右下角，所有页面统一） ===== */
+        /* ===== 页码（正下方居中，所有页面统一） ===== */
         .lb-page-number {
           position: absolute;
           bottom: 14px;
-          right: 18px;
+          left: 50%;
+          transform: translateX(-50%);
           z-index: 15;
           font-family: "Noto Serif SC", Georgia, serif;
           font-size: 11px;
@@ -1709,6 +1722,31 @@ const LeafBook: React.FC<LeafBookProps> = ({ registerOpenBook, flipTriggerRef, a
           border-color: var(--accent);
           background: rgba(184, 140, 106, 0.08);
         }
+        .lb-preview-btns {
+          margin-top: auto;
+          align-self: flex-start;
+          display: flex;
+          gap: 8px;
+        }
+        .lb-preview-upload {
+          display: inline-flex;
+          align-items: center;
+          gap: 4px;
+          font-size: 12px;
+          font-weight: 500;
+          padding: 7px 14px;
+          border-radius: 999px;
+          background: rgba(120, 160, 100, 0.15);
+          border: 1px solid rgba(120, 160, 100, 0.35);
+          color: #5a7a5a;
+          cursor: pointer;
+          font-family: "Noto Sans SC", sans-serif;
+          transition: all 0.25s ease;
+        }
+        .lb-preview-upload:hover {
+          background: rgba(120, 160, 100, 0.25);
+          border-color: rgba(120, 160, 100, 0.5);
+        }
 
         /* 右栏 截图 */
         .lb-preview-visual {
@@ -1729,28 +1767,6 @@ const LeafBook: React.FC<LeafBookProps> = ({ registerOpenBook, flipTriggerRef, a
           transition: transform 0.5s ease;
         }
         .lb-preview-visual:hover .lb-preview-media { transform: scale(1.04); }
-        .lb-preview-visual-overlay {
-          position: absolute;
-          inset: 0;
-          background: linear-gradient(135deg, rgba(0,0,0,0) 55%, rgba(0,0,0,0.28));
-          opacity: 0;
-          transition: opacity 0.3s ease;
-          pointer-events: none;
-        }
-        .lb-preview-visual:hover .lb-preview-visual-overlay { opacity: 1; }
-        .lb-preview-visual-hint {
-          position: absolute;
-          top: 14px;
-          left: 14px;
-          padding: 4px 11px;
-          font-size: 11px;
-          border-radius: 999px;
-          background: rgba(0,0,0,0.45);
-          color: #fff;
-          backdrop-filter: blur(4px);
-          letter-spacing: 0.05em;
-          opacity: 0.85;
-        }
 
         /* ===== 合上书按钮 ===== */
         .lb-close-btn {
@@ -1907,7 +1923,7 @@ const LeafBook: React.FC<LeafBookProps> = ({ registerOpenBook, flipTriggerRef, a
           .lb-origin-continued { font-size: 12px; }
           /* 按钮 */
           .lb-close-btn { bottom: 12px; right: 12px; padding: 6px 12px; font-size: 11px; }
-          .lb-page-number { font-size: 10px; bottom: 10px; right: 14px; }
+          .lb-page-number { font-size: 10px; bottom: 10px; left: 50%; transform: translateX(-50%); }
           /* 双页展开容器：移动端改为单列 */
           .lb-spread-container {
             flex-direction: column;

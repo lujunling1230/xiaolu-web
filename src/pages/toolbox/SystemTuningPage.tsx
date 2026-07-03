@@ -851,6 +851,56 @@ const SystemTuningPage: React.FC = () => {
     setGroupTyping(null);
   };
 
+  /** 发起群聊（从客厅大厅） */
+  const startGroupChat = async (text: string, charIds: string[]) => {
+    const userMsg: ChatMessage = {
+      id: uid(),
+      role: "user",
+      content: text,
+      timestamp: Date.now(),
+    };
+    let currentMessages: ChatMessage[] = [userMsg];
+    setMessages(currentMessages);
+    setInputText("");
+    setIsLoading(true);
+    setView("groupchat");
+    setSelectedCharId(charIds[0]);
+    playGroupBell();
+    scrollToBottom();
+
+    for (const charId of charIds) {
+      const char = getCharacter(charId);
+      if (!char) continue;
+      setGroupTyping(char.name);
+      scrollToBottom();
+
+      const historyMsgs = currentMessages.map((m) => ({
+        role: m.role === "user" ? "user" : "assistant",
+        content: m.role === "user" ? m.content : `${getCharacter(m.characterId!)?.name}说：${m.content}`,
+      }));
+
+      const fullPrompt = `${char.systemPrompt}\n\n你是群聊中的一员，请自然接话，不要重复别人的话。`;
+      const reply = await callAI(fullPrompt, historyMsgs, { maxTokens: 180 });
+
+      const charMsg: ChatMessage = {
+        id: uid(),
+        role: "character",
+        characterId: charId,
+        content: reply,
+        timestamp: Date.now(),
+      };
+      currentMessages = [...currentMessages, charMsg];
+      setMessages(currentMessages);
+      playConnect();
+      scrollToBottom();
+      await new Promise((r) => setTimeout(r, 600));
+    }
+
+    saveChatHistory(charIds[0], currentMessages);
+    setGroupTyping(null);
+    setIsLoading(false);
+  };
+
   /** 发送消息（单聊或触发群聊） */
   const sendMessage = async () => {
     const text = inputText.trim();
@@ -1050,12 +1100,10 @@ const SystemTuningPage: React.FC = () => {
                   whileTap={{ backgroundColor: "#e5e5e5" }}
                   onClick={() => {
                     if (item.type === "group") {
-                      // 进入空群聊，用户自己发消息
-                      setView("groupchat");
-                      setSelectedCharId(null);
-                      setMessages([]);
-                      setInputText("");
-                      setGroupTyping(null);
+                      const text = "有人在吗？出来聊聊~";
+                      const shuffled = [...CHARACTERS].sort(() => Math.random() - 0.5);
+                      const picks = shuffled.slice(0, 3 + Math.floor(Math.random() * 2));
+                      startGroupChat(text, picks.map((c) => c.id));
                     } else {
                       enterChat(item.id);
                     }

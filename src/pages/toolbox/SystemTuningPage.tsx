@@ -1994,17 +1994,19 @@ const SystemTuningPage: React.FC = () => {
             {/* 聊天头部 */}
             <div
               className="apt-chat-header"
-              style={{ borderBottomColor: `${selectedChar.color}25` }}
+              style={{ borderBottomColor: view === "groupchat" ? "#e0e0e0" : `${selectedChar.color}25` }}
             >
               <div className="apt-chat-header-left">
                 <span
                   className="apt-chat-emoji"
-                  style={{ background: `${selectedChar.color}18`, color: selectedChar.color }}
+                  style={view === "groupchat"
+                    ? { background: "#e8f0e8", color: "#4a7c59" }
+                    : { background: `${selectedChar.color}18`, color: selectedChar.color }}
                 >
-                  {selectedChar.emoji}
+                  {view === "groupchat" ? "🏠" : selectedChar.emoji}
                 </span>
                 <div className="apt-chat-header-info">
-                  <span className="apt-chat-name" style={{ color: selectedChar.color }}>
+                  <span className="apt-chat-name" style={{ color: view === "groupchat" ? "#4a7c59" : selectedChar.color }}>
                     {view === "groupchat" ? "群聊模式" : selectedChar.ui.stationTitle}
                   </span>
                   <span className="apt-chat-meta">
@@ -2041,13 +2043,19 @@ const SystemTuningPage: React.FC = () => {
               ref={scrollRef}>
               {messages.length === 0 && (
                 <div className="apt-chat-empty">
-                  <span className="apt-chat-empty-emoji">{selectedChar.emoji}</span>
-                  <p className="apt-chat-empty-text">
-                    {selectedChar.catchphrase}
-                  </p>
-                  <p className="apt-chat-empty-hint">
-                    {selectedChar.ui.placeholder}
-                  </p>
+                  {view === "groupchat" ? (
+                    <>
+                      <span className="apt-chat-empty-emoji">🏠</span>
+                      <p className="apt-chat-empty-text">爱情公寓 3602，全员在线</p>
+                      <p className="apt-chat-empty-hint">输入你的近况，看看谁第一个抢话…</p>
+                    </>
+                  ) : (
+                    <>
+                      <span className="apt-chat-empty-emoji">{selectedChar.emoji}</span>
+                      <p className="apt-chat-empty-text">{selectedChar.catchphrase}</p>
+                      <p className="apt-chat-empty-hint">{selectedChar.ui.placeholder}</p>
+                    </>
+                  )}
                 </div>
               )}
               {messages.map((msg) => (
@@ -2094,7 +2102,7 @@ const SystemTuningPage: React.FC = () => {
                 disabled={!inputText.trim() || isLoading}
                 style={
                   {
-                    background: selectedChar.color,
+                    background: view === "groupchat" ? "#4a7c59" : selectedChar.color,
                     opacity: !inputText.trim() || isLoading ? 0.4 : 1,
                   } as React.CSSProperties
                 }

@@ -28,6 +28,17 @@ async function getGitHubFile(filePath) {
     throw new Error(`GitHub GET ${filePath} 失败: ${res.status} ${text}`);
   }
   const json = await res.json();
+  // 大文件（>1MB）GitHub 不返回 content，需通过 download_url 获取
+  if (!json.content && json.download_url) {
+    const rawRes = await fetch(json.download_url, {
+      headers: { "User-Agent": "xiaoluweb-admin" },
+    });
+    if (!rawRes.ok) {
+      throw new Error(`GitHub download ${filePath} 失败: ${rawRes.status}`);
+    }
+    const text = await rawRes.text();
+    return { data: JSON.parse(text), sha: json.sha };
+  }
   const decoded = Buffer.from(json.content, "base64").toString("utf-8");
   return { data: JSON.parse(decoded), sha: json.sha };
 }

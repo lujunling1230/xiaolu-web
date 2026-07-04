@@ -1685,6 +1685,19 @@ const LifeFilmPage: React.FC = () => {
 
   /* 管理员 */
   const handlePublish = async () => {
+    // 先把当前本地数据复制到 draft key，确保 publishDrafts 能正确合并
+    Object.values(LS_KEYS).forEach((k) => {
+      const data = localStorage.getItem(k);
+      if (data !== null) {
+        localStorage.setItem(`draft_${k}`, data);
+      }
+    });
+    // 自定义模块也要处理
+    const customMods = localStorage.getItem(LS_KEYS.customModules);
+    if (customMods !== null) {
+      localStorage.setItem(`draft_${LS_KEYS.customModules}`, customMods);
+    }
+
     const res = publishDrafts();
     if (res.success) {
       const pushed = await pushSiteData("ling");

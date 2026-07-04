@@ -1383,8 +1383,51 @@ const SystemTuningPage: React.FC = () => {
                           <span className={`wx-discover-feed-action ${m.likedByMe ? "wx-moment-liked" : ""}`} onClick={() => handleLikeMoment(m.id)}>
                             {m.likedByMe ? "❤️" : "🤍"} {m.likes > 0 ? m.likes : ""}
                           </span>
+                          <span
+                            className="wx-discover-feed-action"
+                            onClick={() => setCommentingMomentId(commentingMomentId === m.id ? null : m.id)}
+                          >
+                            💬 {m.comments.length > 0 ? m.comments.length : ""}
+                          </span>
                           <span className="wx-discover-feed-leaf">🍃</span>
                         </div>
+
+                        {/* 评论区（默认折叠） */}
+                        {m.comments.length > 0 && (
+                          <div
+                            className="wx-moment-comments-toggle"
+                            onClick={() => setExpandedCommentsId(expandedCommentsId === m.id ? null : m.id)}
+                          >
+                            {expandedCommentsId === m.id ? "收起评论" : `${m.comments.length}条评论 ▾`}
+                          </div>
+                        )}
+                        {expandedCommentsId === m.id && m.comments.length > 0 && (
+                          <div className="wx-moment-comments">
+                            {m.comments.map((c) => (
+                              <div key={c.id} className="wx-moment-comment">
+                                <span className="wx-moment-comment-avatar">{c.authorAvatar}</span>
+                                <div className="wx-moment-comment-body">
+                                  <span className="wx-moment-comment-author">{c.author}</span>
+                                  <span className="wx-moment-comment-text">{c.content}</span>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+
+                        {/* 评论输入框 */}
+                        {commentingMomentId === m.id && (
+                          <div className="wx-moment-comment-input">
+                            <input
+                              type="text"
+                              value={commentText}
+                              onChange={(e) => setCommentText(e.target.value)}
+                              placeholder="写评论..."
+                              onKeyDown={(e) => { if (e.key === "Enter") handleComment(m.id); }}
+                            />
+                            <button onClick={() => handleComment(m.id)}>发送</button>
+                          </div>
+                        )}
                       </div>
                     ))}
                 </div>

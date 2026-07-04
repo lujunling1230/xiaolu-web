@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { logoutAdmin, siteLoad, saveDraft, publishDrafts, getSeedData, pushSiteData } from "../utils/siteData";
+import { logoutAdmin, siteLoad, legacySave, publishDrafts, getSeedData, pushSiteData } from "../utils/siteData";
 
 /* ============================================================
  * AdminPanel 组件
@@ -222,11 +222,11 @@ const ModuleEditor: React.FC<ModuleEditorProps> = ({ module, onClose }) => {
     }
   }, [module.key]);
 
-  /** 保存到 draft */
+  /** 保存 - 管理员直接写入 SEED_KEY */
   const handleSave = useCallback(() => {
     try {
       const toSave = tab === "json" ? JSON.parse(jsonText) : data;
-      saveDraft(module.key, toSave);
+      legacySave(module.key, toSave);
       setSaved(true);
       setTimeout(() => setSaved(false), 2000);
     } catch {

@@ -1748,33 +1748,19 @@ const LifeFilmPage: React.FC = () => {
 
 
 
-      {/* 浮动管理员入口 🔒 */}
-      <button
-        onClick={() => verifyAdmin(() => {})}
-        title={adminMode ? "管理面板" : "管理员登录"}
-        style={{
-          position: "fixed", bottom: 28, right: 28, zIndex: 20,
-          width: 44, height: 44, border: "none", borderRadius: "50%",
-          background: adminMode ? "rgba(141,154,139,0.3)" : "rgba(255,255,255,0.5)",
-          backdropFilter: "blur(10px)",
-          boxShadow: "0 2px 12px rgba(0,0,0,0.08)",
-          cursor: "pointer", fontSize: 18,
-          display: "flex", alignItems: "center", justifyContent: "center",
-          transition: "all 0.25s ease",
-        }}
-        onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = "rgba(141,154,139,0.5)"; }}
-        onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = adminMode ? "rgba(141,154,139,0.3)" : "rgba(255,255,255,0.5)"; }}
-      >
-        {adminMode ? "⚙" : "🔒"}
-      </button>
-
-      {/* 管理员发布/退出按钮（编辑模式可见） */}
+      {/* 管理员发布按钮（首页 AdminPanel 统一管理，此处仅保留发布入口） */}
       {adminMode && (
-        <div style={{ position: "fixed", bottom: 28, right: 88, zIndex: 20, display: "flex", gap: 8 }}>
-          <button onClick={handlePublish} style={{ padding: "8px 16px", fontSize: 12, border: "none", borderRadius: 999, background: "#8D9A8B", color: "#fff", cursor: "pointer", boxShadow: "0 2px 8px rgba(0,0,0,0.1)" }}>
-            发布草稿
-          </button>
-        </div>
+        <button
+          onClick={handlePublish}
+          style={{
+            position: "fixed", bottom: 28, right: 28, zIndex: 20,
+            padding: "8px 16px", fontSize: 12, border: "none", borderRadius: 999,
+            background: "#8D9A8B", color: "#fff", cursor: "pointer",
+            boxShadow: "0 2px 8px rgba(0,0,0,0.1)",
+          }}
+        >
+          发布草稿
+        </button>
       )}
 
       {/* 管理员密码框 */}

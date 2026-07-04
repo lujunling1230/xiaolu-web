@@ -12,7 +12,15 @@
     "visibility": "public",
     "likes": 0,
     "likedByMe": false,
-    "comments": [],
+    "comments": [
+      {
+        "id": "cmt-1783133892424",
+        "author": "新晋房客",
+        "authorAvatar": "🍃",
+        "content": "2",
+        "timestamp": 1783133892424
+      }
+    ],
     "timestamp": 1783133868440,
     "isMine": true
   },

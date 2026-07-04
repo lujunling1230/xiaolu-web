@@ -51,21 +51,35 @@ const MendingHeartIcon: React.FC = () => (
   </svg>
 );
 
-/* ===== 爱情公寓图标：八人 Q 版群像 ===== */
+/* ===== 爱情公寓图标：八人 Q 版群像（内联 SVG，避免路径依赖） ===== */
 const ApartmentIcon: React.FC = () => (
-  <img
-    src="/src/assets/icons/apartment-group.svg"
-    alt="爱情公寓"
-    width={48}
-    height={48}
-    style={{
-      borderRadius: "50%",
-      width: 48,
-      height: 48,
-      boxShadow: "0 2px 12px rgba(255, 200, 80, 0.4)",
-      display: "block",
-    }}
-  />
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width={48} height={48} style={{ borderRadius: "50%", filter: "drop-shadow(0 0 6px rgba(255,215,0,0.3))" }}>
+    <defs>
+      <radialGradient id="glow" cx="50%" cy="50%" r="50%">
+        <stop offset="0%" stop-color="#FFF3D6" stopOpacity={1}/>
+        <stop offset="70%" stop-color="#FFE4B5" stopOpacity={0.9}/>
+        <stop offset="100%" stop-color="#FFD700" stopOpacity={0.3}/>
+      </radialGradient>
+    </defs>
+    <circle cx="24" cy="24" r="23" fill="url(#glow)"/>
+    <circle cx="24" cy="24" r="23" fill="none" stroke="#FFD700" strokeWidth="0.5" opacity="0.25"/>
+    {/* 一菲 */}
+    <g transform="translate(24, 10)"><circle cx="0" cy="0" r="4.2" fill="#C41E3A"/></g>
+    {/* 子乔 */}
+    <g transform="translate(34, 14)"><circle cx="0" cy="0" r="4" fill="#5B4FC4"/></g>
+    {/* 美嘉 */}
+    <g transform="translate(37, 24)"><circle cx="0" cy="0" r="4" fill="#9B59B6"/></g>
+    {/* 小贤 */}
+    <g transform="translate(34, 34)"><circle cx="0" cy="0" r="4" fill="#4A90D9"/></g>
+    {/* 悠悠 */}
+    <g transform="translate(14, 34)"><circle cx="0" cy="0" r="4" fill="#E8A838"/></g>
+    {/* 关谷 */}
+    <g transform="translate(11, 24)"><circle cx="0" cy="0" r="4" fill="#8B5A2B"/></g>
+    {/* 张伟 */}
+    <g transform="translate(14, 14)"><circle cx="0" cy="0" r="4" fill="#6B2D5C"/></g>
+    {/* 中心爱心 */}
+    <path d="M 24,20.8 C 22,18.5 18,21 18,23.5 C 18,26.5 24,30 24,30 C 24,30 30,26.5 30,23.5 C 30,21 26,18.5 24,20.8 Z" fill="#FFD700" opacity="0.95"/>
+  </svg>
 );
 
 const tools: Tool[] = [

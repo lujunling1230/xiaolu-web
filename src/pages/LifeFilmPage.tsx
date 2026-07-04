@@ -1284,25 +1284,54 @@ const CustomModuleModal: React.FC<{
   verifyAdmin: (cb: () => void) => void;
 }> = ({ moduleDef, onClose, onUpload, verifyAdmin }) => {
   const [records, setRecords] = useState<CustomModuleRecord[]>(() => loadCustomRecords(moduleDef.id));
-  const [showAdd, setShowAdd] = useState(false);
+  const [showForm, setShowForm] = useState(false);
+  const [editingRecord, setEditingRecord] = useState<CustomModuleRecord | null>(null);
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
   const [date, setDate] = useState("");
   const [deleting, setDeleting] = useState<string | null>(null);
 
-  const handleAdd = () => {
-    if (!title.trim()) return;
-    const newRecord: CustomModuleRecord = {
-      id: genId(),
-      title: title.trim(),
-      content: content.trim(),
-      date: date.trim() || new Date().toISOString().slice(0, 10),
-    };
-    const updated = [newRecord, ...records];
-    setRecords(updated);
-    saveCustomRecords(moduleDef.id, updated);
+  const openAddForm = () => {
     setTitle(""); setContent(""); setDate("");
-    setShowAdd(false);
+    setEditingRecord(null);
+    setShowForm(true);
+  };
+
+  const openEditForm = (r: CustomModuleRecord) => {
+    setTitle(r.title);
+    setContent(r.content);
+    setDate(r.date);
+    setEditingRecord(r);
+    setShowForm(true);
+  };
+
+  const handleSave = () => {
+    if (!title.trim()) return;
+    if (editingRecord) {
+      // 编辑模式
+      const updated = records.map(r => r.id === editingRecord.id ? {
+        ...r,
+        title: title.trim(),
+        content: content.trim(),
+        date: date.trim() || r.date,
+      } : r);
+      setRecords(updated);
+      saveCustomRecords(moduleDef.id, updated);
+    } else {
+      // 新增模式
+      const newRecord: CustomModuleRecord = {
+        id: genId(),
+        title: title.trim(),
+        content: content.trim(),
+        date: date.trim() || new Date().toISOString().slice(0, 10),
+      };
+      const updated = [newRecord, ...records];
+      setRecords(updated);
+      saveCustomRecords(moduleDef.id, updated);
+    }
+    setTitle(""); setContent(""); setDate("");
+    setShowForm(false);
+    setEditingRecord(null);
     onUpload();
   };
 
@@ -1314,7 +1343,7 @@ const CustomModuleModal: React.FC<{
   };
 
   return (
-    <ModalOverlay onClose={onClose} showFab fabOnClick={() => setShowAdd(true)}>
+    <ModalOverlay onClose={onClose} showFab fabOnClick={openAddForm}>
       <button style={{ position: "absolute", top: 16, right: 16, width: 32, height: 32, border: "none", borderRadius: "50%", background: "rgba(0,0,0,0.06)", color: "#888", fontSize: 18, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }} onClick={onClose}>×</button>
       <h3 style={{ fontFamily: "Noto Serif SC, serif", fontSize: 20, fontWeight: 600, color: "#4a4038", margin: "0 0 20px", textAlign: "center", letterSpacing: "0.04em" }}>{moduleDef.emoji} {moduleDef.name}</h3>
 
@@ -1324,6 +1353,9 @@ const CustomModuleModal: React.FC<{
         <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
           {records.map(r => (
             <div key={r.id} style={{ position: "relative", padding: "14px 16px", borderRadius: 12, background: "rgba(255,255,255,0.6)", borderLeft: `3px solid ${moduleDef.tint}` }}>
+              <button onClick={() => verifyAdmin(() => openEditForm(r))} style={{ position: "absolute", top: 8, left: 8, width: 18, height: 18, border: "none", borderRadius: "50%", background: "rgba(0,0,0,0.06)", color: "rgba(0,0,0,0.3)", fontSize: 11, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", opacity: _IS_TOUCH ? 0.55 : 0, transition: "opacity 0.2s" }}
+                onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.opacity = "1"; }}
+                onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.opacity = _IS_TOUCH ? "0.55" : "0"; }}>✎</button>
               <button onClick={() => verifyAdmin(() => setDeleting(r.id))} style={{ position: "absolute", top: 8, right: 8, width: 18, height: 18, border: "none", borderRadius: "50%", background: "rgba(0,0,0,0.06)", color: "rgba(0,0,0,0.3)", fontSize: 12, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", opacity: _IS_TOUCH ? 0.55 : 0, transition: "opacity 0.2s" }}
                 onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.opacity = "1"; }}
                 onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.opacity = _IS_TOUCH ? "0.55" : "0"; }}>×</button>
@@ -1337,16 +1369,16 @@ const CustomModuleModal: React.FC<{
         </div>
       )}
 
-      {showAdd && (
-        <div style={{ position: "fixed", inset: 0, zIndex: 200, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(0,0,0,0.35)" }} onClick={() => setShowAdd(false)}>
+      {showForm && (
+        <div style={{ position: "fixed", inset: 0, zIndex: 200, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(0,0,0,0.35)" }} onClick={() => { setShowForm(false); setEditingRecord(null); }}>
           <div style={{ background: "#fff", borderRadius: 16, padding: 24, width: "90%", maxWidth: 400 }} onClick={e => e.stopPropagation()}>
-            <h4 style={{ fontFamily: "Noto Serif SC, serif", fontSize: 16, margin: "0 0 16px", color: "#4a4038" }}>新增记录</h4>
+            <h4 style={{ fontFamily: "Noto Serif SC, serif", fontSize: 16, margin: "0 0 16px", color: "#4a4038" }}>{editingRecord ? "编辑记录" : "新增记录"}</h4>
             <input placeholder="标题" value={title} onChange={e => setTitle(e.target.value)} style={{ width: "100%", padding: "10px 12px", marginBottom: 10, border: "1px solid #e0ddd5", borderRadius: 8, fontSize: 13, outline: "none", boxSizing: "border-box" }} />
             <textarea placeholder="内容（可选）" value={content} onChange={e => setContent(e.target.value)} rows={3} style={{ width: "100%", padding: "10px 12px", marginBottom: 10, border: "1px solid #e0ddd5", borderRadius: 8, fontSize: 13, outline: "none", resize: "vertical", boxSizing: "border-box" }} />
             <input placeholder="日期（可选）" type="date" value={date} onChange={e => setDate(e.target.value)} style={{ width: "100%", padding: "10px 12px", marginBottom: 16, border: "1px solid #e0ddd5", borderRadius: 8, fontSize: 13, outline: "none", boxSizing: "border-box" }} />
             <div style={{ display: "flex", gap: 10 }}>
-              <button onClick={() => setShowAdd(false)} style={{ flex: 1, padding: "10px 0", border: "1.5px solid #e0ddd5", borderRadius: 999, background: "transparent", color: "#8a7a6a", cursor: "pointer" }}>取消</button>
-              <button onClick={handleAdd} style={{ flex: 1, padding: "10px 0", border: "none", borderRadius: 999, background: "#6a8a6a", color: "#fff", cursor: "pointer" }}>添加</button>
+              <button onClick={() => { setShowForm(false); setEditingRecord(null); }} style={{ flex: 1, padding: "10px 0", border: "1.5px solid #e0ddd5", borderRadius: 999, background: "transparent", color: "#8a7a6a", cursor: "pointer" }}>取消</button>
+              <button onClick={handleSave} style={{ flex: 1, padding: "10px 0", border: "none", borderRadius: 999, background: "#6a8a6a", color: "#fff", cursor: "pointer" }}>{editingRecord ? "保存" : "添加"}</button>
             </div>
           </div>
         </div>
@@ -1356,30 +1388,31 @@ const CustomModuleModal: React.FC<{
   );
 };
 
-/* ====== 添加自定义模块弹窗 ====== */
-const AddCustomModuleModal: React.FC<{ onClose: () => void; onAdd: (m: CustomModuleDef) => void }> = ({ onClose, onAdd }) => {
-  const [emoji, setEmoji] = useState("📝");
-  const [name, setName] = useState("");
-  const [tint, setTint] = useState("#DDD0B8");
+/* ====== 添加/编辑自定义模块弹窗 ====== */
+const AddCustomModuleModal: React.FC<{ onClose: () => void; onAdd: (m: CustomModuleDef) => void; editModule?: CustomModuleDef | null }> = ({ onClose, onAdd, editModule }) => {
+  const isEdit = !!editModule;
+  const [emoji, setEmoji] = useState(editModule?.emoji || "📝");
+  const [name, setName] = useState(editModule?.name || "");
+  const [tint, setTint] = useState(editModule?.tint || "#DDD0B8");
 
   const TINT_OPTIONS = ["#DDD0B8", "#C8D8C0", "#DCC8C0", "#D8C8A8", "#C0D0CC", "#D0C8C0", "#E8D8C8", "#C8D0D8"];
 
   const handleSubmit = () => {
     if (!name.trim()) return;
-    const newMod: CustomModuleDef = {
-      id: `custom_${Date.now()}`,
+    const mod: CustomModuleDef = {
+      id: editModule?.id || `custom_${Date.now()}`,
       emoji: emoji.trim() || "📝",
       name: name.trim(),
       tint,
     };
-    onAdd(newMod);
+    onAdd(mod);
     onClose();
   };
 
   return (
     <div style={{ position: "fixed", inset: 0, zIndex: 250, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(0,0,0,0.35)" }} onClick={onClose}>
       <div style={{ background: "#fff", borderRadius: 16, padding: 28, width: "90%", maxWidth: 360, boxShadow: "0 20px 60px rgba(0,0,0,0.2)" }} onClick={e => e.stopPropagation()}>
-        <h4 style={{ fontFamily: "Noto Serif SC, serif", fontSize: 18, margin: "0 0 20px", color: "#4a4038", textAlign: "center" }}>新增模块</h4>
+        <h4 style={{ fontFamily: "Noto Serif SC, serif", fontSize: 18, margin: "0 0 20px", color: "#4a4038", textAlign: "center" }}>{isEdit ? "编辑模块" : "新增模块"}</h4>
         <div style={{ marginBottom: 14 }}>
           <label style={{ fontSize: 12, color: "#8a7a6a", display: "block", marginBottom: 6 }}>图标</label>
           <input value={emoji} onChange={e => setEmoji(e.target.value)} style={{ width: "100%", padding: "10px 12px", border: "1px solid #e0ddd5", borderRadius: 8, fontSize: 16, textAlign: "center", outline: "none", boxSizing: "border-box" }} />
@@ -1398,7 +1431,7 @@ const AddCustomModuleModal: React.FC<{ onClose: () => void; onAdd: (m: CustomMod
         </div>
         <div style={{ display: "flex", gap: 10 }}>
           <button onClick={onClose} style={{ flex: 1, padding: "10px 0", border: "1.5px solid #e0ddd5", borderRadius: 999, background: "transparent", color: "#8a7a6a", cursor: "pointer" }}>取消</button>
-          <button onClick={handleSubmit} disabled={!name.trim()} style={{ flex: 1, padding: "10px 0", border: "none", borderRadius: 999, background: name.trim() ? "#6a8a6a" : "#ccc", color: "#fff", cursor: name.trim() ? "pointer" : "not-allowed" }}>创建</button>
+          <button onClick={handleSubmit} disabled={!name.trim()} style={{ flex: 1, padding: "10px 0", border: "none", borderRadius: 999, background: name.trim() ? "#6a8a6a" : "#ccc", color: "#fff", cursor: name.trim() ? "pointer" : "not-allowed" }}>{isEdit ? "保存" : "创建"}</button>
         </div>
       </div>
     </div>
@@ -1420,8 +1453,11 @@ interface FilmStripProps {
   onOpen: (m: ModuleType) => void;
   customModules: CustomModuleDef[];
   onAddModule: () => void;
+  isAdmin?: boolean;
+  onEditModule?: (m: CustomModuleDef) => void;
+  onDeleteModule?: (m: CustomModuleDef) => void;
 }
-const FilmStrip: React.FC<FilmStripProps> = ({ onOpen, customModules, onAddModule }) => {
+const FilmStrip: React.FC<FilmStripProps> = ({ onOpen, customModules, onAddModule, isAdmin, onEditModule, onDeleteModule }) => {
   const trackRef = useRef<HTMLDivElement>(null);
   const wrapRef = useRef<HTMLDivElement>(null);
   const [tx, setTx] = useState(0);
@@ -1504,14 +1540,28 @@ const FilmStrip: React.FC<FilmStripProps> = ({ onOpen, customModules, onAddModul
             {allFrames.map((_, i) => <span key={`t-${i}`} style={{ display: "block", flexShrink: 0, width: 10, height: 8, borderRadius: 2, background: "rgba(180,160,130,0.35)", border: "1px solid rgba(160,140,110,0.25)" }} />)}
           </div>
           <div style={{ display: "flex", gap: 8, padding: "0 4px" }}>
-            {allFrames.map(f => (
-              <div key={f.id} onClick={() => f.id === "__add__" ? onAddModule() : onOpen(f.id)} style={{ position: "relative", flexShrink: 0, width: 120, height: 90, borderRadius: 12, background: f.tint, boxShadow: "0 4px 12px rgba(0,0,0,0.08)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 4, overflow: "hidden", cursor: "pointer", transition: "transform 0.2s ease, box-shadow 0.2s ease" }}
-                onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.transform = "translateY(-4px) scale(1.04)"; (e.currentTarget as HTMLDivElement).style.boxShadow = "0 8px 20px rgba(0,0,0,0.14)"; }}
-                onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.transform = "translateY(0) scale(1)"; (e.currentTarget as HTMLDivElement).style.boxShadow = "0 4px 12px rgba(0,0,0,0.08)"; }}>
-                <span style={{ fontSize: f.id === "__add__" ? 32 : 28, filter: f.id === "__add__" ? "none" : "sepia(0.08) contrast(0.95)", color: f.id === "__add__" ? "#8a7a6a" : "inherit", fontWeight: f.id === "__add__" ? 300 : "normal" }}>{f.emoji}</span>
-                <span style={{ fontSize: 12, color: "rgba(60,50,40,0.75)", fontWeight: 500, letterSpacing: "0.05em" }}>{f.name}</span>
-              </div>
-            ))}
+            {allFrames.map(f => {
+              const isCustomFrame = f.id.startsWith("custom_");
+              const customMod = isCustomFrame ? customModules.find(cm => cm.id === f.id) : null;
+              return (
+                <div key={f.id} onClick={() => f.id === "__add__" ? onAddModule() : onOpen(f.id)} style={{ position: "relative", flexShrink: 0, width: 120, height: 90, borderRadius: 12, background: f.tint, boxShadow: "0 4px 12px rgba(0,0,0,0.08)", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 4, overflow: "hidden", cursor: "pointer", transition: "transform 0.2s ease, box-shadow 0.2s ease" }}
+                  onMouseEnter={e => { (e.currentTarget as HTMLDivElement).style.transform = "translateY(-4px) scale(1.04)"; (e.currentTarget as HTMLDivElement).style.boxShadow = "0 8px 20px rgba(0,0,0,0.14)"; }}
+                  onMouseLeave={e => { (e.currentTarget as HTMLDivElement).style.transform = "translateY(0) scale(1)"; (e.currentTarget as HTMLDivElement).style.boxShadow = "0 4px 12px rgba(0,0,0,0.08)"; }}>
+                  {isAdmin && customMod && (
+                    <>
+                      <button onClick={e => { e.stopPropagation(); onEditModule?.(customMod); }} style={{ position: "absolute", top: 4, left: 4, width: 20, height: 20, border: "none", borderRadius: "50%", background: "rgba(0,0,0,0.18)", color: "rgba(255,255,255,0.9)", fontSize: 11, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", opacity: _IS_TOUCH ? 0.55 : 0, transition: "opacity 0.2s", zIndex: 3 }}
+                        onMouseEnter={ev => { (ev.currentTarget as HTMLButtonElement).style.opacity = "1"; }}
+                        onMouseLeave={ev => { (ev.currentTarget as HTMLButtonElement).style.opacity = _IS_TOUCH ? "0.55" : "0"; }}>✎</button>
+                      <button onClick={e => { e.stopPropagation(); onDeleteModule?.(customMod); }} style={{ position: "absolute", top: 4, right: 4, width: 20, height: 20, border: "none", borderRadius: "50%", background: "rgba(0,0,0,0.18)", color: "rgba(255,255,255,0.9)", fontSize: 13, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", opacity: _IS_TOUCH ? 0.55 : 0, transition: "opacity 0.2s", zIndex: 3 }}
+                        onMouseEnter={ev => { (ev.currentTarget as HTMLButtonElement).style.background = "rgba(180,80,80,0.6)"; (ev.currentTarget as HTMLButtonElement).style.opacity = "1"; }}
+                        onMouseLeave={ev => { (ev.currentTarget as HTMLButtonElement).style.background = "rgba(0,0,0,0.18)"; (ev.currentTarget as HTMLButtonElement).style.opacity = _IS_TOUCH ? "0.55" : "0"; }}>×</button>
+                    </>
+                  )}
+                  <span style={{ fontSize: f.id === "__add__" ? 32 : 28, filter: f.id === "__add__" ? "none" : "sepia(0.08) contrast(0.95)", color: f.id === "__add__" ? "#8a7a6a" : "inherit", fontWeight: f.id === "__add__" ? 300 : "normal" }}>{f.emoji}</span>
+                  <span style={{ fontSize: 12, color: "rgba(60,50,40,0.75)", fontWeight: 500, letterSpacing: "0.05em" }}>{f.name}</span>
+                </div>
+              );
+            })}
           </div>
           <div style={{ display: "flex", gap: 6, padding: "0 4px", marginTop: 6 }}>
             {allFrames.map((_, i) => <span key={`b-${i}`} style={{ display: "block", flexShrink: 0, width: 10, height: 8, borderRadius: 2, background: "rgba(180,160,130,0.35)", border: "1px solid rgba(160,140,110,0.25)" }} />)}
@@ -1543,6 +1593,8 @@ const LifeFilmPage: React.FC = () => {
   const [customModules, setCustomModules] = useState<CustomModuleDef[]>(() => loadCustomModules());
   const [showAddCustom, setShowAddCustom] = useState(false);
   const [activeCustomModule, setActiveCustomModule] = useState<CustomModuleDef | null>(null);
+  const [editingModule, setEditingModule] = useState<CustomModuleDef | null>(null);
+  const [deletingModule, setDeletingModule] = useState<CustomModuleDef | null>(null);
   const { isAdmin: adminMode, verifyAdmin, AdminGuardUI } = useAdminGuard();
 
   useEffect(() => {
@@ -1587,9 +1639,26 @@ const LifeFilmPage: React.FC = () => {
   };
 
   const handleAddCustomModule = (mod: CustomModuleDef) => {
-    const updated = [...customModules, mod];
+    const idx = customModules.findIndex(m => m.id === mod.id);
+    if (idx >= 0) {
+      // 编辑模式
+      const updated = [...customModules];
+      updated[idx] = mod;
+      setCustomModules(updated);
+      saveCustomModules(updated);
+    } else {
+      // 新增模式
+      const updated = [...customModules, mod];
+      setCustomModules(updated);
+      saveCustomModules(updated);
+    }
+  };
+
+  const handleDeleteCustomModule = (mod: CustomModuleDef) => {
+    const updated = customModules.filter(m => m.id !== mod.id);
     setCustomModules(updated);
     saveCustomModules(updated);
+    setDeletingModule(null);
   };
 
   const MODALS: Record<BuiltinModuleType, React.FC<{ onClose: () => void; onUpload: () => void; verifyAdmin: (cb: () => void) => void }>> = {
@@ -1673,7 +1742,7 @@ const LifeFilmPage: React.FC = () => {
           </div>
         </div>
         <div style={{ position: "relative", display: "flex", alignItems: "center", width: "100%", maxWidth: 760 }}>
-          <FilmStrip onOpen={handleOpenModule} customModules={customModules} onAddModule={() => verifyAdmin(() => setShowAddCustom(true))} />
+          <FilmStrip onOpen={handleOpenModule} customModules={customModules} onAddModule={() => verifyAdmin(() => setShowAddCustom(true))} isAdmin={adminMode} onEditModule={(m) => verifyAdmin(() => setEditingModule(m))} onDeleteModule={(m) => verifyAdmin(() => setDeletingModule(m))} />
         </div>
         <p style={{ fontSize: 12, color: "rgba(120,110,100,0.5)", margin: 0, letterSpacing: "0.06em" }}>← 点击模块探索内容 · 拖动胶卷滚动 →</p>
       </div>
@@ -1689,10 +1758,18 @@ const LifeFilmPage: React.FC = () => {
       )}
       {showAddCustom && (
         <AddCustomModuleModal
-          onClose={() => setShowAddCustom(false)}
+          onClose={() => { setShowAddCustom(false); setEditingModule(null); }}
           onAdd={handleAddCustomModule}
         />
       )}
+      {editingModule && (
+        <AddCustomModuleModal
+          onClose={() => setEditingModule(null)}
+          onAdd={handleAddCustomModule}
+          editModule={editingModule}
+        />
+      )}
+      {deletingModule && <ConfirmDialog message={`确定要删除模块「${deletingModule.name}」吗？模块内的记录也将被清除。`} onConfirm={() => handleDeleteCustomModule(deletingModule)} onCancel={() => setDeletingModule(null)} />}
       {toast && <Toast message={toast} onDone={() => setToast(null)} />}
 
 
@@ -1733,6 +1810,11 @@ const LifeFilmPage: React.FC = () => {
         @media (max-width: 600px) {
           .lf3-content { padding: 40px 12px 32px !important; gap: 20px !important; }
           .lf3-film-wrap { max-width: 100% !important; }
+          .lf-action-btn { width: 32px !important; height: 32px !important; font-size: 15px !important; min-width: 32px; min-height: 32px; }
+          .lf-tabs-wrap { overflow-x: auto !important; -webkit-overflow-scrolling: touch !important; scrollbar-width: none !important; -ms-overflow-style: none !important; }
+          .lf-tabs-wrap::-webkit-scrollbar { display: none !important; }
+          .lf-module-card { min-width: 90px !important; }
+          .lf-add-module-btn { display: flex !important; visibility: visible !important; opacity: 1 !important; min-width: 90px !important; }
         }
       `}</style>
     </div>

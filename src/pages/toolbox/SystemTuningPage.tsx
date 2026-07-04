@@ -467,6 +467,20 @@ const SystemTuningPage: React.FC = () => {
       return raw;
     } catch { return []; }
   });
+
+  // 启动时静默拉取远程最新朋友圈数据
+  useEffect(() => {
+    fetch("/api/moments")
+      .then(r => r.json())
+      .then(remote => {
+        if (Array.isArray(remote) && remote.length > 0) {
+          setMoments(remote);
+          localStorage.setItem("wx_moments", JSON.stringify(remote));
+        }
+      })
+      .catch(() => {});
+  }, []);
+
   const [showPublishModal, setShowPublishModal] = useState(false);
   const [showPublishToast, setShowPublishToast] = useState(false);
   const [showWorkModal, setShowWorkModal] = useState(false);
@@ -554,11 +568,18 @@ const SystemTuningPage: React.FC = () => {
   const [publishTags, setPublishTags] = useState<string[]>([]);
   const [publishVisibility, setPublishVisibility] = useState<"public" | "private" | "roommate">("public");
   const [commentingMomentId, setCommentingMomentId] = useState<string | null>(null);
+  const [expandedCommentsId, setExpandedCommentsId] = useState<string | null>(null);
   const [commentText, setCommentText] = useState("");
 
   const saveMoments = (list: MomentItem[]) => {
     setMoments(list);
     localStorage.setItem("wx_moments", JSON.stringify(list));
+    // 异步推送到远程（静默，不阻塞 UI）
+    fetch("/api/moments", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ password: "ling", data: list }),
+    }).catch(() => {});
   };
   const handlePublish = () => {
     if (!publishText.trim() && publishImages.length === 0) return;
@@ -604,12 +625,13 @@ const SystemTuningPage: React.FC = () => {
   };
   const handleComment = (momentId: string) => {
     if (!commentText.trim()) return;
+    const cmtId = `cmt-${Date.now()}`;
     const list = moments.map((m) => {
       if (m.id !== momentId) return m;
       return {
         ...m,
         comments: [...m.comments, {
-          id: `cmt-${Date.now()}`,
+          id: cmtId,
           author: meNickname,
           authorAvatar: meAvatar || "🍃",
           content: commentText.trim(),
@@ -620,7 +642,49 @@ const SystemTuningPage: React.FC = () => {
     saveMoments(list);
     setCommentText("");
     setCommentingMomentId(null);
+
+    // AI 自动回复（随机延迟 500ms-2s）
+    const targetMoment = list.find(m => m.id === momentId);
+    if (!targetMoment) return;
+    const charId = targetMoment.authorId !== "me" ? targetMoment.authorId : "zeng";
+    const character = getCharacter(charId);
+    if (!character) return;
+    const delay = 500 + Math.random() * 1500;
+    setTimeout(async () => {
+      try {
+        const replyContent = await callAI(
+          `你是${character.name}（${character.title}），用你角色的语气回复朋友圈评论。回复要简短（15字以内），符合角色性格。`,
+          [{ role: "user", content: `有人评论了你的朋友圈「${targetMoment.content.slice(0, 50)}」：「${commentText.trim()}」，你怎么回复？只输出回复内容，不要加引号或前缀。` }],
+          { maxTokens: 50, temperature: 0.85 }
+        );
+        const trimmedReply = (replyContent || "").replace(/^["'「]|["'」]$/g, "").trim().slice(0, 30);
+        if (!trimmedReply) return;
+        setMoments(prev => {
+          const updated = prev.map((m) => {
+            if (m.id !== momentId) return m;
+            return {
+              ...m,
+              comments: [...m.comments, {
+                id: `cmt-ai-${Date.now()}`,
+                author: character.name,
+                authorAvatar: character.avatar,
+                content: trimmedReply,
+                timestamp: Date.now(),
+              }],
+            };
+          });
+          localStorage.setItem("wx_moments", JSON.stringify(updated));
+          return updated;
+        });
+      } catch { /* AI 调用失败静默处理 */ }
+    }, delay);
   };
+  const [, setTick] = useState(0);
+  useEffect(() => {
+    const timer = setInterval(() => setTick(t => t + 1), 60000);
+    return () => clearInterval(timer);
+  }, []);
+
   const formatTime = (ts: number) => {
     const diff = Date.now() - ts;
     if (diff < 60000) return "刚刚";
@@ -1703,13 +1767,24 @@ const SystemTuningPage: React.FC = () => {
                               </span>
                               <span className="wx-moment-leaf">🍃</span>
                             </div>
-                            {/* 评论区 */}
+                            {/* 评论区（默认折叠，点击展开） */}
                             {m.comments.length > 0 && (
+                              <div
+                                className="wx-moment-comments-toggle"
+                                onClick={() => setExpandedCommentsId(expandedCommentsId === m.id ? null : m.id)}
+                              >
+                                {expandedCommentsId === m.id ? "收起评论" : `${m.comments.length}条评论 ▾`}
+                              </div>
+                            )}
+                            {expandedCommentsId === m.id && m.comments.length > 0 && (
                               <div className="wx-moment-comments">
                                 {m.comments.map((c) => (
                                   <div key={c.id} className="wx-moment-comment">
-                                    <span className="wx-moment-comment-author">{c.author}:</span>
-                                    <span className="wx-moment-comment-text">{c.content}</span>
+                                    <span className="wx-moment-comment-avatar">{c.authorAvatar}</span>
+                                    <div className="wx-moment-comment-body">
+                                      <span className="wx-moment-comment-author">{c.author}</span>
+                                      <span className="wx-moment-comment-text">{c.content}</span>
+                                    </div>
                                   </div>
                                 ))}
                               </div>
@@ -3003,13 +3078,42 @@ const SystemTuningPage: React.FC = () => {
           padding: 8px 10px;
           margin-bottom: 6px;
         }
+        .wx-moment-comments-toggle {
+          font-size: 11px;
+          color: #576b95;
+          margin-top: 6px;
+          cursor: pointer;
+          padding: 2px 0;
+        }
+        .wx-moment-comments-toggle:hover {
+          opacity: 0.7;
+        }
         .wx-moment-comment {
+          display: flex;
+          gap: 6px;
+          align-items: flex-start;
           font-size: 12px;
           line-height: 1.5;
-          margin-bottom: 4px;
+          margin-bottom: 6px;
         }
         .wx-moment-comment:last-child {
           margin-bottom: 0;
+        }
+        .wx-moment-comment-avatar {
+          width: 20px;
+          height: 20px;
+          border-radius: 4px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 11px;
+          flex-shrink: 0;
+          background: rgba(0,0,0,0.03);
+        }
+        .wx-moment-comment-body {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 0;
         }
         .wx-moment-comment-author {
           font-weight: 600;
@@ -3985,6 +4089,36 @@ const SystemTuningPage: React.FC = () => {
           .apt-bubble-knobs { display: none; }
           .apt-chat-inputbar { padding: 10px 0 0; }
           .apt-chat-send { padding: 8px 14px; font-size: 13px; }
+
+          /* 「我」页面移动端适配 */
+          .wx-me-bg-btn { width: 28px; height: 28px; font-size: 14px; top: 8px; right: 8px; }
+          .wx-me-glass-card { padding: 14px; gap: 10px; }
+          .wx-me-avatar { width: 48px; height: 48px; }
+          .wx-me-name { font-size: 15px; }
+          .wx-me-signature { font-size: 12px; }
+          .wx-me-edit { font-size: 12px !important; }
+          .wx-me-status-pill { font-size: 11px; padding: 4px 10px; }
+          .wx-me-section-icon { font-size: 13px; }
+          .wx-me-section-title { font-size: 12px; }
+          .wx-me-cell { padding: 10px 12px; gap: 8px; }
+          .wx-me-cell-icon { font-size: 16px; width: 20px; }
+          .wx-me-cell-label { font-size: 13px; }
+          .wx-moment-publish-btn { font-size: 12px; padding: 6px 14px; }
+          .wx-moment-content { font-size: 13px; }
+          .wx-moment-images { gap: 4px; }
+          .wx-moment-img-thumb { width: 60px !important; height: 60px !important; }
+          .wx-moment-comment-input input { font-size: 13px; padding: 8px 10px; }
+
+          /* 发现页移动端适配 */
+          .wx-discover-feed-card { padding: 12px; }
+          .wx-discover-feed-text { font-size: 13px; }
+          .wx-discover-feed-time { font-size: 10px; }
+
+          /* 朋友圈动态流移动端 */
+          .wx-moment-name { font-size: 13px; }
+          .wx-moment-time { font-size: 10px; }
+          .wx-moment-more-btn { font-size: 14px; }
+          .wx-moment-actions { font-size: 12px; }
         }
       `}</style>
     </div>

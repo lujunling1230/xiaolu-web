@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Link } from "react-router-dom";
+import Match3Game from "./games/Match3Game";
 
 /**
  * 解压馆 · Stress Relief Room
@@ -507,7 +508,7 @@ const GravityDoodleGame: React.FC = () => {
 /* ============================================================
    主页面
    ============================================================ */
-type GameKey = "pop" | "cut" | "doodle";
+type GameKey = "match3" | "cut" | "doodle";
 
 const GAMES: {
   key: GameKey;
@@ -517,22 +518,22 @@ const GAMES: {
   gradient: string;
 }[] = [
   {
-    key: "pop",
-    name: "无限捏泡泡",
-    desc: "永远捏不完的满足。",
-    icon: "🫧",
-    gradient: "linear-gradient(135deg, #ffd6e0, #b6d5e8)",
+    key: "match3",
+    name: "消散",
+    desc: "三消归零，万念俱散。",
+    icon: "✨",
+    gradient: "linear-gradient(135deg, #F4C2C2, #C2D4F4)",
   },
   {
     key: "cut",
-    name: "禅意切割",
-    desc: "一刀两半，万物可裂。",
+    name: "斩断",
+    desc: "一刀两断，万物可裂。",
     icon: "🔪",
     gradient: "linear-gradient(135deg, #b8e0d2, #d4c5e2)",
   },
   {
     key: "doodle",
-    name: "重力涂鸦",
+    name: "吞噬",
     desc: "画下的都会落下。",
     icon: "✏️",
     gradient: "linear-gradient(135deg, #f5e1b8, #ffb6c1)",
@@ -568,7 +569,7 @@ const StressReliefPage: React.FC = () => {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.12 }}
         >
-          允许一切崩塌。
+          允许一切失控，除了你的心跳。
         </motion.p>
       </section>
 
@@ -613,7 +614,7 @@ const StressReliefPage: React.FC = () => {
               <button className="sr-game-back" onClick={() => setActive(null)}>
                 ← 换一个
               </button>
-              {active === "pop" && <PopItGame />}
+              {active === "match3" && <Match3Game />}
               {active === "cut" && <ZenCutGame />}
               {active === "doodle" && <GravityDoodleGame />}
             </motion.div>

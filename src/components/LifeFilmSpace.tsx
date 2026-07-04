@@ -1520,6 +1520,7 @@ const LifeFilmSpace: React.FC<LifeFilmSpaceProps> = ({ onClose }) => {
           height: 120px; position: relative;
           scrollbar-width: none; -ms-overflow-style: none;
           scroll-behavior: smooth;
+          touch-action: pan-x;
         }
         .lfs-film-track::-webkit-scrollbar { display: none; }
 

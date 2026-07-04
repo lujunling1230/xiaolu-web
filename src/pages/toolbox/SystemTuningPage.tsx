@@ -22,6 +22,28 @@ interface ChatMessage {
   timestamp: number;
 }
 
+/** 获取当前真实时间的中文描述，注入 systemPrompt 让角色知道现实时间 */
+function getRealTimeContext(): string {
+  const now = new Date();
+  const weekdays = ["日", "一", "二", "三", "四", "五", "六"];
+  const y = now.getFullYear();
+  const m = now.getMonth() + 1;
+  const d = now.getDate();
+  const hh = now.getHours();
+  const mm = String(now.getMinutes()).padStart(2, "0");
+  const weekday = weekdays[now.getDay()];
+  let period = "";
+  if (hh < 6) period = "凌晨";
+  else if (hh < 9) period = "早上";
+  else if (hh < 12) period = "上午";
+  else if (hh < 14) period = "中午";
+  else if (hh < 17) period = "下午";
+  else if (hh < 19) period = "傍晚";
+  else if (hh < 22) period = "晚上";
+  else period = "深夜";
+  return `【现实时间】现在是 ${y}年${m}月${d}日 星期${weekday} ${period} ${hh}:${mm}。你必须知道这个真实时间，当用户问"今天周几""几点了""现在是什么时候"等时间相关问题时，请根据这个真实时间回答，不要编造。`;
+}
+
 type ViewMode = "lobby" | "chat" | "groupchat" | "contacts" | "discover" | "me" | "profile";
 
 /** 可复用的底部 Tab 栏 */
@@ -679,7 +701,7 @@ const SystemTuningPage: React.FC = () => {
     setTimeout(async () => {
       try {
         const replyContent = await callAI(
-          `你是${character.name}（${character.title}），用你角色的语气回复朋友圈评论。回复要简短（15字以内），符合角色性格。`,
+          `你是${character.name}（${character.title}），用你角色的语气回复朋友圈评论。回复要简短（15字以内），符合角色性格。\n\n${getRealTimeContext()}`,
           [{ role: "user", content: `有人评论了你的朋友圈「${targetMoment.content.slice(0, 50)}」：「${commentText.trim()}」，你怎么回复？只输出回复内容，不要加引号或前缀。` }],
           { maxTokens: 50, temperature: 0.85 }
         );
@@ -969,7 +991,7 @@ const SystemTuningPage: React.FC = () => {
         content: m.role === "user" ? m.content : `${getCharacter(m.characterId!)?.name}说：${m.content}`,
       }));
 
-      const fullPrompt = `${char.systemPrompt}\n\n你是群聊中的一员，请自然接话，不要重复别人的话。`;
+      const fullPrompt = `${char.systemPrompt}\n\n你是群聊中的一员，请自然接话，不要重复别人的话。\n\n${getRealTimeContext()}`;
       const reply = await callAI(fullPrompt, historyMsgs, { maxTokens: 180 });
 
       const charMsg: ChatMessage = {
@@ -1038,7 +1060,7 @@ const SystemTuningPage: React.FC = () => {
         const relayHint = groupResult.responders.length > 1
           ? `\n\n你是群聊中的一员。前面已有其他室友发言，请你自然地“接话”或“补刀”，不要重复别人说过的话。可以调侃、吐槽、附和，保持轻松氛围。`
           : "";
-        const fullPrompt = `${char.systemPrompt}${mentionHint}${relayHint}`;
+        const fullPrompt = `${char.systemPrompt}${mentionHint}${relayHint}\n\n${getRealTimeContext()}`;
 
         const reply = await callAI(fullPrompt, historyMsgs, { maxTokens: 180 });
 
@@ -1074,7 +1096,7 @@ const SystemTuningPage: React.FC = () => {
         : "";
 
       const reply = await callAI(
-        selectedChar.systemPrompt + profileHint,
+        selectedChar.systemPrompt + profileHint + "\n\n" + getRealTimeContext(),
         historyMsgs,
         { maxTokens: 200 }
       );

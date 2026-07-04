@@ -571,15 +571,41 @@ const SystemTuningPage: React.FC = () => {
   const [expandedCommentsId, setExpandedCommentsId] = useState<string | null>(null);
   const [commentText, setCommentText] = useState("");
 
+  const [syncStatus, setSyncStatus] = useState<string | null>(null);
+
   const saveMoments = (list: MomentItem[]) => {
     setMoments(list);
     localStorage.setItem("wx_moments", JSON.stringify(list));
-    // 异步推送到远程（静默，不阻塞 UI）
+    // 异步推送到远程
+    const payload = JSON.stringify({ password: "ling", data: list });
+    if (payload.length > 900_000) {
+      // GitHub Contents API 有 1MB 限制（base64 编码后体积约增 33%）
+      console.warn("[moments] 数据过大，跳过远程同步:", (payload.length / 1024).toFixed(0), "KB");
+      setSyncStatus("数据过大，仅保存在本地");
+      setTimeout(() => setSyncStatus(null), 3000);
+      return;
+    }
     fetch("/api/moments", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ password: "ling", data: list }),
-    }).catch(() => {});
+      body: payload,
+    })
+      .then(async (r) => {
+        if (r.ok) {
+          setSyncStatus("已同步到云端");
+          setTimeout(() => setSyncStatus(null), 2000);
+        } else {
+          const err = await r.text();
+          console.warn("[moments] 远程同步失败:", r.status, err);
+          setSyncStatus("同步失败，已保存本地");
+          setTimeout(() => setSyncStatus(null), 3000);
+        }
+      })
+      .catch((e) => {
+        console.warn("[moments] 远程同步异常:", e);
+        setSyncStatus("同步异常，已保存本地");
+        setTimeout(() => setSyncStatus(null), 3000);
+      });
   };
   const handlePublish = () => {
     if (!publishText.trim() && publishImages.length === 0) return;
@@ -1374,6 +1400,19 @@ const SystemTuningPage: React.FC = () => {
                   transition={{ duration: 0.3 }}
                 >
                   已同步到发现广场 🌿
+                </motion.div>
+              )}
+
+              {/* 远程同步状态提示 */}
+              {syncStatus && (
+                <motion.div
+                  className="wx-sync-toast"
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: 20 }}
+                  transition={{ duration: 0.3 }}
+                >
+                  {syncStatus}
                 </motion.div>
               )}
 
@@ -2795,6 +2834,21 @@ const SystemTuningPage: React.FC = () => {
           z-index: 999;
           pointer-events: none;
           white-space: nowrap;
+        }
+        .wx-sync-toast {
+          position: fixed;
+          bottom: 160px;
+          left: 50%;
+          transform: translateX(-50%);
+          padding: 8px 18px;
+          background: rgba(7, 193, 96, 0.85);
+          color: #fff;
+          font-size: 12px;
+          border-radius: 20px;
+          z-index: 999;
+          pointer-events: none;
+          white-space: nowrap;
+          backdrop-filter: blur(4px);
         }
 
         /* 角色详情页（Profile Page） */

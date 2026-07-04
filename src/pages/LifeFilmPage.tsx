@@ -1672,12 +1672,14 @@ const LifeFilmPage: React.FC = () => {
     let cancelled = false;
     fetchSiteData().then((remote) => {
       if (cancelled || !remote) return;
-      // 清除可能覆盖 seed 的本地 key，确保 legacyLoad 回退到远程 seed
+      // 将远程数据写入本地 key，确保 Modal 初始化时读取到最新内容
       Object.values(LS_KEYS).forEach((k) => {
-        localStorage.removeItem(k);
+        if (remote[k] !== undefined) {
+          localStorage.setItem(k, JSON.stringify(remote[k]));
+        }
+        // 清理旧的 draft key，避免残留
         localStorage.removeItem(`draft_${k}`);
       });
-      // 刷新自定义模块列表（在主组件中定义的状态）
       setCustomModules(loadCustomModules());
     });
     return () => { cancelled = true; };

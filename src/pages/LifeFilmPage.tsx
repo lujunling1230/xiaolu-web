@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { legacyLoad, legacySave, publishDrafts, pushSiteData, fetchSiteData } from "../utils/siteData";
+import { legacyLoad, legacySave, publishDrafts, pushSiteData } from "../utils/siteData";
 import { useAdminGuard } from "../hooks/useAdminGuard";
 
 /* ====== 触屏设备检测 ====== */
@@ -1667,53 +1667,17 @@ const LifeFilmPage: React.FC = () => {
   };
   const ActiveModal = openModule && isBuiltin(openModule) ? MODALS[openModule] : null;
 
-  /* 页面加载时同步远程最新数据 */
-  useEffect(() => {
-    let cancelled = false;
-    fetchSiteData().then((remote) => {
-      if (cancelled || !remote) return;
-      // 将远程数据写入本地 key，确保 Modal 初始化时读取到最新内容
-      Object.values(LS_KEYS).forEach((k) => {
-        if (remote[k] !== undefined) {
-          localStorage.setItem(k, JSON.stringify(remote[k]));
-        }
-        // 清理旧的 draft key，避免残留
-        localStorage.removeItem(`draft_${k}`);
-      });
-      setCustomModules(loadCustomModules());
-    });
-    return () => { cancelled = true; };
-  }, []);
-
-  /* 管理员 */
+  /* 管理员：发布 = 将 SEED_KEY（含管理员所有编辑）推送到远程 */
   const handlePublish = async () => {
-    // 先把当前本地数据复制到 draft key，确保 publishDrafts 能正确合并
-    Object.values(LS_KEYS).forEach((k) => {
-      const data = localStorage.getItem(k);
-      if (data !== null) {
-        localStorage.setItem(`draft_${k}`, data);
-      }
-    });
-    // 自定义模块也要处理
-    const customMods = localStorage.getItem(LS_KEYS.customModules);
-    if (customMods !== null) {
-      localStorage.setItem(`draft_${LS_KEYS.customModules}`, customMods);
-    }
+    // 先合并访客 draft 到 SEED_KEY
+    publishDrafts();
 
-    const res = publishDrafts();
-    if (res.success) {
-      const pushed = await pushSiteData("ling");
-      if (pushed) {
-        alert(
-          res.merged.length > 0
-            ? `发布成功，访客将看到最新内容（已同步 ${res.merged.length} 项）`
-            : "发布成功，访客将看到最新内容"
-        );
-      } else {
-        alert("本地草稿已合并，但远程同步失败，请检查网络后重试");
-      }
+    // 将 SEED_KEY 推送到远程
+    const pushed = await pushSiteData("ling");
+    if (pushed) {
+      alert("发布成功，访客将看到最新内容");
     } else {
-      alert("发布失败，请确认管理员权限");
+      alert("远程同步失败，请检查网络后重试");
     }
   };
 

@@ -1,21 +1,15 @@
 /**
  * siteData.ts
  *
- * 站点统一数据管理模块。
+ * 站点统一数据管理模块（重构版）。
  *
- * 核心逻辑：
- * - 页面加载时，优先读取 localStorage 中的 life_film_site_seed。
- * - 若该 Key 不存在，则用 defaultData.js 进行初始化。严禁覆盖已有数据。
- *
- * 数据隔离策略：
- * - 管理员：直接读写原始 key（如 lf_reading），可编辑/删除源数据。
- * - 访客：读取时合并「原始数据 + 访客草稿」；写入时只保存增量到 draft_ 前缀。
- * - 访客的添加/上传操作不会污染 life_film_site_seed 或原始 key。
- * - 管理员「发布草稿」可将访客数据合并到主 seed。
- *
- * 安全红线：
- * - 代码中不得包含任何自动清空 localStorage 的逻辑。
- * - 删除数据需二次确认（由调用方实现）。
+ * 核心原则：
+ * - SEED_KEY (life_film_site_seed) 是唯一的数据源，存储所有模块数据。
+ * - 管理员编辑数据时，直接写入 SEED_KEY（不再经过原始 key 或 draft）。
+ * - 访客添加数据时，写入 draft_* 前缀，不影响 SEED_KEY。
+ * - 发布 = 将 SEED_KEY 推送到远程服务器（pushSiteData）。
+ * - "合并访客草稿" = 将 draft_* 中的新条目追加到 SEED_KEY（publishDrafts）。
+ * - 页面加载时 fetchSiteData() 更新 SEED_KEY，所有组件从 SEED_KEY 读取。
  */
 
 import defaultData from "../data/defaultData.js";
@@ -56,18 +50,18 @@ export function loadAdminSession(): void {
   }
 }
 
-/** 初始化站点数据 */
+/** 初始化站点数据（仅在 SEED_KEY 不存在时写入默认值） */
 export function initSiteData(): void {
   try {
     const existing = localStorage.getItem(SEED_KEY);
-    if (existing) return; // 已存在，严禁覆盖
+    if (existing) return;
     localStorage.setItem(SEED_KEY, JSON.stringify(defaultData));
   } catch (e) {
     console.warn("[siteData] init failed:", e);
   }
 }
 
-/** 从主数据 seed 读取某个字段 */
+/** 从 SEED_KEY 读取某个字段 */
 export function getSeedData<T>(key: string, fallback?: T): T | undefined {
   try {
     const raw = localStorage.getItem(SEED_KEY);
@@ -79,9 +73,8 @@ export function getSeedData<T>(key: string, fallback?: T): T | undefined {
   }
 }
 
-/** 向主数据 seed 写入某个字段（仅管理员） */
+/** 向 SEED_KEY 写入某个字段 */
 export function setSeedData(key: string, value: unknown): boolean {
-  if (!_isAdmin) return false;
   try {
     const raw = localStorage.getItem(SEED_KEY);
     const data = raw ? JSON.parse(raw) : {};
@@ -95,28 +88,17 @@ export function setSeedData(key: string, value: unknown): boolean {
 }
 
 /**
- * 获取「基础数据」：原始 key → seed → fallback
- * 这是管理员/源数据层面的数据，不含访客草稿。
- */
-function getBaseData(key: string): unknown {
-  try {
-    const raw = localStorage.getItem(key);
-    if (raw !== null) {
-      try { return JSON.parse(raw); } catch { return raw; }
-    }
-  } catch {}
-  return getSeedData(key);
-}
-
-/**
- * 兼容旧 key 的读取：合并 base data + visitor draft data
+ * 读取数据：SEED_KEY + 访客 draft 合并
  *
- * - 数组类型：base + draft 中不存在于 base 的条目（按 id 去重）
- * - 非数组类型：draft 优先（访客的值覆盖 base）
+ * 优先级：
+ * 1. SEED_KEY 中的数据（管理员发布的数据 + 远程同步的数据）
+ * 2. draft_* 中的访客增量数据
+ * 3. fallback 默认值
  */
 export function legacyLoad<T>(key: string, fallback?: T): T | undefined {
   try {
-    const base = getBaseData(key);
+    // 始终从 SEED_KEY 读取基础数据
+    const base = getSeedData(key);
 
     const draftRaw = localStorage.getItem(`draft_${key}`);
     if (draftRaw === null) {
@@ -125,14 +107,14 @@ export function legacyLoad<T>(key: string, fallback?: T): T | undefined {
 
     const draft: unknown = JSON.parse(draftRaw);
 
-    // 数组：合并 base + draft（按 id 去重）
+    // 数组：合并 base + draft（按 id 去重，访客新增的追加到末尾）
     if (Array.isArray(base) && Array.isArray(draft)) {
       const baseIds = new Set(
         (base as any[]).map((item: any) => item.id).filter(Boolean)
       );
       const merged = [...(base as any[])];
       for (const item of draft as any[]) {
-        if (item.id && baseIds.has(item.id)) continue; // 跳过已存在的
+        if (item.id && baseIds.has(item.id)) continue;
         merged.push(item);
       }
       return merged as T;
@@ -146,24 +128,21 @@ export function legacyLoad<T>(key: string, fallback?: T): T | undefined {
 }
 
 /**
- * 兼容旧 key 的保存：管理员写原 key，访客只写增量到 draft_
+ * 保存数据
  *
- * - 管理员：直接覆盖原始 key（这就是源数据）
- * - 访客（数组）：对比 base，只保存不存在于 base 中的条目到 draft_
- * - 访客（非数组）：直接保存到 draft_
+ * - 管理员：直接写入 SEED_KEY（这就是源数据，即时生效）
+ * - 访客：只保存增量到 draft_* key
  */
 export function legacySave(key: string, value: unknown): void {
   try {
     if (isAdmin()) {
-      // 管理员：直接写原始 key
-      const toSave = typeof value === "string" ? value : JSON.stringify(value);
-      localStorage.setItem(key, toSave);
+      // 管理员：直接写 SEED_KEY
+      setSeedData(key, value);
     } else {
       // 访客：只保存增量到 draft_ key
-      const base = getBaseData(key);
+      const base = getSeedData(key);
 
       if (Array.isArray(value) && Array.isArray(base)) {
-        // 数组：过滤掉已存在于 base 中的条目，只保存访客新增的
         const baseIds = new Set(
           (base as any[]).map((item: any) => item.id).filter(Boolean)
         );
@@ -174,7 +153,6 @@ export function legacySave(key: string, value: unknown): void {
           localStorage.setItem(`draft_${key}`, JSON.stringify(visitorItems));
         }
       } else {
-        // 非数组：直接保存到 draft_
         const toSave = typeof value === "string" ? value : JSON.stringify(value);
         localStorage.setItem(`draft_${key}`, toSave);
       }
@@ -192,7 +170,6 @@ export function siteLoad<T>(key: string, fallback?: T): T | undefined {
     if (raw !== null) {
       try { return JSON.parse(raw) as T; } catch { return raw as unknown as T; }
     }
-    // 回退到主数据 seed
     const seedVal = getSeedData<T>(key);
     if (seedVal !== undefined) return seedVal;
   } catch {}
@@ -220,9 +197,13 @@ export function saveDraft(key: string, value: unknown): void {
   }
 }
 
-/** 管理员发布：将 draft 数据合并到主 seed */
+/**
+ * 管理员发布：将访客 draft 数据合并到 SEED_KEY
+ *
+ * 合并策略（数组）：以 draft 为准覆盖已有 id，追加新 id
+ * 合并策略（非数组）：draft 覆盖
+ */
 export function publishDrafts(): { success: boolean; merged: string[] } {
-  if (!_isAdmin) return { success: false, merged: [] };
   const merged: string[] = [];
   try {
     const seedRaw = localStorage.getItem(SEED_KEY);
@@ -235,14 +216,23 @@ export function publishDrafts(): { success: boolean; merged: string[] } {
       const val = localStorage.getItem(key);
       if (val === null) continue;
 
-      // 合并策略：数组则拼接去重，其他则覆盖
       try {
         const draftData = JSON.parse(val);
         const existing = seed[realKey];
         if (Array.isArray(existing) && Array.isArray(draftData)) {
+          // 以 draft 为准：draft 中有的 id 覆盖 base 中同 id 的条目
+          const draftMap = new Map(
+            draftData.filter((item: any) => item.id).map((item: any) => [item.id, item])
+          );
+          const mergedArr = existing.map((item: any) =>
+            item.id && draftMap.has(item.id) ? draftMap.get(item.id) : item
+          );
+          // 追加 draft 中不存在于 base 的新条目
           const existingIds = new Set(existing.map((item: any) => item.id).filter(Boolean));
-          const newItems = draftData.filter((item: any) => !item.id || !existingIds.has(item.id));
-          seed[realKey] = [...existing, ...newItems];
+          for (const item of draftData) {
+            if (!item.id || !existingIds.has(item.id)) mergedArr.push(item);
+          }
+          seed[realKey] = mergedArr;
         } else {
           seed[realKey] = draftData;
         }
@@ -268,8 +258,8 @@ export function publishDrafts(): { success: boolean; merged: string[] } {
 const API_URL = "/api/site-data";
 
 /**
- * 从服务端拉取最新站点数据，成功后更新 localStorage 缓存
- * @returns 远程 seed 对象或 null（失败时）
+ * 从服务端拉取最新站点数据，成功后更新 SEED_KEY
+ * @returns 远程数据或 null（失败时）
  */
 export async function fetchSiteData(): Promise<Record<string, unknown> | null> {
   try {
@@ -292,8 +282,7 @@ export async function fetchSiteData(): Promise<Record<string, unknown> | null> {
 }
 
 /**
- * 将当前 localStorage 中的站点 seed 数据推送到服务端
- * 管理员发布操作后调用
+ * 将 SEED_KEY 数据推送到服务端
  * @param password 管理员密码
  */
 export async function pushSiteData(password: string): Promise<boolean> {

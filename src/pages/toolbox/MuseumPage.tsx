@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Link } from "react-router-dom";
-import { siteLoad, legacyLoad, legacySave, fetchSiteData } from "../../utils/siteData";
+import { siteLoad, legacyLoad, legacySave, publishDrafts, pushSiteData } from "../../utils/siteData";
 import { useAdminGuard } from "../../hooks/useAdminGuard";
 
 /**
@@ -1053,25 +1053,7 @@ const MuseumPage: React.FC = () => {
     });
   }, []);
 
-  // 页面加载时同步远程最新数据
-  useEffect(() => {
-    let cancelled = false;
-    fetchSiteData().then((remote) => {
-      if (cancelled || !remote) return;
-      // 用远程 seed 数据覆盖本地 key，确保 legacyLoad 读取到最新内容
-      Object.values(SEED_KEYS).forEach((k) => {
-        const seedVal = (remote as any)[k];
-        if (seedVal !== undefined) {
-          localStorage.setItem(k, JSON.stringify(seedVal));
-        }
-      });
-      setBgms(loadData(SEED_KEYS.bgms, DEFAULT_BGMS));
-      setTvs(loadData(SEED_KEYS.tvs, DEFAULT_TVS));
-      setNets(loadData(SEED_KEYS.nets, DEFAULT_NETS));
-      setHonors(loadData(SEED_KEYS.honors, DEFAULT_HONORS));
-    });
-    return () => { cancelled = true; };
-  }, []);
+  // App.tsx 已全局调用 fetchSiteData，无需在页面级别重复调用
 
   // 时代回响强制升序排列（年份小的在前）
   const sortedBgms = useMemo(() => [...bgms].sort((a, b) => (parseInt(a.year) || 0) - (parseInt(b.year) || 0)), [bgms]);
@@ -1336,6 +1318,26 @@ const MuseumPage: React.FC = () => {
       >
         {adminMode ? "⚙" : "🔒"}
       </button>
+
+      {/* 管理员发布按钮 */}
+      {adminMode && (
+        <button
+          onClick={async () => {
+            publishDrafts();
+            const ok = await pushSiteData("ling");
+            alert(ok ? "发布成功，访客将看到最新内容" : "远程同步失败，请检查网络后重试");
+          }}
+          style={{
+            position: "fixed", bottom: 80, right: 28, zIndex: 20,
+            padding: "8px 16px", border: "none", borderRadius: 20,
+            background: "rgba(141,154,139,0.6)", color: "#e8dcc8",
+            backdropFilter: "blur(10px)", fontSize: 13, cursor: "pointer",
+            boxShadow: "0 2px 12px rgba(0,0,0,0.08)",
+          }}
+        >
+          发布到网站
+        </button>
+      )}
 
       <style>{`
         .museum-page,

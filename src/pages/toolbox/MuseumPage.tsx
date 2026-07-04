@@ -1323,9 +1323,14 @@ const MuseumPage: React.FC = () => {
       {adminMode && (
         <button
           onClick={async () => {
-            publishDrafts();
-            const ok = await pushSiteData("ling");
-            alert(ok ? "发布成功，访客将看到最新内容" : "远程同步失败，请检查网络后重试");
+            try {
+              publishDrafts();
+              const ok = await pushSiteData("ling");
+              alert(ok ? "发布成功，访客将看到最新内容" : "远程同步失败，请检查网络后重试");
+            } catch (e) {
+              console.error("[MuseumPage] publish error:", e);
+              alert("发布出错: " + (e instanceof Error ? e.message : String(e)));
+            }
           }}
           style={{
             position: "fixed", bottom: 80, right: 28, zIndex: 20,

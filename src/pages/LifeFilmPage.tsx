@@ -1677,12 +1677,7 @@ const LifeFilmPage: React.FC = () => {
         localStorage.removeItem(k);
         localStorage.removeItem(`draft_${k}`);
       });
-      setBooks(loadData<Book>(LS_KEYS.reading, MOCK_BOOKS));
-      setPhotos(loadData<Photo>(LS_KEYS.photos, MOCK_PHOTOS));
-      setTracks(loadData<Track>(LS_KEYS.tracks, MOCK_TRACKS));
-      setSports(loadData<Sport>(LS_KEYS.sports, MOCK_SPORTS));
-      setMeditations(loadData<Meditation>(LS_KEYS.meditations, MOCK_MEDITATIONS));
-      setDramas(loadData<Drama>(LS_KEYS.dramas, MOCK_DRAMAS));
+      // 刷新自定义模块列表（在主组件中定义的状态）
       setCustomModules(loadCustomModules());
     });
     return () => { cancelled = true; };

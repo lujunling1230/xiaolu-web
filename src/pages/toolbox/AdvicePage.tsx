@@ -1598,6 +1598,7 @@ const AdvicePage: React.FC = () => {
           .advice-letterbox-detail-inner { padding: 0 14px 14px; }
           .advice-letterbox-envelope,
           .advice-letterbox-reply { padding: 12px; }
+          .advice-bg { background-position: center 25%; background-size: cover; }
           .milk-box { bottom: 0; left: 34%; }
           .milk-body { width: 80px; height: 100px; }
           .milk-upper { height: 52px; }

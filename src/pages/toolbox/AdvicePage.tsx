@@ -638,10 +638,7 @@ const AdvicePage: React.FC = () => {
               </div>
             ))}
           </div>
-          <button type="button" className="notice-about-trigger" onClick={() => setShowAbout(p => !p)}>
-            {showAbout ? '收起' : '关于这间店'}
-          </button>
-          <div className={`notice-about-panel ${showAbout ? 'notice-about-panel--open' : ''}`}>
+          <div className="notice-about-panel notice-about-panel--open">
             <div className="notice-about-content">
               <h3>关于这间店</h3>
               <p>人与人，因烦恼而相连。浪矢爷爷相信，每个咨询者心中早已有了答案，写信只是为了确认自己的选择。</p>
@@ -1488,7 +1485,7 @@ const AdvicePage: React.FC = () => {
           bottom: 24vh;
           z-index: 10;
           width: 252px;
-          // opacity: 0.99;
+          opacity: 1;
           transition: all 0.3s ease;
         }
 
@@ -1538,30 +1535,9 @@ const AdvicePage: React.FC = () => {
           font-size: 12px; line-height: 1.6;
           color: #5C3A21; margin: 0;
         }
-        .notice-about-trigger {
-          display: block; width: 100%;
-          margin-top: 12px; padding: 6px 0;
-          background: none; border: none;
-          font-size: 12px; color: #F5F5DC;
-          font-family: "Noto Serif SC", serif;
-          letter-spacing: 0.06em;
-          cursor: pointer;
-          transition: background 0.2s ease, font-weight 0.2s ease;
-          text-align: center;
-          position: relative; z-index: 1;
-          text-shadow: 0 1px 2px rgba(0,0,0,0.25);
-          border-radius: 4px;
-        }
-        .notice-about-trigger:hover {
-          background: rgba(255,255,255,0.1);
-          font-weight: 600;
-        }
         .notice-about-panel {
-          max-height: 0;
-          overflow: hidden;
-          transition: max-height 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+          margin-top: 10px;
         }
-        .notice-about-panel--open { max-height: 300px; }
         .notice-about-content {
           padding-top: 12px;
           border-top: 1px dashed rgba(80,50,20,0.25);

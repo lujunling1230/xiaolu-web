@@ -178,6 +178,17 @@ const AdvicePage: React.FC = () => {
 
   useEffect(() => { setLetters(loadLetters()); }, []);
 
+  /* 锁定视口高度，防止移动端地址栏变化导致 fixed 元素跳动 */
+  useEffect(() => {
+    const setVH = () => {
+      const vh = window.innerHeight * 0.01;
+      document.documentElement.style.setProperty('--vh', `${vh}px`);
+    };
+    setVH();
+    window.addEventListener('resize', setVH);
+    return () => window.removeEventListener('resize', setVH);
+  }, []);
+
   /* 开场动画结束后提示 */
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -1077,7 +1088,7 @@ const AdvicePage: React.FC = () => {
            ============================================================ */
         .milk-box {
           position: fixed;
-          bottom: -52svh;
+          bottom: calc(var(--vh) * -52);
           left: 34%;
           transform: translateX(-50%);
           z-index: 15;
@@ -1482,7 +1493,7 @@ const AdvicePage: React.FC = () => {
         .notice-board {
           position: fixed;
           left: 68%;
-          bottom: 24svh;
+          bottom: calc(var(--vh) * 24);
           z-index: 10;
           width: 252px;height: 500px;
           opacity: 1;

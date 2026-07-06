@@ -876,7 +876,7 @@ const AdvicePage: React.FC = () => {
         /* ---------- 写信便签卡片（做旧牛皮纸风格） ---------- */
         .advice-letter {
           position: fixed;
-          left: 476px;
+          left: 34%;
           bottom: 210px;
           transform: translateX(-50%);
           width: 300px;
@@ -1067,8 +1067,8 @@ const AdvicePage: React.FC = () => {
            ============================================================ */
         .milk-box {
           position: fixed;
-          bottom: 0;
-          left: 476px;
+          bottom: -52vh;
+          left: 34%;
           transform: translateX(-50%);
           z-index: 15;
           cursor: pointer;
@@ -1346,8 +1346,8 @@ const AdvicePage: React.FC = () => {
         /* ---------- 信件箱（小狗触发，做旧牛皮纸风格） ---------- */
         .advice-letterbox {
           position: fixed;
-          left: 420px;
-          top: 64px;
+          left:30%;
+          top: 8%;
           width: 300px;
           max-width: 40vw;
           max-height: 55vh;
@@ -1471,8 +1471,8 @@ const AdvicePage: React.FC = () => {
            ============================================================ */
         .notice-board {
           position: fixed;
-          left: 952px;
-          bottom: 128px;
+          left: 68%;
+          bottom: 16vh;
           z-index: 10;
           width: 252px;
           opacity: 0.99;
@@ -1606,7 +1606,7 @@ const AdvicePage: React.FC = () => {
           .advice-letterbox-envelope,
           .advice-letterbox-reply { padding: 12px; }
           .advice-bg { background-position: center 25%; background-size: cover; }
-          .milk-box { bottom: 0; left: 128px; }
+          .milk-box { bottom: 0; left: 34%; }
           .milk-body { width: 80px; height: 100px; }
           .milk-upper { height: 52px; }
           .milk-rain-guard { height: 24px; left: -6px; right: -6px; }
@@ -1615,13 +1615,13 @@ const AdvicePage: React.FC = () => {
           .milk-sticker { width: 32px; height: 24px; }
           .milk-sticker span { font-size: 8px; }
           .advice-letter {
-            left: 128px;
+            left: 34%;
             bottom: 160px;
             transform: translateX(-50%);
           }
-          .notice-board { left: 200px; bottom: 100px; width: 250px; }
-          .advice-miao { bottom: 16px; right: 16px; width: 56px; height: 56px; }
-          .advice-letterbox { left: 80px; top: 64px; width: 260px; }
+          .notice-board { right: 25%; top: 12%; width: 90vw; max-width: 320px; }
+          .advice-miao { bottom: 16px; right: 16px; }
+          .advice-letterbox { right: 12%; top: 6%; }
           .notice-board-wood { padding: 12px; }
           .intro-sign-title { font-size: 28px; }
           .intro-scene-mailbox { width: 36px; height: 48px; }

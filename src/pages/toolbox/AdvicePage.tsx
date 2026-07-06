@@ -686,10 +686,10 @@ const AdvicePage: React.FC = () => {
           z-index: 0;
         }
 
-        /* 暗色叠加 */
+        /* 轻微暗色叠加（保持原图明亮度） */
         .advice-bg-overlay {
           position: fixed; inset: 0;
-          background: rgba(0, 0, 0, 0.5);
+          background: rgba(0, 0, 0, 0.12);
           z-index: 1;
           pointer-events: none;
         }
@@ -1275,8 +1275,8 @@ const AdvicePage: React.FC = () => {
            ============================================================ */
         .advice-miao {
           position: fixed;
-          bottom: 24px;
-          right: 24px;
+          bottom: 16px;
+          right: 16px;
           z-index: 20;
           display: flex; flex-direction: column;
           align-items: center; gap: 4px;
@@ -1464,8 +1464,8 @@ const AdvicePage: React.FC = () => {
            ============================================================ */
         .notice-board {
           position: fixed;
-          right: 23%;
-          top: 14%;
+          right: 18%;
+          top: 12%;
           z-index: 10;
           width: 240px;
           opacity: 0.95;

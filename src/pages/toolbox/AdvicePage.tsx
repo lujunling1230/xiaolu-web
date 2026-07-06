@@ -869,8 +869,8 @@ const AdvicePage: React.FC = () => {
         /* ---------- 写信便签卡片（做旧牛皮纸风格） ---------- */
         .advice-letter {
           position: fixed;
-          left: 50%;
-          bottom: 26%;
+          left: 34%;
+          bottom: 210px;
           transform: translateX(-50%);
           width: 300px;
           max-width: 85vw;
@@ -1060,7 +1060,7 @@ const AdvicePage: React.FC = () => {
            ============================================================ */
         .milk-box {
           position: fixed;
-          bottom: 0;
+          bottom: -52vh;
           left: 34%;
           transform: translateX(-50%);
           z-index: 15;
@@ -1099,7 +1099,7 @@ const AdvicePage: React.FC = () => {
         /* --- 箱体主体（做旧绿漆 + 噪点 + 磨损） --- */
         .milk-body {
           position: relative;
-          width: 160px; height: 200px;
+          width: 189px; height: 215px;
           background-image:
             url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='1.2' numOctaves='5' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100' height='100' filter='url(%23n)' opacity='0.12'/%3E%3C/svg%3E"),
             linear-gradient(160deg, #5A8A38 0%, #4A7030 40%, #3A5C24 70%, #2E4A1C 100%);
@@ -1275,8 +1275,8 @@ const AdvicePage: React.FC = () => {
            ============================================================ */
         .advice-miao {
           position: fixed;
-          left: 75%;
-          top: 30%;
+          bottom: 24px;
+          right: 24px;
           z-index: 20;
           display: flex; flex-direction: column;
           align-items: center; gap: 4px;
@@ -1339,7 +1339,7 @@ const AdvicePage: React.FC = () => {
         /* ---------- 信件箱（小狗触发，做旧牛皮纸风格） ---------- */
         .advice-letterbox {
           position: fixed;
-          right: 15%;
+          left:30%;
           top: 8%;
           width: 300px;
           max-width: 40vw;
@@ -1464,11 +1464,11 @@ const AdvicePage: React.FC = () => {
            ============================================================ */
         .notice-board {
           position: fixed;
-          right: 30%;
-          top: 15%;
+          left: 68%;
+          bottom: 16vh;
           z-index: 10;
-          width: 240px;
-          opacity: 0.95;
+          width: 252px;
+          opacity: 0.99;
           transition: all 0.3s ease;
         }
 
@@ -1608,12 +1608,12 @@ const AdvicePage: React.FC = () => {
           .milk-sticker { width: 32px; height: 24px; }
           .milk-sticker span { font-size: 8px; }
           .advice-letter {
-            left: 35%;
-            bottom: 18%;
+            left: 34%;
+            bottom: 160px;
             transform: translateX(-50%);
           }
           .notice-board { right: 25%; top: 12%; width: 90vw; max-width: 320px; }
-          .advice-miao { left: 72%; top: 28%; }
+          .advice-miao { bottom: 16px; right: 16px; }
           .advice-letterbox { right: 12%; top: 6%; }
           .notice-board-wood { padding: 12px; }
           .intro-sign-title { font-size: 28px; }

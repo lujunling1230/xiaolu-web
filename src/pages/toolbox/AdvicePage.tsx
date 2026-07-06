@@ -1276,7 +1276,7 @@ const AdvicePage: React.FC = () => {
         .advice-miao {
           position: fixed;
           left: 75%;
-          top: 38%;
+          top: 30%;
           z-index: 20;
           display: flex; flex-direction: column;
           align-items: center; gap: 4px;
@@ -1464,9 +1464,8 @@ const AdvicePage: React.FC = () => {
            ============================================================ */
         .notice-board {
           position: fixed;
-          left: 50%;
+          right: 30%;
           top: 15%;
-          transform: translateX(-50%);
           z-index: 10;
           width: 240px;
           opacity: 0.95;
@@ -1613,8 +1612,8 @@ const AdvicePage: React.FC = () => {
             bottom: 18%;
             transform: translateX(-50%);
           }
-          .notice-board { left: 50%; top: 12%; transform: translateX(-50%); width: 90vw; max-width: 320px; }
-          .advice-miao { left: 72%; top: 36%; }
+          .notice-board { right: 25%; top: 12%; width: 90vw; max-width: 320px; }
+          .advice-miao { left: 72%; top: 28%; }
           .advice-letterbox { right: 12%; top: 6%; }
           .notice-board-wood { padding: 12px; }
           .intro-sign-title { font-size: 28px; }

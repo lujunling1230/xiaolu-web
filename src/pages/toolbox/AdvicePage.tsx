@@ -1275,8 +1275,8 @@ const AdvicePage: React.FC = () => {
            ============================================================ */
         .advice-miao {
           position: fixed;
-          bottom: 16px;
-          right: 16px;
+          left: 75%;
+          top: 38%;
           z-index: 20;
           display: flex; flex-direction: column;
           align-items: center; gap: 4px;
@@ -1339,8 +1339,8 @@ const AdvicePage: React.FC = () => {
         /* ---------- 信件箱（小狗触发，做旧牛皮纸风格） ---------- */
         .advice-letterbox {
           position: fixed;
-          right: 24px;
-          bottom: 90px;
+          right: 15%;
+          top: 8%;
           width: 300px;
           max-width: 40vw;
           max-height: 55vh;
@@ -1464,8 +1464,9 @@ const AdvicePage: React.FC = () => {
            ============================================================ */
         .notice-board {
           position: fixed;
-          right: 18%;
-          top: 12%;
+          left: 50%;
+          top: 15%;
+          transform: translateX(-50%);
           z-index: 10;
           width: 240px;
           opacity: 0.95;
@@ -1612,9 +1613,9 @@ const AdvicePage: React.FC = () => {
             bottom: 18%;
             transform: translateX(-50%);
           }
-          .notice-board { right: 20%; top: 12%; width: 90vw; max-width: 320px; }
-          .advice-miao { bottom: 16px; right: 16px; }
-          .advice-letterbox { right: 16px; bottom: 80px; }
+          .notice-board { left: 50%; top: 12%; transform: translateX(-50%); width: 90vw; max-width: 320px; }
+          .advice-miao { left: 72%; top: 36%; }
+          .advice-letterbox { right: 12%; top: 6%; }
           .notice-board-wood { padding: 12px; }
           .intro-sign-title { font-size: 28px; }
           .intro-scene-mailbox { width: 36px; height: 48px; }

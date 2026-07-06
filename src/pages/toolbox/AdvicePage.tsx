@@ -822,13 +822,20 @@ const AdvicePage: React.FC = () => {
           max-width: 560px; margin: 0 auto; padding: 20px 4px 0;
         }
         .advice-back {
-          font-size: 13px; color: rgba(255,204,188,0.7); text-decoration: none;
+          position: fixed;
+          left: 16px; top: 16px;
+          z-index: 30;
+          font-size: 13px; color: rgba(255,204,188,0.85); text-decoration: none;
           letter-spacing: 0.04em;
           transition: color 0.25s ease, transform 0.25s ease;
           display: inline-flex; align-items: center;
-          text-shadow: 0 1px 4px rgba(0,0,0,0.4);
+          text-shadow: 0 1px 4px rgba(0,0,0,0.5);
+          padding: 6px 12px;
+          border-radius: 6px;
+          background: rgba(0,0,0,0.25);
+          backdrop-filter: blur(2px);
         }
-        .advice-back:hover { color: #FFCCBC; transform: translateX(-3px); }
+        .advice-back:hover { color: #FFCCBC; transform: translateX(-3px); background: rgba(0,0,0,0.35); }
         .advice-topbar-meta {
           font-size: 10px; color: rgba(255,204,188,0.4);
           letter-spacing: 0.28em; text-transform: uppercase;

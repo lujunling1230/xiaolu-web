@@ -10,9 +10,17 @@
     ],
     "tags": [],
     "visibility": "public",
-    "likes": 0,
-    "likedByMe": false,
-    "comments": [],
+    "likes": 1,
+    "likedByMe": true,
+    "comments": [
+      {
+        "id": "cmt-1783162090057",
+        "author": "新晋房客",
+        "authorAvatar": "🍃",
+        "content": "2",
+        "timestamp": 1783162090057
+      }
+    ],
     "timestamp": 1783134490901,
     "isMine": true
   },

@@ -1464,26 +1464,22 @@ const AdvicePage: React.FC = () => {
            ============================================================ */
         .notice-board {
           position: fixed;
-          right: 24px;
-          bottom: 100px;
+          right: 23%;
+          top: 14%;
           z-index: 10;
           width: 240px;
           opacity: 0.95;
-  transition: all 0.3s ease;
+          transition: all 0.3s ease;
         }
- 
+
         .notice-board-wood {
-          background-image:
-            url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100'%3E%3Cfilter id='w'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100' height='100' filter='url(%23w)' opacity='0.06'/%3E%3C/svg%3E"),
-            linear-gradient(135deg, #D4AF37 0%, #C9A227 50%, #B8860B 100%);
-          background-blend-mode: overlay;
-          border: 1px solid rgba(80,50,20,0.4);
+          background: rgba(245, 220, 120, 0.85);
+          border: 1px solid rgba(100, 60, 20, 0.4);
           border-radius: 8px 12px 6px 10px;
           padding: 16px;
           mix-blend-mode: multiply;
-          box-shadow:
-            0 4px 12px rgba(0,0,0,0.25),
-            inset 0 2px 6px rgba(0,0,0,0.3);
+          backdrop-filter: blur(0.5px);
+          box-shadow: 0 2px 8px rgba(0,0,0,0.15);
           position: relative;
         }
         .notice-pin {
@@ -1520,7 +1516,7 @@ const AdvicePage: React.FC = () => {
         .notice-sticky p {
           font-family: "Noto Serif SC", serif;
           font-size: 12px; line-height: 1.6;
-          color: #3E2723; margin: 0;
+          color: #5C3A21; margin: 0;
         }
         .notice-about-trigger {
           display: block; width: 100%;
@@ -1554,16 +1550,16 @@ const AdvicePage: React.FC = () => {
         }
         .notice-about-content h3 {
           font-family: "Noto Serif SC", serif;
-          font-size: 13px; color: #3E2723;
+          font-size: 13px; color: #5C3A21;
           margin: 0 0 10px; letter-spacing: 0.06em;
         }
         .notice-about-content p {
           font-family: "Noto Serif SC", Georgia, serif;
           font-size: 12px; line-height: 1.8;
-          color: #3E2723; margin: 0 0 8px;
+          color: #5C3A21; margin: 0 0 8px;
         }
         .notice-about-content .notice-about-sign {
-          text-align: right; color: #5D4037;
+          text-align: right; color: #5C3A21;
           font-style: italic; margin-top: 10px;
         }
 
@@ -1615,7 +1611,7 @@ const AdvicePage: React.FC = () => {
             bottom: 18%;
             transform: translateX(-50%);
           }
-          .notice-board { right: 12px; bottom: 80px; width: 90vw; max-width: 320px; }
+          .notice-board { right: 20%; top: 12%; width: 90vw; max-width: 320px; }
           .advice-miao { bottom: 16px; right: 16px; }
           .advice-letterbox { right: 16px; bottom: 80px; }
           .notice-board-wood { padding: 12px; }

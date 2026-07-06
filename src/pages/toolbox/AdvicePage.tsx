@@ -873,45 +873,58 @@ const AdvicePage: React.FC = () => {
             url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.95' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.05'/%3E%3C/svg%3E");
         }
 
-        /* ---------- 写信便签卡片（做旧牛皮纸风格） ---------- */
+        /* ---------- 写信便签卡片（贴在牛奶箱上的黄色便签纸） ---------- */
         .advice-letter {
           position: fixed;
-          left: 34%;
-          bottom: 210px;
-          transform: translateX(-50%);
+          left: 26%;
+          bottom: 186px;
+          transform: translateX(-50%) rotate(-1.5deg);
           width: 300px;
           max-width: 85vw;
           z-index: 10;
-          padding: 20px 24px;
-          border-radius: 4px 12px 12px 8px;
-          border: 1px solid rgba(160,136,127,0.4);
+          padding: 18px 22px 20px;
+          border-radius: 3px 12px 10px 4px;
+          border: 1px solid rgba(180, 150, 60, 0.5);
           background-image:
-            url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100' height='100' filter='url(%23n)' opacity='0.06'/%3E%3C/svg%3E"),
-            linear-gradient(160deg, #F0E4CC 0%, #E8D8BC 50%, #DFCDA8 100%);
+            url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='2.0' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100' height='100' filter='url(%23n)' opacity='0.07'/%3E%3C/svg%3E"),
+            linear-gradient(135deg, #FFF9C4 0%, #F5E76E 100%);
           background-blend-mode: overlay;
+          opacity: 0.95;
           box-shadow:
-            0 6px 20px rgba(0,0,0,0.18),
-            inset 0 2px 6px rgba(0,0,0,0.1);
-          animation: sticky-note-appear 0.5s ease-out;
+            0 6px 16px rgba(0,0,0,0.12),
+            0 1px 3px rgba(0,0,0,0.08);
+          animation: sticky-note-appear 0.4s ease-out;
+        }
+        .advice-letter::before {
+          content: "";
+          position: absolute;
+          top: -8px; left: 50%;
+          margin-left: -5px;
+          width: 10px; height: 16px;
+          background: rgba(180,150,60,0.35);
+          border-radius: 2px 2px 3px 3px;
+          box-shadow: 0 1px 3px rgba(0,0,0,0.15);
         }
         @keyframes sticky-note-appear {
-          from { opacity: 0; transform: translateX(-50%) translateY(16px) rotate(-1deg); }
-          to   { opacity: 1; transform: translateX(-50%) translateY(0) rotate(0); }
+          from { opacity: 0; transform: translateX(-50%) translateY(8px) rotate(-3deg); }
+          to   { opacity: 1; transform: translateX(-50%) translateY(0) rotate(-1.5deg); }
         }
 
         /* × 关闭按钮 */
         .advice-letter-close {
           position: absolute;
-          top: 8px; right: 10px;
-          width: 22px; height: 22px;
+          top: -6px; right: -6px;
+          width: 20px; height: 20px;
           border: none; background: none;
-          font-size: 14px; color: #A1887F;
+          font-size: 11px; color: #8D6E63;
           cursor: pointer; padding: 0;
           display: flex; align-items: center; justify-content: center;
           border-radius: 50%;
           transition: background 0.2s ease, color 0.2s ease;
           font-family: serif;
           line-height: 1;
+          background: rgba(255,255,255,0.6);
+          box-shadow: 0 1px 3px rgba(0,0,0,0.12);
         }
         .advice-letter-close:hover {
           background: rgba(161,136,127,0.15);
@@ -919,16 +932,16 @@ const AdvicePage: React.FC = () => {
         }
         .advice-letter-greeting {
           font-family: "Ma Shan Zheng", "Noto Serif SC", serif;
-          font-size: 15px; color: #8D6E63;
-          margin: 0 0 12px; letter-spacing: 0.06em;
+          font-size: 14px; color: #5D4037;
+          margin: 0 0 10px; letter-spacing: 0.06em;
         }
         .advice-input {
-          width: 100%; border: 1px solid #E0D5C0;
-          border-radius: 8px;
+          width: 100%; border: 1px solid rgba(180,150,60,0.3);
+          border-radius: 4px;
           resize: none; outline: none;
-          background: rgba(255,255,255,0.8);
+          background: rgba(255,255,245,0.85);
           font-family: inherit;
-          font-size: 14px; line-height: 1.8;
+          font-size: 13px; line-height: 1.8;
           color: #5D4037; letter-spacing: 0.02em;
           padding: 10px 12px;
           box-sizing: border-box;
@@ -936,28 +949,28 @@ const AdvicePage: React.FC = () => {
         }
         .advice-input::placeholder { color: #BCAAA4; }
         .advice-input:focus {
-          border-color: #D4A373;
-          box-shadow: 0 0 0 2px rgba(212,163,115,0.15);
+          border-color: rgba(180,150,60,0.6);
+          box-shadow: 0 0 0 2px rgba(180,150,60,0.12);
         }
 
         /* ---------- 投递按钮 ---------- */
         .advice-submit {
           display: inline-flex; align-items: center;
           justify-content: center; gap: 8px;
-          width: 100%; margin-top: 24px;
-          padding: 12px; border: none; border-radius: 10px;
-          font-size: 15px; font-family: inherit;
+          width: 100%; margin-top: 20px;
+          padding: 10px; border: 1px solid rgba(180,150,60,0.4); border-radius: 6px;
+          font-size: 14px; font-family: inherit;
           font-weight: 500; letter-spacing: 0.06em;
-          color: #fff; background: #6D4C41;
-          box-shadow: 0 4px 14px rgba(0,0,0,0.25);
+          color: #5D4037; background: rgba(245,235,170,0.7);
+          box-shadow: 0 2px 6px rgba(0,0,0,0.08);
           transition: transform 0.15s ease, background 0.25s ease, box-shadow 0.25s ease;
           will-change: transform;
         }
         .advice-submit:hover:not(:disabled) {
-          background: #5D4037; transform: translateY(-2px);
-          box-shadow: 0 6px 18px rgba(0,0,0,0.3);
+          background: rgba(240,225,140,0.85); transform: translateY(-1px);
+          box-shadow: 0 3px 10px rgba(0,0,0,0.12);
         }
-        .advice-submit:disabled { opacity: 0.5; cursor: not-allowed; }
+        .advice-submit:disabled { opacity: 0.4; cursor: not-allowed; background: rgba(245,235,170,0.4); }
         .advice-submit-icon { display: inline-flex; align-items: center; }
 
         /* ---------- 信纸飞入动画（从右下角便签位置起飞） ---------- */
@@ -1051,14 +1064,14 @@ const AdvicePage: React.FC = () => {
 
         .advice-again {
           display: block; margin: 0 auto;
-          padding: 8px 24px;
-          border: 1.5px solid #D7CCC8; border-radius: 999px;
-          background: #EFEBE9; font-size: 13px; font-family: inherit;
-          font-weight: 500; color: #5D4037; letter-spacing: 0.05em;
+          padding: 6px 20px;
+          border: 1px dashed rgba(180,150,60,0.4); border-radius: 999px;
+          background: transparent; font-size: 12px; font-family: inherit;
+          font-weight: 400; color: #8D6E63; letter-spacing: 0.05em;
           transition: background 0.25s ease, border-color 0.25s ease, transform 0.2s ease;
         }
         .advice-again:hover {
-          background: #D7CCC8; border-color: #BCAAA4;
+          background: rgba(255,255,255,0.3); border-color: rgba(180,150,60,0.6);
           transform: translateY(-1px);
         }
 
@@ -1282,8 +1295,8 @@ const AdvicePage: React.FC = () => {
            ============================================================ */
         .advice-miao {
           position: fixed;
-          bottom: 8px;
-          right: 24px;
+          bottom: 18px;
+          left: 34px;
           z-index: 20;
           display: flex; flex-direction: column;
           align-items: center; gap: 4px;
@@ -1615,9 +1628,9 @@ const AdvicePage: React.FC = () => {
           .milk-sticker { width: 32px; height: 24px; }
           .milk-sticker span { font-size: 8px; }
           .advice-letter {
-            left: 34%;
-            bottom: 160px;
-            transform: translateX(-50%);
+            left: 26%;
+            bottom: 140px;
+            transform: translateX(-50%) rotate(-1deg);
           }
           .notice-board { right: 25%; top: 12%; width: 90vw; max-width: 320px; }
           .advice-miao { bottom: 8px; right: 16px; }

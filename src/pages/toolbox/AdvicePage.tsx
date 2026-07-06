@@ -1106,7 +1106,7 @@ const AdvicePage: React.FC = () => {
         /* --- 箱体主体（做旧绿漆 + 噪点 + 磨损） --- */
         .milk-body {
           position: relative;
-          width: 126px; height: 143px;
+          width: 189px; height: 215px;
           background-image:
             url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='1.2' numOctaves='5' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100' height='100' filter='url(%23n)' opacity='0.12'/%3E%3C/svg%3E"),
             linear-gradient(160deg, #5A8A38 0%, #4A7030 40%, #3A5C24 70%, #2E4A1C 100%);
@@ -1474,7 +1474,7 @@ const AdvicePage: React.FC = () => {
           left: 68%;
           bottom: 16vh;
           z-index: 10;
-          width: 189px;
+          width: 252px;
           opacity: 0.99;
           transition: all 0.3s ease;
         }
@@ -1607,7 +1607,7 @@ const AdvicePage: React.FC = () => {
           .advice-letterbox-reply { padding: 12px; }
           .advice-bg { background-position: center 25%; background-size: cover; }
           .milk-box { bottom: 0; left: 34%; }
-          .milk-body { width: 53px; height: 67px; }
+          .milk-body { width: 80px; height: 100px; }
           .milk-upper { height: 52px; }
           .milk-rain-guard { height: 24px; left: -6px; right: -6px; }
           .milk-lower { height: 92px; }

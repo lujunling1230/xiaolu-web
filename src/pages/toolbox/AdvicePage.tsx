@@ -1077,7 +1077,7 @@ const AdvicePage: React.FC = () => {
            ============================================================ */
         .milk-box {
           position: fixed;
-          bottom: -52vh;
+          bottom: -52svh;
           left: 34%;
           transform: translateX(-50%);
           z-index: 15;
@@ -1292,8 +1292,8 @@ const AdvicePage: React.FC = () => {
            ============================================================ */
         .advice-miao {
           position: fixed;
-          bottom: 18px;
-          left: 34px;
+          bottom: -368px;
+          right: -1740px;
           z-index: 20;
           display: flex; flex-direction: column;
           align-items: center; gap: 4px;
@@ -1356,8 +1356,8 @@ const AdvicePage: React.FC = () => {
         /* ---------- 信件箱（小狗触发，做旧牛皮纸风格） ---------- */
         .advice-letterbox {
           position: fixed;
-          right: 100px;
-          bottom: 90px;
+          right: 90px;
+          bottom: 130px;
           width: 300px;
           max-width: 40vw;
           max-height: 55vh;
@@ -1482,9 +1482,9 @@ const AdvicePage: React.FC = () => {
         .notice-board {
           position: fixed;
           left: 68%;
-          bottom: 24vh;
+          bottom: 24svh;
           z-index: 10;
-          width: 252px;
+          width: 252px;height: 500px;
           opacity: 1;
           transition: all 0.3s ease;
         }

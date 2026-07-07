@@ -401,10 +401,10 @@ function computeProvinceStats(cities: City[]): ProvinceArea[] {
 const MAP_VIEWBOX_W = 420;
 const MAP_VIEWBOX_H = 300;
 
-const VISITED_OVERLAY = "rgba(93, 138, 106, 0.85)";
-const UNVISITED_OVERLAY = "rgba(232, 226, 212, 0.45)";
-const VISITED_STROKE = "#4d7a5a";
-const UNVISITED_STROKE = "#d4ccbe";
+const VISITED_FILL = "rgba(93, 138, 106, 0.08)";
+const UNVISITED_FILL = "transparent";
+const VISITED_STROKE = "#C9A84C";
+const UNVISITED_STROKE = "#B0A898";
 
 /* ============================================================
    空城市模板（用于新增）
@@ -645,23 +645,27 @@ const TravelPage: React.FC = () => {
                   <g key={p.name}>
                     <path
                       d={p.path}
-                      fill={isVisited ? VISITED_OVERLAY : UNVISITED_OVERLAY}
+                      fill={isVisited ? VISITED_FILL : UNVISITED_FILL}
                       stroke={isVisited ? VISITED_STROKE : UNVISITED_STROKE}
-                      strokeWidth={isHovered ? 1.5 : 0.8}
-                      opacity={isHovered ? 1 : isVisited ? 0.75 : 0.5}
+                      strokeWidth={isHovered ? 2.2 : isVisited ? 1.8 : 1.2}
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      opacity={isHovered ? 1 : 0.9}
                       className="travel-province-area"
                       onMouseEnter={(e) => handleProvinceHover(p, e)}
                       onMouseMove={(e) => handleProvinceHover(p, e)}
                       onClick={() => handleProvinceClick(p)}
                     />
                     {isVisited && (
-                      <circle
-                        cx={parseFloat(p.path.match(/M\s*(\d+)/)?.[1] || "0") + 8}
-                        cy={parseFloat(p.path.match(/\s+(\d+)/)?.[1] || "0") + 8}
-                        r="4"
-                        fill="#fff"
-                        opacity="0.7"
-                        style={{ pointerEvents: "none" }}
+                      <path
+                        d={p.path}
+                        fill="none"
+                        stroke="#C9A84C"
+                        strokeWidth={isHovered ? 3 : 2.5}
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        opacity={isHovered ? 1 : 0.85}
+                        style={{ pointerEvents: "none", filter: "drop-shadow(0 0 2px rgba(201,168,76,0.4))" }}
                       />
                     )}
                   </g>
@@ -685,11 +689,11 @@ const TravelPage: React.FC = () => {
 
           <div className="travel-legend">
             <span className="travel-legend-item">
-              <span className="travel-legend-dot" style={{ background: "#5d8a6a" }} />
+              <span className="travel-legend-dot" style={{ background: "#C9A84C" }} />
               已去过
             </span>
             <span className="travel-legend-item">
-              <span className="travel-legend-dot" style={{ background: "#e8e2d4" }} />
+              <span className="travel-legend-dot" style={{ background: "#B0A898" }} />
               待探索
             </span>
             <span className="travel-legend-tip">点击省份切换</span>
@@ -1056,10 +1060,10 @@ const TravelPage: React.FC = () => {
         }
         .travel-province-area {
           cursor: pointer;
-          transition: opacity 0.2s ease, stroke-width 0.2s ease;
+          transition: stroke-width 0.2s ease, filter 0.2s ease;
         }
         .travel-province-area:hover {
-          filter: drop-shadow(0 0 4px rgba(0,0,0,0.2));
+          filter: drop-shadow(0 0 3px rgba(201,168,76,0.5));
         }
         .travel-tooltip {
           position: absolute; z-index: 10; pointer-events: none;

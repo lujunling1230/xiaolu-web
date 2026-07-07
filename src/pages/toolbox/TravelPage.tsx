@@ -318,71 +318,78 @@ function getProvinceByCity(cityName: string): string | null {
 }
 
 /* ============================================================
-   省份数据（基础布局 + 动态计算 visited / count）
+   交互式中国地图（基于手绘水彩背景 + SVG 多边形点击区域）
    ============================================================ */
-interface ProvinceBlock {
+interface ProvinceArea {
   name: string;
-  x: number;
-  y: number;
-  w: number;
-  h: number;
+  /** SVG 多边形路径坐标 */
+  path: string;
+  /** 是否去过（根据有记录的城市判断） */
   visited: boolean;
+  /** 去过的城市数量 */
   count: number;
 }
 
-/* 省份基础布局（不含 visited / count，由 cities 动态计算） */
-const PROVINCE_LAYOUTS: Omit<ProvinceBlock, "visited" | "count">[] = [
-  { name: "黑龙江", x: 330, y: 20, w: 50, h: 35 },
-  { name: "吉林", x: 315, y: 58, w: 38, h: 28 },
-  { name: "辽宁", x: 300, y: 90, w: 42, h: 28 },
-  { name: "内蒙古", x: 200, y: 30, w: 110, h: 35 },
-  { name: "北京", x: 270, y: 75, w: 22, h: 18 },
-  { name: "河北", x: 255, y: 95, w: 48, h: 32 },
-  { name: "山西", x: 225, y: 100, w: 30, h: 35 },
-  { name: "新疆", x: 60, y: 45, w: 90, h: 55 },
-  { name: "甘肃", x: 150, y: 80, w: 48, h: 50 },
-  { name: "陕西", x: 200, y: 110, w: 32, h: 40 },
-  { name: "青海", x: 100, y: 130, w: 55, h: 38 },
-  { name: "西藏", x: 40, y: 160, w: 80, h: 60 },
-  { name: "四川", x: 165, y: 160, w: 50, h: 48 },
-  { name: "重庆", x: 215, y: 175, w: 22, h: 25 },
-  { name: "云南", x: 130, y: 220, w: 48, h: 42 },
-  { name: "贵州", x: 185, y: 210, w: 30, h: 30 },
-  { name: "湖北", x: 225, y: 150, w: 38, h: 32 },
-  { name: "河南", x: 230, y: 120, w: 36, h: 28 },
-  { name: "山东", x: 275, y: 115, w: 42, h: 28 },
-  { name: "江苏", x: 275, y: 150, w: 36, h: 28 },
-  { name: "安徽", x: 255, y: 150, w: 24, h: 32 },
-  { name: "浙江", x: 285, y: 182, w: 32, h: 28 },
-  { name: "上海", x: 305, y: 168, w: 16, h: 16 },
-  { name: "江西", x: 260, y: 200, w: 32, h: 32 },
-  { name: "湖南", x: 220, y: 195, w: 34, h: 32 },
-  { name: "福建", x: 285, y: 215, w: 32, h: 35 },
-  { name: "广东", x: 250, y: 235, w: 42, h: 30 },
-  { name: "广西", x: 205, y: 235, w: 38, h: 30 },
-  { name: "海南", x: 230, y: 275, w: 28, h: 18 },
+// 基于水彩中国地图手动提取的主要省份轮廓区域
+const PROVINCE_PATHS: Omit<ProvinceArea, "visited" | "count">[] = [
+  { name: "黑龙江", path: "M 335 15 L 400 20 L 405 60 L 350 75 L 330 55 Z" },
+  { name: "吉林", path: "M 305 55 L 355 65 L 350 95 L 300 85 Z" },
+  { name: "辽宁", path: "M 285 80 L 340 85 L 345 120 L 280 115 Z" },
+  { name: "内蒙古", path: "M 180 20 L 320 30 L 310 90 L 170 80 Z" },
+  { name: "北京", path: "M 260 70 L 285 72 L 288 90 L 262 92 Z" },
+  { name: "天津", path: "M 270 85 L 290 87 L 292 100 L 272 102 Z" },
+  { name: "河北", path: "M 235 85 L 285 90 L 280 125 L 230 120 Z" },
+  { name: "山西", path: "M 215 95 L 245 100 L 240 135 L 210 130 Z" },
+  { name: "陕西", path: "M 190 105 L 225 110 L 220 150 L 185 145 Z" },
+  { name: "宁夏", path: "M 160 115 L 185 120 L 180 140 L 155 135 Z" },
+  { name: "甘肃", path: "M 130 70 L 180 80 L 175 130 L 125 120 Z" },
+  { name: "青海", path: "M 90 115 L 145 125 L 140 160 L 85 150 Z" },
+  { name: "新疆", path: "M 40 30 L 130 45 L 125 100 L 35 85 Z" },
+  { name: "西藏", path: "M 30 150 L 110 160 L 105 220 L 25 210 Z" },
+  { name: "四川", path: "M 150 150 L 200 160 L 195 205 L 145 195 Z" },
+  { name: "重庆", path: "M 205 165 L 230 170 L 225 195 L 200 190 Z" },
+  { name: "贵州", path: "M 175 195 L 205 200 L 200 225 L 170 220 Z" },
+  { name: "云南", path: "M 120 200 L 170 210 L 165 255 L 115 245 Z" },
+  { name: "广西", path: "M 190 220 L 240 230 L 235 260 L 185 250 Z" },
+  { name: "广东", path: "M 235 220 L 280 230 L 275 260 L 230 250 Z" },
+  { name: "海南", path: "M 220 260 L 250 265 L 245 285 L 215 280 Z" },
+  { name: "湖南", path: "M 205 185 L 245 190 L 240 220 L 200 215 Z" },
+  { name: "湖北", path: "M 215 140 L 255 145 L 250 175 L 210 170 Z" },
+  { name: "河南", path: "M 220 115 L 255 120 L 250 145 L 215 140 Z" },
+  { name: "安徽", path: "M 240 140 L 265 145 L 260 175 L 235 170 Z" },
+  { name: "江苏", path: "M 260 135 L 295 140 L 290 170 L 255 165 Z" },
+  { name: "山东", path: "M 260 105 L 300 110 L 295 140 L 255 135 Z" },
+  { name: "浙江", path: "M 270 170 L 305 175 L 300 200 L 265 195 Z" },
+  { name: "上海", path: "M 295 160 L 315 165 L 310 180 L 290 175 Z" },
+  { name: "江西", path: "M 245 180 L 275 185 L 270 215 L 240 210 Z" },
+  { name: "福建", path: "M 270 200 L 305 210 L 300 240 L 265 230 Z" },
+  { name: "台湾", path: "M 315 225 L 330 220 L 335 245 L 310 250 Z" },
+  { name: "香港", path: "M 285 245 L 295 240 L 298 250 L 282 255 Z" },
+  { name: "澳门", path: "M 278 248 L 285 245 L 288 252 L 273 255 Z" },
 ];
 
 /** 根据 cities 动态计算每个省份的 visited 和 count */
-function computeProvinceStats(cities: City[]): ProvinceBlock[] {
+function computeProvinceStats(cities: City[]): ProvinceArea[] {
   const counts: Record<string, number> = {};
   for (const c of cities) {
     const prov = c.province?.trim();
     if (!prov) continue;
     counts[prov] = (counts[prov] || 0) + 1;
   }
-  return PROVINCE_LAYOUTS.map((p) => ({
+  return PROVINCE_PATHS.map((p) => ({
     ...p,
     visited: (counts[p.name] || 0) > 0,
     count: counts[p.name] || 0,
   }));
 }
 
-const MAP_W = 360;
-const MAP_H = 310;
+const MAP_VIEWBOX_W = 420;
+const MAP_VIEWBOX_H = 300;
 
-const VISITED_GREEN = "#5d8a6a";
-const UNVISITED_GRAY = "#e8e2d4";
+const VISITED_OVERLAY = "rgba(93, 138, 106, 0.85)";
+const UNVISITED_OVERLAY = "rgba(232, 226, 212, 0.45)";
+const VISITED_STROKE = "#4d7a5a";
+const UNVISITED_STROKE = "#d4ccbe";
 
 /* ============================================================
    空城市模板（用于新增）
@@ -405,20 +412,39 @@ const BLANK_CITY = (): City => ({
    ============================================================ */
 const TravelPage: React.FC = () => {
   const [cities, setCities] = useState<City[]>(loadCities);
-  const [hovered, setHovered] = useState<ProvinceBlock | null>(null);
+  const [hovered, setHovered] = useState<ProvinceArea | null>(null);
   const [tooltipPos, setTooltipPos] = useState({ x: 0, y: 0 });
   const [activeCity, setActiveCity] = useState<City | null>(null);
   const [editingCity, setEditingCity] = useState<City | null>(null);
   const [hoverCardId, setHoverCardId] = useState<number | null>(null);
   const [toast, setToast] = useState<string | null>(null);
+  /* 手动标记去过/未去过的省份（点击切换），持久化到 localStorage */
+  const [manualVisited, setManualVisited] = useState<Set<string>>(() => {
+    try {
+      const raw = localStorage.getItem("travel_manual_visited");
+      return raw ? new Set<string>(JSON.parse(raw)) : new Set<string>();
+    } catch { return new Set<string>(); }
+  });
 
   const isNew = useMemo(() => editingCity ? !cities.some((c) => c.id === editingCity.id) : false, [editingCity, cities]);
 
   // 保存到 localStorage
   useEffect(() => { saveCities(cities); }, [cities]);
 
-  // 动态计算省份状态
-  const provinceBlocks = useMemo(() => computeProvinceStats(cities), [cities]);
+  ///* 保存手动标记到 localStorage */
+  useEffect(() => {
+    try { localStorage.setItem("travel_manual_visited", JSON.stringify([...manualVisited])); } catch { /* ignore */ }
+  }, [manualVisited]);
+
+  /* 动态计算省份状态（合并手动标记） */
+  const provinceBlocks = useMemo(() => {
+    const auto = computeProvinceStats(cities);
+    return auto.map((p) => ({
+      ...p,
+      visited: p.visited || manualVisited.has(p.name),
+      count: p.count,
+    }));
+  }, [cities, manualVisited]);
 
   // 统计
   const stats = useMemo(() => {
@@ -436,10 +462,17 @@ const TravelPage: React.FC = () => {
     }
   }, [activeCity, editingCity]);
 
-  const handleProvinceHover = (p: ProvinceBlock, e: React.MouseEvent) => {
+  const handleProvinceHover = (p: ProvinceArea, e: React.MouseEvent) => {
     setHovered(p);
     const rect = (e.currentTarget as SVGElement).closest("svg")!.getBoundingClientRect();
     setTooltipPos({ x: e.clientX - rect.left, y: e.clientY - rect.top });
+  };
+  const handleProvinceClick = (p: ProvinceArea) => {
+    setManualVisited((prev) => {
+      const next = new Set(prev);
+      if (next.has(p.name)) next.delete(p.name); else next.add(p.name);
+      return next;
+    });
   };
 
   /* ---- 新增 ---- */
@@ -584,40 +617,43 @@ const TravelPage: React.FC = () => {
         </div>
 
         <div className="travel-map-wrap">
-          <svg
-            viewBox={`0 0 ${MAP_W} ${MAP_H}`}
-            className="travel-map"
-            onMouseLeave={() => setHovered(null)}
-          >
-            {provinceBlocks.map((p) => (
-              <g key={p.name}>
-                <rect
-                  x={p.x}
-                  y={p.y}
-                  width={p.w}
-                  height={p.h}
-                  rx={5}
-                  fill={p.visited ? VISITED_GREEN : UNVISITED_GRAY}
-                  stroke={p.visited ? "#4d7a5a" : "#d4ccbe"}
-                  strokeWidth={0.6}
-                  opacity={hovered?.name === p.name ? 1 : p.visited ? 0.85 : 0.6}
-                  style={{ cursor: "pointer", transition: "opacity 0.2s ease" }}
-                  onMouseEnter={(e) => handleProvinceHover(p, e)}
-                  onMouseMove={(e) => handleProvinceHover(p, e)}
-                />
-                <text
-                  x={p.x + p.w / 2}
-                  y={p.y + p.h / 2 + 3}
-                  textAnchor="middle"
-                  fontSize={p.name.length > 2 ? 6.5 : 7.5}
-                  fill={p.visited ? "#fff" : "#a89e8e"}
-                  style={{ pointerEvents: "none", userSelect: "none" }}
-                >
-                  {p.name}
-                </text>
-              </g>
-            ))}
-          </svg>
+          <div className="travel-map-bg" style={{ backgroundImage: "url('/china-map-bg.jpg')" }}>
+            <svg
+              viewBox={`0 0 ${MAP_VIEWBOX_W} ${MAP_VIEWBOX_H}`}
+              className="travel-map-overlay"
+              onMouseLeave={() => setHovered(null)}
+            >
+              {provinceBlocks.map((p) => {
+                const isHovered = hovered?.name === p.name;
+                const isVisited = p.visited;
+                return (
+                  <g key={p.name}>
+                    <path
+                      d={p.path}
+                      fill={isVisited ? VISITED_OVERLAY : UNVISITED_OVERLAY}
+                      stroke={isVisited ? VISITED_STROKE : UNVISITED_STROKE}
+                      strokeWidth={isHovered ? 1.5 : 0.8}
+                      opacity={isHovered ? 1 : isVisited ? 0.75 : 0.5}
+                      className="travel-province-area"
+                      onMouseEnter={(e) => handleProvinceHover(p, e)}
+                      onMouseMove={(e) => handleProvinceHover(p, e)}
+                      onClick={() => handleProvinceClick(p)}
+                    />
+                    {isVisited && (
+                      <circle
+                        cx={parseFloat(p.path.match(/M\s*(\d+)/)?.[1] || "0") + 8}
+                        cy={parseFloat(p.path.match(/\s+(\d+)/)?.[1] || "0") + 8}
+                        r="4"
+                        fill="#fff"
+                        opacity="0.7"
+                        style={{ pointerEvents: "none" }}
+                      />
+                    )}
+                  </g>
+                );
+              })}
+            </svg>
+          </div>
 
           {hovered && (
             <div
@@ -634,13 +670,14 @@ const TravelPage: React.FC = () => {
 
           <div className="travel-legend">
             <span className="travel-legend-item">
-              <span className="travel-legend-dot" style={{ background: VISITED_GREEN }} />
+              <span className="travel-legend-dot" style={{ background: "#5d8a6a" }} />
               已去过
             </span>
             <span className="travel-legend-item">
-              <span className="travel-legend-dot" style={{ background: UNVISITED_GRAY }} />
+              <span className="travel-legend-dot" style={{ background: "#e8e2d4" }} />
               待探索
             </span>
+            <span className="travel-legend-tip">点击省份切换</span>
           </div>
         </div>
 
@@ -989,9 +1026,26 @@ const TravelPage: React.FC = () => {
         .travel-map-wrap {
           position: relative; background: #fffdf6;
           border: 1px solid #ece4d4; border-radius: 14px;
-          padding: 24px; box-shadow: 0 10px 30px -14px rgba(120,100,60,0.15);
+          padding: 0; overflow: hidden;
+          box-shadow: 0 10px 30px -14px rgba(120,100,60,0.15);
         }
-        .travel-map { display: block; width: 100%; max-width: 520px; height: auto; margin: 0 auto; }
+        .travel-map-bg {
+          position: relative; width: 100%;
+          padding-top: 66.67%; /* 3:2 aspect ratio */
+          background-size: cover; background-position: center;
+          background-repeat: no-repeat;
+        }
+        .travel-map-overlay {
+          position: absolute; inset: 0; width: 100%; height: 100%;
+          display: block;
+        }
+        .travel-province-area {
+          cursor: pointer;
+          transition: opacity 0.2s ease, stroke-width 0.2s ease;
+        }
+        .travel-province-area:hover {
+          filter: drop-shadow(0 0 4px rgba(0,0,0,0.2));
+        }
         .travel-tooltip {
           position: absolute; z-index: 10; pointer-events: none;
           padding: 6px 12px; border-radius: 6px;
@@ -1004,6 +1058,9 @@ const TravelPage: React.FC = () => {
         }
         .travel-legend-item {
           display: flex; align-items: center; gap: 6px; font-size: 13px; color: #9a8a7e;
+        }
+        .travel-legend-tip {
+          font-size: 11px; color: #c4b8a8; font-style: italic; letter-spacing: 0.04em;
         }
         .travel-legend-dot { width: 12px; height: 12px; border-radius: 3px; }
 

@@ -67,7 +67,6 @@ const navItems: NavItem[] = [
   { key: "forest", label: "首页", icon: <LeafIcon /> },
   { key: "about", label: "关于我", icon: <DeerIcon /> },
   { key: "projects", label: "项目集", icon: <BookIcon /> },
-  { key: "lab", label: "疗愈室", icon: <HouseIcon /> },
 ];
 
 const ForestNavbar: React.FC = () => {

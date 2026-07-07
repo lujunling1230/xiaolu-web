@@ -97,8 +97,6 @@ const AppContent: React.FC = () => {
         <SimpleNavbar
           current={current}
           onNavigate={handleNavigate}
-          isNight={isNight}
-          onToggleTheme={toggleTheme}
           isFullMode={isFullMode}
         />
       </div>

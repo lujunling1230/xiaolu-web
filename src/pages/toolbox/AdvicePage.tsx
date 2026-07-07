@@ -24,6 +24,7 @@ const STICKIES = [
   "地图是一张白纸，其实很幸福。",
   "每个选择都改变命运。",
   "善意会穿越时空。",
+  "心之所向，便是阳关大道。",
 ];
 const loadLetters = (): Letter[] => {
   try { const r = localStorage.getItem(STORAGE_KEY); return r ? JSON.parse(r) : []; }
@@ -153,9 +154,7 @@ const AdvicePage: React.FC = () => {
   const [reply, setReply] = useState<string | null>(null);
   const [phase, setPhase] = useState<Phase>("idle");
   const [loading, setLoading] = useState(false);
-  const [lidAngle, setLidAngle] = useState(0);
-  const [glowIntensity, setGlowIntensity] = useState(0);
-  const [showLetterInBox, setShowLetterInBox] = useState(false);
+
   const [flyingLetter, setFlyingLetter] = useState(false);
   const [replyFlyingIn, setReplyFlyingIn] = useState(false);
   const [mailboxShake, setMailboxShake] = useState(false);
@@ -238,15 +237,9 @@ const AdvicePage: React.FC = () => {
     /* === 阶段1: 信纸飞入牛奶箱 === */
     setPhase("inserting");
     setFlyingLetter(true);
-    setLidAngle(-45);
     await wait(600);
     setFlyingLetter(false);
-    setShowLetterInBox(true);
-    setGlowIntensity(0.35);
     await wait(400);
-    setLidAngle(0);
-    setShowLetterInBox(false);
-    setGlowIntensity(0);
     await wait(500);
 
     /* === 阶段2: 等待回信 === */
@@ -324,15 +317,10 @@ const AdvicePage: React.FC = () => {
   const afterReplyReady = (text: string) => {
     setPhase("reply-arrived");
     setReplyFlyingIn(true);
-    setLidAngle(-45);
-    setGlowIntensity(0.3);
     (async () => {
       await wait(500);
       setReplyFlyingIn(false);
-      setShowLetterInBox(true);
       await wait(300);
-      setLidAngle(0);
-      setGlowIntensity(0);
       await wait(200);
       setMailboxShake(true);
       await wait(500);
@@ -686,11 +674,12 @@ const AdvicePage: React.FC = () => {
         /* ---------- 背景图（cover 铺满全屏） ---------- */
         .advice-bg {
           position: fixed;
-          inset: 0;
+          top: 0; left: 0; right: 0; bottom: 0;
           background-image: url('/advice-shop-bg-v2.jpg?v=1');
           background-repeat: no-repeat;
           background-position: center center;
           background-size: cover;
+          -webkit-background-size: cover;
           z-index: 0;
         }
 
@@ -1605,8 +1594,18 @@ const AdvicePage: React.FC = () => {
           .advice-letterbox-detail-inner { padding: 0 14px 14px; }
           .advice-letterbox-envelope,
           .advice-letterbox-reply { padding: 12px; }
-          .advice-bg { background-position: center 25%; background-size: cover; }
-          .milk-box { bottom: 0; left: 34%; }
+          .advice-bg {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-image: url('/advice-shop-bg-v2.jpg?v=1');
+            background-repeat: no-repeat;
+            background-position: center 25%;
+            background-size: cover;
+            -webkit-background-size: cover;
+            min-height: 100vh;
+            min-height: -webkit-fill-available;
+          }
+          .milk-box { bottom: calc(var(--vh) * -40); left: 34%; }
           .milk-body { width: 80px; height: 100px; }
           .milk-upper { height: 52px; }
           .milk-rain-guard { height: 24px; left: -6px; right: -6px; }
@@ -1619,7 +1618,7 @@ const AdvicePage: React.FC = () => {
             bottom: 140px;
             transform: translateX(-50%) rotate(-1deg);
           }
-          .notice-board { right: 25%; top: 12%; width: 90vw; max-width: 320px; }
+          .notice-board { left: 65%; bottom: calc(var(--vh) * 18); width: 220px; }
           .advice-miao { bottom: 8px; right: 16px; }
           .notice-board-wood { padding: 12px; }
           .intro-sign-title { font-size: 28px; }

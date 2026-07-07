@@ -8,26 +8,23 @@ import { Link } from "react-router-dom";
  * Logo 强化、主次分明、移动端汉堡菜单
  * ============================================================ */
 
-type Section = "home" | "about" | "projects" | "lab" | "film" | "mickey";
+type Section = "home" | "about" | "projects" | "film" | "mickey";
 
 interface SimpleNavbarProps {
   current: Section;
   onNavigate: (section: Section) => void;
-  isNight: boolean;
-  onToggleTheme: () => void;
   isFullMode: boolean;
   onOpenFilmSpace?: () => void;
 }
 
 /** 主 / 次导航拆分 */
-const PRIMARY_KEYS = ["home", "about", "projects", "lab"] as const;
+const PRIMARY_KEYS = ["home", "about", "projects"] as const;
 const SECONDARY_KEYS = ["mickey", "film"] as const;
 
 const LABEL_MAP: Record<string, { label: string; icon?: string; href: string | null }> = {
   home:    { label: "首页",    href: null },
   about:   { label: "关于我",  href: null },
   projects:{ label: "项目集",  icon: "🍃", href: null },
-  lab:     { label: "疗愈室",  href: "/healing" },
   mickey:  { label: "妙妙工具箱", href: "/mickey" },
   film:    { label: "第七卷胶片", href: "/film" },
 };
@@ -35,8 +32,6 @@ const LABEL_MAP: Record<string, { label: string; icon?: string; href: string | n
 const SimpleNavbar: React.FC<SimpleNavbarProps> = ({
   current,
   onNavigate,
-  isNight,
-  onToggleTheme,
   isFullMode,
 }) => {
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -58,7 +53,7 @@ const SimpleNavbar: React.FC<SimpleNavbarProps> = ({
 
   const allKeys = isFullMode
     ? ([...PRIMARY_KEYS, ...SECONDARY_KEYS] as Section[])
-    : (["lab", "film"] as Section[]);
+    : (["film"] as Section[]);
 
   const primaryItems = isFullMode
     ? PRIMARY_KEYS.map((k) => ({ key: k, ...LABEL_MAP[k] }))
@@ -165,32 +160,6 @@ const SimpleNavbar: React.FC<SimpleNavbarProps> = ({
             </div>
           )}
 
-          {/* 昼夜切换 */}
-          <button
-            onClick={onToggleTheme}
-            className="ml-3 flex items-center justify-center"
-            style={{
-              width: 34,
-              height: 34,
-              borderRadius: 999,
-              border: "1px solid rgba(90,107,92,0.2)",
-              background: "rgba(255,255,255,0.4)",
-              color: "#5A6B5C",
-              fontSize: 14,
-              cursor: "pointer",
-              transition: "all 0.3s ease",
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.background = "rgba(141,154,139,0.12)";
-              e.currentTarget.style.borderColor = "rgba(141,154,139,0.4)";
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.background = "rgba(255,255,255,0.4)";
-              e.currentTarget.style.borderColor = "rgba(90,107,92,0.2)";
-            }}
-          >
-            {isNight ? "☀" : "☾"}
-          </button>
         </div>
 
         {/* ---------- 移动端汉堡按钮 ---------- */}
@@ -272,25 +241,6 @@ const SimpleNavbar: React.FC<SimpleNavbarProps> = ({
               }}
             />
           ))}
-          <div style={{ marginTop: 12, borderTop: "1px solid rgba(90,107,92,0.1)", paddingTop: 16 }}>
-            <button
-              onClick={() => { onToggleTheme(); setMobileOpen(false); }}
-              style={{
-                width: "100%",
-                textAlign: "left",
-                padding: "10px 12px",
-                borderRadius: 10,
-                border: "none",
-                background: "none",
-                color: "#5A6B5C",
-                fontSize: 15,
-                cursor: "pointer",
-                letterSpacing: "0.04em",
-              }}
-            >
-              {isNight ? "☀ 切换昼模式" : "☾ 切换夜模式"}
-            </button>
-          </div>
         </div>
       )}
 

@@ -687,29 +687,39 @@ const TravelPage: React.FC = () => {
                         style={{ pointerEvents: "none", cursor: "pointer" }}
                         onClick={() => handleProvinceClick(p)}
                       >
-                        {/* 外圈：淡琥珀色光环 */}
-                        <circle
+                        {/* 图钉阴影 */}
+                        <ellipse
                           cx={center.x}
-                          cy={center.y}
-                          r={3.5}
-                          fill="rgba(196, 148, 82, 0.12)"
-                          stroke="none"
+                          cy={center.y + 2.5}
+                          rx={2.0}
+                          ry={0.7}
+                          fill="rgba(120, 90, 50, 0.18)"
                         />
-                        {/* 中圈：琥珀色描边 */}
+                        {/* 图钉针杆 */}
+                        <line
+                          x1={center.x}
+                          y1={center.y - 1.0}
+                          x2={center.x}
+                          y2={center.y + 2.0}
+                          stroke="rgba(140, 110, 70, 0.5)"
+                          strokeWidth="0.6"
+                          strokeLinecap="round"
+                        />
+                        {/* 图钉头部：圆帽 */}
                         <circle
                           cx={center.x}
-                          cy={center.y}
+                          cy={center.y - 1.8}
                           r={2.2}
-                          fill="none"
+                          fill="rgba(196, 148, 82, 0.85)"
                           stroke="rgba(168, 130, 78, 0.6)"
-                          strokeWidth="0.8"
+                          strokeWidth="0.5"
                         />
-                        {/* 内核：实心琥珀圆点 */}
+                        {/* 图钉高光 */}
                         <circle
-                          cx={center.x}
-                          cy={center.y}
-                          r={1.3}
-                          fill="rgba(168, 130, 78, 0.85)"
+                          cx={center.x - 0.6}
+                          cy={center.y - 2.3}
+                          r={0.7}
+                          fill="rgba(255, 245, 230, 0.6)"
                         />
                       </g>
                     )}
@@ -742,7 +752,7 @@ const TravelPage: React.FC = () => {
 
           <div className="travel-legend">
             <span className="travel-legend-item">
-              <span className="travel-legend-dot" style={{ background: "rgba(168,130,78,0.85)", border: "1px solid rgba(168,130,78,0.6)", boxShadow: "0 0 0 2px rgba(196,148,82,0.12)" }} />
+              <span className="travel-legend-dot" style={{ background: "rgba(196,148,82,0.85)", border: "1px solid rgba(168,130,78,0.6)", borderRadius: "50%", width: 10, height: 10, boxShadow: "0 1px 2px rgba(120,90,50,0.25)" }} />
               已探索
             </span>
             <span className="travel-legend-item">
@@ -1245,15 +1255,16 @@ const TravelPage: React.FC = () => {
           stroke-dashoffset: 800;
           animation: provinceDraw 2s var(--ease-smooth) forwards;
         }
-        /* 已访问省份图章标记：轻微呼吸动画 */
-        @keyframes visitedPulse {
-          0%, 100% { opacity: 0.8; transform: scale(1); }
-          50% { opacity: 1; transform: scale(1.15); }
+        /* 已访问省份图钉标记：轻微摇摆动画 */
+        @keyframes pinDrop {
+          0% { opacity: 0; transform: translateY(-4px) scale(0.6); }
+          60% { opacity: 1; transform: translateY(1px) scale(1.05); }
+          100% { opacity: 1; transform: translateY(0) scale(1); }
         }
-        .travel-visited-mark circle:first-child {
+        .travel-visited-mark {
           transform-origin: center;
           transform-box: fill-box;
-          animation: visitedPulse 3s var(--ease-smooth) infinite;
+          animation: pinDrop 0.6s var(--ease-smooth) both;
         }
         .travel-tooltip {
           position: absolute; z-index: 20; pointer-events: none;

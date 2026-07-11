@@ -468,6 +468,39 @@ const TravelPage: React.FC = () => {
     } catch { return new Set<string>(); }
   });
 
+  /* 编辑模式：可拖拽省份调整位置 */
+  const [editMode, setEditMode] = useState(false);
+  const [dragging, setDragging] = useState<string | null>(null);
+  const [provinceOffsets, setProvinceOffsets] = useState<Record<string, { dx: number; dy: number }>>(() => {
+    try {
+      const raw = localStorage.getItem("travel_province_offsets");
+      return raw ? JSON.parse(raw) : {};
+    } catch { return {}; }
+  });
+
+  /** 对 SVG path 应用偏移量（精确解析 M/Q/Z 命令后的坐标对） */
+  function applyOffset(path: string, name: string): string {
+    const off = provinceOffsets[name];
+    if (!off || (off.dx === 0 && off.dy === 0)) return path;
+    // 将路径拆分为 token，对每个数值 token 按序交替加 dx/dy
+    const tokens: string[] = [];
+    const regex = /[A-Za-z]|-?\d+\.?\d*/g;
+    let m: RegExpExecArray | null;
+    while ((m = regex.exec(path)) !== null) tokens.push(m[0]);
+    let coordIdx = 0;
+    return tokens.map((t) => {
+      if (/^[A-Za-z]$/.test(t)) { coordIdx = 0; return t; }
+      const val = parseFloat(t) + (coordIdx % 2 === 0 ? off.dx : off.dy);
+      coordIdx++;
+      return String(Math.round(val * 10) / 10);
+    }).join(" ");
+  }
+
+  /* 持久化省份偏移量 */
+  useEffect(() => {
+    try { localStorage.setItem("travel_province_offsets", JSON.stringify(provinceOffsets)); } catch { /* ignore */ }
+  }, [provinceOffsets]);
+
   const isNew = useMemo(() => editingCity ? !cities.some((c) => c.id === editingCity.id) : false, [editingCity, cities]);
 
   // 保存到 localStorage
@@ -646,6 +679,13 @@ const TravelPage: React.FC = () => {
         <div className="travel-section-head">
           <span className="travel-stamp">足迹</span>
           <h2 className="travel-section-title">走过的土地</h2>
+          <button
+            className={`travel-edit-toggle ${editMode ? "active" : ""}`}
+            onClick={() => setEditMode((v) => !v)}
+            title={editMode ? "退出编辑模式" : "进入编辑模式，拖拽省份调整位置"}
+          >
+            {editMode ? "锁定位置" : "调整位置"}
+          </button>
         </div>
 
         <div className="travel-map-wrap">
@@ -655,31 +695,53 @@ const TravelPage: React.FC = () => {
           <div className="travel-map-pin bl" />
           <div className="travel-map-pin br" />
 
-          <div className="travel-map-bg" style={{ backgroundImage: "url('/china-map-watercolor.jpg')" }}>
+          <div className={`travel-map-bg ${editMode ? "editing" : ""}`} style={{ backgroundImage: "url('/china-map-watercolor.jpg')" }}>
             <svg
               viewBox={`0 0 ${MAP_VIEWBOX_W} ${MAP_VIEWBOX_H}`}
               className="travel-map-overlay"
-              onMouseLeave={() => setHovered(null)}
+              onMouseLeave={() => { setHovered(null); setDragging(null); }}
             >
               {provinceBlocks.map((p) => {
                 const isHovered = hovered?.name === p.name;
                 const isVisited = p.visited;
-                const center = getProvinceCenter(p.path);
+                const offsetedPath = applyOffset(p.path, p.name);
+                const center = getProvinceCenter(offsetedPath);
                 return (
-                  <g key={p.name}>
+                  <g
+                    key={p.name}
+                    onMouseDown={editMode ? (e) => {
+                      e.preventDefault();
+                      setDragging(p.name);
+                    } : undefined}
+                  >
                     <path
-                      d={p.path}
+                      d={offsetedPath}
                       data-name={PROVINCE_FULL_NAME[p.name] || p.name}
-                      fill={isVisited ? VISITED_FILL : UNVISITED_FILL}
-                      stroke={isVisited ? VISITED_STROKE : UNVISITED_STROKE}
-                      strokeWidth={isHovered ? 2.0 : isVisited ? 1.2 : 0.7}
+                      fill={editMode ? "rgba(200,80,30,0.12)" : isVisited ? VISITED_FILL : UNVISITED_FILL}
+                      stroke={editMode ? "rgba(200,80,30,0.6)" : isVisited ? VISITED_STROKE : UNVISITED_STROKE}
+                      strokeWidth={isHovered || editMode ? 2.0 : isVisited ? 1.2 : 0.7}
                       strokeLinecap="round"
                       strokeLinejoin="round"
                       opacity={isHovered ? 1 : isVisited ? 0.85 : 0.6}
-                      className="travel-province-area"
+                      className={`travel-province-area ${editMode ? "draggable" : ""}`}
+                      style={editMode ? { cursor: dragging === p.name ? "grabbing" : "grab" } : undefined}
                       onMouseEnter={(e) => handleProvinceHover(p, e)}
-                      onMouseMove={(e) => handleProvinceHover(p, e)}
-                      onClick={() => handleProvinceClick(p)}
+                      onMouseMove={(e) => {
+                        handleProvinceHover(p, e);
+                        if (editMode && dragging === p.name) {
+                          const svg = (e.currentTarget as SVGElement).closest("svg")!;
+                          const rect = svg.getBoundingClientRect();
+                          const vbX = ((e.clientX - rect.left) / rect.width) * MAP_VIEWBOX_W;
+                          const vbY = ((e.clientY - rect.top) / rect.height) * MAP_VIEWBOX_H;
+                          const origCenter = getProvinceCenter(p.path);
+                          setProvinceOffsets((prev) => ({
+                            ...prev,
+                            [p.name]: { dx: vbX - origCenter.x, dy: vbY - origCenter.y },
+                          }));
+                        }
+                      }}
+                      onMouseUp={() => { if (dragging === p.name) setDragging(null); }}
+                      onClick={() => { if (!editMode) handleProvinceClick(p); }}
                     />
                     {isVisited && (
                       <g
@@ -1173,7 +1235,15 @@ const TravelPage: React.FC = () => {
 
         /* ===== Section 标题 ===== */
         .travel-section { max-width: 960px; margin: 0 auto; padding: 56px 24px; }
-        .travel-section-head { display: flex; align-items: center; gap: 14px; margin-bottom: 32px; }
+        .travel-section-head { display: flex; align-items: center; gap: 14px; margin-bottom: 32px; flex-wrap: wrap; }
+        .travel-edit-toggle {
+          margin-left: auto; padding: 5px 14px; border: 1px solid var(--gold-accent);
+          border-radius: 4px; background: transparent; color: var(--gold-accent);
+          font-family: var(--font-hand); font-size: 13px; cursor: pointer;
+          transition: background 0.25s, color 0.25s;
+        }
+        .travel-edit-toggle:hover { background: rgba(196, 148, 82, 0.1); }
+        .travel-edit-toggle.active { background: var(--gold-accent); color: var(--paper-bg); }
         .travel-stamp {
           display: inline-flex; align-items: center; justify-content: center;
           padding: 3px 14px; border: 2px solid var(--gold-accent); border-radius: 4px;
@@ -1244,6 +1314,16 @@ const TravelPage: React.FC = () => {
         .travel-province-area:hover {
           filter: drop-shadow(0 0 6px rgba(168,130,78,0.5)) brightness(1.05);
           stroke-width: 2.2 !important;
+        }
+        .travel-province-area.draggable {
+          transition: fill 0.15s ease, stroke 0.15s ease;
+        }
+        .travel-province-area.draggable:hover {
+          filter: drop-shadow(0 0 8px rgba(200,80,30,0.5)) brightness(1.08);
+        }
+        .travel-map-bg.editing {
+          outline: 2px dashed rgba(200, 80, 30, 0.4);
+          outline-offset: 4px;
         }
         /* 省份描线描绘动画 */
         @keyframes provinceDraw {

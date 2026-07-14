@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { useAdminGuard } from "../../hooks/useAdminGuard";
 
@@ -38,6 +38,17 @@ interface FormState {
   unit: Unit;
   expiryDate: string;
   location: Location;
+}
+
+interface RecognizedCandidate {
+  id: string;
+  name: string;
+  confidence: number; // 0-100
+  unit?: string;
+  count?: number;
+  selected: boolean;
+  expiryDate?: string;
+  location?: string;
 }
 
 /* ============================================================
@@ -143,6 +154,61 @@ const PILLS: {
     idle: "bg-white border-gray-200 text-gray-600 hover:border-emerald-200",
   },
 ];
+
+const VL_API_BASE = "https://dashscope.aliyuncs.com/compatible-mode/v1";
+const VL_MODEL = "qwen-vl-plus";
+const _VL_API_KEY = "sk-ws-H.EMIDEPD.99KW.MEUCIFKj_RNhEpPBBXnpRLNoN9YrqKrpnP8CWD2nnG9gbONOAiEAhKjGJeLvxkepCGn8rIPBiSUk_8LhvRGYDorqwVLM_i8";
+function getApiKey(): string { return _VL_API_KEY; }
+
+interface VLItem {
+  name: string;
+  count?: number;
+  unit?: string;
+  expiryDate?: string;
+  location?: string;
+  confidence?: number;
+}
+
+async function recognizeWithVL(base64Image: string): Promise<VLItem[] | null> {
+  try {
+    const response = await fetch(`${VL_API_BASE}/chat/completions`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${getApiKey()}`,
+      },
+      body: JSON.stringify({
+        model: VL_MODEL,
+        messages: [
+          {
+            role: "user",
+            content: [
+              {
+                type: "text",
+                text: '识别图片中的物品，返回JSON数组。每个物品包含：name（名称，必填）、count（数量，数字）、unit（单位，如瓶/盒/袋/罐/箱/个/支）、expiryDate（到期日，YYYY-MM-DD格式，如不确定可留空）、location（存放位置，如冰箱/浴室/储物间/厨房/客厅/卧室）、confidence（置信度0-100）。只返回JSON数组，不要其他文字。格式示例：[{"name":"牛奶","count":2,"unit":"瓶","expiryDate":"2025-08-15","location":"冰箱","confidence":95}]',
+              },
+              {
+                type: "image_url",
+                image_url: { url: base64Image },
+              },
+            ],
+          },
+        ],
+        response_format: { type: "json_object" },
+      }),
+    });
+    if (!response.ok) return null;
+    const data = await response.json();
+    const content = data.choices?.[0]?.message?.content;
+    if (!content) return null;
+    const parsed = JSON.parse(content);
+    if (Array.isArray(parsed)) return parsed as VLItem[];
+    if (parsed.items && Array.isArray(parsed.items)) return parsed.items as VLItem[];
+    return null;
+  } catch {
+    return null;
+  }
+}
 
 /* ============================================================
    编辑弹窗组件
@@ -281,6 +347,256 @@ const EditModal: React.FC<{
 };
 
 /* ============================================================
+   拍照引导弹窗
+   ============================================================ */
+const PhotoGuideModal: React.FC<{
+  onClose: () => void;
+  onStart: () => void;
+}> = ({ onClose, onStart }) => {
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4"
+      onClick={onClose}
+    >
+      <div
+        className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-xl"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <h3 className="mb-3 text-lg font-semibold text-gray-800">
+          📷 拍照识别物品
+        </h3>
+        <div className="space-y-2 text-sm text-gray-600">
+          <p className="flex items-center gap-2">
+            <span className="text-green-500">✓</span>
+            拍得清 —— 保持画面清晰，避免模糊
+          </p>
+          <p className="flex items-center gap-2">
+            <span className="text-green-500">✓</span>
+            平铺摆放 —— 物品尽量平铺，减少重叠
+          </p>
+          <p className="flex items-center gap-2">
+            <span className="text-green-500">✓</span>
+            光线充足 —— 在明亮环境下拍摄
+          </p>
+          <p className="flex items-center gap-2">
+            <span className="text-green-500">✓</span>
+            靠近拍摄 —— 让物品占据画面主要部分
+          </p>
+        </div>
+        <div className="mt-6 flex gap-3">
+          <button
+            onClick={onClose}
+            className="flex-1 rounded-lg border border-gray-200 py-2.5 text-sm text-gray-600 transition-colors hover:bg-gray-50"
+          >
+            取消
+          </button>
+          <button
+            onClick={onStart}
+            className="flex-1 rounded-lg bg-[#5d8a6a] py-2.5 text-sm font-medium text-white transition-colors hover:bg-[#4d7a5a]"
+          >
+            开始拍照
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+/* ============================================================
+   拍照确认弹窗
+   ============================================================ */
+const PhotoConfirmModal: React.FC<{
+  photoUrl: string;
+  candidates: RecognizedCandidate[];
+  onClose: () => void;
+  onConfirm: (items: RecognizedCandidate[]) => void;
+  onRetake: () => void;
+  onUpdateCandidate: (id: string, patch: Partial<RecognizedCandidate>) => void;
+}> = ({ photoUrl, candidates, onClose, onConfirm, onRetake, onUpdateCandidate }) => {
+  const selected = candidates.filter((c) => c.selected);
+
+  const confidenceBadge = (confidence: number) => {
+    if (confidence >= 80) {
+      return (
+        <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-xs font-medium text-emerald-600">
+          可信
+        </span>
+      );
+    }
+    if (confidence >= 50) {
+      return (
+        <span className="rounded-full bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-600">
+          待确认
+        </span>
+      );
+    }
+    return (
+      <span className="rounded-full bg-red-50 px-2 py-0.5 text-xs font-medium text-red-600">
+        不确定
+      </span>
+    );
+  };
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4"
+      onClick={onClose}
+    >
+      <div
+        className="w-full max-w-md max-h-[90vh] overflow-y-auto rounded-2xl bg-white p-6 shadow-xl"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <h3 className="mb-4 text-lg font-semibold text-gray-800">
+          📷 识别结果
+        </h3>
+
+        <div className="mb-4 flex justify-center">
+          <img
+            src={photoUrl}
+            alt="识别照片"
+            className="max-h-[200px] rounded-lg object-contain"
+          />
+        </div>
+
+        <div className="space-y-4">
+          {candidates.map((c) => (
+            <div
+              key={c.id}
+              className={cn(
+                "rounded-xl border p-4 transition-colors",
+                c.selected
+                  ? "border-[#5d8a6a] bg-green-50/50"
+                  : "border-gray-200 bg-white"
+              )}
+            >
+              <div className="mb-3 flex items-center justify-between">
+                <label className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    checked={c.selected}
+                    onChange={(e) =>
+                      onUpdateCandidate(c.id, { selected: e.target.checked })
+                    }
+                    className="h-4 w-4 accent-[#5d8a6a]"
+                  />
+                  <span className="text-sm font-medium text-gray-700">
+                    选中入库
+                  </span>
+                </label>
+                {confidenceBadge(c.confidence)}
+              </div>
+
+              <div className="space-y-3">
+                <div>
+                  <label className="mb-1 block text-xs text-gray-500">
+                    物品名称
+                  </label>
+                  <input
+                    type="text"
+                    value={c.name}
+                    onChange={(e) =>
+                      onUpdateCandidate(c.id, { name: e.target.value })
+                    }
+                    className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm outline-none transition-colors focus:border-[#5d8a6a]"
+                  />
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="mb-1 block text-xs text-gray-500">
+                      数量
+                    </label>
+                    <input
+                      type="number"
+                      min={1}
+                      value={c.count ?? 1}
+                      onChange={(e) =>
+                        onUpdateCandidate(c.id, {
+                          count: Math.max(1, Number(e.target.value) || 1),
+                        })
+                      }
+                      className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm outline-none transition-colors focus:border-[#5d8a6a]"
+                    />
+                  </div>
+                  <div>
+                    <label className="mb-1 block text-xs text-gray-500">
+                      单位
+                    </label>
+                    <select
+                      value={c.unit ?? "瓶"}
+                      onChange={(e) =>
+                        onUpdateCandidate(c.id, { unit: e.target.value })
+                      }
+                      className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm outline-none transition-colors focus:border-[#5d8a6a]"
+                    >
+                      {UNITS.map((u) => (
+                        <option key={u} value={u}>
+                          {u}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="mb-1 block text-xs text-gray-500">
+                      到期日
+                    </label>
+                    <input
+                      type="date"
+                      value={c.expiryDate ?? ""}
+                      onChange={(e) =>
+                        onUpdateCandidate(c.id, { expiryDate: e.target.value })
+                      }
+                      className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm outline-none transition-colors focus:border-[#5d8a6a]"
+                    />
+                  </div>
+                  <div>
+                    <label className="mb-1 block text-xs text-gray-500">
+                      存放位置
+                    </label>
+                    <select
+                      value={c.location ?? "冰箱"}
+                      onChange={(e) =>
+                        onUpdateCandidate(c.id, { location: e.target.value })
+                      }
+                      className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm outline-none transition-colors focus:border-[#5d8a6a]"
+                    >
+                      {LOCATIONS.map((l) => (
+                        <option key={l} value={l}>
+                          {l}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <div className="mt-6 flex gap-3">
+          <button
+            onClick={onRetake}
+            className="flex-1 rounded-lg border border-gray-200 py-2.5 text-sm text-gray-600 transition-colors hover:bg-gray-50"
+          >
+            重新拍照
+          </button>
+          <button
+            onClick={() => onConfirm(selected)}
+            disabled={selected.length === 0}
+            className="flex-1 rounded-lg bg-[#5d8a6a] py-2.5 text-sm font-medium text-white transition-colors hover:bg-[#4d7a5a] disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            确认入库 ({selected.length})
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+/* ============================================================
    主组件
    ============================================================ */
 const InventoryPage: React.FC = () => {
@@ -299,6 +615,13 @@ const InventoryPage: React.FC = () => {
     expiryDate: "",
     location: "冰箱",
   });
+
+  const [photoGuideOpen, setPhotoGuideOpen] = useState(false);
+  const [photoConfirmOpen, setPhotoConfirmOpen] = useState(false);
+  const [recognizedItems, setRecognizedItems] = useState<RecognizedCandidate[]>([]);
+  const [isRecognizing, setIsRecognizing] = useState(false);
+  const [photoPreviewUrl, setPhotoPreviewUrl] = useState("");
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   /** 数据变更即持久化 */
   useEffect(() => {
@@ -397,6 +720,109 @@ const InventoryPage: React.FC = () => {
     ? daysUntil(earliest.expiryDate, today)
     : Infinity;
 
+  /* —— 拍照识别 handlers —— */
+  const handlePhotoClick = () => {
+    setPhotoGuideOpen(true);
+  };
+
+  const handleStartPhoto = () => {
+    setPhotoGuideOpen(false);
+    fileInputRef.current?.click();
+  };
+
+  const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = async (event) => {
+      const base64 = event.target?.result as string;
+      if (!base64) return;
+
+      setPhotoPreviewUrl(base64);
+      setIsRecognizing(true);
+      setPhotoConfirmOpen(true);
+
+      const results = await recognizeWithVL(base64);
+      setIsRecognizing(false);
+
+      if (results && results.length > 0) {
+        const candidates: RecognizedCandidate[] = results.map((r) => ({
+          id: genId(),
+          name: r.name || "未知物品",
+          confidence: Math.min(100, Math.max(0, r.confidence ?? 50)),
+          count: r.count ?? 1,
+          unit: UNITS.includes(r.unit as Unit) ? r.unit : "瓶",
+          expiryDate: r.expiryDate && /^\d{4}-\d{2}-\d{2}$/.test(r.expiryDate)
+            ? r.expiryDate
+            : "",
+          location: LOCATIONS.includes(r.location as Location)
+            ? r.location
+            : "冰箱",
+          selected: true,
+        }));
+        setRecognizedItems(candidates);
+      } else {
+        setRecognizedItems([
+          {
+            id: genId(),
+            name: "未知物品",
+            confidence: 0,
+            count: 1,
+            unit: "瓶",
+            expiryDate: "",
+            location: "冰箱",
+            selected: false,
+          },
+        ]);
+      }
+    };
+    reader.readAsDataURL(file);
+    e.target.value = "";
+  };
+
+  const handlePhotoConfirm = (selected: RecognizedCandidate[]) => {
+    const validUnit = (u?: string): Unit =>
+      UNITS.includes(u as Unit) ? (u as Unit) : "瓶";
+    const validLocation = (l?: string): Location =>
+      LOCATIONS.includes(l as Location) ? (l as Location) : "冰箱";
+
+    const newItems: InventoryItem[] = selected
+      .filter((c) => c.name.trim().length > 0 && (c.count ?? 0) >= 1)
+      .map((c) => ({
+        id: genId(),
+        name: c.name.trim(),
+        count: c.count ?? 1,
+        unit: validUnit(c.unit),
+        expiryDate: c.expiryDate || new Date().toISOString().slice(0, 10),
+        location: validLocation(c.location),
+      }));
+
+    if (newItems.length > 0) {
+      setItems((prev) => [...newItems, ...prev]);
+    }
+
+    setPhotoConfirmOpen(false);
+    setRecognizedItems([]);
+    setPhotoPreviewUrl("");
+  };
+
+  const handleRetake = () => {
+    setPhotoConfirmOpen(false);
+    setRecognizedItems([]);
+    setPhotoPreviewUrl("");
+    setPhotoGuideOpen(true);
+  };
+
+  const handleUpdateCandidate = (
+    id: string,
+    patch: Partial<RecognizedCandidate>
+  ) => {
+    setRecognizedItems((prev) =>
+      prev.map((c) => (c.id === id ? { ...c, ...patch } : c))
+    );
+  };
+
   return (
     <div className="inventory-page min-h-screen bg-gray-50 text-gray-800">
       {/* 编辑弹窗 */}
@@ -405,6 +831,30 @@ const InventoryPage: React.FC = () => {
           item={editingItem}
           onSave={handleEditSave}
           onClose={() => setEditingItem(null)}
+        />
+      )}
+
+      {/* 拍照引导弹窗 */}
+      {photoGuideOpen && (
+        <PhotoGuideModal
+          onClose={() => setPhotoGuideOpen(false)}
+          onStart={handleStartPhoto}
+        />
+      )}
+
+      {/* 拍照确认弹窗 */}
+      {photoConfirmOpen && (
+        <PhotoConfirmModal
+          photoUrl={photoPreviewUrl}
+          candidates={recognizedItems}
+          onClose={() => {
+            setPhotoConfirmOpen(false);
+            setRecognizedItems([]);
+            setPhotoPreviewUrl("");
+          }}
+          onConfirm={handlePhotoConfirm}
+          onRetake={handleRetake}
+          onUpdateCandidate={handleUpdateCandidate}
         />
       )}
 
@@ -444,6 +894,24 @@ const InventoryPage: React.FC = () => {
               <span className="h-1 w-4 rounded-full bg-[#5d8a6a]" />
               入库登记
             </h2>
+
+            <input
+              type="file"
+              accept="image/*"
+              capture="environment"
+              ref={fileInputRef}
+              onChange={handleFileSelect}
+              className="hidden"
+            />
+
+            <button
+              type="button"
+              onClick={handlePhotoClick}
+              disabled={isRecognizing}
+              className="mb-3 flex w-full items-center justify-center gap-2 rounded-lg border-2 border-dashed border-gray-300 py-2.5 text-sm text-gray-600 transition-colors hover:border-[#5d8a6a] hover:text-[#5d8a6a] disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {isRecognizing ? "识别中..." : "📷 拍照识别物品"}
+            </button>
 
             <div className="space-y-3">
               <div>

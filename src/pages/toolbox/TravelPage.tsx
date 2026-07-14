@@ -695,7 +695,7 @@ const TravelPage: React.FC = () => {
           <div className="travel-map-pin bl" />
           <div className="travel-map-pin br" />
 
-          <div className={`travel-map-bg ${editMode ? "editing" : ""}`} style={{ backgroundImage: "url('/china-map-watercolor.jpg')" }}>
+          <div className={`travel-map-bg ${editMode ? "editing" : ""}`} style={{ backgroundImage: "url('/china-map-bg.jpg')" }}>
             <svg
               viewBox={`0 0 ${MAP_VIEWBOX_W} ${MAP_VIEWBOX_H}`}
               className="travel-map-overlay"

@@ -5,12 +5,12 @@ import { motion, AnimatePresence } from "framer-motion";
  * MeditationTimer 冥想空间
  *
  * 功能：
- * - 环境音选择：海浪 / 森林 / 篝火 / 音乐
+ * - 环境音选择：海浪 / 雨声 / 篝火 / 鸟鸣
  * - 时长选择：1 / 3 / 5 / 10 min
  * - 语音引导 Toggle
  * - 倒计时 + SVG 圆环进度条
  * - 完成涟漪动画
- * - Web Audio API 环境音模拟（简版白噪音）
+ * - Web Audio API 环境音实时合成（白噪音 + 滤波）
  *
  * 技术栈：React + TypeScript + 内联 CSS（组件级 <style>）
  * 动画：Framer Motion + transform/opacity/filter
@@ -21,9 +21,9 @@ const DURATIONS = [1, 3, 5, 10]; // 分钟
 
 const SOUND_OPTIONS = [
   { id: "ocean", icon: "\uD83C\uDF0A", label: "海浪", sub: "Ocean" },
-  { id: "forest", icon: "\uD83C\uDF32", label: "森林", sub: "Forest" },
+  { id: "rain", icon: "\uD83C\uDF27", label: "雨声", sub: "Rain" },
   { id: "fire", icon: "\uD83D\uDD25", label: "篝火", sub: "Fire" },
-  { id: "music", icon: "\uD83C\uDFB5", label: "音乐", sub: "Music" },
+  { id: "birds", icon: "\uD83D\uDC26", label: "鸟鸣", sub: "Birds" },
 ] as const;
 
 type SoundId = (typeof SOUND_OPTIONS)[number]["id"];
@@ -34,9 +34,22 @@ const formatTime = (seconds: number): string => {
   return `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
 };
 
+/* ─── 白噪音缓冲（单例复用） ─── */
+let noiseBuffer: AudioBuffer | null = null;
+function getNoiseBuffer(ctx: AudioContext): AudioBuffer {
+  if (noiseBuffer && noiseBuffer.sampleRate === ctx.sampleRate) return noiseBuffer;
+  const bufSize = 2 * ctx.sampleRate; // 2 秒循环
+  const buf = ctx.createBuffer(2, bufSize, ctx.sampleRate);
+  for (let ch = 0; ch < 2; ch++) {
+    const data = buf.getChannelData(ch);
+    for (let i = 0; i < bufSize; i++) data[i] = Math.random() * 2 - 1;
+  }
+  noiseBuffer = buf;
+  return buf;
+}
+
 /* ─── Web Audio 环境音辅助 ─── */
 
-/** 创建 AudioContext（懒加载，需要用户交互后才能 resume） */
 let audioCtx: AudioContext | null = null;
 function getAudioCtx(): AudioContext {
   if (!audioCtx) {
@@ -48,134 +61,379 @@ function getAudioCtx(): AudioContext {
   return audioCtx;
 }
 
-/**
- * 启动环境音
- * TODO: 真实环境音需要音频文件或更复杂的合成；
- *       以下仅用基础振荡器 + 白噪音做简单模拟。
- */
+/** 启动环境音 — 全部用白噪音 + 滤波实时合成 */
 function startAmbientSound(soundId: SoundId): { stop: () => void } {
   const ctx = getAudioCtx();
   const masterGain = ctx.createGain();
-  masterGain.gain.value = 0.15;
+  masterGain.gain.value = 0;
   masterGain.connect(ctx.destination);
+  // 淡入（音量提升，四层合成更饱满）
+  masterGain.gain.linearRampToValueAtTime(0.24, ctx.currentTime + 0.8);
 
-  const nodes: AudioNode[] = [masterGain];
+  const sources: AudioScheduledSourceNode[] = [];
+  const intervals: ReturnType<typeof setInterval>[] = [];
+  const timeouts: ReturnType<typeof setTimeout>[] = [];
 
   const stopAll = () => {
-    nodes.forEach((n) => {
-      try {
-        if ("stop" in n && typeof (n as OscillatorNode).stop === "function") {
-          (n as OscillatorNode).stop();
-        }
-      } catch {
-        /* already stopped */
-      }
-      try {
-        n.disconnect();
-      } catch {
-        /* already disconnected */
-      }
-    });
+    // 淡出
+    try {
+      masterGain.gain.cancelScheduledValues(ctx.currentTime);
+      masterGain.gain.setValueAtTime(masterGain.gain.value, ctx.currentTime);
+      masterGain.gain.linearRampToValueAtTime(0, ctx.currentTime + 0.5);
+    } catch { /* */ }
+    // 延迟断开
+    setTimeout(() => {
+      sources.forEach((s) => {
+        try { s.stop(); } catch { /* */ }
+        try { s.disconnect(); } catch { /* */ }
+      });
+      try { masterGain.disconnect(); } catch { /* */ }
+    }, 600);
+    intervals.forEach(clearInterval);
+    timeouts.forEach(clearTimeout);
   };
 
   try {
-    switch (soundId) {
-      case "ocean": {
-        // 低频脉动：LFO 调制 GainNode
-        const osc = ctx.createOscillator();
-        osc.type = "sine";
-        osc.frequency.value = 80;
-        const oscGain = ctx.createGain();
-        oscGain.gain.value = 0.6;
-        osc.connect(oscGain).connect(masterGain);
-        osc.start();
-        nodes.push(osc, oscGain);
+    const noiseBuf = getNoiseBuffer(ctx);
 
+    switch (soundId) {
+      /* ===== 海浪 ===== */
+      case "ocean": {
+        // 第一层：低频浪涌（低通滤波 + LFO 深度调制）
+        const noise1 = ctx.createBufferSource();
+        noise1.buffer = noiseBuf;
+        noise1.loop = true;
+        const lpf1 = ctx.createBiquadFilter();
+        lpf1.type = "lowpass";
+        lpf1.frequency.value = 180; // 更深沉的低频
+        lpf1.Q.value = 0.8;
+        const waveGain = ctx.createGain();
+        waveGain.gain.value = 0.85;
+        noise1.connect(lpf1);
+        lpf1.connect(waveGain);
+        waveGain.connect(masterGain);
+        noise1.start();
+        sources.push(noise1);
+
+        // LFO 潮汐调制 — 更深更慢的浪涌 (~16s 一个周期)
         const lfo = ctx.createOscillator();
         lfo.type = "sine";
-        lfo.frequency.value = 0.15; // 极慢脉动
+        lfo.frequency.value = 0.06;
         const lfoGain = ctx.createGain();
-        lfoGain.gain.value = 0.4;
-        lfo.connect(lfoGain).connect(oscGain.gain);
+        lfoGain.gain.value = 0.55;
+        lfo.connect(lfoGain);
+        lfoGain.connect(waveGain.gain);
         lfo.start();
-        nodes.push(lfo, lfoGain);
+        sources.push(lfo);
+
+        // 第二层：中频碎浪（带通滤波）
+        const noise2 = ctx.createBufferSource();
+        noise2.buffer = noiseBuf;
+        noise2.loop = true;
+        const bpf2 = ctx.createBiquadFilter();
+        bpf2.type = "bandpass";
+        bpf2.frequency.value = 900;
+        bpf2.Q.value = 0.35;
+        const surfGain = ctx.createGain();
+        surfGain.gain.value = 0.35;
+        noise2.connect(bpf2);
+        bpf2.connect(surfGain);
+        surfGain.connect(masterGain);
+        noise2.start();
+        sources.push(noise2);
+
+        // 碎浪也随潮汐起伏（略快于主浪）
+        const lfo2 = ctx.createOscillator();
+        lfo2.type = "sine";
+        lfo2.frequency.value = 0.10;
+        const lfoGain2 = ctx.createGain();
+        lfoGain2.gain.value = 0.25;
+        lfo2.connect(lfoGain2);
+        lfoGain2.connect(surfGain.gain);
+        lfo2.start();
+        sources.push(lfo2);
+
+        // 第三层：泡沫水花（高频白噪音 + 随机脉冲）
+        const noise3 = ctx.createBufferSource();
+        noise3.buffer = noiseBuf;
+        noise3.loop = true;
+        const hpf = ctx.createBiquadFilter();
+        hpf.type = "highpass";
+        hpf.frequency.value = 2800;
+        hpf.Q.value = 0.4;
+        const foamGain = ctx.createGain();
+        foamGain.gain.value = 0;
+        noise3.connect(hpf);
+        hpf.connect(foamGain);
+        foamGain.connect(masterGain);
+        noise3.start();
+        sources.push(noise3);
+
+        // 随机泡沫脉冲 — 模拟浪花溅起
+        const foamInterval = setInterval(() => {
+          if (foamGain.gain) {
+            const now = ctx.currentTime;
+            const intensity = 0.08 + Math.random() * 0.18;
+            foamGain.gain.setValueAtTime(0, now);
+            foamGain.gain.linearRampToValueAtTime(intensity, now + 0.02);
+            foamGain.gain.exponentialRampToValueAtTime(0.001, now + 0.1 + Math.random() * 0.2);
+          }
+        }, 120 + Math.random() * 200);
+        intervals.push(foamInterval);
+
+        // 第四层：沙滩低频震感（极低频白噪音）
+        const noise4 = ctx.createBufferSource();
+        noise4.buffer = noiseBuf;
+        noise4.loop = true;
+        const lpf4 = ctx.createBiquadFilter();
+        lpf4.type = "lowpass";
+        lpf4.frequency.value = 60;
+        lpf4.Q.value = 0.5;
+        const sandGain = ctx.createGain();
+        sandGain.gain.value = 0.3;
+        noise4.connect(lpf4);
+        lpf4.connect(sandGain);
+        sandGain.connect(masterGain);
+        noise4.start();
+        sources.push(noise4);
         break;
       }
-      case "forest": {
-        // 中频沙沙：多个高频振荡器叠加
-        for (let i = 0; i < 3; i++) {
-          const osc = ctx.createOscillator();
-          osc.type = "triangle";
-          osc.frequency.value = 800 + i * 400;
-          const g = ctx.createGain();
-          g.gain.value = 0.15 - i * 0.03;
-          osc.connect(g).connect(masterGain);
-          osc.start();
-          nodes.push(osc, g);
-        }
-        // 加一层低频噪声感
-        const noiseOsc = ctx.createOscillator();
-        noiseOsc.type = "sawtooth";
-        noiseOsc.frequency.value = 120;
-        const ng = ctx.createGain();
-        ng.gain.value = 0.05;
+
+      /* ===== 雨声 ===== */
+      case "rain": {
+        // 基底：中高频白噪音（高通 + 低通 = 沙沙雨声）
+        const noise1 = ctx.createBufferSource();
+        noise1.buffer = noiseBuf;
+        noise1.loop = true;
+        const hpf = ctx.createBiquadFilter();
+        hpf.type = "highpass";
+        hpf.frequency.value = 700;
+        const lpf = ctx.createBiquadFilter();
+        lpf.type = "lowpass";
+        lpf.frequency.value = 6000;
+        lpf.Q.value = 0.5;
+        const rainGain = ctx.createGain();
+        rainGain.gain.value = 0.55;
+        noise1.connect(hpf);
+        hpf.connect(lpf);
+        lpf.connect(rainGain);
+        rainGain.connect(masterGain);
+        noise1.start();
+        sources.push(noise1);
+
+        // 稀疏的大雨滴（随机带通滤波脉冲）
+        const dripNoise = ctx.createBufferSource();
+        dripNoise.buffer = noiseBuf;
+        dripNoise.loop = true;
+        const dripBpf = ctx.createBiquadFilter();
+        dripBpf.type = "bandpass";
+        dripBpf.frequency.value = 2000;
+        dripBpf.Q.value = 3;
+        const dripGain = ctx.createGain();
+        dripGain.gain.value = 0;
+        dripNoise.connect(dripBpf);
+        dripBpf.connect(dripGain);
+        dripGain.connect(masterGain);
+        dripNoise.start();
+        sources.push(dripNoise);
+
+        // 随机雨滴脉冲
+        const dripInterval = setInterval(() => {
+          if (dripGain.gain) {
+            const now = ctx.currentTime;
+            const intensity = 0.08 + Math.random() * 0.15;
+            dripGain.gain.setValueAtTime(0, now);
+            dripGain.gain.linearRampToValueAtTime(intensity, now + 0.01);
+            dripGain.gain.exponentialRampToValueAtTime(0.001, now + 0.08 + Math.random() * 0.12);
+          }
+        }, 150 + Math.random() * 250);
+        intervals.push(dripInterval);
+        break;
+      }
+
+      /* ===== 篝火 ===== */
+      case "fire": {
+        // 第一层：火焰"呼呼"声（带通白噪音 + LFO 扫频模拟风动）
+        const noise1 = ctx.createBufferSource();
+        noise1.buffer = noiseBuf;
+        noise1.loop = true;
+        const bpf1 = ctx.createBiquadFilter();
+        bpf1.type = "bandpass";
+        bpf1.frequency.value = 300;
+        bpf1.Q.value = 0.5;
+        const fireGain = ctx.createGain();
+        fireGain.gain.value = 0.6;
+        noise1.connect(bpf1);
+        bpf1.connect(fireGain);
+        fireGain.connect(masterGain);
+        noise1.start();
+        sources.push(noise1);
+
+        // LFO 模拟火焰跳动
+        const lfo = ctx.createOscillator();
+        lfo.type = "sine";
+        lfo.frequency.value = 0.4;
+        const lfoGain = ctx.createGain();
+        lfoGain.gain.value = 0.3;
+        lfo.connect(lfoGain);
+        lfoGain.connect(fireGain.gain);
+        lfo.start();
+        sources.push(lfo);
+
+        // 第二层：中频噼啪声（更频繁、更响亮）
+        const noise2 = ctx.createBufferSource();
+        noise2.buffer = noiseBuf;
+        noise2.loop = true;
+        const bpf2 = ctx.createBiquadFilter();
+        bpf2.type = "bandpass";
+        bpf2.frequency.value = 1500;
+        bpf2.Q.value = 2.5;
+        const crackleGain = ctx.createGain();
+        crackleGain.gain.value = 0;
+        noise2.connect(bpf2);
+        bpf2.connect(crackleGain);
+        crackleGain.connect(masterGain);
+        noise2.start();
+        sources.push(noise2);
+
+        // 随机噼啪脉冲 — 更密集、更大声
+        const crackleInterval = setInterval(() => {
+          if (crackleGain.gain) {
+            const now = ctx.currentTime;
+            const val = 0.12 + Math.random() * 0.35;
+            crackleGain.gain.setValueAtTime(0, now);
+            crackleGain.gain.linearRampToValueAtTime(val, now + 0.003);
+            crackleGain.gain.exponentialRampToValueAtTime(0.001, now + 0.04 + Math.random() * 0.08);
+          }
+        }, 50 + Math.random() * 120);
+        intervals.push(crackleInterval);
+
+        // 第三层：高频爆裂尖刺（木柴爆裂瞬间）
+        const noise3 = ctx.createBufferSource();
+        noise3.buffer = noiseBuf;
+        noise3.loop = true;
+        const hpf3 = ctx.createBiquadFilter();
+        hpf3.type = "highpass";
+        hpf3.frequency.value = 4500;
+        const snapGain = ctx.createGain();
+        snapGain.gain.value = 0;
+        noise3.connect(hpf3);
+        hpf3.connect(snapGain);
+        snapGain.connect(masterGain);
+        noise3.start();
+        sources.push(noise3);
+
+        // 稀疏爆裂脉冲
+        const snapInterval = setInterval(() => {
+          if (snapGain.gain) {
+            const now = ctx.currentTime;
+            const val = 0.06 + Math.random() * 0.25;
+            snapGain.gain.setValueAtTime(0, now);
+            snapGain.gain.linearRampToValueAtTime(val, now + 0.001);
+            snapGain.gain.exponentialRampToValueAtTime(0.001, now + 0.03 + Math.random() * 0.05);
+          }
+        }, 300 + Math.random() * 500);
+        intervals.push(snapInterval);
+
+        // 第四层：低频底噪（木柴闷烧感）
+        const noise4 = ctx.createBufferSource();
+        noise4.buffer = noiseBuf;
+        noise4.loop = true;
+        const lpf4 = ctx.createBiquadFilter();
+        lpf4.type = "lowpass";
+        lpf4.frequency.value = 100;
+        lpf4.Q.value = 0.5;
+        const emberGain = ctx.createGain();
+        emberGain.gain.value = 0.4;
+        noise4.connect(lpf4);
+        lpf4.connect(emberGain);
+        emberGain.connect(masterGain);
+        noise4.start();
+        sources.push(noise4);
+
+        // 低频温暖嗡鸣
+        const hum = ctx.createOscillator();
+        hum.type = "sine";
+        hum.frequency.value = 55;
+        const humGain = ctx.createGain();
+        humGain.gain.value = 0.12;
+        hum.connect(humGain);
+        humGain.connect(masterGain);
+        hum.start();
+        sources.push(hum);
+        break;
+      }
+
+      /* ===== 鸟鸣 ===== */
+      case "birds": {
+        // 轻微环境底噪（非常低音量的带通）
+        const noise1 = ctx.createBufferSource();
+        noise1.buffer = noiseBuf;
+        noise1.loop = true;
         const bpf = ctx.createBiquadFilter();
         bpf.type = "bandpass";
-        bpf.frequency.value = 600;
-        bpf.Q.value = 0.5;
-        noiseOsc.connect(ng).connect(bpf).connect(masterGain);
-        noiseOsc.start();
-        nodes.push(noiseOsc, ng, bpf);
-        break;
-      }
-      case "fire": {
-        // 温暖低频 crackle 感
-        const osc = ctx.createOscillator();
-        osc.type = "sawtooth";
-        osc.frequency.value = 60;
-        const lp = ctx.createBiquadFilter();
-        lp.type = "lowpass";
-        lp.frequency.value = 200;
-        const fg = ctx.createGain();
-        fg.gain.value = 0.5;
-        osc.connect(lp).connect(fg).connect(masterGain);
-        osc.start();
-        nodes.push(osc, lp, fg);
+        bpf.frequency.value = 300;
+        bpf.Q.value = 0.3;
+        const ambGain = ctx.createGain();
+        ambGain.gain.value = 0.08;
+        noise1.connect(bpf);
+        bpf.connect(ambGain);
+        ambGain.connect(masterGain);
+        noise1.start();
+        sources.push(noise1);
 
-        const crackle = ctx.createOscillator();
-        crackle.type = "square";
-        crackle.frequency.value = 30;
-        const cg = ctx.createGain();
-        cg.gain.value = 0.08;
-        crackle.connect(cg).connect(masterGain);
-        crackle.start();
-        nodes.push(crackle, cg);
+        // 随机鸟鸣（正弦波啁啾）
+        function chirp() {
+          const osc = ctx.createOscillator();
+          const g = ctx.createGain();
+          const now = ctx.currentTime;
+
+          const baseFreq = 1800 + Math.random() * 2400;
+          const chirpLen = 0.06 + Math.random() * 0.12;
+          const numNotes = 2 + Math.floor(Math.random() * 4);
+
+          osc.type = "sine";
+          g.gain.setValueAtTime(0, now);
+
+          for (let i = 0; i < numNotes; i++) {
+            const t = now + i * (chirpLen + 0.02 + Math.random() * 0.06);
+            const freq = baseFreq + (Math.random() - 0.5) * 800;
+            osc.frequency.setValueAtTime(freq, t);
+            osc.frequency.linearRampToValueAtTime(
+              freq + (Math.random() > 0.5 ? 1 : -1) * (200 + Math.random() * 600),
+              t + chirpLen * 0.6
+            );
+            g.gain.setValueAtTime(0.1 + Math.random() * 0.15, t);
+            g.gain.exponentialRampToValueAtTime(0.001, t + chirpLen);
+          }
+
+          osc.connect(g);
+          g.connect(masterGain);
+          osc.start(now);
+          osc.stop(now + numNotes * (chirpLen + 0.1) + 0.1);
+          sources.push(osc);
+        }
+
+        // 调度下一次鸟叫
+        function scheduleNext() {
+          const delay = 500 + Math.random() * 2500;
+          const id = setTimeout(() => {
+            chirp();
+            // 偶尔连叫两三声
+            if (Math.random() > 0.5) {
+              const id2 = setTimeout(() => chirp(), 80 + Math.random() * 150);
+              timeouts.push(id2);
+              if (Math.random() > 0.6) {
+                const id3 = setTimeout(() => chirp(), 200 + Math.random() * 200);
+                timeouts.push(id3);
+              }
+            }
+            scheduleNext();
+          }, delay);
+          timeouts.push(id);
+        }
+        scheduleNext();
         break;
-      }
-      case "music": {
-        // 简单正弦波旋律：C4-E4-G4 循环
-        const melody = [261.63, 329.63, 392.0, 329.63];
-        let idx = 0;
-        const osc = ctx.createOscillator();
-        osc.type = "sine";
-        osc.frequency.value = melody[0];
-        const mg = ctx.createGain();
-        mg.gain.value = 0.4;
-        osc.connect(mg).connect(masterGain);
-        osc.start();
-        nodes.push(osc, mg);
-        const interval = setInterval(() => {
-          idx = (idx + 1) % melody.length;
-          osc.frequency.setValueAtTime(melody[idx], ctx.currentTime);
-        }, 1200);
-        // 把 stop 也清除 interval
-        const origStop = stopAll;
-        return {
-          stop: () => {
-            clearInterval(interval);
-            origStop();
-          },
-        };
       }
     }
   } catch {
@@ -183,6 +441,56 @@ function startAmbientSound(soundId: SoundId): { stop: () => void } {
   }
 
   return { stop: stopAll };
+}
+
+/* ─── 语音引导 ─── */
+
+const GUIDE_TEXTS: Record<string, string> = {
+  start:
+    "你好，欢迎来到冥想空间。找一个舒适的姿势，轻轻闭上双眼。让我们跟随呼吸的节律，让身心慢慢沉入这片宁静之中。",
+  mid30:
+    "保持深呼吸，感受空气流过鼻腔的温度。每一次呼气，都让身体更加放松。不必赶走任何念头，只是温柔地注视着它们，然后轻轻放下。",
+  mid60:
+    "此刻，你与自然融为了一体。外界的声音变得遥远，内心的湖泊平静如镜。继续安住在这份宁静里，不需要去往任何地方。",
+  end:
+    "冥想即将结束。慢慢将意识带回身体，感受手脚的存在。轻轻活动手指和脚趾，当你准备好了，缓缓睁开双眼。愿你带着这份平静，走进接下来的生活。",
+};
+
+/** 获取最温柔的中文女声 */
+function getFriendlyVoice(): SpeechSynthesisVoice | undefined {
+  if (typeof window === "undefined" || !window.speechSynthesis) return undefined;
+  const voices = window.speechSynthesis.getVoices();
+  if (!voices.length) return undefined;
+  const zh = voices.filter((v) => v.lang.startsWith("zh"));
+  const prefer = zh.find(
+    (v) =>
+      /xiaoxiao|xiaoyi|yunxi|yunjian|晓晓|晓伊|云希|云健|meijia|meiyan|佳|燕/i.test(v.name) ||
+      (v.name.includes("Female") && v.lang.startsWith("zh"))
+  );
+  return prefer || zh[0] || voices[0];
+}
+
+/** 播放语音引导 */
+function speakGuide(text: string, onEnd?: () => void): SpeechSynthesisUtterance | null {
+  if (typeof window === "undefined" || !window.speechSynthesis) return null;
+  window.speechSynthesis.cancel(); // 先停止之前的
+  const u = new SpeechSynthesisUtterance(text);
+  const voice = getFriendlyVoice();
+  if (voice) u.voice = voice;
+  u.lang = "zh-CN";
+  u.rate = 0.82;  // 稍慢，更温柔
+  u.pitch = 0.92; // 略低沉，有亲和力
+  u.volume = 0.9;
+  if (onEnd) u.onend = onEnd;
+  window.speechSynthesis.speak(u);
+  return u;
+}
+
+/** 停止语音 */
+function stopVoiceGuide() {
+  if (typeof window !== "undefined" && window.speechSynthesis) {
+    window.speechSynthesis.cancel();
+  }
 }
 
 /* ─── 主组件 ─── */
@@ -197,26 +505,55 @@ const MeditationTimer: React.FC = () => {
 
   // 环境音引用
   const ambientRef = useRef<{ stop: () => void } | null>(null);
+  // 语音引导引用
+  const voiceRef = useRef<SpeechSynthesisUtterance | null>(null);
+  // 记录已播报的引导阶段（避免重复）
+  const guideStageRef = useRef<Set<string>>(new Set());
 
-  // 清理环境音
+  // 清理环境音 + 语音
   const stopAmbient = useCallback(() => {
     if (ambientRef.current) {
       ambientRef.current.stop();
       ambientRef.current = null;
     }
+    stopVoiceGuide();
   }, []);
 
   // 组件卸载时清理
   useEffect(() => {
-    return () => stopAmbient();
+    return () => {
+      stopAmbient();
+      stopVoiceGuide();
+    };
   }, [stopAmbient]);
 
-  // 倒计时
+  // 倒计时 + 语音引导调度
   useEffect(() => {
     if (!running) return;
+    const total = duration * 60;
     const interval = setInterval(() => {
       setSeconds((prev) => {
-        if (prev <= 1) {
+        const next = prev - 1;
+        const elapsed = total - next;
+        const progress = elapsed / total;
+
+        // 语音引导：按进度触发
+        if (voiceGuide) {
+          if (progress >= 0.28 && progress < 0.35 && !guideStageRef.current.has("mid30")) {
+            guideStageRef.current.add("mid30");
+            voiceRef.current = speakGuide(GUIDE_TEXTS.mid30);
+          }
+          if (progress >= 0.55 && progress < 0.65 && !guideStageRef.current.has("mid60")) {
+            guideStageRef.current.add("mid60");
+            voiceRef.current = speakGuide(GUIDE_TEXTS.mid60);
+          }
+          if (progress >= 0.82 && progress < 0.92 && !guideStageRef.current.has("end")) {
+            guideStageRef.current.add("end");
+            voiceRef.current = speakGuide(GUIDE_TEXTS.end);
+          }
+        }
+
+        if (next <= 0) {
           clearInterval(interval);
           setRunning(false);
           setCompleted(true);
@@ -233,26 +570,35 @@ const MeditationTimer: React.FC = () => {
           }
           return 0;
         }
-        return prev - 1;
+        return next;
       });
     }, 1000);
     return () => clearInterval(interval);
-  }, [running, duration, stopAmbient]);
+  }, [running, duration, stopAmbient, voiceGuide]);
 
   const handleStart = () => {
     setCompleted(false);
     setSeconds(duration * 60);
     setRunning(true);
+    guideStageRef.current.clear();
     // 启动环境音
     stopAmbient();
     ambientRef.current = startAmbientSound(selectedSound);
+    // 播放初始语音引导（延迟 1.5s，等环境音淡入后再开始）
+    if (voiceGuide) {
+      setTimeout(() => {
+        voiceRef.current = speakGuide(GUIDE_TEXTS.start);
+      }, 1500);
+    }
   };
 
   const handleEnd = () => {
     setRunning(false);
     setSeconds(0);
     setCompleted(false);
+    guideStageRef.current.clear();
     stopAmbient();
+    stopVoiceGuide();
   };
 
   const handleRetry = () => {

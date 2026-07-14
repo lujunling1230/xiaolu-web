@@ -468,21 +468,28 @@ const TravelPage: React.FC = () => {
     } catch { return new Set<string>(); }
   });
 
-  /* 编辑模式：可拖拽省份调整位置 */
+  /* 卷轴展开动画 */
+  const [scrollUnrolled, setScrollUnrolled] = useState(false);
+  useEffect(() => {
+    const t = setTimeout(() => setScrollUnrolled(true), 150);
+    return () => clearTimeout(t);
+  }, []);
+
+  /* 编辑模式：可拖拽省份调整位置 / 滚轮缩放拉伸 */
   const [editMode, setEditMode] = useState(false);
   const [dragging, setDragging] = useState<string | null>(null);
-  const [provinceOffsets, setProvinceOffsets] = useState<Record<string, { dx: number; dy: number }>>(() => {
+  const [provinceTransforms, setProvinceTransforms] = useState<Record<string, { dx: number; dy: number; sx: number; sy: number }>>(() => {
     try {
-      const raw = localStorage.getItem("travel_province_offsets");
+      const raw = localStorage.getItem("travel_province_transforms");
       return raw ? JSON.parse(raw) : {};
     } catch { return {}; }
   });
 
-  /** 对 SVG path 应用偏移量（精确解析 M/Q/Z 命令后的坐标对） */
-  function applyOffset(path: string, name: string): string {
-    const off = provinceOffsets[name];
-    if (!off || (off.dx === 0 && off.dy === 0)) return path;
-    // 将路径拆分为 token，对每个数值 token 按序交替加 dx/dy
+  /** 对 SVG path 应用平移+缩放变换（以原始中心为基准缩放后再平移） */
+  function applyTransform(path: string, name: string): string {
+    const tr = provinceTransforms[name];
+    if (!tr || (tr.dx === 0 && tr.dy === 0 && tr.sx === 1 && tr.sy === 1)) return path;
+    const center = getProvinceCenter(path);
     const tokens: string[] = [];
     const regex = /[A-Za-z]|-?\d+\.?\d*/g;
     let m: RegExpExecArray | null;
@@ -490,16 +497,19 @@ const TravelPage: React.FC = () => {
     let coordIdx = 0;
     return tokens.map((t) => {
       if (/^[A-Za-z]$/.test(t)) { coordIdx = 0; return t; }
-      const val = parseFloat(t) + (coordIdx % 2 === 0 ? off.dx : off.dy);
+      const val = parseFloat(t);
+      const scaled = coordIdx % 2 === 0
+        ? center.x + (val - center.x) * tr.sx + tr.dx
+        : center.y + (val - center.y) * tr.sy + tr.dy;
       coordIdx++;
-      return String(Math.round(val * 10) / 10);
+      return String(Math.round(scaled * 10) / 10);
     }).join(" ");
   }
 
-  /* 持久化省份偏移量 */
+  /* 持久化省份变换 */
   useEffect(() => {
-    try { localStorage.setItem("travel_province_offsets", JSON.stringify(provinceOffsets)); } catch { /* ignore */ }
-  }, [provinceOffsets]);
+    try { localStorage.setItem("travel_province_transforms", JSON.stringify(provinceTransforms)); } catch { /* ignore */ }
+  }, [provinceTransforms]);
 
   const isNew = useMemo(() => editingCity ? !cities.some((c) => c.id === editingCity.id) : false, [editingCity, cities]);
 
@@ -657,17 +667,39 @@ const TravelPage: React.FC = () => {
   return (
     <div className="travel-page">
       {/* ===== Hero 羊皮纸卷轴 ===== */}
-      <header className="travel-hero">
+      <header className={`travel-hero ${scrollUnrolled ? "unrolled" : ""}`}>
         <div className="travel-hero-scroll-bar left" />
         <div className="travel-hero-scroll-bar right" />
         <div className="travel-hero-scroll-knob left" />
         <div className="travel-hero-scroll-knob right" />
+        {/* 金色尘埃粒子 */}
+        <div className="travel-dust" />
+        <div className="travel-dust" />
+        <div className="travel-dust" />
+        <div className="travel-dust" />
+        <div className="travel-dust" />
         <Link to="/mickey" className="travel-back">
           ← 返回妙妙工具箱
         </Link>
         <div className="travel-hero-content">
           <h1 className="travel-hero-title">漫游指南</h1>
-          <p className="travel-hero-sub">走过的路，看过的云。</p>
+          <div className="travel-hero-ornament" />
+          <div className="travel-hero-year">元年 · 启程</div>
+
+          <div className="travel-hero-text">
+            <p>世界是一张未折叠的地图，亦是无数条待踏足的路径。</p>
+            <p>余性好游，尝遍历山川城郭。</p>
+            <p>每至一城，必察其街巷肌理，尝其市井烟火，录其食宿交通。</p>
+            <p>积岁累月，汇为此卷。</p>
+            <p>非为奇谈志异，实乃一己之攻略备忘。</p>
+            <p>愿后来者，持此卷，少走弯路，多遇良辰。</p>
+          </div>
+
+          <div className="travel-hero-signature">
+            <span className="travel-hero-name">—— 漫游使 小叶 识</span>
+            <div className="travel-hero-seal"><span>漫游</span></div>
+          </div>
+
           <button className="travel-hero-stamp" onClick={() => window.scrollTo({ top: document.querySelector('.travel-section')?.getBoundingClientRect().top + window.scrollY - 20, behavior: 'smooth' })}>
             开启<br/>旅程
           </button>
@@ -682,7 +714,7 @@ const TravelPage: React.FC = () => {
           <button
             className={`travel-edit-toggle ${editMode ? "active" : ""}`}
             onClick={() => setEditMode((v) => !v)}
-            title={editMode ? "退出编辑模式" : "进入编辑模式，拖拽省份调整位置"}
+            title={editMode ? "退出编辑模式" : "进入编辑模式：拖拽移动，滚轮垂直拉伸，Shift+滚轮水平拉伸"}
           >
             {editMode ? "锁定位置" : "调整位置"}
           </button>
@@ -700,11 +732,42 @@ const TravelPage: React.FC = () => {
               viewBox={`0 0 ${MAP_VIEWBOX_W} ${MAP_VIEWBOX_H}`}
               className="travel-map-overlay"
               onMouseLeave={() => { setHovered(null); setDragging(null); }}
+              onMouseMove={(e) => {
+                if (editMode && dragging) {
+                  const svg = e.currentTarget as SVGSVGElement;
+                  const rect = svg.getBoundingClientRect();
+                  const vbX = ((e.clientX - rect.left) / rect.width) * MAP_VIEWBOX_W;
+                  const vbY = ((e.clientY - rect.top) / rect.height) * MAP_VIEWBOX_H;
+                  const origCenter = getProvinceCenter(
+                    PROVINCE_PATHS.find((pp) => pp.name === dragging)?.path || ""
+                  );
+                  setProvinceTransforms((prev) => ({
+                    ...prev,
+                    [dragging]: { dx: vbX - origCenter.x, dy: vbY - origCenter.y, sx: prev[dragging]?.sx ?? 1, sy: prev[dragging]?.sy ?? 1 },
+                  }));
+                }
+              }}
+              onMouseUp={() => { setDragging(null); }}
+              onWheel={(e) => {
+                if (!editMode) return;
+                e.preventDefault();
+                const target = hovered?.name;
+                if (!target) return;
+                const delta = e.deltaY > 0 ? 1.05 : 0.95;
+                const axis = e.shiftKey ? "sx" : "sy";
+                setProvinceTransforms((prev) => {
+                  const cur = prev[target] || { dx: 0, dy: 0, sx: 1, sy: 1 };
+                  return {
+                    ...prev,
+                    [target]: { ...cur, [axis]: Math.max(0.3, Math.min(3, (cur[axis] || 1) * delta)) },
+                  };
+                });
+              }}
             >
               {provinceBlocks.map((p) => {
                 const isHovered = hovered?.name === p.name;
                 const isVisited = p.visited;
-                const offsetedPath = applyOffset(p.path, p.name);
+                const offsetedPath = applyTransform(p.path, p.name);
                 const center = getProvinceCenter(offsetedPath);
                 return (
                   <g
@@ -726,21 +789,7 @@ const TravelPage: React.FC = () => {
                       className={`travel-province-area ${editMode ? "draggable" : ""}`}
                       style={editMode ? { cursor: dragging === p.name ? "grabbing" : "grab" } : undefined}
                       onMouseEnter={(e) => handleProvinceHover(p, e)}
-                      onMouseMove={(e) => {
-                        handleProvinceHover(p, e);
-                        if (editMode && dragging === p.name) {
-                          const svg = (e.currentTarget as SVGElement).closest("svg")!;
-                          const rect = svg.getBoundingClientRect();
-                          const vbX = ((e.clientX - rect.left) / rect.width) * MAP_VIEWBOX_W;
-                          const vbY = ((e.clientY - rect.top) / rect.height) * MAP_VIEWBOX_H;
-                          const origCenter = getProvinceCenter(p.path);
-                          setProvinceOffsets((prev) => ({
-                            ...prev,
-                            [p.name]: { dx: vbX - origCenter.x, dy: vbY - origCenter.y },
-                          }));
-                        }
-                      }}
-                      onMouseUp={() => { if (dragging === p.name) setDragging(null); }}
+                      onMouseMove={(e) => handleProvinceHover(p, e)}
                       onClick={() => { if (!editMode) handleProvinceClick(p); }}
                     />
                     {isVisited && (
@@ -1144,70 +1193,157 @@ const TravelPage: React.FC = () => {
 
         /* ===== Hero 羊皮纸卷轴 ===== */
         .travel-hero {
-          position: relative; height: 48vh; min-height: 340px;
+          position: relative; min-height: 520px; height: auto;
           display: flex; align-items: center; justify-content: center;
           overflow: hidden;
           background: linear-gradient(180deg, #E0D8C8 0%, #EDE5D5 25%, #F5F0E6 60%, #F5F0E6 100%);
           border-bottom: 2px solid #D4C8B0;
+          padding: 60px 0;
         }
+
+        /* ---- 卷轴杆：深色木边 ---- */
         .travel-hero-scroll-bar {
-          position: absolute; top: 0; width: 32px; height: 100%;
-          background: linear-gradient(90deg, #7A6655 0%, #9A8570 40%, #8A7560 60%, #7A6655 100%);
-          z-index: 5;
-          box-shadow: inset 0 0 8px rgba(0,0,0,0.3), 2px 0 10px rgba(0,0,0,0.15);
+          position: absolute; top: 0; width: 32px; height: 100%; z-index: 5;
+          background: linear-gradient(90deg, #6B5344 0%, #7A6655 15%, #9A8570 40%, #8A7560 60%, #9A8570 80%, #7A6655 90%, #6B5344 100%);
+          box-shadow: inset 2px 0 6px rgba(0,0,0,0.25), inset -1px 0 3px rgba(255,255,255,0.08), 4px 0 12px rgba(0,0,0,0.18);
+          transition: transform 2.5s cubic-bezier(0.65, 0, 0.35, 1);
         }
-        .travel-hero-scroll-bar.left {
-          left: 0; border-radius: 0 6px 6px 0;
-        }
-        .travel-hero-scroll-bar.right {
-          right: 0; border-radius: 6px 0 0 6px;
-          box-shadow: inset 0 0 8px rgba(0,0,0,0.3), -2px 0 10px rgba(0,0,0,0.15);
-        }
+        .travel-hero-scroll-bar.left { left: 0; border-radius: 0 6px 6px 0; transform-origin: left center; }
+        .travel-hero-scroll-bar.right { right: 0; border-radius: 6px 0 0 6px; box-shadow: inset -2px 0 6px rgba(0,0,0,0.25), inset 1px 0 3px rgba(255,255,255,0.08), -4px 0 12px rgba(0,0,0,0.18); transform-origin: right center; }
+
+        /* 初始闭合：卷轴向中间紧靠 */
+        .travel-hero:not(.unrolled) .travel-hero-scroll-bar.left { transform: translateX(calc(50vw - 16px)); }
+        .travel-hero:not(.unrolled) .travel-hero-scroll-bar.right { transform: translateX(calc(-50vw + 16px)); }
+
+        /* ---- 旋钮 ---- */
         .travel-hero-scroll-knob {
-          position: absolute; top: 50%; transform: translateY(-50%);
-          width: 42px; height: 90px; z-index: 6;
-          background: linear-gradient(180deg, #6B5344 0%, #8B6F5C 30%, #A08060 50%, #8B6F5C 70%, #6B5344 100%);
+          position: absolute; top: 50%; width: 42px; height: 90px; z-index: 6;
+          background: linear-gradient(180deg, #5C4538 0%, #7A6655 25%, #A08060 50%, #7A6655 75%, #5C4538 100%);
           border-radius: 8px;
-          box-shadow: 0 2px 12px rgba(0,0,0,0.3), inset 0 1px 2px rgba(255,255,255,0.15);
+          box-shadow: 0 2px 14px rgba(0,0,0,0.35), inset 0 1px 2px rgba(255,255,255,0.12);
+          transition: transform 2.5s cubic-bezier(0.65, 0, 0.35, 1);
         }
-        .travel-hero-scroll-knob.left { left: -5px; }
-        .travel-hero-scroll-knob.right { right: -5px; }
+        .travel-hero-scroll-knob.left { left: -5px; transform: translateY(-50%); }
+        .travel-hero-scroll-knob.right { right: -5px; transform: translateY(-50%); }
+
+        /* ---- 内容区：clip-path 展开 ---- */
         .travel-hero-content {
           position: relative; z-index: 2; text-align: center;
-          padding: 0 60px;
+          flex: 1; max-width: 640px;
+          padding: 0 56px;
+          opacity: 0;
+          clip-path: inset(0 50% 0 50%);
+          transition: clip-path 2.5s cubic-bezier(0.65, 0, 0.35, 1), opacity 0.6s ease 1.2s;
         }
+        .travel-hero.unrolled .travel-hero-content {
+          clip-path: inset(0 0% 0 0%);
+          opacity: 1;
+        }
+
+        /* ---- 返回按钮 ---- */
         .travel-back {
           position: absolute; top: 20px; left: 48px; z-index: 10;
           font-size: 14px; color: var(--warm-brown); text-decoration: none;
-          letter-spacing: 0.04em; transition: color 0.25s ease;
+          letter-spacing: 0.04em; transition: color 0.25s ease, opacity 0.8s ease 2s;
           font-family: var(--font-serif);
+          opacity: 0;
         }
+        .travel-hero.unrolled .travel-back { opacity: 1; }
         .travel-back:hover { color: var(--ink-blue); }
+
+        /* ---- 标题 ---- */
         .travel-hero-title {
-          font-family: var(--font-hand);
-          font-size: clamp(40px, 7vw, 64px); font-weight: 400;
-          color: var(--ink-blue); margin: 0 0 14px;
-          letter-spacing: 0.18em;
-          text-shadow: 2px 2px 0 rgba(200,180,140,0.35), 0 4px 16px rgba(60,40,20,0.12);
-          animation: heroTitleIn 1.2s var(--ease-smooth) both;
+          font-family: "KaiTi", "STKaiti", "Noto Serif SC", var(--font-hand), serif;
+          font-size: clamp(32px, 5vw, 48px); font-weight: 400;
+          color: #5c3a21; margin: 0 0 8px;
+          letter-spacing: 0.22em;
+          text-shadow: 1px 1px 0 rgba(180,160,130,0.4);
+          opacity: 0; transform: translateY(12px);
+          transition: opacity 1s ease 1.5s, transform 1s ease 1.5s;
         }
-        @keyframes heroTitleIn {
-          from { opacity: 0; transform: translateY(24px) scale(0.95); }
-          to { opacity: 1; transform: translateY(0) scale(1); }
+        .travel-hero.unrolled .travel-hero-title { opacity: 1; transform: translateY(0); }
+
+        /* 装饰线 */
+        .travel-hero-ornament {
+          width: 60px; height: 1px;
+          background: linear-gradient(90deg, transparent, var(--gold-accent), transparent);
+          margin: 10px auto;
+          opacity: 0;
+          transition: opacity 0.6s ease 1.6s;
         }
-        .travel-hero-sub {
-          font-family: var(--font-serif);
-          font-size: 16px; color: #8B7D6B; margin: 0;
-          letter-spacing: 0.15em;
-          animation: heroSubIn 1s 0.3s var(--ease-smooth) both;
+        .travel-hero.unrolled .travel-hero-ornament { opacity: 0.5; }
+
+        /* 元年 · 启程 */
+        .travel-hero-year {
+          font-size: 14px; color: #8B7D6B;
+          letter-spacing: 0.3em; margin-bottom: 24px;
+          font-family: "KaiTi", "STKaiti", "Noto Serif SC", serif;
+          opacity: 0;
+          transition: opacity 0.8s ease 1.7s;
         }
-        @keyframes heroSubIn {
-          from { opacity: 0; transform: translateY(12px); }
-          to { opacity: 1; transform: translateY(0); }
+        .travel-hero.unrolled .travel-hero-year { opacity: 1; }
+
+        /* 题记正文 */
+        .travel-hero-text {
+          max-width: 520px; margin: 0 auto;
+          text-align: center; line-height: 2.2;
+          font-size: 15px; color: #5c3a21;
+          letter-spacing: 0.08em;
+          font-family: "KaiTi", "STKaiti", "Noto Serif SC", "SimSun", serif;
         }
+        .travel-hero-text p {
+          margin-bottom: 10px;
+          opacity: 0; transform: translateY(10px);
+          transition: opacity 0.8s ease, transform 0.8s ease;
+        }
+        .travel-hero.unrolled .travel-hero-text p:nth-child(1) { opacity: 1; transform: translateY(0); transition-delay: 1.9s; }
+        .travel-hero.unrolled .travel-hero-text p:nth-child(2) { opacity: 1; transform: translateY(0); transition-delay: 2.2s; }
+        .travel-hero.unrolled .travel-hero-text p:nth-child(3) { opacity: 1; transform: translateY(0); transition-delay: 2.5s; }
+        .travel-hero.unrolled .travel-hero-text p:nth-child(4) { opacity: 1; transform: translateY(0); transition-delay: 2.8s; }
+        .travel-hero.unrolled .travel-hero-text p:nth-child(5) { opacity: 1; transform: translateY(0); transition-delay: 3.1s; }
+        .travel-hero.unrolled .travel-hero-text p:nth-child(6) { opacity: 1; transform: translateY(0); transition-delay: 3.4s; }
+
+        /* 署名 */
+        .travel-hero-signature {
+          margin-top: 24px;
+          display: flex; align-items: center; justify-content: center;
+          gap: 14px;
+          opacity: 0; transform: translateY(8px);
+          transition: opacity 0.8s ease 3.6s, transform 0.8s ease 3.6s;
+        }
+        .travel-hero.unrolled .travel-hero-signature { opacity: 1; transform: translateY(0); }
+        .travel-hero-name {
+          font-size: 14px; color: #8B7D6B;
+          letter-spacing: 0.12em;
+          font-family: "KaiTi", "STKaiti", "Noto Serif SC", serif;
+        }
+
+        /* 红色印章 */
+        .travel-hero-seal {
+          width: 40px; height: 40px;
+          background: #C53D43; border: 2px solid #A82830;
+          display: flex; align-items: center; justify-content: center;
+          position: relative;
+          box-shadow: 0 1px 4px rgba(197,61,67,0.3);
+          opacity: 0; transform: scale(0.6) rotate(15deg);
+          transition: opacity 0.6s ease 3.9s, transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) 3.9s;
+        }
+        .travel-hero.unrolled .travel-hero-seal { opacity: 1; transform: scale(1) rotate(-3deg); }
+        .travel-hero-seal::before {
+          content: ""; position: absolute; inset: 3px;
+          border: 1px solid rgba(255,255,255,0.25);
+        }
+        .travel-hero-seal span {
+          color: #fff; font-size: 12px; font-weight: 700;
+          letter-spacing: 0.15em; line-height: 1;
+          font-family: "KaiTi", "STKaiti", serif;
+          text-shadow: 0 1px 2px rgba(0,0,0,0.15);
+        }
+
+        /* 开启旅程按钮 */
         .travel-hero-stamp {
           display: inline-flex; align-items: center; justify-content: center;
-          margin-top: 28px; width: 80px; height: 80px;
+          margin-top: 24px; width: 80px; height: 80px;
           border-radius: 50%; border: 3px solid var(--gold-accent);
           background: linear-gradient(145deg, #F5E6D0 0%, #E8D5BE 100%);
           color: var(--pine-green);
@@ -1215,10 +1351,11 @@ const TravelPage: React.FC = () => {
           letter-spacing: 0.06em; line-height: 1.3;
           cursor: pointer;
           box-shadow: 0 4px 14px rgba(200,146,74,0.25), inset 0 1px 2px rgba(255,255,255,0.5);
-          transition: transform 0.35s var(--ease-bounce), box-shadow 0.3s ease;
-          animation: stampAppear 0.8s 0.6s var(--ease-bounce) both;
+          transition: transform 0.35s var(--ease-bounce), box-shadow 0.3s ease, opacity 0.8s ease 4.1s;
           position: relative;
+          opacity: 0; transform: scale(0.6) rotate(20deg);
         }
+        .travel-hero.unrolled .travel-hero-stamp { opacity: 1; transform: scale(1) rotate(0deg); }
         .travel-hero-stamp::before {
           content: ""; position: absolute; inset: -7px;
           border-radius: 50%; border: 1px dashed var(--gold-accent);
@@ -1228,9 +1365,56 @@ const TravelPage: React.FC = () => {
           transform: scale(1.1) rotate(-5deg);
           box-shadow: 0 8px 24px rgba(200,146,74,0.35);
         }
-        @keyframes stampAppear {
-          from { opacity: 0; transform: scale(0.4) rotate(20deg); }
-          to { opacity: 1; transform: scale(1) rotate(0deg); }
+
+        /* 金色尘埃 */
+        @keyframes dustFloat {
+          0% { transform: translateY(0) translateX(0) scale(1); opacity: 0; }
+          15% { opacity: 0.6; }
+          85% { opacity: 0.4; }
+          100% { transform: translateY(-120px) translateX(30px) scale(0.3); opacity: 0; }
+        }
+        .travel-dust {
+          position: absolute; width: 3px; height: 3px; opacity: 0;
+          background: radial-gradient(circle, rgba(212,180,100,0.9) 0%, transparent 70%);
+          border-radius: 50%; pointer-events: none; z-index: 3;
+          transition: opacity 1s ease 2s;
+        }
+        .travel-hero.unrolled .travel-dust { opacity: 1; }
+        .travel-dust:nth-child(1) { left: 18%; bottom: 15%; animation: dustFloat 5s 2.2s ease-in-out infinite; }
+        .travel-dust:nth-child(2) { left: 35%; bottom: 25%; animation: dustFloat 7s 3.5s ease-in-out infinite; width: 2px; height: 2px; }
+        .travel-dust:nth-child(3) { left: 62%; bottom: 18%; animation: dustFloat 6s 2.8s ease-in-out infinite; }
+        .travel-dust:nth-child(4) { left: 78%; bottom: 30%; animation: dustFloat 8s 4.2s ease-in-out infinite; width: 2.5px; height: 2.5px; }
+        .travel-dust:nth-child(5) { left: 45%; bottom: 10%; animation: dustFloat 5.5s 5s ease-in-out infinite; }
+
+        /* ===== 减少动画偏好 ===== */
+        @media (prefers-reduced-motion: reduce) {
+          .travel-hero-scroll-bar, .travel-hero-scroll-knob,
+          .travel-hero-content, .travel-back,
+          .travel-hero-title, .travel-hero-ornament, .travel-hero-year,
+          .travel-hero-text p, .travel-hero-signature, .travel-hero-seal,
+          .travel-hero-stamp, .travel-dust {
+            transition: none !important;
+            animation: none !important;
+          }
+          .travel-hero:not(.unrolled) .travel-hero-scroll-bar.left,
+          .travel-hero:not(.unrolled) .travel-hero-scroll-bar.right {
+            transform: translateX(0);
+          }
+          .travel-hero:not(.unrolled) .travel-hero-content {
+            clip-path: inset(0 0% 0 0%);
+            opacity: 1;
+          }
+          .travel-hero:not(.unrolled) .travel-back,
+          .travel-hero:not(.unrolled) .travel-hero-title,
+          .travel-hero:not(.unrolled) .travel-hero-ornament,
+          .travel-hero:not(.unrolled) .travel-hero-year,
+          .travel-hero:not(.unrolled) .travel-hero-text p,
+          .travel-hero:not(.unrolled) .travel-hero-signature,
+          .travel-hero:not(.unrolled) .travel-hero-seal,
+          .travel-hero:not(.unrolled) .travel-hero-stamp,
+          .travel-hero:not(.unrolled) .travel-dust {
+            opacity: 1; transform: none; filter: none;
+          }
         }
 
         /* ===== Section 标题 ===== */

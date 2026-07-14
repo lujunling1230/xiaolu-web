@@ -71,12 +71,8 @@ const HealingRoomPage: React.FC = () => {
     <div className="hr-root">
       {/* ===== 森林背景层 ===== */}
       <div className="hr-bg" />
-      {/* ===== 微风树叶动效层 ===== */}
-      <div className="hr-leaf hr-leaf-1" />
-      <div className="hr-leaf hr-leaf-2" />
-      <div className="hr-leaf hr-leaf-3" />
 
-      {/* ===== 左侧导航 ===== */}
+        {/* ===== 左侧导航 ===== */}
       <aside className="hl-sidebar">
         {/* 回到主站 */}
         <Link to="/" className="hl-back">
@@ -175,15 +171,20 @@ const HealingRoomPage: React.FC = () => {
           overflow: hidden;
         }
 
-        /* ===== 森林背景 ===== */
+        /* ===== 森林背景（整体缓动） ===== */
         .hr-bg {
           position: fixed;
-          inset: 0;
+          inset: -10px;
           z-index: 0;
           background-image: url('/healing-forest.jpg');
           background-size: cover;
           background-position: center;
           filter: brightness(0.88) saturate(0.9);
+          animation: hrBgSway 8s ease-in-out infinite;
+        }
+        @keyframes hrBgSway {
+          0%, 100% { transform: translateX(0); }
+          50% { transform: translateX(6px); }
         }
 
         /* ===== 渐变暗角 ===== */
@@ -200,57 +201,6 @@ const HealingRoomPage: React.FC = () => {
             rgba(0,0,0,0.4) 100%
           );
           pointer-events: none;
-        }
-
-        /* ===== 微风树叶动效 ===== */
-        @keyframes hrSway1 {
-          0%, 100% { transform: scale(1.04) rotate(-1.2deg); }
-          50% { transform: scale(1.06) rotate(1.2deg) translateY(-3px); }
-        }
-        @keyframes hrSway2 {
-          0%, 100% { transform: scale(1.02) rotate(0.8deg); }
-          50% { transform: scale(1.04) rotate(-1.5deg) translateY(-4px); }
-        }
-        @keyframes hrSway3 {
-          0%, 100% { transform: scale(1.03) rotate(-0.6deg); }
-          50% { transform: scale(1.05) rotate(1deg) translateX(2px) translateY(-2px); }
-        }
-
-        .hr-leaf {
-          position: fixed;
-          z-index: 1;
-          pointer-events: none;
-          background-image: url('/healing-forest.jpg');
-          background-size: cover;
-          background-repeat: no-repeat;
-          filter: brightness(0.65) saturate(0.8);
-        }
-        .hr-leaf-1 {
-          top: -5%; right: -5%;
-          width: 55%; height: 55%;
-          background-position: right top;
-          opacity: 0.45;
-          transform-origin: 80% 20%;
-          animation: hrSway1 5.5s ease-in-out infinite;
-        }
-        .hr-leaf-2 {
-          bottom: -8%; left: -6%;
-          width: 50%; height: 50%;
-          background-position: left bottom;
-          background-size: 120% 120%;
-          opacity: 0.35;
-          transform-origin: 20% 80%;
-          animation: hrSway2 6.8s ease-in-out infinite;
-          animation-delay: -2s;
-        }
-        .hr-leaf-3 {
-          top: -10%; left: 30%;
-          width: 45%; height: 45%;
-          background-position: center top;
-          opacity: 0.28;
-          transform-origin: 50% 100%;
-          animation: hrSway3 4.8s ease-in-out infinite;
-          animation-delay: -1.2s;
         }
 
         /* ===== 左侧导航栏 ===== */

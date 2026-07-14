@@ -333,8 +333,6 @@ const AdvicePage: React.FC = () => {
     /* 有回信待读 → 打开阅读 */
     if (phase === "reply-arrived") {
       setPhase("reading");
-      setLidAngle(-50);
-      setGlowIntensity(0.4);
       setTimeout(() => {
         setToast("📬 里面有一封回信！");
         setTimeout(() => setToast(null), 2500);
@@ -351,11 +349,7 @@ const AdvicePage: React.FC = () => {
     if (phase === "idle" || phase === "reading") {
       setShowLetterCard(true);
       setPhase("writing");
-      setLidAngle(-45);
-      setGlowIntensity(0.3);
       setTimeout(() => {
-        setLidAngle(0);
-        setGlowIntensity(0);
         inputRef.current?.focus();
       }, 600);
     }
@@ -365,9 +359,6 @@ const AdvicePage: React.FC = () => {
     setPhase("idle");
     setReply(null);
     setQuestion("");
-    setLidAngle(0);
-    setGlowIntensity(0);
-    setShowLetterInBox(false);
     setReplyFlyingIn(false);
     setFlyingLetter(false);
     setShowLetterCard(false);
@@ -408,9 +399,65 @@ const AdvicePage: React.FC = () => {
         </div>
       </div>
 
-      {/* ===== 背景图 ===== */}
-      <div className="advice-bg" aria-hidden="true" />
-      <div className="advice-bg-overlay" aria-hidden="true" />
+      {/* ===== 纯 CSS 3D 透视杂货店场景 ===== */}
+      <div className="shop-scene" aria-hidden="true">
+        {/* 屋顶 */}
+        <div className="shop-roof" />
+        {/* 墙壁 */}
+        <div className="shop-wall" />
+        {/* 招牌 */}
+        <div className="shop-sign">
+          <span className="shop-sign-text">解忧杂货店</span>
+          <span className="shop-sign-sub">Namiya's General Store</span>
+        </div>
+        {/* 左窗 */}
+        <div className="shop-window-left">
+          <div className="shop-window-pane" />
+        </div>
+        {/* 右窗 */}
+        <div className="shop-window-right">
+          <div className="shop-window-pane" />
+        </div>
+        {/* 门 */}
+        <div className="shop-door">
+          <div className="shop-door-panel" />
+          <div className="shop-door-handle" />
+        </div>
+        {/* 门口灯光 */}
+        <div className="shop-light" />
+        {/* 地面 */}
+        <div className="shop-floor" />
+
+        {/* 牛奶箱（场景内左下方） */}
+        <MilkBox
+          isOpen={phase === "reading"}
+          isGlow={phase === "reply-arrived"}
+          isShake={mailboxShake}
+          onClick={openMailbox}
+        />
+
+        {/* 公告板（场景内右侧） */}
+        <div className="notice-board" ref={aboutRef}>
+          <div className="notice-board-wood">
+            <div className="notice-pin" />
+            <div className="notice-sticky-list">
+              {STICKIES.map((text, i) => (
+                <div className="notice-sticky" key={i}>
+                  <p>{text}</p>
+                </div>
+              ))}
+            </div>
+            <div className="notice-about-panel notice-about-panel--open">
+              <div className="notice-about-content">
+                <h3>关于这间店</h3>
+                <p>人与人，因烦恼而相连。浪矢爷爷相信，每个咨询者心中早已有了答案，写信只是为了确认自己的选择。</p>
+                <p>我们不过是在时间长河里，替你亮着一盏灯。愿这间杂货店，能接住你那些无处安放的迷茫，让你有勇气对自己说出那句——"我决定了"。</p>
+                <p className="notice-about-sign">——致每一个写信的你</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
 
       {/* ===== 右下角便签式写信卡片（点击牛奶箱后出现） ===== */}
       <AnimatePresence>
@@ -530,13 +577,7 @@ const AdvicePage: React.FC = () => {
         </AnimatePresence>
       </div>
 
-      {/* ===== 牛奶箱（左下角固定，始终可见） ===== */}
-      <MilkBox
-        isOpen={phase === "reading"}
-        isGlow={phase === "reply-arrived"}
-        isShake={mailboxShake}
-        onClick={openMailbox}
-      />
+      {/* 牛奶箱已移入 .shop-scene 内部 */}
 
       {/* 回信飞入动画 */}
       <AnimatePresence>
@@ -626,27 +667,7 @@ const AdvicePage: React.FC = () => {
         </motion.section>
       )}
 
-      {/* ===== 公告板 ===== */}
-      <div className="notice-board" ref={aboutRef}>
-        <div className="notice-board-wood">
-          <div className="notice-pin" />
-          <div className="notice-sticky-list">
-            {STICKIES.map((text, i) => (
-              <div className="notice-sticky" key={i}>
-                <p>{text}</p>
-              </div>
-            ))}
-          </div>
-          <div className="notice-about-panel notice-about-panel--open">
-            <div className="notice-about-content">
-              <h3>关于这间店</h3>
-              <p>人与人，因烦恼而相连。浪矢爷爷相信，每个咨询者心中早已有了答案，写信只是为了确认自己的选择。</p>
-              <p>我们不过是在时间长河里，替你亮着一盏灯。愿这间杂货店，能接住你那些无处安放的迷茫，让你有勇气对自己说出那句——"我决定了"。</p>
-              <p className="notice-about-sign">——致每一个写信的你</p>
-            </div>
-          </div>
-        </div>
-      </div>
+      {/* 公告板已移入 .shop-scene 内部 */}
 
       {/* ===== Toast 提示 ===== */}
       {toast && <div className="advice-toast">{toast}</div>}
@@ -671,30 +692,276 @@ const AdvicePage: React.FC = () => {
           color-scheme: light;
         }
 
-        /* ---------- 背景图（cover 铺满全屏） ---------- */
-        .advice-bg {
-          position: fixed;
-          top: 0; left: 0; right: 0; bottom: 0;
-          background-image: url('/advice-shop-bg-v2.jpg?v=1');
-          background-repeat: no-repeat;
-          background-position: center center;
-          background-size: cover;
-          -webkit-background-size: cover;
-          z-index: 0;
-        }
-
-        /* 轻微暗色叠加（保持原图明亮度） */
-        .advice-bg-overlay {
-          position: fixed; inset: 0;
-          background: rgba(0, 0, 0, 0.12);
-          z-index: 1;
-          pointer-events: none;
-        }
-
-        .advice-page > *:not(.advice-bg):not(.advice-bg-overlay):not(.intro-overlay):not(.advice-letter):not(.advice-letterbox) {
+        /* ---------- z-index 层级 ---------- */
+        .advice-page > *:not(.shop-scene):not(.intro-overlay):not(.advice-letter):not(.advice-letterbox) {
           position: relative; z-index: 2;
         }
         .advice-topbar, .advice-hero, .advice-main { z-index: 2; position: relative; }
+
+        /* ============================================================
+           纯 CSS 3D 透视杂货店场景
+           ============================================================ */
+        .shop-scene {
+          position: fixed;
+          inset: 0;
+          z-index: 0;
+          perspective: 800px;
+          overflow: hidden;
+          background: #1A110A;
+        }
+
+        /* --- 天空 / 夜空 --- */
+        .shop-scene::before {
+          content: "";
+          position: absolute;
+          inset: 0;
+          background: linear-gradient(180deg,
+            #0D0A08 0%,
+            #1A110A 30%,
+            #2A1B14 60%,
+            #3E2723 100%);
+          z-index: 0;
+        }
+
+        /* --- 地面（透视） --- */
+        .shop-floor {
+          position: absolute;
+          bottom: 0;
+          left: -10%;
+          right: -10%;
+          height: 38%;
+          background: linear-gradient(180deg, #2A1B14 0%, #1A110A 100%);
+          transform: rotateX(25deg);
+          transform-origin: bottom center;
+          z-index: 1;
+          border-top: 2px solid rgba(93, 64, 55, 0.3);
+        }
+        /* 地面木纹 */
+        .shop-floor::before {
+          content: "";
+          position: absolute;
+          inset: 0;
+          background-image:
+            url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.1'/%3E%3C/svg%3E");
+          opacity: 0.6;
+        }
+
+        /* --- 墙壁 --- */
+        .shop-wall {
+          position: absolute;
+          top: 22%;
+          left: 15%;
+          right: 15%;
+          height: 42%;
+          background: linear-gradient(180deg, #3E2723 0%, #4E342E 50%, #3E2723 100%);
+          border-radius: 2px 2px 0 0;
+          z-index: 2;
+          box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+        }
+        /* 墙壁木纹 */
+        .shop-wall::before {
+          content: "";
+          position: absolute;
+          inset: 0;
+          background-image:
+            url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.08'/%3E%3C/svg%3E");
+          border-radius: 2px 2px 0 0;
+          opacity: 0.7;
+        }
+        /* 墙壁底边阴影 */
+        .shop-wall::after {
+          content: "";
+          position: absolute;
+          bottom: -8px;
+          left: 0;
+          right: 0;
+          height: 8px;
+          background: linear-gradient(180deg, rgba(0,0,0,0.3), transparent);
+        }
+
+        /* --- 屋顶 --- */
+        .shop-roof {
+          position: absolute;
+          top: 10%;
+          left: 10%;
+          right: 10%;
+          height: 16%;
+          z-index: 3;
+          background: #2A1B14;
+          clip-path: polygon(5% 100%, 50% 0%, 95% 100%);
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+        }
+        /* 屋顶纹理 */
+        .shop-roof::before {
+          content: "";
+          position: absolute;
+          inset: 0;
+          background-image:
+            url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='80'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='1.2' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.12'/%3E%3C/svg%3E");
+          clip-path: polygon(5% 100%, 50% 0%, 95% 100%);
+          opacity: 0.5;
+        }
+
+        /* --- 招牌 --- */
+        .shop-sign {
+          position: absolute;
+          top: 15%;
+          left: 50%;
+          transform: translateX(-50%);
+          z-index: 4;
+          background: linear-gradient(135deg, #FFF8E1 0%, #F5E6C8 100%);
+          border: 3px solid #5D4037;
+          border-radius: 4px;
+          padding: 10px 28px;
+          text-align: center;
+          box-shadow:
+            0 4px 12px rgba(0, 0, 0, 0.35),
+            inset 0 1px 0 rgba(255, 255, 255, 0.5);
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          gap: 4px;
+        }
+        .shop-sign-text {
+          font-family: "Ma Shan Zheng", "Noto Serif SC", serif;
+          font-size: clamp(18px, 3.5vw, 32px);
+          color: #3E2723;
+          letter-spacing: 0.15em;
+          text-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);
+          line-height: 1.2;
+        }
+        .shop-sign-sub {
+          font-size: clamp(8px, 1.2vw, 11px);
+          color: rgba(93, 64, 55, 0.6);
+          letter-spacing: 0.2em;
+          text-transform: uppercase;
+        }
+
+        /* --- 门 --- */
+        .shop-door {
+          position: absolute;
+          top: 30%;
+          left: 50%;
+          transform: translateX(-50%);
+          width: 16%;
+          height: 34%;
+          z-index: 5;
+          background: linear-gradient(180deg, #5D4037 0%, #4E342E 60%, #3E2723 100%);
+          border: 2px solid #3E2723;
+          border-bottom: none;
+          border-radius: 3px 3px 0 0;
+          box-shadow:
+            inset 0 0 8px rgba(0, 0, 0, 0.3),
+            0 2px 8px rgba(0, 0, 0, 0.4);
+        }
+        /* 门木纹 */
+        .shop-door::before {
+          content: "";
+          position: absolute;
+          inset: 0;
+          background-image:
+            url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='60' height='60'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='1.0' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.06'/%3E%3C/svg%3E");
+          border-radius: 3px 3px 0 0;
+        }
+        /* 门板装饰线 */
+        .shop-door-panel {
+          position: absolute;
+          top: 10%;
+          left: 15%;
+          right: 15%;
+          bottom: 10%;
+          border: 1px solid rgba(93, 64, 55, 0.4);
+          border-radius: 2px;
+        }
+        /* 门把手 */
+        .shop-door-handle {
+          position: absolute;
+          top: 50%;
+          right: 18%;
+          transform: translateY(-50%);
+          width: clamp(6px, 1vw, 10px);
+          height: clamp(12px, 2vw, 22px);
+          background: radial-gradient(circle at 30% 30%, #C0A060, #8B7332);
+          border-radius: 3px;
+          box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+        }
+
+        /* --- 左窗 --- */
+        .shop-window-left {
+          position: absolute;
+          top: 28%;
+          left: 24%;
+          width: 14%;
+          height: 22%;
+          z-index: 5;
+          background: rgba(255, 220, 150, 0.6);
+          border: 3px solid #3E2723;
+          border-radius: 2px;
+          box-shadow:
+            0 0 20px rgba(255, 200, 100, 0.2),
+            inset 0 0 15px rgba(255, 220, 150, 0.3),
+            0 2px 8px rgba(0, 0, 0, 0.3);
+        }
+        /* 窗户十字格 */
+        .shop-window-pane {
+          position: absolute;
+          inset: 0;
+        }
+        .shop-window-pane::before {
+          content: "";
+          position: absolute;
+          top: 0;
+          bottom: 0;
+          left: 50%;
+          transform: translateX(-50%);
+          width: 3px;
+          background: #3E2723;
+        }
+        .shop-window-pane::after {
+          content: "";
+          position: absolute;
+          left: 0;
+          right: 0;
+          top: 50%;
+          transform: translateY(-50%);
+          height: 3px;
+          background: #3E2723;
+        }
+
+        /* --- 右窗 --- */
+        .shop-window-right {
+          position: absolute;
+          top: 28%;
+          right: 24%;
+          width: 14%;
+          height: 22%;
+          z-index: 5;
+          background: rgba(255, 220, 150, 0.6);
+          border: 3px solid #3E2723;
+          border-radius: 2px;
+          box-shadow:
+            0 0 20px rgba(255, 200, 100, 0.2),
+            inset 0 0 15px rgba(255, 220, 150, 0.3),
+            0 2px 8px rgba(0, 0, 0, 0.3);
+        }
+
+        /* --- 门口暖黄灯光 --- */
+        .shop-light {
+          position: absolute;
+          top: 35%;
+          left: 50%;
+          transform: translateX(-50%);
+          width: 40%;
+          height: 45%;
+          z-index: 4;
+          background: radial-gradient(
+            ellipse at center bottom,
+            rgba(255, 220, 150, 0.15) 0%,
+            rgba(255, 200, 100, 0.06) 40%,
+            transparent 70%
+          );
+          pointer-events: none;
+        }
 
         /* ============================================================
            开场动画（纯 CSS @keyframes，5秒，每次进入都播放）
@@ -1076,11 +1343,11 @@ const AdvicePage: React.FC = () => {
            牛奶箱（做旧绿漆质感 · 全部露出）
            ============================================================ */
         .milk-box {
-          position: fixed;
-          bottom: calc(var(--vh) * -52);
-          left: 34%;
+          position: absolute;
+          bottom: 10%;
+          left: 18%;
           transform: translateX(-50%);
-          z-index: 15;
+          z-index: 10;
           cursor: pointer;
           border: none;
           background: none;
@@ -1420,223 +1687,4 @@ const AdvicePage: React.FC = () => {
           font-size: 11px; color: #8D6E63;
           white-space: nowrap;
           font-family: "Noto Serif SC", serif;
-        }
-        .advice-letterbox-preview {
-          flex: 1; min-width: 0;
-          white-space: nowrap; overflow: hidden;
-          text-overflow: ellipsis; color: #5D4037;
-        }
-        .advice-letterbox-status-wrap {
-          display: inline-flex; align-items: center; gap: 4px; white-space: nowrap;
-        }
-        .advice-letterbox-dot {
-          width: 5px; height: 5px; border-radius: 50%;
-          background: #7a9e6b; display: inline-block;
-        }
-        .advice-letterbox-status { font-size: 11px; color: #BCAAA4; }
-        .advice-letterbox-status--replied {
-          color: #5D4037;
-          background: #D7CCC8;
-          padding: 1px 6px;
-          border-radius: 4px;
-        }
-        .advice-letterbox-arrow {
-          font-size: 10px; color: #A1887F;
-          transition: transform 0.3s ease; display: inline-block;
-        }
-        .advice-letterbox-arrow--open { transform: rotate(90deg); }
-        .advice-letterbox-detail { overflow: hidden; }
-        .advice-letterbox-detail-inner {
-          padding: 0 16px 14px;
-          display: flex; flex-direction: column; gap: 10px;
-        }
-        .advice-letterbox-envelope {
-          padding: 10px 14px;
-          background: rgba(245,240,225,0.6);
-          border-radius: 8px;
-          border: 1px dashed rgba(161,136,127,0.3);
-        }
-        .advice-letterbox-reply {
-          padding: 10px 14px;
-          background: rgba(245,240,225,0.8);
-          border-radius: 8px;
-          border-left: 2px solid #D4A373;
-        }
-        .advice-letterbox-label {
-          font-size: 11px; color: #A1887F;
-          margin: 0 0 8px; letter-spacing: 0.06em; font-weight: 500;
-        }
-        .advice-letterbox-content {
-          font-family: "Noto Serif SC", Georgia, serif;
-          font-size: 14px; line-height: 1.8;
-          color: #4E342E; margin: 0;
-          letter-spacing: 0.02em; white-space: pre-wrap;
-        }
-        .advice-letterbox-content--pending {
-          color: #BCAAA4; font-style: italic; font-family: inherit;
-        }
-
-        /* ============================================================
-           公告板（融入右侧黄色木板 · 暖黄旧木牌）
-           ============================================================ */
-        .notice-board {
-          position: fixed;
-          left: 68%;
-          bottom: calc(var(--vh) * 24);
-          z-index: 10;
-          width: 252px;height: 500px;
-          opacity: 1;
-          transition: all 0.3s ease;
-        }
-
-        .notice-board-wood {
-          background: rgba(245, 220, 120, 0.85);
-          border: 1px solid rgba(100, 60, 20, 0.4);
-          border-radius: 8px 12px 6px 10px;
-          padding: 16px;
-          mix-blend-mode: multiply;
-          backdrop-filter: blur(0.5px);
-          box-shadow: 0 2px 8px rgba(0,0,0,0.15);
-          position: relative;
-        }
-        .notice-pin {
-          position: absolute; top: 8px; left: 50%;
-          transform: translateX(-50%);
-          width: 10px; height: 10px;
-          border-radius: 50%;
-          background: radial-gradient(circle at 30% 30%, #B71C1C, #8B0000);
-          box-shadow: 0 1px 3px rgba(0,0,0,0.3);
-          z-index: 2;
-        }
-        .notice-sticky-list {
-          display: flex; flex-direction: column; gap: 10px;
-          margin-top: 8px;
-          position: relative; z-index: 1;
-        }
-        .notice-sticky {
-          background: rgba(255,250,235,0.75);
-          padding: 10px 12px;
-          border-radius: 3px;
-          box-shadow: 0 1px 4px rgba(0,0,0,0.1);
-          position: relative;
-          transition: transform 0.25s ease, box-shadow 0.25s ease;
-          cursor: default;
-        }
-        .notice-sticky:hover {
-          transform: translateY(-2px);
-          box-shadow: 0 3px 8px rgba(0,0,0,0.15);
-        }
-        .notice-sticky:nth-child(1) { transform: rotate(-1.5deg); }
-        .notice-sticky:nth-child(2) { transform: rotate(1deg); }
-        .notice-sticky:nth-child(3) { transform: rotate(-0.5deg); }
-        .notice-sticky:hover { transform: translateY(-2px) rotate(0deg); }
-        .notice-sticky p {
-          font-family: "Noto Serif SC", serif;
-          font-size: 12px; line-height: 1.6;
-          color: #5C3A21; margin: 0;
-        }
-        .notice-about-panel {
-          margin-top: 10px;
-        }
-        .notice-about-content {
-          padding-top: 12px;
-          border-top: 1px dashed rgba(80,50,20,0.25);
-          margin-top: 8px;
-          position: relative; z-index: 1;
-        }
-        .notice-about-content h3 {
-          font-family: "Noto Serif SC", serif;
-          font-size: 13px; color: #5C3A21;
-          margin: 0 0 10px; letter-spacing: 0.06em;
-        }
-        .notice-about-content p {
-          font-family: "Noto Serif SC", Georgia, serif;
-          font-size: 12px; line-height: 1.8;
-          color: #5C3A21; margin: 0 0 8px;
-        }
-        .notice-about-content .notice-about-sign {
-          text-align: right; color: #5C3A21;
-          font-style: italic; margin-top: 10px;
-        }
-
-        /* ---------- 响应式 ---------- */
-        @media (max-width: 768px) {
-          .advice-page { padding: 0 0 60px; }
-          .advice-topbar { padding: 16px 16px 0; }
-          .advice-hero { padding: 0; height: 0; }
-          .advice-main { padding: 0 4vw; }
-          .advice-miao-svg { width: 48px; height: 48px; }
-          .advice-miao-label { font-size: 9px; }
-          .advice-reply {
-            padding: 16px; padding-bottom: 48px;
-          }
-          /* 写信便签：移动端缩小 */
-          .advice-letter {
-            left: 35%;
-            bottom: 22%;
-            transform: translateX(-50%);
-            width: 85vw;
-            max-width: 340px;
-            padding: 16px 18px;
-          }
-          .advice-letter-greeting { font-size: 14px; margin-bottom: 10px; }
-          .advice-input { font-size: 13px; padding: 8px 10px; }
-          .advice-submit { padding: 14px; min-height: 44px; }
-          .advice-letterbox {
-            right: 12px;
-            bottom: 80px;
-            width: 88%;
-            max-width: 330px;
-            max-height: 50vh;
-            padding: 16px;
-          }
-          .advice-letterbox-summary { padding: 12px 14px; gap: 8px; }
-          .advice-letterbox-detail-inner { padding: 0 14px 14px; }
-          .advice-letterbox-envelope,
-          .advice-letterbox-reply { padding: 12px; }
-          .advice-bg {
-            position: fixed;
-            top: 0; left: 0; right: 0; bottom: 0;
-            background-image: url('/advice-shop-bg-v2.jpg?v=1');
-            background-repeat: no-repeat;
-            background-position: center 25%;
-            background-size: cover;
-            -webkit-background-size: cover;
-            min-height: 100vh;
-            min-height: -webkit-fill-available;
-          }
-          .milk-box { bottom: calc(var(--vh) * -40); left: 34%; }
-          .milk-body { width: 80px; height: 100px; }
-          .milk-upper { height: 52px; }
-          .milk-rain-guard { height: 24px; left: -6px; right: -6px; }
-          .milk-lower { height: 92px; }
-          .milk-divider { height: 4px; }
-          .milk-sticker { width: 32px; height: 24px; }
-          .milk-sticker span { font-size: 8px; }
-          .advice-letter {
-            left: 26%;
-            bottom: 140px;
-            transform: translateX(-50%) rotate(-1deg);
-          }
-          .notice-board { left: 65%; bottom: calc(var(--vh) * 18); width: 220px; }
-          .advice-miao { bottom: 8px; right: 16px; }
-          .notice-board-wood { padding: 12px; }
-          .intro-sign-title { font-size: 28px; }
-          .intro-scene-mailbox { width: 36px; height: 48px; }
-          .intro-scene-board { width: 100px; height: 65px; }
-        }
-        @media (min-width: 769px) {
-          .advice-letter, .advice-reply, .advice-letterbox {
-            margin-left: auto; margin-right: auto;
-          }
-        }
-      `}</style>
-    </div>
-  );
-};
-
-function wait(ms: number): Promise<void> {
-  return new Promise((r) => setTimeout(r, ms));
-}
-
-export default AdvicePage;
+        }

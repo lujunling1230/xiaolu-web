@@ -1,514 +1,25 @@
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Link } from "react-router-dom";
 import Match3Game from "./games/Match3Game";
+import FruitSliceGame from "./games/FruitSliceGame";
+import ZombieJuiceGame from "./games/ZombieJuiceGame";
+import TowerDefenseGame from "./games/TowerDefenseGame";
 
 /**
  * 解压馆 · Stress Relief Room
  *
- * 三个解压小游戏，马卡龙色系，即点即玩。
- * 1. 无限捏泡泡 Pop It —— SVG 网格气泡，点击爆裂 + 星星粒子 + 啵声
- * 2. 禅意切割 Zen Cut —— 拖拽划线，物体裂成两半坠落旋转
- * 3. 重力涂鸦 Gravity Doodle —— Canvas 画线，圆点受重力下坠堆积
+ * 四个解压小游戏，即点即玩。
+ * 1. 消散 Match3 —— 三消归零
+ * 2. 切水果 Fruit Slice —— 极简水墨风，划过切割得分
+ * 3. 僵尸榨汁 Zombie Juice —— 美漫扁平风，点击僵尸飞入榨汁机
+ * 4. 守卫小萝卜 Tower Defense —— 塔防守卫，放置防御塔击退怪物
  */
-
-/* ============================================================
-   通用：马卡龙色板 + Web Audio
-   ============================================================ */
-const MACARON = ["#ffb6c1", "#b6d5e8", "#b8e0d2", "#d4c5e2", "#f5e1b8", "#f6c6c6"];
-
-let audioCtx: AudioContext | null = null;
-const getCtx = () => {
-  if (!audioCtx) {
-    const Ctor =
-      window.AudioContext ||
-      (window as unknown as { webkitAudioContext: typeof AudioContext })
-        .webkitAudioContext;
-    audioCtx = new Ctor();
-  }
-  return audioCtx;
-};
-/** 气泡"啵"声 */
-const playPop = () => {
-  try {
-    const ctx = getCtx();
-    const now = ctx.currentTime;
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-    osc.type = "sine";
-    osc.frequency.setValueAtTime(720, now);
-    osc.frequency.exponentialRampToValueAtTime(220, now + 0.08);
-    gain.gain.setValueAtTime(0.18, now);
-    gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.1);
-    osc.connect(gain);
-    gain.connect(ctx.destination);
-    osc.start(now);
-    osc.stop(now + 0.1);
-  } catch {
-    /* 静音 */
-  }
-};
-
-/* ============================================================
-   游戏 1：无限捏泡泡 Pop It
-   ============================================================ */
-interface Bubble {
-  id: number;
-  cx: number;
-  cy: number;
-  r: number;
-  color: string;
-  popped: boolean;
-}
-interface Star {
-  id: number;
-  x: number;
-  y: number;
-  dx: number;
-  dy: number;
-  color: string;
-}
-
-const COLS = 6;
-const ROWS = 6;
-const GAP = 14;
-const CELL = 44;
-
-const makeBubbles = (): Bubble[] => {
-  const list: Bubble[] = [];
-  for (let r = 0; r < ROWS; r++) {
-    for (let c = 0; c < COLS; c++) {
-      list.push({
-        id: r * COLS + c,
-        cx: c * (CELL + GAP) + CELL / 2 + GAP,
-        cy: r * (CELL + GAP) + CELL / 2 + GAP,
-        r: CELL / 2 - 2,
-        color: MACARON[(r * COLS + c) % MACARON.length],
-        popped: false,
-      });
-    }
-  }
-  return list;
-};
-
-const PopItGame: React.FC = () => {
-  const [bubbles, setBubbles] = useState<Bubble[]>(makeBubbles);
-  const [stars, setStars] = useState<Star[]>([]);
-  const starId = useRef(0);
-
-  const pop = (b: Bubble) => {
-    playPop();
-    // 爆裂星星
-    const ns: Star[] = Array.from({ length: 6 }, () => ({
-      id: starId.current++,
-      x: b.cx,
-      y: b.cy,
-      dx: (Math.random() - 0.5) * 70,
-      dy: (Math.random() - 0.5) * 70 - 10,
-      color: MACARON[Math.floor(Math.random() * MACARON.length)],
-    }));
-    setStars((prev) => [...prev, ...ns]);
-    // 标记爆裂
-    setBubbles((prev) =>
-      prev.map((x) => (x.id === b.id ? { ...x, popped: true } : x))
-    );
-    // 600ms 后原地重生新气泡（换色）
-    window.setTimeout(() => {
-      setBubbles((prev) =>
-        prev.map((x) =>
-          x.id === b.id
-            ? {
-                ...x,
-                popped: false,
-                color: MACARON[Math.floor(Math.random() * MACARON.length)],
-              }
-            : x
-        )
-      );
-    }, 600);
-    // 清理星星
-    window.setTimeout(() => {
-      setStars((prev) => prev.filter((s) => !ns.some((nn) => nn.id === s.id)));
-    }, 700);
-  };
-
-  const W = COLS * (CELL + GAP) + GAP;
-  const H = ROWS * (CELL + GAP) + GAP;
-
-  return (
-    <div className="sr-game-stage">
-      <svg width={W} height={H} className="sr-pop-svg">
-        {bubbles.map((b) => (
-          <motion.circle
-            key={b.id}
-            cx={b.cx}
-            cy={b.cy}
-            r={b.r}
-            fill={b.color}
-            initial={false}
-            animate={{ scale: b.popped ? 0 : 1, opacity: b.popped ? 0 : 1 }}
-            transition={{ duration: 0.25, ease: "easeOut" }}
-            style={{ transformOrigin: `${b.cx}px ${b.cy}px`, cursor: "pointer" }}
-            onClick={() => !b.popped && pop(b)}
-          />
-        ))}
-        {/* 星星粒子 */}
-        {stars.map((s) => (
-          <motion.text
-            key={s.id}
-            x={s.x}
-            y={s.y}
-            fontSize={16}
-            fill={s.color}
-            initial={{ opacity: 1, x: 0, y: 0, scale: 1 }}
-            animate={{ opacity: 0, x: s.dx, y: s.dy, scale: 0.3, rotate: 180 }}
-            transition={{ duration: 0.6, ease: "easeOut" }}
-          >
-            ✦
-          </motion.text>
-        ))}
-      </svg>
-      <p className="sr-game-tip">点点看，永远捏不完。</p>
-    </div>
-  );
-};
-
-/* ============================================================
-   游戏 2：禅意切割 Zen Cut
-   ============================================================ */
-interface Block {
-  id: number;
-  x: number;
-  y: number;
-  w: number;
-  h: number;
-  color: string;
-  cut: { rx1: number; ry1: number; rx2: number; ry2: number; key: number } | null;
-}
-
-const makeBlocks = (): Block[] =>
-  Array.from({ length: 5 }, (_, i) => ({
-    id: i,
-    x: 40 + (i % 3) * 120 + (i % 2) * 20,
-    y: 50 + Math.floor(i / 3) * 130 + (i % 2) * 30,
-    w: 90 + (i % 2) * 20,
-    h: 70,
-    color: MACARON[i % MACARON.length],
-    cut: null,
-  }));
-
-const ZenCutGame: React.FC = () => {
-  const stageRef = useRef<HTMLDivElement>(null);
-  const [blocks, setBlocks] = useState<Block[]>(makeBlocks);
-  const [dragPts, setDragPts] = useState<{ x: number; y: number }[]>([]);
-  const cutting = useRef(false);
-  const cutKey = useRef(0);
-
-  const relPos = (e: React.PointerEvent) => {
-    const rect = stageRef.current!.getBoundingClientRect();
-    return { x: e.clientX - rect.left, y: e.clientY - rect.top };
-  };
-
-  const onDown = (e: React.PointerEvent) => {
-    cutting.current = true;
-    setDragPts([relPos(e)]);
-  };
-  const onMove = (e: React.PointerEvent) => {
-    if (!cutting.current) return;
-    setDragPts((prev) => [...prev, relPos(e)]);
-  };
-  const onUp = () => {
-    if (!cutting.current) return;
-    cutting.current = false;
-    const pts = dragPts;
-    if (pts.length < 2) {
-      setDragPts([]);
-      return;
-    }
-    // 找到穿过每个 block 的首尾点，生成切割
-    setBlocks((prev) =>
-      prev.map((b) => {
-        if (b.cut) return b;
-        const inside = pts.filter(
-          (p) => p.x >= b.x && p.x <= b.x + b.w && p.y >= b.y && p.y <= b.y + b.h
-        );
-        if (inside.length < 2) return b;
-        const first = inside[0];
-        const last = inside[inside.length - 1];
-        return {
-          ...b,
-          cut: {
-            rx1: first.x - b.x,
-            ry1: first.y - b.y,
-            rx2: last.x - b.x,
-            ry2: last.y - b.y,
-            key: cutKey.current++,
-          },
-        };
-      })
-    );
-    setDragPts([]);
-  };
-
-  // 切割完成后重生
-  const respawn = (id: number) => {
-    setBlocks((prev) =>
-      prev.map((b) =>
-        b.id === id
-          ? {
-              ...b,
-              cut: null,
-              x: 40 + Math.random() * 260,
-              y: 50 + Math.random() * 180,
-              color: MACARON[Math.floor(Math.random() * MACARON.length)],
-            }
-          : b
-      )
-    );
-  };
-
-  const polyTop = (b: Block) =>
-    `polygon(0% 0%, 100% 0%, ${b.cut!.rx2}px ${b.cut!.ry2}px, ${b.cut!.rx1}px ${b.cut!.ry1}px)`;
-  const polyBot = (b: Block) =>
-    `polygon(${b.cut!.rx1}px ${b.cut!.ry1}px, ${b.cut!.rx2}px ${b.cut!.ry2}px, 100% 100%, 0% 100%)`;
-
-  return (
-    <div
-      className="sr-game-stage sr-zencut"
-      ref={stageRef}
-      style={{ touchAction: "none" }}
-      onPointerDown={onDown}
-      onPointerMove={onMove}
-      onPointerUp={onUp}
-      onPointerLeave={onUp}
-    >
-      <div className="sr-zencut-area">
-        {/* 物体 */}
-        {blocks.map((b) =>
-          b.cut ? (
-            <div key={b.id} style={{ position: "absolute", left: b.x, top: b.y, width: b.w, height: b.h }}>
-              {/* 上半 */}
-              <motion.div
-                style={{
-                  position: "absolute",
-                  inset: 0,
-                  background: b.color,
-                  borderRadius: 16,
-                  clipPath: polyTop(b),
-                }}
-                initial={{ x: 0, y: 0, rotate: 0, opacity: 1 }}
-                animate={{ x: -6, y: -50, rotate: -14, opacity: 0 }}
-                transition={{ duration: 0.7, ease: "easeIn" }}
-                onAnimationComplete={() => respawn(b.id)}
-              />
-              {/* 下半 */}
-              <motion.div
-                style={{
-                  position: "absolute",
-                  inset: 0,
-                  background: b.color,
-                  borderRadius: 16,
-                  clipPath: polyBot(b),
-                }}
-                initial={{ x: 0, y: 0, rotate: 0, opacity: 1 }}
-                animate={{ x: 8, y: 80, rotate: 18, opacity: 0 }}
-                transition={{ duration: 0.7, ease: "easeIn" }}
-              />
-            </div>
-          ) : (
-            <motion.div
-              key={b.id}
-              style={{
-                position: "absolute",
-                left: b.x,
-                top: b.y,
-                width: b.w,
-                height: b.h,
-                background: b.color,
-                borderRadius: 16,
-                boxShadow: "0 8px 20px -8px rgba(0,0,0,0.15), inset 0 -6px 12px rgba(255,255,255,0.3)",
-              }}
-              animate={{ y: [0, -4, 0] }}
-              transition={{ duration: 3 + b.id * 0.3, repeat: Infinity, ease: "easeInOut" }}
-            />
-          )
-        )}
-        {/* 切割轨迹 */}
-        {dragPts.length > 1 && (
-          <svg className="sr-cut-line" style={{ position: "absolute", inset: 0, pointerEvents: "none" }}>
-            <polyline
-              points={dragPts.map((p) => `${p.x},${p.y}`).join(" ")}
-              fill="none"
-              stroke="#fff"
-              strokeWidth={3}
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              opacity={0.85}
-            />
-          </svg>
-        )}
-      </div>
-      <p className="sr-game-tip">拖动划线，切开它们。</p>
-    </div>
-  );
-};
-
-/* ============================================================
-   游戏 3：重力涂鸦 Gravity Doodle
-   ============================================================ */
-interface GDot {
-  x: number;
-  y: number;
-  vx: number;
-  vy: number;
-  r: number;
-  color: string;
-  settled: boolean;
-}
-
-const GravityDoodleGame: React.FC = () => {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const dotsRef = useRef<GDot[]>([]);
-  const drawingRef = useRef(false);
-  const lastPt = useRef<{ x: number; y: number } | null>(null);
-  const rafRef = useRef<number>(0);
-  const sizeRef = useRef({ w: 0, h: 0 });
-  // 高度图：按列记录已堆积的最高 y（值越小越高）
-  const heightMap = useRef<number[]>([]);
-
-  const resize = () => {
-    const cv = canvasRef.current!;
-    const dpr = window.devicePixelRatio || 1;
-    const rect = cv.getBoundingClientRect();
-    sizeRef.current = { w: rect.width, h: rect.height };
-    cv.width = rect.width * dpr;
-    cv.height = rect.height * dpr;
-    const ctx = cv.getContext("2d")!;
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    const cols = Math.ceil(rect.width / 8);
-    heightMap.current = new Array(cols).fill(rect.height);
-  };
-
-  useEffect(() => {
-    resize();
-    const onResize = () => resize();
-    window.addEventListener("resize", onResize);
-
-    const loop = () => {
-      const { w, h } = sizeRef.current;
-      const ctx = canvasRef.current!.getContext("2d")!;
-      ctx.clearRect(0, 0, w, h);
-      const gravity = 0.35;
-      const dots = dotsRef.current;
-      for (const d of dots) {
-        if (!d.settled) {
-          d.vy += gravity;
-          d.x += d.vx;
-          d.y += d.vy;
-          // 列高度检测堆积
-          const col = Math.max(0, Math.min(heightMap.current.length - 1, Math.floor(d.x / 8)));
-          if (d.y + d.r >= heightMap.current[col]) {
-            d.y = heightMap.current[col] - d.r;
-            d.vy = 0;
-            d.vx = 0;
-            d.settled = true;
-            // 更新该列及邻近列高度（形成堆积斜面）
-            for (let c = Math.max(0, col - 1); c <= Math.min(heightMap.current.length - 1, col + 1); c++) {
-              heightMap.current[c] = Math.max(0, Math.min(heightMap.current[c], d.y - d.r));
-            }
-          }
-          // 越界回收
-          if (d.x < -20 || d.x > w + 20) d.settled = true;
-        }
-        ctx.beginPath();
-        ctx.arc(d.x, d.y, d.r, 0, Math.PI * 2);
-        ctx.fillStyle = d.color;
-        ctx.fill();
-      }
-      rafRef.current = requestAnimationFrame(loop);
-    };
-    rafRef.current = requestAnimationFrame(loop);
-
-    return () => {
-      window.removeEventListener("resize", onResize);
-      cancelAnimationFrame(rafRef.current);
-    };
-  }, []);
-
-  const relPos = (e: React.PointerEvent) => {
-    const rect = canvasRef.current!.getBoundingClientRect();
-    return { x: e.clientX - rect.left, y: e.clientY - rect.top };
-  };
-
-  const onDown = (e: React.PointerEvent) => {
-    drawingRef.current = true;
-    lastPt.current = relPos(e);
-    spawnDot(lastPt.current);
-  };
-  const onMove = (e: React.PointerEvent) => {
-    if (!drawingRef.current) return;
-    const p = relPos(e);
-    const lp = lastPt.current!;
-    // 在两点间插值生成连续圆点
-    const dx = p.x - lp.x;
-    const dy = p.y - lp.y;
-    const dist = Math.hypot(dx, dy);
-    const steps = Math.max(1, Math.floor(dist / 4));
-    for (let i = 1; i <= steps; i++) {
-      spawnDot({ x: lp.x + (dx * i) / steps, y: lp.y + (dy * i) / steps });
-    }
-    lastPt.current = p;
-  };
-  const onUp = () => {
-    drawingRef.current = false;
-    lastPt.current = null;
-  };
-
-  const spawnDot = (p: { x: number; y: number }) => {
-    dotsRef.current.push({
-      x: p.x,
-      y: p.y,
-      vx: 0,
-      vy: 0,
-      r: 4 + Math.random() * 3,
-      color: MACARON[Math.floor(Math.random() * MACARON.length)],
-      settled: false,
-    });
-    // 限制总量避免卡顿
-    if (dotsRef.current.length > 600) {
-      dotsRef.current.splice(0, 100);
-    }
-  };
-
-  const clearAll = () => {
-    dotsRef.current = [];
-    const { h } = sizeRef.current;
-    heightMap.current = new Array(Math.ceil(sizeRef.current.w / 8)).fill(h);
-  };
-
-  return (
-    <div className="sr-game-stage sr-doodle">
-      <canvas
-        ref={canvasRef}
-        className="sr-doodle-canvas"
-        style={{ touchAction: "none" }}
-        onPointerDown={onDown}
-        onPointerMove={onMove}
-        onPointerUp={onUp}
-        onPointerLeave={onUp}
-      />
-      <button className="sr-trash" onClick={clearAll} aria-label="清空画布">
-        🗑
-      </button>
-      <p className="sr-game-tip">画几笔，看它们落下。</p>
-    </div>
-  );
-};
 
 /* ============================================================
    主页面
    ============================================================ */
-type GameKey = "match3" | "cut" | "doodle";
+type GameKey = "match3" | "fruitslice" | "zombiejuice" | "towerdefense";
 
 const GAMES: {
   key: GameKey;
@@ -525,18 +36,25 @@ const GAMES: {
     gradient: "linear-gradient(135deg, #F4C2C2, #C2D4F4)",
   },
   {
-    key: "cut",
-    name: "斩断",
-    desc: "一刀两断，万物可裂。",
-    icon: "🔪",
-    gradient: "linear-gradient(135deg, #b8e0d2, #d4c5e2)",
+    key: "fruitslice",
+    name: "切水果",
+    desc: "一刀两断，万念皆空。",
+    icon: "🍉",
+    gradient: "linear-gradient(135deg, #e8e0d0, #d0d8d4)",
   },
   {
-    key: "doodle",
-    name: "吞噬",
-    desc: "画下的都会落下。",
-    icon: "✏️",
-    gradient: "linear-gradient(135deg, #f5e1b8, #ffb6c1)",
+    key: "zombiejuice",
+    name: "僵尸榨汁",
+    desc: "榨干烦恼，只剩快乐。",
+    icon: "🧟",
+    gradient: "linear-gradient(135deg, #c8e6c8, #d4e8c8)",
+  },
+  {
+    key: "towerdefense",
+    name: "守卫小萝卜",
+    desc: "筑塔守卫，寸步不让。",
+    icon: "🥕",
+    gradient: "linear-gradient(135deg, #f5e1b8, #c8e6c8)",
   },
 ];
 
@@ -615,8 +133,9 @@ const StressReliefPage: React.FC = () => {
                 ← 换一个
               </button>
               {active === "match3" && <Match3Game />}
-              {active === "cut" && <ZenCutGame />}
-              {active === "doodle" && <GravityDoodleGame />}
+              {active === "fruitslice" && <FruitSliceGame />}
+              {active === "zombiejuice" && <ZombieJuiceGame />}
+              {active === "towerdefense" && <TowerDefenseGame />}
             </motion.div>
           )}
         </AnimatePresence>
@@ -711,27 +230,6 @@ const StressReliefPage: React.FC = () => {
           box-shadow: 0 10px 30px -14px rgba(150,120,140,0.15);
         }
         .sr-game-tip { margin: 20px 0 0; font-size: 13px; color: #b8a8b0; letter-spacing: 0.05em; }
-        .sr-pop-svg { max-width: 100%; }
-
-        /* 禅意切割 */
-        .sr-zencut { align-items: stretch; }
-        .sr-zencut-area {
-          position: relative; width: 100%; height: 360px; border-radius: 14px;
-          background: linear-gradient(160deg, #f7f3f5, #efe9ee);
-          overflow: hidden;
-        }
-        .sr-cut-line { width: 100%; height: 100%; }
-
-        /* 重力涂鸦 */
-        .sr-doodle { padding: 0; overflow: hidden; position: relative; }
-        .sr-doodle-canvas { display: block; width: 100%; height: 420px; border-radius: 18px; }
-        .sr-trash {
-          position: absolute; bottom: 56px; right: 20px; z-index: 5;
-          width: 44px; height: 44px; border-radius: 50%; border: none;
-          background: #fff; font-size: 18px; box-shadow: 0 4px 14px -4px rgba(0,0,0,0.2);
-          transition: transform 0.2s ease, background 0.2s ease;
-        }
-        .sr-trash:hover { transform: scale(1.1); background: #fff5f7; }
       `}</style>
     </div>
   );

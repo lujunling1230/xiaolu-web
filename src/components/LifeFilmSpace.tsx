@@ -29,7 +29,7 @@ interface Frame {
 const FRAMES: Frame[] = [
   { emoji: "📖", name: "阅读", desc: "最近在读《思考，快与慢》，丹尼尔·卡尼曼的经典之作。", detail: "金句摘录：我们对我们所知的东西的信心，远远超过了我们所知的东西。", tint: "#C4B89A", sound: "page" },
   { emoji: "📸", name: "摄影", desc: "喜欢用镜头捕捉森林里的光影，记录转瞬即逝的自然之美。", detail: "设备：Sony A7C + 28-60mm，偏爱自然光与胶片色调。", tint: "#A8B8A0", sound: "shutter" },
-  { emoji: "🎧", name: "音乐/播客", desc: "播客重度用户，最喜欢「声东击西」和「日谈公园」。", detail: "音乐偏好：后摇、古典、氛围电子。最近单曲循环坂本龙一。", tint: "#C8A8A0", sound: "vinyl" },
+  { emoji: "🎧", name: "音乐", desc: "播客重度用户，最喜欢「声东击西」和「日谈公园」。", detail: "音乐偏好：后摇、古典、氛围电子。最近单曲循环坂本龙一。", tint: "#C8A8A0", sound: "vinyl" },
   { emoji: "🏃", name: "运动", desc: "每周跑步 3 次，配速 5'30\"，享受奔跑时的心流状态。", detail: "Keep 累计 300+ km，最佳半马 1:58:32。", tint: "#D4A882", sound: "step" },
   { emoji: "🧘", name: "冥想", desc: "每天 10 分钟正念冥想，已坚持 200+ 天。", detail: "使用 Headspace 引导，偏爱身体扫描与呼吸觉察。", tint: "#9AB8B0", sound: "breathe" },
   { emoji: "📺", name: "追剧", desc: "剧迷一枚，最近在追《重启人生》和《繁花》。", detail: "品味：日剧 > 韩剧 > 国剧。最爱《深夜食堂》系列。", tint: "#D4C896", sound: "popcorn" },

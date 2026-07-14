@@ -51,7 +51,7 @@ const saveCustomRecords = (id: string, records: CustomModuleRecord[]) => {
 /* ====== 数据模型 ====== */
 interface Book { id: string; title: string; author: string; cover: string; quote: string; date: string; }
 interface Photo { id: string; src: string; title: string; date: string; desc: string; }
-interface Track { id: string; title: string; type: string; date: string; cover: string; }
+interface Track { id: string; title: string; type: string; date: string; cover: string; url?: string; }
 interface Sport { id: string; icon: string; name: string; date: string; time: string; note: string; }
 interface Meditation { id: string; theme: string; duration: string; date: string; insight: string; }
 interface Drama { id: string; title: string; season: string; date: string; cover: string; quote: string; }
@@ -189,8 +189,9 @@ const UPLOAD_FIELDS: Record<UploadModuleType, FieldDef[]> = {
   music: [
     { key: "cover", label: "封面图", type: "file", isFile: true },
     { key: "title", label: "标题", placeholder: "如：落日飞车 · My Jinji", required: true },
-    { key: "type", label: "类型", type: "select", options: ["音乐", "播客"], required: true },
+    { key: "type", label: "类型", type: "select", options: ["音乐"], required: true },
     { key: "date", label: "收听时间", type: "date" },
+    { key: "url", label: "网易云音乐链接", placeholder: "电脑浏览器地址栏复制，如：music.163.com/song?id=186016" },
     { key: "note", label: "备注", placeholder: "如：通勤 · 睡前 · 黄昏", isTextarea: true },
   ],
   sport: [
@@ -215,7 +216,7 @@ const UPLOAD_FIELDS: Record<UploadModuleType, FieldDef[]> = {
   ],
 };
 const UPLOAD_TITLES: Record<UploadModuleType, string> = {
-  reading: "添加书籍", photo: "添加照片", music: "添加音乐/播客",
+  reading: "添加书籍", photo: "添加照片", music: "添加音乐",
   sport: "添加运动记录", meditation: "添加冥想记录", drama: "添加追剧记录",
 };
 
@@ -687,45 +688,128 @@ const PhotoModal: React.FC<{ onClose: () => void; onUpload: () => void; verifyAd
   );
 };
 
-/* ====== 音乐/播客模块（疗愈系黑胶唱片） ====== */
+/* ====== 网易云音乐链接解析 ====== */
+function parseNetEaseId(rawUrl: string): string {
+  if (!rawUrl) return "";
+  const trimmed = rawUrl.trim();
+  const idMatch = trimmed.match(/[?&]id=(\d+)/) || trimmed.match(/outchain\/\d+\/(\d+)/) || trimmed.match(/^(\d+)$/);
+  return idMatch ? idMatch[1] : "";
+}
+function parseNetEaseAudio(rawUrl: string): string {
+  if (!rawUrl) return "";
+  const trimmed = rawUrl.trim();
+  if (/\.(mp3|ogg|m4a|wav)(\?|$)/i.test(trimmed)) return trimmed;
+  const id = parseNetEaseId(trimmed);
+  if (id) return `https://music.163.com/song/media/outer/url?id=${id}.mp3`;
+  return "";
+}
+function formatTime(sec: number): string {
+  if (!sec || !isFinite(sec)) return "0:00";
+  const m = Math.floor(sec / 60);
+  const s = Math.floor(sec % 60);
+  return `${m}:${s.toString().padStart(2, "0")}`;
+}
+
+/* ====== 音乐模块（疗愈系黑胶唱片） ====== */
 const MusicModal: React.FC<{ onClose: () => void; onUpload: () => void; verifyAdmin: (cb: () => void) => void }> = ({ onClose, onUpload, verifyAdmin }) => {
   const [tracks, setTracks] = useState<Track[]>(() => loadData<Track>(LS_KEYS.tracks, MOCK_TRACKS));
   const [playing, setPlaying] = useState<string | null>(null);
+  const [isPaused, setIsPaused] = useState(false);
   const [progress, setProgress] = useState(0);
+  const [duration, setDuration] = useState(0);
+  const [currentTime, setCurrentTime] = useState(0);
+  const [audioError, setAudioError] = useState<string | null>(null);
   const [showUpload, setShowUpload] = useState(false);
   const [deleting, setDeleting] = useState<string | null>(null);
   const [editing, setEditing] = useState<Track | null>(null);
   const [showNotes, setShowNotes] = useState(false);
-  const timerRef = useRef<ReturnType<typeof setInterval>>(undefined);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
 
+  const currentTrack = tracks.find(t => t.id === playing);
+  const audioSrc = currentTrack ? parseNetEaseAudio(currentTrack.url || "") : "";
+  const netEaseId = currentTrack ? parseNetEaseId(currentTrack.url || "") : "";
+  const useIframe = !!audioError && !!netEaseId;
+
+  // 切歌时重新加载音频源
   useEffect(() => {
-    if (playing) {
-      timerRef.current = setInterval(() => {
-        setProgress(p => {
-          if (p >= 100) {
-            if (timerRef.current) clearInterval(timerRef.current);
-            setPlaying(null);
-            setShowNotes(false);
-            return 0;
-          }
-          return p + 1;
-        });
-      }, 300);
+    const audio = audioRef.current;
+    if (!audio || !audioSrc) return;
+    audio.pause();
+    audio.src = audioSrc;
+    audio.load();
+    const onCanPlay = () => {
+      if (playing && !isPaused) {
+        audio.play().catch(() => setAudioError("无法播放此音频，可能链接已失效或需要VIP"));
+        setShowNotes(true);
+      }
+      audio.removeEventListener("canplay", onCanPlay);
+    };
+    audio.addEventListener("canplay", onCanPlay);
+    return () => audio.removeEventListener("canplay", onCanPlay);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [audioSrc]);
+
+  // 播放/暂停切换（不重载音频）
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (!audio || !audioSrc) return;
+    if (playing && !isPaused) {
+      audio.play().catch(() => setAudioError("无法播放此音频，可能链接已失效或需要VIP"));
+      setShowNotes(true);
     } else {
-      if (timerRef.current) clearInterval(timerRef.current);
+      audio.pause();
+      setShowNotes(false);
     }
-    return () => { if (timerRef.current) clearInterval(timerRef.current); };
-  }, [playing]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [playing, isPaused]);
+
+  // 清理
+  useEffect(() => {
+    return () => {
+      const audio = audioRef.current;
+      if (audio) { audio.pause(); audio.src = ""; }
+    };
+  }, []);
 
   const handlePlay = (id: string) => {
     if (playing === id) {
-      setPlaying(null);
-      setShowNotes(false);
-      setProgress(0);
+      setIsPaused(p => !p);
     } else {
       setPlaying(id);
-      setShowNotes(true);
+      setIsPaused(false);
+      setProgress(0);
+      setCurrentTime(0);
+      setDuration(0);
+      setAudioError(null);
     }
+  };
+
+  const handleSeek = (e: React.MouseEvent<HTMLDivElement>) => {
+    const audio = audioRef.current;
+    if (!audio || !duration) return;
+    const rect = e.currentTarget.getBoundingClientRect();
+    const ratio = (e.clientX - rect.left) / rect.width;
+    audio.currentTime = ratio * duration;
+  };
+
+  const handleTimeUpdate = () => {
+    const audio = audioRef.current;
+    if (!audio) return;
+    setCurrentTime(audio.currentTime);
+    setProgress(duration > 0 ? (audio.currentTime / duration) * 100 : 0);
+  };
+
+  const handleLoadedMetadata = () => {
+    const audio = audioRef.current;
+    if (audio && isFinite(audio.duration)) setDuration(audio.duration);
+  };
+
+  const handleEnded = () => {
+    setPlaying(null);
+    setIsPaused(false);
+    setShowNotes(false);
+    setProgress(0);
+    setCurrentTime(0);
   };
 
   const handleDelete = (id: string) => {
@@ -739,9 +823,10 @@ const MusicModal: React.FC<{ onClose: () => void; onUpload: () => void; verifyAd
     const updated = tracks.map(t => t.id === editing.id ? {
       ...t,
       title: data.title || t.title,
-      type: data.type?.replace(/[^音乐播客]/g, "") || t.type,
+      type: data.type?.replace(/[^\u97f3\u4e50]/g, "") || t.type,
       date: data.date || t.date,
       cover: t.cover,
+      url: data.url !== undefined ? data.url : t.url,
     } : t);
     setTracks(updated);
     saveData(LS_KEYS.tracks, updated);
@@ -750,7 +835,6 @@ const MusicModal: React.FC<{ onClose: () => void; onUpload: () => void; verifyAd
   };
 
   const NOTE_EMOJIS = ["♪", "♫", "♬", "🎵"];
-  const currentTrack = tracks.find(t => t.id === playing);
 
   return (
     <>
@@ -759,10 +843,21 @@ const MusicModal: React.FC<{ onClose: () => void; onUpload: () => void; verifyAd
           onClick={onClose}
           onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = HEALING_COLORS.woodBorder; }}
           onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = HEALING_COLORS.woodLight; }}>×</button>
-        <h3 style={{ fontFamily: "Noto Serif SC, serif", fontSize: 22, fontWeight: 600, color: HEALING_COLORS.text, margin: "0 0 24px", textAlign: "center", letterSpacing: "0.06em" }}>🎧 我的收听清单</h3>
+        <h3 style={{ fontFamily: "Noto Serif SC, serif", fontSize: 22, fontWeight: 600, color: HEALING_COLORS.text, margin: "0 0 24px", textAlign: "center", letterSpacing: "0.06em" }}>🎧 我的音乐收藏</h3>
         {currentTrack ? (
           /* 播放界面 */
           <div style={{ display: "flex", flexDirection: "column", alignItems: "center", padding: "16px 0 8px" }}>
+            {/* 隐藏的 audio 元素（无 crossOrigin，避免 CORS 拦截） */}
+            {audioSrc && !useIframe && (
+              <audio
+                ref={audioRef}
+                src={audioSrc}
+                onTimeUpdate={handleTimeUpdate}
+                onLoadedMetadata={handleLoadedMetadata}
+                onEnded={handleEnded}
+                onError={() => setAudioError("无法播放此音频，可能链接已失效或需要VIP")}
+              />
+            )}
             {/* 黑胶唱片 + 树枝动画 */}
             <div style={{ position: "relative", width: 200, height: 200, marginBottom: 24, display: "flex", alignItems: "center", justifyContent: "center" }}>
               {/* 飘出的音符 */}
@@ -777,60 +872,97 @@ const MusicModal: React.FC<{ onClose: () => void; onUpload: () => void; verifyAd
               ))}
               {/* 绿色细树枝 */}
               <div style={{
-                position: "absolute", left: playing ? -60 : -10, top: "50%", transform: "translateY(-50%)",
-                width: playing ? 70 : 0, height: 3,
+                position: "absolute", left: playing && !isPaused ? -60 : -10, top: "50%", transform: "translateY(-50%)",
+                width: playing && !isPaused ? 70 : 0, height: 3,
                 background: `linear-gradient(90deg, ${HEALING_COLORS.accent}, ${HEALING_COLORS.wood})`,
                 borderRadius: 2, transition: "width 0.8s cubic-bezier(0.34,1.56,0.64,1)",
                 overflow: "hidden", zIndex: 1,
               }}>
                 <div style={{ position: "absolute", right: -6, top: -5, width: 14, height: 14, background: HEALING_COLORS.accent, borderRadius: "50% 0 50% 50%", transform: "rotate(-45deg)" }} />
               </div>
-              {/* 黑胶唱片 - 木纹唱片沟槽质感 */}
+              {/* 黑胶唱片 */}
               <div style={{
                 width: 160, height: 160, borderRadius: "50%",
                 background: `linear-gradient(135deg, #3a3028 0%, #4a4038 20%, #3a3028 40%, #4a4038 60%, #3a3028 80%, #4a4038 100%)`,
-                boxShadow: `0 12px 40px rgba(0,0,0,0.3), inset 0 2px 4px rgba(255,255,255,0.08), ${playing ? `0 0 24px rgba(106,138,106,0.4)` : "none"}`,
+                boxShadow: `0 12px 40px rgba(0,0,0,0.3), inset 0 2px 4px rgba(255,255,255,0.08), ${playing && !isPaused ? `0 0 24px rgba(106,138,106,0.4)` : "none"}`,
                 display: "flex", alignItems: "center", justifyContent: "center",
-                animation: playing ? "vinyl-spin 5s linear infinite" : "none",
+                animation: playing && !isPaused ? "vinyl-spin 5s linear infinite" : "none",
                 transition: "box-shadow 0.5s ease",
                 position: "relative", overflow: "hidden",
               }}>
-                {/* 唱片沟槽纹理 */}
                 <div style={{ position: "absolute", width: "100%", height: "100%", borderRadius: "50%", background: "repeating-radial-gradient(circle at center, transparent 0px, transparent 1px, rgba(255,255,255,0.015) 1px, rgba(255,255,255,0.015) 2px)" }} />
-                {/* 唱片同心圆纹理 */}
                 {[40, 55, 70, 85, 100, 115].map(r => (
                   <div key={r} style={{ position: "absolute", width: r, height: r, borderRadius: "50%", border: `1px solid rgba(255,255,255,0.03)` }} />
                 ))}
-                {/* 中心封面 - 40mm 黑胶唱片风格 + 木纹圆心 */}
-                <div style={{ width: 40, height: 40, borderRadius: "50%", background: `linear-gradient(135deg, ${HEALING_COLORS.wood} 0%, #D4B896 50%, ${HEALING_COLORS.wood} 100%)`, display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "inset 0 2px 6px rgba(0,0,0,0.4), 0 1px 4px rgba(0,0,0,0.3)", zIndex: 2 }}>
+                {/* 中心封面 */}
+                <div style={{ width: 40, height: 40, borderRadius: "50%", background: `linear-gradient(135deg, ${HEALING_COLORS.wood} 0%, #D4B896 50%, ${HEALING_COLORS.wood} 100%)`, display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "inset 0 2px 6px rgba(0,0,0,0.4), 0 1px 4px rgba(0,0,0,0.3)", zIndex: 2, overflow: "hidden" }}>
                   <div style={{ width: 8, height: 8, borderRadius: "50%", background: "rgba(0,0,0,0.7)", boxShadow: "inset 0 1px 2px rgba(255,255,255,0.1)" }} />
-                  <span style={{ fontSize: 16, position: "absolute" }}>{currentTrack.cover}</span>
+                  {currentTrack.cover.startsWith("http") ? (
+                    <img src={currentTrack.cover} alt="" style={{ position: "absolute", width: "100%", height: "100%", objectFit: "cover", zIndex: 1 }} />
+                  ) : (
+                    <span style={{ fontSize: 16, position: "absolute" }}>{currentTrack.cover}</span>
+                  )}
                 </div>
               </div>
             </div>
             {/* 曲目信息 */}
             <h4 style={{ fontFamily: "Noto Serif SC, serif", fontSize: 18, color: HEALING_COLORS.text, margin: "0 0 4px", textAlign: "center" }}>{currentTrack.title}</h4>
-            <p style={{ fontSize: 13, color: HEALING_COLORS.textLight, margin: "0 0 20px" }}>{currentTrack.type} · {currentTrack.date}</p>
-            {/* 进度条 */}
-            <div style={{ width: "100%", maxWidth: 300, marginBottom: 16 }}>
-              <div style={{ height: 4, background: HEALING_COLORS.woodLight, borderRadius: 2 }}>
-                <div style={{ height: "100%", width: `${progress}%`, background: `linear-gradient(90deg, ${HEALING_COLORS.grayGreen}, ${HEALING_COLORS.accent})`, borderRadius: 2, transition: "width 0.3s" }} />
+            <p style={{ fontSize: 13, color: HEALING_COLORS.textLight, margin: "0 0 16px" }}>{currentTrack.type} · {currentTrack.date}</p>
+            {/* 无链接提示 */}
+            {!audioSrc && !audioError && (
+              <p style={{ fontSize: 12, color: HEALING_COLORS.textMuted, margin: "0 0 16px", fontFamily: "Noto Serif SC, serif" }}>这首还没有音乐链接，编辑添加网易云链接即可播放</p>
+            )}
+            {/* VIP/版权歌曲：使用网易云 iframe 嵌入播放器 */}
+            {useIframe && (
+              <div style={{ width: "100%", maxWidth: 320, marginBottom: 16, borderRadius: 12, overflow: "hidden", border: `1px solid ${HEALING_COLORS.woodBorder}`, boxShadow: "0 4px 16px rgba(0,0,0,0.08)" }}>
+                <iframe src={`https://music.163.com/outchain/player?type=2&id=${netEaseId}&auto=1&height=66`} width="100%" height={66} frameBorder={0} style={{ display: "block" }} allow="autoplay" />
               </div>
-            </div>
+            )}
+            {/* 外链播放错误但非网易云 */}
+            {audioError && !useIframe && (
+              <div style={{ marginBottom: 16, textAlign: "center" }}>
+                <p style={{ fontSize: 12, color: "#D46B4D", margin: "0 0 8px", fontFamily: "Noto Serif SC, serif" }}>{audioError}</p>
+                {currentTrack.url && (
+                  <a href={currentTrack.url} target="_blank" rel="noopener noreferrer"
+                    style={{ fontSize: 12, color: HEALING_COLORS.grayGreen, textDecoration: "none", display: "inline-flex", alignItems: "center", gap: 4, border: `1px solid ${HEALING_COLORS.grayGreenLight}`, padding: "4px 12px", borderRadius: 999, transition: "all 0.2s" }}
+                    onMouseEnter={e => { e.currentTarget.style.background = HEALING_COLORS.grayGreenLight; }}
+                    onMouseLeave={e => { e.currentTarget.style.background = "transparent"; }}
+                  ><span>🎵</span> 在网易云音乐打开</a>
+                )}
+              </div>
+            )}
+            {/* 进度条 - 仅原生播放模式 */}
+            {audioSrc && !useIframe && (
+              <div style={{ width: "100%", maxWidth: 300, marginBottom: 8 }}>
+                <div onClick={handleSeek} style={{ height: 4, background: HEALING_COLORS.woodLight, borderRadius: 2, cursor: "pointer", position: "relative" }}>
+                  <div style={{ height: "100%", width: `${progress}%`, background: `linear-gradient(90deg, ${HEALING_COLORS.grayGreen}, ${HEALING_COLORS.accent})`, borderRadius: 2, transition: "width 0.1s linear" }} />
+                </div>
+                <div style={{ display: "flex", justifyContent: "space-between", marginTop: 6 }}>
+                  <span style={{ fontSize: 10, color: HEALING_COLORS.textMuted, fontFamily: "Courier New, monospace" }}>{formatTime(currentTime)}</span>
+                  <span style={{ fontSize: 10, color: HEALING_COLORS.textMuted, fontFamily: "Courier New, monospace" }}>{formatTime(duration)}</span>
+                </div>
+              </div>
+            )}
             {/* 控制按钮 */}
             <div style={{ display: "flex", gap: 16 }}>
-              <button onClick={() => handlePlay(currentTrack.id)} style={{ padding: "12px 28px", border: `2px solid ${HEALING_COLORS.woodBorder}`, borderRadius: 16, background: "transparent", color: HEALING_COLORS.text, cursor: "pointer", fontSize: 14, fontFamily: "Noto Serif SC, serif", transition: "all 0.25s" }}
-                onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = HEALING_COLORS.woodLight; }}
-                onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = "transparent"; }}>暂停</button>
-              <button onClick={() => setProgress(p => Math.min(p + 10, 99))} style={{ padding: "12px 28px", border: "none", borderRadius: 16, background: HEALING_COLORS.grayGreen, color: "#fff", cursor: "pointer", fontSize: 14, fontFamily: "Noto Serif SC, serif", transition: "all 0.25s" }}
-                onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.transform = "translateY(-2px)"; (e.currentTarget as HTMLButtonElement).style.boxShadow = `0 6px 20px rgba(141,154,139,0.4)`; }}
-                onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.transform = "translateY(0)"; (e.currentTarget as HTMLButtonElement).style.boxShadow = "none"; }}>快进 ▶▶</button>
+              {audioSrc && !useIframe ? (
+                <>
+                  <button onClick={() => handlePlay(currentTrack.id)} style={{ padding: "12px 28px", border: `2px solid ${HEALING_COLORS.woodBorder}`, borderRadius: 16, background: "transparent", color: HEALING_COLORS.text, cursor: "pointer", fontSize: 14, fontFamily: "Noto Serif SC, serif", transition: "all 0.25s" }}
+                    onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.background = HEALING_COLORS.woodLight; }}
+                    onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.background = "transparent"; }}>{isPaused ? "播放 ▶" : "暂停 ⏸"}</button>
+                  <button onClick={() => { const audio = audioRef.current; if (audio) audio.currentTime = Math.min(audio.currentTime + 10, duration || audio.currentTime + 10); }} style={{ padding: "12px 28px", border: "none", borderRadius: 16, background: HEALING_COLORS.grayGreen, color: "#fff", cursor: "pointer", fontSize: 14, fontFamily: "Noto Serif SC, serif", transition: "all 0.25s" }}
+                    onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.transform = "translateY(-2px)"; (e.currentTarget as HTMLButtonElement).style.boxShadow = `0 6px 20px rgba(141,154,139,0.4)`; }}
+                    onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.transform = "translateY(0)"; (e.currentTarget as HTMLButtonElement).style.boxShadow = "none"; }}>快进 ▶▶</button>
+                </>
+              ) : (
+                <button onClick={() => handlePlay(currentTrack.id)} style={{ padding: "12px 28px", border: `2px solid ${HEALING_COLORS.woodBorder}`, borderRadius: 16, background: "transparent", color: HEALING_COLORS.textLight, cursor: "pointer", fontSize: 14, fontFamily: "Noto Serif SC, serif" }}>返回列表</button>
+              )}
             </div>
           </div>
         ) : tracks.length === 0 ? (
           <EmptyState emoji="🎧" />
         ) : (
-          /* 卡片列表 - 米白纸纹质感 */
+          /* 卡片列表 */
           <div style={{ display: "grid", gridTemplateColumns: "repeat(2, 1fr)", gap: 14 }}>
             {tracks.map(t => (
               <div key={t.id} style={{ position: "relative", cursor: "pointer", display: "flex", alignItems: "center", gap: 14, padding: "14px 16px", borderRadius: 16, background: `linear-gradient(135deg, ${HEALING_COLORS.creamDark} 0%, ${HEALING_COLORS.cream} 50%, ${HEALING_COLORS.creamDark} 100%)`, border: `1px solid ${HEALING_COLORS.woodBorder}`, boxShadow: "inset 0 1px 0 rgba(255,255,255,0.8)", transition: "all 0.25s cubic-bezier(0.34,1.56,0.64,1)" }}
@@ -843,13 +975,17 @@ const MusicModal: React.FC<{ onClose: () => void; onUpload: () => void; verifyAd
                 <button onClick={e => { e.stopPropagation(); verifyAdmin(() => setDeleting(t.id)); }} style={{ position: "absolute", top: 6, right: 6, width: 20, height: 20, border: "none", borderRadius: "50%", background: "rgba(0,0,0,0.08)", color: "rgba(0,0,0,0.3)", fontSize: 12, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center", opacity: _IS_TOUCH ? 0.55 : 0, transition: "opacity 0.2s" }}
                   onMouseEnter={e => { (e.currentTarget as HTMLButtonElement).style.opacity = "1"; }}
                   onMouseLeave={e => { (e.currentTarget as HTMLButtonElement).style.opacity = _IS_TOUCH ? "0.55" : "0"; }}>×</button>
-                {/* 黑胶唱片图标 - 木纹质感 */}
+                {/* 黑胶唱片图标 */}
                 <div style={{ width: 48, height: 48, borderRadius: "50%", background: `linear-gradient(135deg, #4a4038 0%, #3a3028 40%, #4a4038 60%, #2a2018 100%)`, display: "flex", alignItems: "center", justifyContent: "center", boxShadow: "inset 0 2px 4px rgba(0,0,0,0.5), 0 2px 8px rgba(0,0,0,0.2)", flexShrink: 0, position: "relative" }}>
                   <div style={{ position: "absolute", width: "100%", height: "100%", borderRadius: "50%", background: "repeating-conic-gradient(from 0deg, rgba(255,255,255,0.02) 0deg 3deg, transparent 3deg 6deg)" }} />
                   <div style={{ width: 14, height: 14, borderRadius: "50%", background: `linear-gradient(135deg, ${HEALING_COLORS.wood} 0%, #D4B896 100%)`, boxShadow: "inset 0 1px 3px rgba(0,0,0,0.5)" }} />
-                  <span style={{ fontSize: 16, position: "absolute", zIndex: 1 }}>{t.cover}</span>
+                  {t.cover.startsWith("http") ? (
+                    <img src={t.cover} alt="" style={{ position: "absolute", width: 20, height: 20, borderRadius: "50%", objectFit: "cover", zIndex: 1 }} />
+                  ) : (
+                    <span style={{ fontSize: 16, position: "absolute", zIndex: 1 }}>{t.cover}</span>
+                  )}
                 </div>
-                <div><p style={{ fontSize: 13, color: HEALING_COLORS.text, margin: 0, fontWeight: 500, fontFamily: "Noto Serif SC, serif" }}>{t.title}</p><p style={{ fontSize: 11, color: HEALING_COLORS.textMuted, margin: "4px 0 0" }}>{t.type} · {t.date}</p></div>
+                <div><p style={{ fontSize: 13, color: HEALING_COLORS.text, margin: 0, fontWeight: 500, fontFamily: "Noto Serif SC, serif" }}>{t.title}{t.url ? <span style={{ fontSize: 10, marginLeft: 4, opacity: 0.5 }}>🔗</span> : null}</p><p style={{ fontSize: 11, color: HEALING_COLORS.textMuted, margin: "4px 0 0" }}>{t.type} · {t.date}</p></div>
               </div>
             ))}
           </div>
@@ -859,8 +995,9 @@ const MusicModal: React.FC<{ onClose: () => void; onUpload: () => void; verifyAd
       {showUpload && (
         <UploadModal moduleType="music" onSubmit={(data, _files) => {
           const newTrack: Track = {
-            id: genId(), title: data.title, type: data.type?.replace(/[^音乐播客]/g, "") || "音乐",
+            id: genId(), title: data.title, type: "音乐",
             date: data.date || "", cover: "🎵",
+            url: data.url || "",
           };
           const updated = [newTrack, ...tracks];
           setTracks(updated); saveData(LS_KEYS.tracks, updated);
@@ -868,8 +1005,8 @@ const MusicModal: React.FC<{ onClose: () => void; onUpload: () => void; verifyAd
         }} onClose={() => setShowUpload(false)} />
       )}
       {editing && (
-        <UploadModal moduleType="music" title="编辑音乐/播客"
-          initialData={{ title: editing.title, type: editing.type + " / " + editing.type, date: editing.date }}
+        <UploadModal moduleType="music" title="编辑音乐"
+          initialData={{ title: editing.title, type: editing.type + " / " + editing.type, date: editing.date, url: editing.url || "" }}
           initialFiles={{}}
           onSubmit={handleEditSubmit}
           onClose={() => setEditing(null)} />
@@ -1442,7 +1579,7 @@ const AddCustomModuleModal: React.FC<{ onClose: () => void; onAdd: (m: CustomMod
 const BUILTIN_FRAMES = [
   { id: "reading" as ModuleType, emoji: "📖", name: "阅读", tint: "#DDD0B8" },
   { id: "photo" as ModuleType, emoji: "📷", name: "摄影", tint: "#C8D8C0" },
-  { id: "music" as ModuleType, emoji: "🎧", name: "音乐/播客", tint: "#DCC8C0" },
+  { id: "music" as ModuleType, emoji: "🎧", name: "音乐", tint: "#DCC8C0" },
   { id: "sport" as ModuleType, emoji: "🏃", name: "运动", tint: "#D8C8A8" },
   { id: "meditation" as ModuleType, emoji: "🧘", name: "冥想", tint: "#C0D0CC" },
   { id: "drama" as ModuleType, emoji: "📺", name: "追剧", tint: "#D0C8C0" },

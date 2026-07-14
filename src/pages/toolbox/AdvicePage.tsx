@@ -401,58 +401,98 @@ const AdvicePage: React.FC = () => {
 
       {/* ===== 纯 CSS 3D 透视杂货店场景 ===== */}
       <div className="shop-scene" aria-hidden="true">
-        {/* 屋顶 */}
-        <div className="shop-roof" />
-        {/* 墙壁 */}
-        <div className="shop-wall" />
-        {/* 招牌 */}
-        <div className="shop-sign">
-          <span className="shop-sign-text">解忧杂货店</span>
-          <span className="shop-sign-sub">Namiya's General Store</span>
+        {/* 天空背景 */}
+        <div className="shop-sky" />
+
+        {/* 二楼层 */}
+        <div className="shop-second-floor">
+          <div className="shop-sf-left">
+            <div className="shop-sf-window" />
+          </div>
+          <div className="shop-sf-center">
+            <div className="shop-sf-basket" />
+            <div className="shop-sf-ac" />
+          </div>
+          <div className="shop-sf-right">
+            <div className="shop-sf-balcony" />
+          </div>
         </div>
-        {/* 左窗 */}
-        <div className="shop-window-left">
-          <div className="shop-window-pane" />
+
+        {/* 三店铺 */}
+        <div className="shop-row">
+          {/* 左侧：井貰屋 */}
+          <div className="shop-left">
+            <div className="shop-left-sign">井貰屋</div>
+            <div className="shop-left-wall">
+              <div className="shop-left-window">
+                <div className="shop-book shop-book-1" />
+                <div className="shop-book shop-book-2" />
+                <div className="shop-book shop-book-3" />
+              </div>
+              <div className="shop-left-door" />
+            </div>
+          </div>
+
+          {/* 中间：解忧杂货店 */}
+          <div className="shop-center">
+            <div className="shop-center-sign">解忧杂货店</div>
+            <div className="shop-awning" />
+            <div className="shop-center-wall">
+              <div className="shop-postbox">POST</div>
+              <div className="shop-stool" />
+              <div className="shop-lamp" />
+              <div className="shop-center-door">
+                <div className="shop-door-poster p1" />
+                <div className="shop-door-poster p2" />
+                <div className="shop-door-poster p3" />
+                <div className="shop-door-handle" />
+              </div>
+              <div className="shop-door-side-text">大切な 荷物</div>
+              <div className="shop-sign-vertical">
+                <div className="shop-sign-v-text">詩篇玉藻</div>
+              </div>
+            </div>
+          </div>
+
+          {/* 右侧：传玉 */}
+          <div className="shop-right">
+            <div className="shop-right-sign">传玉</div>
+            <div className="shop-right-door" />
+          </div>
         </div>
-        {/* 右窗 */}
-        <div className="shop-window-right">
-          <div className="shop-window-pane" />
-        </div>
-        {/* 门 */}
-        <div className="shop-door">
-          <div className="shop-door-panel" />
-          <div className="shop-door-handle" />
-        </div>
-        {/* 门口灯光 */}
-        <div className="shop-light" />
+
         {/* 地面 */}
         <div className="shop-floor" />
 
-        {/* 牛奶箱（场景内左下方） */}
-        <MilkBox
-          isOpen={phase === "reading"}
-          isGlow={phase === "reply-arrived"}
-          isShake={mailboxShake}
-          onClick={openMailbox}
-        />
+        {/* 牛奶箱 - 叠加在邮筒位置 */}
+        <div className="milk-box-position">
+          <MilkBox
+            isOpen={phase === "reading"}
+            isGlow={phase === "reply-arrived"}
+            isShake={mailboxShake}
+            onClick={openMailbox}
+          />
+        </div>
 
-        {/* 公告板（场景内右侧） */}
-        <div className="notice-board" ref={aboutRef}>
-          <div className="notice-board-wood">
-            <div className="notice-pin" />
-            <div className="notice-sticky-list">
-              {STICKIES.map((text, i) => (
-                <div className="notice-sticky" key={i}>
-                  <p>{text}</p>
+        {/* 公告板 - 叠加在竖立招牌位置 */}
+        <div className="notice-board-position">
+          <div className="notice-board" ref={aboutRef}>
+            <div className="notice-board-wood">
+              <div className="notice-pin" />
+              <div className="notice-sticky-list">
+                {STICKIES.map((text, i) => (
+                  <div className="notice-sticky" key={i}>
+                    <p>{text}</p>
+                  </div>
+                ))}
+              </div>
+              <div className="notice-about-panel notice-about-panel--open">
+                <div className="notice-about-content">
+                  <h3>关于这间店</h3>
+                  <p>人与人，因烦恼而相连。浪矢爷爷相信，每个咨询者心中早已有了答案，写信只是为了确认自己的选择。</p>
+                  <p>我们不过是在时间长河里，替你亮着一盏灯。愿这间杂货店，能接住你那些无处安放的迷茫，让你有勇气对自己说出那句——"我决定了"。</p>
+                  <p className="notice-about-sign">——致每一个写信的你</p>
                 </div>
-              ))}
-            </div>
-            <div className="notice-about-panel notice-about-panel--open">
-              <div className="notice-about-content">
-                <h3>关于这间店</h3>
-                <p>人与人，因烦恼而相连。浪矢爷爷相信，每个咨询者心中早已有了答案，写信只是为了确认自己的选择。</p>
-                <p>我们不过是在时间长河里，替你亮着一盏灯。愿这间杂货店，能接住你那些无处安放的迷茫，让你有勇气对自己说出那句——"我决定了"。</p>
-                <p className="notice-about-sign">——致每一个写信的你</p>
               </div>
             </div>
           </div>
@@ -1687,4 +1727,222 @@ const AdvicePage: React.FC = () => {
           font-size: 11px; color: #8D6E63;
           white-space: nowrap;
           font-family: "Noto Serif SC", serif;
-        }
+        }
+        .advice-letterbox-preview {
+          flex: 1; min-width: 0;
+          white-space: nowrap; overflow: hidden;
+          text-overflow: ellipsis; color: #5D4037;
+        }
+        .advice-letterbox-status-wrap {
+          display: inline-flex; align-items: center; gap: 4px; white-space: nowrap;
+        }
+        .advice-letterbox-dot {
+          width: 5px; height: 5px; border-radius: 50%;
+          background: #7a9e6b; display: inline-block;
+        }
+        .advice-letterbox-status { font-size: 11px; color: #BCAAA4; }
+        .advice-letterbox-status--replied {
+          color: #5D4037;
+          background: #D7CCC8;
+          padding: 1px 6px;
+          border-radius: 4px;
+        }
+        .advice-letterbox-arrow {
+          font-size: 10px; color: #A1887F;
+          transition: transform 0.3s ease; display: inline-block;
+        }
+        .advice-letterbox-arrow--open { transform: rotate(90deg); }
+        .advice-letterbox-detail { overflow: hidden; }
+        .advice-letterbox-detail-inner {
+          padding: 0 16px 14px;
+          display: flex; flex-direction: column; gap: 10px;
+        }
+        .advice-letterbox-envelope {
+          padding: 10px 14px;
+          background: rgba(245,240,225,0.6);
+          border-radius: 8px;
+          border: 1px dashed rgba(161,136,127,0.3);
+        }
+        .advice-letterbox-reply {
+          padding: 10px 14px;
+          background: rgba(245,240,225,0.8);
+          border-radius: 8px;
+          border-left: 2px solid #D4A373;
+        }
+        .advice-letterbox-label {
+          font-size: 11px; color: #A1887F;
+          margin: 0 0 8px; letter-spacing: 0.06em; font-weight: 500;
+        }
+        .advice-letterbox-content {
+          font-family: "Noto Serif SC", Georgia, serif;
+          font-size: 14px; line-height: 1.8;
+          color: #4E342E; margin: 0;
+          letter-spacing: 0.02em; white-space: pre-wrap;
+        }
+        .advice-letterbox-content--pending {
+          color: #BCAAA4; font-style: italic; font-family: inherit;
+        }
+
+        /* ============================================================
+           公告板（融入右侧黄色木板 · 暖黄旧木牌）
+           ============================================================ */
+        .notice-board {
+          position: absolute;
+          right: 4%;
+          bottom: 12%;
+          z-index: 10;
+          width: 252px; height: 500px;
+          opacity: 1;
+          transition: all 0.3s ease;
+        }
+
+        .notice-board-wood {
+          background: rgba(245, 220, 120, 0.85);
+          border: 1px solid rgba(100, 60, 20, 0.4);
+          border-radius: 8px 12px 6px 10px;
+          padding: 16px;
+          mix-blend-mode: multiply;
+          backdrop-filter: blur(0.5px);
+          box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+          position: relative;
+        }
+        .notice-pin {
+          position: absolute; top: 8px; left: 50%;
+          transform: translateX(-50%);
+          width: 10px; height: 10px;
+          border-radius: 50%;
+          background: radial-gradient(circle at 30% 30%, #B71C1C, #8B0000);
+          box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+          z-index: 2;
+        }
+        .notice-sticky-list {
+          display: flex; flex-direction: column; gap: 10px;
+          margin-top: 8px;
+          position: relative; z-index: 1;
+        }
+        .notice-sticky {
+          background: rgba(255,250,235,0.75);
+          padding: 10px 12px;
+          border-radius: 3px;
+          box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+          position: relative;
+          transition: transform 0.25s ease, box-shadow 0.25s ease;
+          cursor: default;
+        }
+        .notice-sticky:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 3px 8px rgba(0,0,0,0.15);
+        }
+        .notice-sticky:nth-child(1) { transform: rotate(-1.5deg); }
+        .notice-sticky:nth-child(2) { transform: rotate(1deg); }
+        .notice-sticky:nth-child(3) { transform: rotate(-0.5deg); }
+        .notice-sticky:hover { transform: translateY(-2px) rotate(0deg); }
+        .notice-sticky p {
+          font-family: "Noto Serif SC", serif;
+          font-size: 12px; line-height: 1.6;
+          color: #5C3A21; margin: 0;
+        }
+        .notice-about-panel {
+          margin-top: 10px;
+        }
+        .notice-about-content {
+          padding-top: 12px;
+          border-top: 1px dashed rgba(80,50,20,0.25);
+          margin-top: 8px;
+          position: relative; z-index: 1;
+        }
+        .notice-about-content h3 {
+          font-family: "Noto Serif SC", serif;
+          font-size: 13px; color: #5C3A21;
+          margin: 0 0 10px; letter-spacing: 0.06em;
+        }
+        .notice-about-content p {
+          font-family: "Noto Serif SC", Georgia, serif;
+          font-size: 12px; line-height: 1.8;
+          color: #5C3A21; margin: 0 0 8px;
+        }
+        .notice-about-content .notice-about-sign {
+          text-align: right; color: #5C3A21;
+          font-style: italic; margin-top: 10px;
+        }
+
+        /* ---------- 响应式 ---------- */
+        @media (max-width: 768px) {
+          .advice-page { padding: 0 0 60px; }
+          .advice-topbar { padding: 16px 16px 0; }
+          .advice-hero { padding: 0; height: 0; }
+          .advice-main { padding: 0 4vw; }
+          .advice-miao-svg { width: 48px; height: 48px; }
+          .advice-miao-label { font-size: 9px; }
+          .advice-reply {
+            padding: 16px; padding-bottom: 48px;
+          }
+          /* 写信便签：移动端缩小 */
+          .advice-letter {
+            left: 35%;
+            bottom: 22%;
+            transform: translateX(-50%);
+            width: 85vw;
+            max-width: 340px;
+            padding: 16px 18px;
+          }
+          .advice-letter-greeting { font-size: 14px; margin-bottom: 10px; }
+          .advice-input { font-size: 13px; padding: 8px 10px; }
+          .advice-submit { padding: 14px; min-height: 44px; }
+          .advice-letterbox {
+            right: 12px;
+            bottom: 80px;
+            width: 88%;
+            max-width: 330px;
+            max-height: 50vh;
+            padding: 16px;
+          }
+          .advice-letterbox-summary { padding: 12px 14px; gap: 8px; }
+          .advice-letterbox-detail-inner { padding: 0 14px 14px; }
+          .advice-letterbox-envelope,
+          .advice-letterbox-reply { padding: 12px; }
+          /* 牛奶箱：移动端缩小 */
+          .milk-box { bottom: 8%; left: 12%; }
+          .milk-body { width: 72px; height: 90px; }
+          .milk-upper { height: 46px; }
+          .milk-rain-guard { height: 20px; left: -4px; right: -4px; }
+          .milk-lower { height: 82px; }
+          .milk-divider { height: 3px; }
+          .milk-sticker { width: 28px; height: 20px; }
+          .milk-sticker span { font-size: 7px; }
+          .advice-letter {
+            left: 50%;
+            bottom: 35%;
+            transform: translateX(-50%) rotate(-1deg);
+          }
+          /* 公告板：移动端缩小 */
+          .notice-board { right: 3%; bottom: 8%; width: 180px; height: auto; }
+          .advice-miao { bottom: 8px; right: 16px; }
+          .notice-board-wood { padding: 12px; }
+          .intro-sign-title { font-size: 28px; }
+          .intro-scene-mailbox { width: 36px; height: 48px; }
+          .intro-scene-board { width: 100px; height: 65px; }
+          /* 场景移动端微调 */
+          .shop-wall { left: 8%; right: 8%; height: 44%; }
+          .shop-roof { left: 5%; right: 5%; }
+          .shop-door { width: 22%; height: 36%; top: 32%; }
+          .shop-window-left { left: 16%; width: 18%; top: 30%; }
+          .shop-window-right { right: 16%; width: 18%; top: 30%; }
+          .shop-sign { padding: 8px 20px; }
+          .shop-floor { height: 40%; }
+        }
+        @media (min-width: 769px) {
+          .advice-letter, .advice-reply, .advice-letterbox {
+            margin-left: auto; margin-right: auto;
+          }
+        }
+      `}</style>
+    </div>
+  );
+};
+
+function wait(ms: number): Promise<void> {
+  return new Promise((r) => setTimeout(r, ms));
+}
+
+export default AdvicePage;

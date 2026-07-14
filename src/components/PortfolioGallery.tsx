@@ -180,23 +180,24 @@ const PortfolioGallery: React.FC = () => {
                 <CloseIcon />
               </button>
 
-              {/* 封面大图 / 视频 */}
-              {selected.videoUrl ? (
-                <video
-                  className="gallery-modal-cover"
-                  src={selected.videoUrl}
-                  poster={selected.imageUrl}
-                  controls
-                  playsInline
-                />
-              ) : (
-                <img src={selected.imageUrl} alt={selected.title} className="gallery-modal-cover" />
-              )}
-
               <div className="gallery-modal-body">
                 <h2 className="gallery-modal-title">{selected.title}</h2>
                 <span className="gallery-tag">{selected.tag}</span>
                 <p className="gallery-modal-desc">{selected.description}</p>
+
+                {/* 项目截图 —— 缩小为插图，置于文字下方 */}
+                {selected.videoUrl ? (
+                  <video
+                    className="gallery-modal-cover"
+                    src={selected.videoUrl}
+                    poster={selected.imageUrl}
+                    controls
+                    playsInline
+                  />
+                ) : (
+                  <img src={selected.imageUrl} alt={selected.title} className="gallery-modal-cover" />
+                )}
+
                 {selectedTags.length > 0 && (
                   <div className="gallery-tech-tags">
                     {selectedTags.map((t) => (
@@ -369,13 +370,13 @@ const PortfolioGallery: React.FC = () => {
         .gallery-modal {
           position: relative;
           width: 100%;
-          max-width: 640px;
+          max-width: 560px;
           max-height: 85vh;
           overflow-y: auto;
           border-radius: 20px;
           background: var(--card-bg);
           border: 1px solid var(--border);
-          box-shadow: 0 24px 64px -16px rgba(0,0,0,0.25);
+          box-shadow: 0 16px 48px -12px rgba(0,0,0,0.12);
         }
         .gallery-modal-close {
           position: absolute;
@@ -399,10 +400,15 @@ const PortfolioGallery: React.FC = () => {
         }
         .gallery-modal-cover {
           width: 100%;
-          height: 280px;
+          max-width: 420px;
+          height: auto;
+          max-height: 240px;
           object-fit: cover;
           display: block;
-          border-radius: 20px 20px 0 0;
+          margin: 20px auto 4px;
+          border-radius: 12px;
+          box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+          background: var(--card-bg);
         }
         .gallery-modal-body {
           padding: 28px;
@@ -463,7 +469,9 @@ const PortfolioGallery: React.FC = () => {
             max-width: 100%;
           }
           .gallery-modal-cover {
-            height: 200px;
+            max-width: 100%;
+            max-height: 200px;
+            border-radius: 10px;
           }
           .gallery-admin-fab {
             right: 16px;

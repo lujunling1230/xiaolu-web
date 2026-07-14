@@ -1373,6 +1373,35 @@ const TravelPage: React.FC = () => {
           box-shadow: 0 8px 24px rgba(200,146,74,0.35);
         }
 
+        /* ---- 展开完成后：持续微风摇曳 ---- */
+        @keyframes scrollSway {
+          0%, 100% { transform: perspective(1200px) rotateY(-0.5deg) rotateX(0.15deg); }
+          50% { transform: perspective(1200px) rotateY(0.5deg) rotateX(-0.1deg); }
+        }
+        .travel-hero.unrolled {
+          animation: scrollSway 8s ease-in-out 2.2s infinite;
+          transform-style: preserve-3d;
+        }
+
+        /* ---- 展开完成后：木杆呼吸 + 旋钮转动 ---- */
+        @keyframes barBreathe {
+          0%, 100% { transform: scaleX(1); }
+          50% { transform: scaleX(1.03); }
+        }
+        .travel-hero-scroll-bar { transform-origin: center; }
+        .travel-hero-scroll-bar.left { transform-origin: left center; }
+        .travel-hero-scroll-bar.right { transform-origin: right center; }
+        .travel-hero.unrolled .travel-hero-scroll-bar {
+          animation: barBreathe 4s ease-in-out 2.2s infinite;
+        }
+        @keyframes knobTurn {
+          0%, 100% { transform: translateY(-50%) rotate(-2deg); }
+          50% { transform: translateY(-50%) rotate(2deg); }
+        }
+        .travel-hero.unrolled .travel-hero-scroll-knob {
+          animation: knobTurn 6s ease-in-out 2.2s infinite;
+        }
+
         /* 金色尘埃 */
         @keyframes dustFloat {
           0% { transform: translateY(0) translateX(0) scale(1); opacity: 0; }

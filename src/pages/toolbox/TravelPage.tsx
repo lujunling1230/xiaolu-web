@@ -1193,44 +1193,51 @@ const TravelPage: React.FC = () => {
 
         /* ===== Hero 羊皮纸卷轴 ===== */
         .travel-hero {
-          position: relative; min-height: 520px; height: auto;
-          display: flex; align-items: center; justify-content: center;
+          position: relative; min-height: 420px; height: auto;
+          display: flex; align-items: stretch;
           overflow: hidden;
           background: linear-gradient(180deg, #E0D8C8 0%, #EDE5D5 25%, #F5F0E6 60%, #F5F0E6 100%);
           border-bottom: 2px solid #D4C8B0;
-          padding: 60px 0;
+          padding: 0;
         }
 
-        /* ---- 卷轴杆：深色木边 ---- */
+        /* ---- 卷轴杆：深色木边，flex 子项，宽度过渡 ---- */
         .travel-hero-scroll-bar {
-          position: absolute; top: 0; width: 32px; height: 100%; z-index: 5;
+          width: 0; height: 100%; flex-shrink: 0;
+          z-index: 5; position: relative;
+          overflow: visible;
           background: linear-gradient(90deg, #6B5344 0%, #7A6655 15%, #9A8570 40%, #8A7560 60%, #9A8570 80%, #7A6655 90%, #6B5344 100%);
           box-shadow: inset 2px 0 6px rgba(0,0,0,0.25), inset -1px 0 3px rgba(255,255,255,0.08), 4px 0 12px rgba(0,0,0,0.18);
-          transition: transform 2.5s cubic-bezier(0.65, 0, 0.35, 1);
+          transition: width 2.5s cubic-bezier(0.65, 0, 0.35, 1);
         }
-        .travel-hero-scroll-bar.left { left: 0; border-radius: 0 6px 6px 0; transform-origin: left center; }
-        .travel-hero-scroll-bar.right { right: 0; border-radius: 6px 0 0 6px; box-shadow: inset -2px 0 6px rgba(0,0,0,0.25), inset 1px 0 3px rgba(255,255,255,0.08), -4px 0 12px rgba(0,0,0,0.18); transform-origin: right center; }
-
-        /* 初始闭合：卷轴向中间紧靠 */
-        .travel-hero:not(.unrolled) .travel-hero-scroll-bar.left { transform: translateX(calc(50vw - 16px)); }
-        .travel-hero:not(.unrolled) .travel-hero-scroll-bar.right { transform: translateX(calc(-50vw + 16px)); }
+        .travel-hero.unrolled .travel-hero-scroll-bar.left {
+          width: 32px; border-radius: 0 6px 6px 0;
+        }
+        .travel-hero.unrolled .travel-hero-scroll-bar.right {
+          width: 32px; border-radius: 6px 0 0 6px;
+          box-shadow: inset -2px 0 6px rgba(0,0,0,0.25), inset 1px 0 3px rgba(255,255,255,0.08), -4px 0 12px rgba(0,0,0,0.18);
+        }
 
         /* ---- 旋钮 ---- */
         .travel-hero-scroll-knob {
-          position: absolute; top: 50%; width: 42px; height: 90px; z-index: 6;
+          position: absolute; top: 50%;
+          width: 42px; height: 90px; z-index: 6;
           background: linear-gradient(180deg, #5C4538 0%, #7A6655 25%, #A08060 50%, #7A6655 75%, #5C4538 100%);
           border-radius: 8px;
           box-shadow: 0 2px 14px rgba(0,0,0,0.35), inset 0 1px 2px rgba(255,255,255,0.12);
-          transition: transform 2.5s cubic-bezier(0.65, 0, 0.35, 1);
+          opacity: 0;
+          transition: opacity 0.5s ease 2.2s;
         }
+        .travel-hero.unrolled .travel-hero-scroll-knob { opacity: 1; }
         .travel-hero-scroll-knob.left { left: -5px; transform: translateY(-50%); }
         .travel-hero-scroll-knob.right { right: -5px; transform: translateY(-50%); }
 
-        /* ---- 内容区：clip-path 展开 ---- */
+        /* ---- 内容区：flex 子项，clip-path 展开 ---- */
         .travel-hero-content {
+          flex: 1; display: flex; flex-direction: column;
+          align-items: center; justify-content: center;
           position: relative; z-index: 2; text-align: center;
-          flex: 1; max-width: 640px;
-          padding: 0 56px;
+          padding: 48px 56px;
           opacity: 0;
           clip-path: inset(0 50% 0 50%);
           transition: clip-path 2.5s cubic-bezier(0.65, 0, 0.35, 1), opacity 0.6s ease 1.2s;
@@ -1242,7 +1249,7 @@ const TravelPage: React.FC = () => {
 
         /* ---- 返回按钮 ---- */
         .travel-back {
-          position: absolute; top: 20px; left: 48px; z-index: 10;
+          position: absolute; top: 16px; left: 16px; z-index: 10;
           font-size: 14px; color: var(--warm-brown); text-decoration: none;
           letter-spacing: 0.04em; transition: color 0.25s ease, opacity 0.8s ease 2s;
           font-family: var(--font-serif);
@@ -1254,8 +1261,8 @@ const TravelPage: React.FC = () => {
         /* ---- 标题 ---- */
         .travel-hero-title {
           font-family: "KaiTi", "STKaiti", "Noto Serif SC", var(--font-hand), serif;
-          font-size: clamp(32px, 5vw, 48px); font-weight: 400;
-          color: #5c3a21; margin: 0 0 8px;
+          font-size: clamp(36px, 6vw, 56px); font-weight: 400;
+          color: #5c3a21; margin: 0 0 6px;
           letter-spacing: 0.22em;
           text-shadow: 1px 1px 0 rgba(180,160,130,0.4);
           opacity: 0; transform: translateY(12px);
@@ -1267,7 +1274,7 @@ const TravelPage: React.FC = () => {
         .travel-hero-ornament {
           width: 60px; height: 1px;
           background: linear-gradient(90deg, transparent, var(--gold-accent), transparent);
-          margin: 10px auto;
+          margin: 8px auto;
           opacity: 0;
           transition: opacity 0.6s ease 1.6s;
         }
@@ -1275,8 +1282,8 @@ const TravelPage: React.FC = () => {
 
         /* 元年 · 启程 */
         .travel-hero-year {
-          font-size: 14px; color: #8B7D6B;
-          letter-spacing: 0.3em; margin-bottom: 24px;
+          font-size: 15px; color: #8B7D6B;
+          letter-spacing: 0.3em; margin-bottom: 20px;
           font-family: "KaiTi", "STKaiti", "Noto Serif SC", serif;
           opacity: 0;
           transition: opacity 0.8s ease 1.7s;
@@ -1286,13 +1293,13 @@ const TravelPage: React.FC = () => {
         /* 题记正文 */
         .travel-hero-text {
           max-width: 520px; margin: 0 auto;
-          text-align: center; line-height: 2.2;
-          font-size: 15px; color: #5c3a21;
-          letter-spacing: 0.08em;
+          text-align: center; line-height: 2;
+          font-size: 16px; color: #5c3a21;
+          letter-spacing: 0.1em;
           font-family: "KaiTi", "STKaiti", "Noto Serif SC", "SimSun", serif;
         }
         .travel-hero-text p {
-          margin-bottom: 10px;
+          margin-bottom: 8px;
           opacity: 0; transform: translateY(10px);
           transition: opacity 0.8s ease, transform 0.8s ease;
         }
@@ -1398,7 +1405,10 @@ const TravelPage: React.FC = () => {
           }
           .travel-hero:not(.unrolled) .travel-hero-scroll-bar.left,
           .travel-hero:not(.unrolled) .travel-hero-scroll-bar.right {
-            transform: translateX(0);
+            width: 32px;
+          }
+          .travel-hero:not(.unrolled) .travel-hero-scroll-knob {
+            opacity: 1;
           }
           .travel-hero:not(.unrolled) .travel-hero-content {
             clip-path: inset(0 0% 0 0%);

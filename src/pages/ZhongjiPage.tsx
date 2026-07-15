@@ -26,8 +26,8 @@ const VOLUMES: Volume[] = [
     title: "技术底色",
     subtitle: "Software Fundamentals",
     quote:
-      "曾以为代码只是逻辑，后来才懂那是另一种语言。从第一次在终端敲下 Hello World，到 Debug 到天明，我学会了与机器对话，更学会了严谨。HTML 是骨架，CSS 是皮相，JavaScript 是灵魂。每一个标签的嵌套，每一行样式的微调，每一次事件监听的绑定，都是通往产品世界的地基。不懂得技术的产品经理，如同不会画画的建筑师，终归纸上谈兵。",
-    annotation: "地基不牢，地动山摇",
+      "曾以为代码只是冰冷的逻辑，后来才懂那是另一种语言。初见终端那漆黑屏幕时满心茫然，连一个分号的位置都纠结半日。后来渐渐入了门，竟着了迷，Debug 到天明也不觉疲倦。HTML 是骨架，撑起万物的形态；CSS 是皮相，赋予肌肤以光彩；JavaScript 是灵魂，让一切活过来动起来。每一个标签的嵌套，每一行样式的微调，每一次事件监听的绑定，都是通往产品世界的地基。不懂得技术的产品经理，如同不会画画的建筑师，终归纸上谈兵。",
+    annotation: "入门如攀岩，越过高处方见风景",
     path: "/zhongji/v1",
   },
   {
@@ -36,8 +36,8 @@ const VOLUMES: Volume[] = [
     title: "产品初构",
     subtitle: "Product Thinking",
     quote:
-      "产品不是画出来的，是推演出来的。每一个按钮的位置，每一次交互的反馈，背后都是对用户心智的揣摩。需求文档不是功能的罗列，而是对人性的一种理解。一个好的产品经理，要学会在混沌中找到秩序，在矛盾中找到平衡。从用户画像到用户旅程，从信息架构到交互原型，每一步都是对「人」的深度思考。这一卷，记录了从混沌的需求中梳理出清晰脉络的过程。",
-    annotation: "从混沌中梳理脉络",
+      "产品不是画出来的，是推演出来的。真正做过产品才知道，需求冲突是家常便饭——业务方要快，技术方要稳，用户要简单，老板还总想花哨。资源永远不够，排期永远紧张，用户反馈还时常互相矛盾。好的产品经理，要学会在混沌中找到秩序，在矛盾中找到平衡。需求文档不是功能的罗列，而是对人性的一种理解。从用户画像到用户旅程，每一步都是对「人」的深度思考。这一卷记录了从混沌需求中梳理脉络的历程。",
+    annotation: "混沌不是无序，是尚未被理解的秩序",
     path: "/zhongji/v2",
   },
   {
@@ -46,8 +46,8 @@ const VOLUMES: Volume[] = [
     title: "交互与界面",
     subtitle: "UI/UX Design",
     quote:
-      "界面是产品的脸，交互是产品的举止。我不追求炫技，只追求「刚刚好」。那种手指触碰屏幕时的顺滑感，是技术与艺术的交汇点。色彩不只是视觉，更是情绪；排版不只是美观，更是阅读的引导。留白不是浪费，而是呼吸。圆角不是妥协，而是温柔。每一个像素的对齐，每一帧动画的缓动，都是对用户感官的尊重。做界面，就是做一种无声的对话。",
-    annotation: "参见《致用卷》工具箱",
+      "界面是产品的脸，交互是产品的举止。我不追求炫技，只追求「刚刚好」。留白不是浪费，而是呼吸——它给眼睛休息的空间，让真正重要的内容自然浮现。动效要有节制，过度的动画是噪音，恰如其分的过渡才是语言。色彩不只是视觉，更是情绪；排版不只是美观，更是阅读的引导。圆角不是妥协，而是温柔。每一个像素的对齐，每一帧动画的缓动，都是对用户感官的尊重。设计即沟通，做界面就是做一种无声的对话。",
+    annotation: "好设计是隐形的",
     path: "/zhongji/v3",
   },
   {
@@ -56,8 +56,8 @@ const VOLUMES: Volume[] = [
     title: "AI 与工作流",
     subtitle: "AI Integration",
     quote:
-      "AI 不是替代者，是副驾驶。这一卷记录了如何驯服大模型，让它成为我思维的延伸。从编写第一条 Prompt 到构建完整的 RAG 管道，这是一场关于效率的革命。Prompt 工程是心法，Chain of Thought 是路径，Function Calling 是桥梁。当你学会了与 AI 协作，你会发现它不是工具，而是伙伴。它帮你完成重复的劳动，而把创造力留给了你自己。",
-    annotation: "Prompt 工程即心法",
+      "AI 不是替代者，是副驾驶。这一卷记录了如何驯服大模型，让它成为思维的延伸。从编写第一条 Prompt 到构建完整的 RAG 管道，这是一场效率的革命。RAG 改变了知识管理的方式——再也不用在文档海洋中打捞，让向量索引替你记住一切。编写 Prompt 渐渐成了日常习惯，像早晨泡咖啡一样自然。但我也清醒地认识到 AI 的局限：它会一本正经地胡说八道，它不理解语境中的弦外之音。Prompt 工程是心法，Chain of Thought 是路径，当你学会与 AI 协作，创造力终归留给了你自己。",
+    annotation: "驯服工具，而非被工具驯服",
     path: "/zhongji/v4",
   },
   {
@@ -66,8 +66,8 @@ const VOLUMES: Volume[] = [
     title: "项目深析",
     subtitle: "Project Retrospective",
     quote:
-      "每一个成功的项目背后，都有十个失败的尝试。这里记录的不仅是光鲜的成果，更是那些被推翻的方案和深夜的反思。代码重构是勇气的体现，需求变更是常态的应对，上线延期是现实的妥协。真正的项目经验不在于你做了什么，而在于你从中学到了什么。失败是最好的老师，但前提是你真的去复盘了。每一个 Bug 都是通往更好产品的阶梯。",
-    annotation: "失败是最好的老师",
+      "每一个成功的项目背后，都有十个失败的尝试。这里记录的不只是光鲜成果，更是被推翻的方案和深夜的反思。代码重构是勇气的体现，需求变更是常态的应对，上线延期是现实的妥协。真正的项目经验不只在于技术，更在于软技能——跨团队协作需要同理心，向上汇报要把复杂说简单，需求优先级排序则需要得罪人的勇气。带团队后才发现最难的不是管事，是管人心。失败是最好的老师，但前提是你真的复盘了。",
+    annotation: "复盘是最高效的学习方式",
     path: "/zhongji/v5",
   },
   {
@@ -76,8 +76,8 @@ const VOLUMES: Volume[] = [
     title: "成长与反思",
     subtitle: "Growth Mindset",
     quote:
-      "技术的浪潮奔涌不息，唯有保持空杯心态，方能不被淘汰。这一卷是我与自己的对话，关于成长，关于焦虑，关于在这个快速变化的时代如何安身立命。学了那么多技术，最终发现最难的不是写代码，而是知道自己为什么要写。做产品的意义不在于功能多少，而在于是否真的帮助了一个人。在效率与温度之间，我选择温度。在完美与完成之间，我选择完成。",
-    annotation: "写于某个失眠的凌晨",
+      "技术的浪潮奔涌不息，唯有保持空杯心态方能不被淘汰。AI 时代的 PM，角色正从功能定义者变为体验编排者。学了那么多技术，最终发现最难的不是写代码，而是知道自己为什么要写。做产品的意义不在于功能多少，而在于是否真的帮助了一个人。在效率与温度之间，我选择温度。在完美与完成之间，我选择完成。长期主义不是口号，是内心的一种平静。这一卷是我与自己的对话，关于成长，关于如何安身立命。",
+    annotation: "长期主义是一种选择",
     path: "/zhongji/v6",
   },
 ];
@@ -147,20 +147,20 @@ function playUnrollSound() {
 /* ═══════════════════════════════════════════════════
    竹简端帽封皮
    ═══════════════════════════════════════════════════ */
-const ScrollCap: React.FC<{ side: "left" | "right" }> = ({ side }) => (
+const ScrollCap: React.FC<{ side: "top" | "bottom" }> = ({ side }) => (
   <div
     style={{
       position: "relative",
-      width: 28,
-      height: "100%",
+      width: "100%",
+      height: 28,
       flexShrink: 0,
       background:
-        side === "left"
-          ? "linear-gradient(90deg, #2e1810 0%, #4e342e 40%, #5d4037 70%, #4e342e 100%)"
-          : "linear-gradient(270deg, #2e1810 0%, #4e342e 40%, #5d4037 70%, #4e342e 100%)",
-      borderRadius: side === "left" ? "14px 4px 4px 14px" : "4px 14px 14px 4px",
+        side === "top"
+          ? "linear-gradient(180deg, #2e1810 0%, #4e342e 40%, #5d4037 70%, #4e342e 100%)"
+          : "linear-gradient(0deg, #2e1810 0%, #4e342e 40%, #5d4037 70%, #4e342e 100%)",
+      borderRadius: side === "top" ? "14px 14px 4px 4px" : "4px 4px 14px 14px",
       boxShadow: `
-        ${side === "left" ? "2px 0 8px rgba(0,0,0,0.25)" : "-2px 0 8px rgba(0,0,0,0.25)"}
+        ${side === "top" ? "0 2px 8px rgba(0,0,0,0.25)" : "0 -2px 8px rgba(0,0,0,0.25)"}
         inset 0 2px 4px rgba(255,255,255,0.08),
         inset 0 -2px 4px rgba(0,0,0,0.3)
       `,
@@ -173,11 +173,11 @@ const ScrollCap: React.FC<{ side: "left" | "right" }> = ({ side }) => (
     {/* 金属轴芯 */}
     <div
       style={{
-        width: 6,
-        height: "70%",
+        width: "70%",
+        height: 6,
         borderRadius: 3,
         background:
-          "linear-gradient(180deg, #8d6e63 0%, #6d4c41 30%, #4e342e 60%, #6d4c41 100%)",
+          "linear-gradient(90deg, #8d6e63 0%, #6d4c41 30%, #4e342e 60%, #6d4c41 100%)",
         boxShadow: "inset 0 1px 2px rgba(255,255,255,0.15), 0 0 4px rgba(0,0,0,0.3)",
       }}
     />
@@ -201,13 +201,6 @@ const BAMBOO_TEXTURE = `
     rgba(255, 255, 255, 0.04) 18px,
     transparent 18px,
     transparent 37px
-  ),
-  repeating-linear-gradient(
-    0deg,
-    transparent 0px,
-    transparent 160px,
-    rgba(93, 64, 55, 0.12) 160px,
-    rgba(93, 64, 55, 0.12) 163px
   ),
   linear-gradient(180deg, #dcc59a 0%, #dcc59a 100%)
 `;
@@ -233,7 +226,6 @@ const splitSentences = (text: string): string[] =>
    ═══════════════════════════════════════════════════ */
 const TextSlip: React.FC<{
   children: React.ReactNode;
-  width: number;
   fontSize?: number;
   color?: string;
   fontFamily?: string;
@@ -241,32 +233,34 @@ const TextSlip: React.FC<{
   fontStyle?: string;
   letterSpacing?: string;
   lineHeight?: number;
+  align?: "left" | "center";
+  padY?: number;
 }> = ({
   children,
-  width,
   fontSize = 15,
   color = "#3e2723",
-  fontFamily = '"Noto Serif SC", serif',
+  fontFamily = "'Ma Shan Zheng', 'ZCOOL XiaoWei', 'Noto Serif SC', serif",
   opacity = 1,
   fontStyle,
-  letterSpacing = "0.08em",
-  lineHeight = 2,
+  letterSpacing = "0.06em",
+  lineHeight = 1.9,
+  align = "left",
+  padY = 12,
 }) => (
   <div
     style={{
-      width,
+      width: "100%",
       flexShrink: 0,
       position: "relative",
-      background: "#dcc59a",
-      borderRight: "1px solid rgba(101, 80, 50, 0.22)",
-      overflow: "hidden",
+      background: "rgba(220, 197, 154, 0.92)",
+      borderBottom: "1px solid rgba(101, 80, 50, 0.22)",
+      display: "flex",
+      flexDirection: "column",
+      justifyContent: "center",
     }}
   >
-    {/* 竖排文字 */}
     <div
       style={{
-        writingMode: "vertical-rl",
-        textOrientation: "mixed",
         fontFamily,
         fontSize,
         color,
@@ -274,10 +268,10 @@ const TextSlip: React.FC<{
         lineHeight,
         opacity,
         fontStyle,
-        padding: "20px 0",
-        height: "100%",
+        padding: `${padY}px 24px`,
         boxSizing: "border-box",
-        overflow: "hidden",
+        wordBreak: "keep-all",
+        textAlign: align,
       }}
     >
       {children}
@@ -306,6 +300,14 @@ const ZhongjiPage: React.FC = () => {
       link.href = "https://fonts.googleapis.com/css2?family=Ma+Shan+Zheng&display=swap";
       link.rel = "stylesheet";
       document.head.appendChild(link);
+    }
+    const id2 = "zcool-xiaowei-font";
+    if (!document.getElementById(id2)) {
+      const link2 = document.createElement("link");
+      link2.id = id2;
+      link2.href = "https://fonts.googleapis.com/css2?family=ZCOOL+XiaoWei&display=swap";
+      link2.rel = "stylesheet";
+      document.head.appendChild(link2);
     }
   }, []);
 
@@ -354,9 +356,9 @@ const ZhongjiPage: React.FC = () => {
   const isRolled = slipState === "rolled";
   const isUnfolded = slipState === "unfolded";
 
-  /* 竹简宽度 */
-  const slipWidth = isMobile ? "92vw" : 760;
-  const slipHeight = isMobile ? 340 : 400;
+  /* 竹简尺寸 */
+  const slipWidth = isMobile ? "92vw" : 560;
+  const slipMaxHeight = isMobile ? "70vh" : 600;
 
   return (
     <div
@@ -540,7 +542,7 @@ const ZhongjiPage: React.FC = () => {
           onClick={handleUnroll}
           initial={false}
           animate={{
-            scaleX: isRolled ? 0.06 : 1,
+            scaleY: isRolled ? 0.04 : 1,
             opacity: isRolled ? 0.85 : 1,
           }}
           transition={{
@@ -549,16 +551,17 @@ const ZhongjiPage: React.FC = () => {
           }}
           style={{
             display: "flex",
+            flexDirection: "column",
             alignItems: "stretch",
             width: slipWidth,
-            height: slipHeight,
-            transformOrigin: "left center",
+            maxHeight: isRolled ? 60 : slipMaxHeight,
+            transformOrigin: "center top",
             cursor: isRolled ? "pointer" : "default",
             boxShadow: "0 10px 30px rgba(0,0,0,0.35), 0 4px 12px rgba(0,0,0,0.2)",
           }}
         >
-          {/* 左端帽 */}
-          <ScrollCap side="left" />
+          {/* 上端帽 */}
+          <ScrollCap side="top" />
 
           {/* 竹简内容区 */}
           <div
@@ -572,6 +575,31 @@ const ZhongjiPage: React.FC = () => {
               boxShadow: "inset 0 0 20px rgba(62,39,35,0.08)",
             }}
           >
+            {/* 左绑绳 */}
+            <div style={{
+              position: "absolute",
+              top: 0,
+              bottom: 0,
+              left: 18,
+              width: 6,
+              background: "linear-gradient(90deg, #5d4037 0%, #3e2723 40%, #2e1810 60%, #3e2723 100%)",
+              boxShadow: "1px 0 3px rgba(0,0,0,0.3), inset 1px 0 1px rgba(255,255,255,0.08)",
+              zIndex: 20,
+              opacity: 0.85,
+            }} />
+            {/* 右绑绳 */}
+            <div style={{
+              position: "absolute",
+              top: 0,
+              bottom: 0,
+              right: 18,
+              width: 6,
+              background: "linear-gradient(90deg, #3e2723 0%, #2e1810 40%, #3e2723 60%, #5d4037 100%)",
+              boxShadow: "-1px 0 3px rgba(0,0,0,0.3), inset -1px 0 1px rgba(255,255,255,0.08)",
+              zIndex: 20,
+              opacity: 0.85,
+            }} />
+
             {/* 卷起状态提示 */}
             <AnimatePresence>
               {isRolled && (
@@ -642,24 +670,24 @@ const ZhongjiPage: React.FC = () => {
                     position: "absolute",
                     inset: 0,
                     display: "flex",
-                    flexDirection: "row-reverse",
+                    flexDirection: "column",
                     alignItems: "stretch",
-                    zIndex: 15,
-                    overflow: "hidden",
+                    zIndex: 25,
+                    overflow: "auto",
                   }}
                 >
-                  {/* 卷号竹片（最右，书法大字） */}
-                  <TextSlip width={isMobile ? 36 : 44} fontSize={isMobile ? 18 : 22} color="#5c3a21" fontFamily='"Ma Shan Zheng", serif' letterSpacing="0.12em" lineHeight={1.6}>
+                  {/* 卷号竹片（顶部，书法大字） */}
+                  <TextSlip fontSize={isMobile ? 20 : 24} color="#4a2c1a" fontFamily="'Ma Shan Zheng', 'ZCOOL XiaoWei', 'Noto Serif SC', serif" letterSpacing="0.12em" lineHeight={1.6} align="center" padY={16}>
                     {vol.no}
                   </TextSlip>
 
                   {/* 章名竹片 */}
-                  <TextSlip width={isMobile ? 34 : 42} fontSize={isMobile ? 20 : 26} color="#3e2723" fontFamily='"Ma Shan Zheng", serif' letterSpacing="0.12em" lineHeight={1.5}>
+                  <TextSlip fontSize={isMobile ? 22 : 28} color="#3e2723" fontFamily="'Ma Shan Zheng', 'ZCOOL XiaoWei', 'Noto Serif SC', serif" letterSpacing="0.12em" lineHeight={1.5} align="center" padY={14}>
                     {vol.chapter}
                   </TextSlip>
 
                   {/* 标题竹片 */}
-                  <TextSlip width={isMobile ? 32 : 38} fontSize={isMobile ? 14 : 16} color="#5d4037" opacity={0.7}>
+                  <TextSlip fontSize={isMobile ? 13 : 15} color="#5d4037" opacity={0.7} align="center" padY={8}>
                     {vol.title}
                   </TextSlip>
 
@@ -667,11 +695,10 @@ const ZhongjiPage: React.FC = () => {
                   {splitSentences(vol.quote).map((s, i) => (
                     <TextSlip
                       key={i}
-                      width={isMobile ? 32 : 38}
                       fontSize={isMobile ? 14 : 16}
                       color="#3e2723"
-                      letterSpacing="0.08em"
-                      lineHeight={2.2}
+                      letterSpacing="0.06em"
+                      lineHeight={1.9}
                     >
                       {s}
                     </TextSlip>
@@ -680,15 +707,16 @@ const ZhongjiPage: React.FC = () => {
                   {/* 批注竹片 */}
                   {vol.annotation && (
                     <TextSlip
-                      width={isMobile ? 30 : 36}
                       fontSize={isMobile ? 12 : 13}
                       color="#7d6354"
                       opacity={0.6}
                       fontStyle="italic"
-                      letterSpacing="0.06em"
-                      lineHeight={1.8}
+                      letterSpacing="0.04em"
+                      lineHeight={1.7}
+                      align="center"
+                      padY={10}
                     >
-                      ——{vol.annotation}
+                      —— {vol.annotation}
                     </TextSlip>
                   )}
                 </motion.div>
@@ -698,16 +726,16 @@ const ZhongjiPage: React.FC = () => {
             {/* 展开时光线扫过效果 */}
             {slipState === "unfolding" && (
               <motion.div
-                initial={{ x: "-100%" }}
-                animate={{ x: "100%" }}
+                initial={{ y: "-100%" }}
+                animate={{ y: "100%" }}
                 transition={{ duration: 1.2, ease: "easeInOut" }}
                 style={{
                   position: "absolute",
-                  top: 0,
-                  bottom: 0,
-                  width: "40%",
+                  left: 0,
+                  right: 0,
+                  height: "40%",
                   background:
-                    "linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.25) 50%, transparent 100%)",
+                    "linear-gradient(180deg, transparent 0%, rgba(255,255,255,0.25) 50%, transparent 100%)",
                   pointerEvents: "none",
                   zIndex: 8,
                 }}
@@ -728,8 +756,8 @@ const ZhongjiPage: React.FC = () => {
             />
           </div>
 
-          {/* 右端帽 */}
-          <ScrollCap side="right" />
+          {/* 下端帽 */}
+          <ScrollCap side="bottom" />
         </motion.div>
 
         {/* 展开后的章节按钮 */}

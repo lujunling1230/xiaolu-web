@@ -1,18 +1,27 @@
 /**
- * 作品项目数据 —— LeafBook 翻页展示 + 作品集网格展示
+ * 作品项目数据 —— AI 产品经理视角项目文档
+ *
+ * 每个项目以"产品需求文档"的思维呈现：
+ * 痛点 → 方案 → 价值 → 场景 → 亮点
  */
 
 export interface Project {
-  id: string;          // 唯一标识符
-  title: string;       // 作品名称
-  tag: string;         // 定位/分类标签
-  painPoint: string;   // 痛点定位 —— 一行醒目 Slogan
-  description: string; // 作品简介
-  imageUrl: string;    // 作品截图
-  videoUrl?: string;   // 可选 —— 演示视频
-  link?: string;       // 可选 —— 外链
-  liveUrl: string;     // 独立部署链接
-  tags?: string[];     // 技术标签数组
+  id: string;              // 唯一标识符
+  title: string;           // 产品名称
+  tag: string;             // 产品定位/分类
+
+  // 7 大模块（AI 产品经理视角）
+  painPoints: string[];    // 用户痛点
+  targetUsers: string[];   // 适合人群
+  solutions: string[];      // 解决方案
+  coreValue: string[];     // 核心价值
+  useCases: string[];      // 使用场景
+  highlights: string[];    // 产品亮点
+  futurePlans?: string[];  // 未来规划（可选）
+
+  // 基础信息
+  liveUrl: string;         // 独立部署链接
+  tags?: string[];         // 技术标签
 }
 
 export const projects: Project[] = [
@@ -20,9 +29,40 @@ export const projects: Project[] = [
     id: "forest-healing",
     title: "森林疗愈室",
     tag: "沉浸式疗愈网页",
-    painPoint: "专为 i 人设计的低能耗回血方案",
-    description: "一片流动的森林，随时间变化光影，内置五种白噪音，可以调节音量，点击树叶会掉落并播放音效，帮助你安静放空。这是一个纯粹的情绪出口，在这里你不需要做任何决策。",
-    imageUrl: "/projects/0-forest-healing.png",
+    painPoints: [
+      "高压人群缺乏低门槛的情绪出口",
+      "传统冥想应用门槛高，操作复杂",
+      "用户在疲惫时需要「零决策」的放空体验",
+    ],
+    targetUsers: [
+      "高强度工作的职场人士",
+      "易焦虑人群",
+      "追求内心平静的 i 人",
+    ],
+    solutions: [
+      "构建沉浸式森林场景，模拟真实自然环境",
+      "内置 5 种白噪音，支持音量调节和音效交互",
+      "点击树叶触发掉落动画与自然音效",
+    ],
+    coreValue: [
+      '"零门槛"的情绪释放 —— 用户无需做任何决策',
+      "低能耗回血：5 分钟即可获得心理修复",
+      "纯粹的感官体验，无社交压力",
+    ],
+    useCases: [
+      "睡前助眠",
+      "工作间隙的短暂休憩",
+      "焦虑发作时的即时安抚",
+    ],
+    highlights: [
+      "实时流动的森林光影，随时间变化",
+      "树叶交互：点击触发掉落动画",
+      "白噪音混音系统",
+    ],
+    futurePlans: [
+      "多场景切换（海边、雨林）",
+      "用户自定义音效组合",
+    ],
     liveUrl: "https://xiaoluweb.com/",
     tags: ["React", "Framer Motion", "Web Audio", "Tailwind", "沉浸式设计"],
   },
@@ -30,9 +70,40 @@ export const projects: Project[] = [
     id: "system-tuning",
     title: "爱情公寓 · AI 朋友圈",
     tag: "AI 角色扮演 · 社交模拟",
-    painPoint: "让 AI 角色在朋友圈里活起来",
-    description: "完整还原微信社交产品形态，支持单聊、群聊、发现、朋友圈、通讯录。每条朋友圈支持用户评论，对应角色会自动 AI 回复，高度还原每个角色性格。支持用户发布动态，AI 角色会点赞评论，完全沉浸互动体验。",
-    imageUrl: "/projects/1-system-tuning.png",
+    painPoints: [
+      "用户渴望与喜欢的角色深度互动",
+      "传统 AI 对话缺乏真实社交场景",
+      "角色扮演类产品沉浸感不足",
+    ],
+    targetUsers: [
+      "剧集/动漫爱好者",
+      "喜欢角色扮演的用户",
+      "寻求情感陪伴的年轻人",
+    ],
+    solutions: [
+      "完整还原微信社交产品形态",
+      "AI 角色具备记忆系统和性格还原",
+      "支持用户发布动态，AI 角色会点赞评论",
+    ],
+    coreValue: [
+      "让 AI 角色「活」在朋友圈里",
+      "高度还原的角色性格与互动逻辑",
+      "沉浸式社交体验：单聊、群聊、朋友圈全覆盖",
+    ],
+    useCases: [
+      "角色扮演娱乐",
+      "情感陪伴",
+      "创意故事创作",
+    ],
+    highlights: [
+      "完整微信 UI 还原",
+      "AI 角色智能回复系统",
+      "动态评论与角色联动",
+    ],
+    futurePlans: [
+      "多剧集角色库",
+      "用户自定义角色创建",
+    ],
     liveUrl: "https://xiaoluweb.com/toolbox/answer",
     tags: ["React", "TypeScript", "AI 生成", "LLM 角色扮演", "WebSocket 对话", "数据持久化"],
   },
@@ -40,9 +111,36 @@ export const projects: Project[] = [
     id: "quest-log",
     title: "通关清单",
     tag: "游戏化 To-Do 管理",
-    painPoint: "把人生变成一场 RPG",
-    description: "将生活任务转化为游戏任务，每个任务完成可以获得经验值，升级后解锁成就，让平凡日常也有闯关打怪的乐趣。支持任务分类、等级系统、成就系统，帮助你保持前进动力。",
-    imageUrl: "/projects/2-quest-log.png",
+    painPoints: [
+      "日常任务缺乏激励感，难以坚持",
+      "传统待办应用枯燥无味",
+      "用户需要可视化的成长反馈",
+    ],
+    targetUsers: [
+      "游戏玩家",
+      "需要任务管理的用户",
+      "追求成长感的年轻人",
+    ],
+    solutions: [
+      "将生活任务转化为 RPG 游戏任务",
+      "任务完成获取经验值，升级解锁成就",
+      "丰富的成就系统与等级视觉反馈",
+    ],
+    coreValue: [
+      "把人生变成一场 RPG",
+      "平凡日常也有闯关打怪的乐趣",
+      "即时反馈系统保持前进动力",
+    ],
+    useCases: [
+      "每日习惯养成",
+      "学习任务管理",
+      "工作事项追踪",
+    ],
+    highlights: [
+      "经验值与等级系统",
+      "成就徽章收集",
+      "任务分类与优先级",
+    ],
     liveUrl: "https://xiaoluweb.com/toolbox/quests",
     tags: ["React", "Framer Motion", "游戏化设计", "LocalStorage", "成就系统"],
   },
@@ -50,9 +148,36 @@ export const projects: Project[] = [
     id: "inventory",
     title: "物资管家",
     tag: "个人库存管理应用",
-    painPoint: "家里囤了什么东西，保质期一目了然",
-    description: "记录家中物资、食品、药品的购买日期和保质期，临近过期会提醒。分类管理，搜索筛选，帮助你避免过期浪费，保持生活井然有序。极简设计，开箱即用。",
-    imageUrl: "/projects/3-inventory.png",
+    painPoints: [
+      "家中物资杂乱，保质期难以追踪",
+      "食品过期造成浪费",
+      "急需某物时找不到",
+    ],
+    targetUsers: [
+      "独居人士",
+      "需要管理家庭物资的用户",
+      "注重生活品质的群体",
+    ],
+    solutions: [
+      "记录物资购买日期与保质期",
+      "临近过期自动提醒",
+      "分类管理与智能搜索",
+    ],
+    coreValue: [
+      "家里囤了什么东西，保质期一目了然",
+      "避免过期浪费，保持生活井然有序",
+      "极简设计，开箱即用",
+    ],
+    useCases: [
+      "食品保质期管理",
+      "家庭药品整理",
+      "日用品库存盘点",
+    ],
+    highlights: [
+      "保质期倒计时提醒",
+      "智能分类系统",
+      "快速搜索筛选",
+    ],
     liveUrl: "https://xiaoluweb.com/toolbox/supplies",
     tags: ["React", "TypeScript", "LocalStorage", "分类搜索", "提醒机制"],
   },
@@ -60,9 +185,36 @@ export const projects: Project[] = [
     id: "advice-shop",
     title: "解忧杂货铺",
     tag: "治愈系问答空间",
-    painPoint: "总有一句话，能解开你的心结",
-    description: "收录了 100+ 治愈句子，点击随机翻牌，每次翻开都是惊喜。心情不好的时候来抽一张，说不定就能得到你想要的答案。轻量、安静、温柔。",
-    imageUrl: "/projects/4-advice-shop.png",
+    painPoints: [
+      "用户需要即时的情感慰藉",
+      "传统心理咨询门槛高、费用高",
+      "深夜独处时无人倾诉",
+    ],
+    targetUsers: [
+      "情绪低落的年轻人",
+      "寻求心灵慰藉的用户",
+      "喜欢随机惊喜的人群",
+    ],
+    solutions: [
+      "收录 100+ 治愈句子",
+      "点击随机翻牌机制",
+      "轻量、安静、温柔的界面设计",
+    ],
+    coreValue: [
+      "总有一句话，能解开你的心结",
+      "即时的情感共鸣",
+      "零压力的使用体验",
+    ],
+    useCases: [
+      "心情不好时的即时安慰",
+      "深夜独处的温暖陪伴",
+      "选择困难时的随机指引",
+    ],
+    highlights: [
+      "翻牌动画与惊喜感",
+      "治愈文案库",
+      "极简交互设计",
+    ],
     liveUrl: "https://xiaoluweb.com/toolbox/advice",
     tags: ["React", "Framer Motion", "情感化设计", "LocalStorage"],
   },
@@ -70,9 +222,36 @@ export const projects: Project[] = [
     id: "travel-guide",
     title: "漫游指南",
     tag: "旅行足迹与攻略",
-    painPoint: "走过的路，看过的云",
-    description: "手绘风格中国地图，标注走过的城市，点击可以查看旅行游记和照片。用 SVG 路径绘制，点击有呼吸动画，记录每一段旅程的风景与心情。",
-    imageUrl: "/projects/5-travel-guide.png",
+    painPoints: [
+      "旅行照片散落各处，难以整理",
+      "走过的地方难以形成系统记忆",
+      "传统游记编辑成本高",
+    ],
+    targetUsers: [
+      "旅行爱好者",
+      "喜欢记录生活的人",
+      "地理探索者",
+    ],
+    solutions: [
+      "手绘风格中国地图 SVG 实现",
+      "标注走过的城市，一目了然",
+      "点击城市查看游记与照片",
+    ],
+    coreValue: [
+      "走过的路，看过的云",
+      "用视觉化方式记录旅行足迹",
+      "每一段旅程都有专属记忆",
+    ],
+    useCases: [
+      "旅行打卡记录",
+      "行程规划参考",
+      "回忆收藏",
+    ],
+    highlights: [
+      "手绘地图风格",
+      "SVG 路径呼吸动画",
+      "城市详情页",
+    ],
     liveUrl: "https://xiaoluweb.com/toolbox/travel",
     tags: ["SVG", "Framer Motion", "胶片美学", "交互地图"],
   },
@@ -80,9 +259,36 @@ export const projects: Project[] = [
     id: "recharge-list",
     title: "回血清单",
     tag: "i 人低能耗回血",
-    painPoint: "允许一切崩塌，只做一件极小的事",
-    description: "收集了 50+ 极小行动，帮你在情绪耗竭的时候快速回血。每一个行动都不超过 5 分钟，点击标记完成，可以看到自己回血的历史。微小也是力量。",
-    imageUrl: "/projects/6-recharge-list.png",
+    painPoints: [
+      "情绪耗竭时不知从何恢复",
+      "大型自我疗愈方案难以执行",
+      '需要"最小行动"快速回血',
+    ],
+    targetUsers: [
+      "高敏感人群",
+      "易情绪耗竭的用户",
+      "追求低能耗自我修复的 i 人",
+    ],
+    solutions: [
+      "收集 50+ 极小行动（不超过 5 分钟）",
+      "点击标记完成，记录回血历史",
+      "3D Transform 立体交互",
+    ],
+    coreValue: [
+      "允许一切崩塌，只做一件极小的事",
+      "微小也是力量",
+      "量化回血进度，增强掌控感",
+    ],
+    useCases: [
+      "情绪崩溃后的快速修复",
+      "日常微休息",
+      "能量补给站",
+    ],
+    highlights: [
+      "极小行动库（5 分钟内）",
+      "3D 卡片翻转交互",
+      "回血历史记录",
+    ],
     liveUrl: "https://xiaoluweb.com/toolbox/recharge",
     tags: ["3D Transform", "Framer Motion", "LocalStorage", "情绪疗愈"],
   },
@@ -90,9 +296,37 @@ export const projects: Project[] = [
     id: "stress-relief",
     title: "解压馆",
     tag: "交互式解压小游戏",
-    painPoint: "允许一切失控，除了你的心跳",
-    description: "收集三款解压小游戏：消散（三消归零，万念俱散）、斩断（一刀两断，万物可裂）、吞噬（画下的都会落下）。每个游戏都是独立完整实现，支持关卡进度保存，帮助你在紧张间隙释放压力。",
-    imageUrl: "/projects/7-stress-relief.png",
+    painPoints: [
+      "高压人群需要快速释放压力",
+      "传统解压方式门槛高或效果有限",
+      "紧张间隙缺乏即时的解压工具",
+    ],
+    targetUsers: [
+      "高压职场人士",
+      "学生群体",
+      "任何需要释放压力的用户",
+    ],
+    solutions: [
+      "三款独立解压小游戏",
+      "消散：三消归零，万念俱散",
+      "斩断：一刀两断，万物可裂",
+      "吞噬：画下的都会落下",
+    ],
+    coreValue: [
+      "允许一切失控，除了你的心跳",
+      "即时的压力释放",
+      "沉浸式交互体验",
+    ],
+    useCases: [
+      "工作间隙的短暂放松",
+      "考试前的压力释放",
+      "睡前放松",
+    ],
+    highlights: [
+      "Canvas 物理效果",
+      "SVG 交互动画",
+      "关卡进度保存",
+    ],
     liveUrl: "https://xiaoluweb.com/toolbox/games",
     tags: ["Canvas", "SVG", "Web Audio", "游戏开发", "三消算法"],
   },
@@ -100,9 +334,36 @@ export const projects: Project[] = [
     id: "memory-museum",
     title: "时光博物馆",
     tag: "双展厅回忆录",
-    painPoint: "每一步都算数",
-    description: "两个展厅：「成长展厅」记录成长关键节点，「藏品展厅」展示怀旧数码产品。用复古胶片风格，每个藏品都有故事和照片，带我们回到那个充满期待的年代。",
-    imageUrl: "/projects/8-memory-museum.png",
+    painPoints: [
+      "成长记忆散落各处",
+      "旧物难以保留原始情感",
+      "需要仪式感来纪念过去",
+    ],
+    targetUsers: [
+      "怀旧人群",
+      "喜欢记录成长的人",
+      "珍视回忆的用户",
+    ],
+    solutions: [
+      "双展厅设计：成长展厅 + 藏品展厅",
+      "复古胶片风格呈现",
+      "每个藏品都有故事和照片",
+    ],
+    coreValue: [
+      "每一步都算数",
+      "用数字化方式保留珍贵记忆",
+      "时光流转中的情感锚点",
+    ],
+    useCases: [
+      "成长记录",
+      "怀旧收藏展示",
+      "家庭回忆整理",
+    ],
+    highlights: [
+      "双展厅叙事结构",
+      "复古胶片滤镜",
+      "Lightbox 藏品展示",
+    ],
     liveUrl: "https://xiaoluweb.com/toolbox/memories",
     tags: ["Framer Motion", "Lightbox", "复古胶片", "叙事设计"],
   },
@@ -110,9 +371,37 @@ export const projects: Project[] = [
     id: "life-slices",
     title: "第七卷胶片",
     tag: "生活切面音乐馆",
-    painPoint: "一卷胶片，六个画面",
-    description: "把生活切成六片：阅读、摄影、音乐、运动、冥想、追剧。每个切面都可以记录你喜欢的东西，比如正在读的书、拍的照片、常听的歌。用立体手绘胶卷动画展开，充满生活质感。",
-    imageUrl: "/projects/9-life-slices.png",
+    painPoints: [
+      "生活中的美好碎片难以聚合",
+      "阅读、音乐、摄影各自独立",
+      "缺乏统一的生活美学呈现",
+    ],
+    targetUsers: [
+      "文艺青年",
+      "生活记录者",
+      "追求生活质感的人群",
+    ],
+    solutions: [
+      "把生活切成 6 个切面：阅读、摄影、音乐、运动、冥想、追剧",
+      "立体手绘胶卷动画展开",
+      "每个切面可独立记录内容",
+    ],
+    coreValue: [
+      "一卷胶片，六个画面",
+      "生活不是电影，但可以把每一天都拍成胶片",
+      "充满生活质感的记录方式",
+    ],
+    useCases: [
+      "阅读书单管理",
+      "音乐收藏展示",
+      "摄影作品集",
+      "追剧记录",
+    ],
+    highlights: [
+      "胶卷动画展开效果",
+      "6 大生活模块",
+      "数据持久化",
+    ],
     liveUrl: "https://xiaoluweb.com/film",
     tags: ["Framer Motion", "Web Audio", "胶卷美学", "CRUD", "数据持久化"],
   },

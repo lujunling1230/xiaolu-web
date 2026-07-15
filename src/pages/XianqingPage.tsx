@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { Link } from "react-router-dom";
 
 /**
@@ -6,7 +6,7 @@ import { Link } from "react-router-dom";
  * DIGITAL ATELIER · VOL.VII
  * 人生第七卷胶片馆
  *
- * 暖灰纹理纸感背景 + 6个胶片卡片 + 悬停放大阴影交互
+ * 暖灰纹理纸感背景 + 水平拼接胶片条（默认卷起，点击展开）
  */
 
 /* ====== 胶片卡片数据 ====== */
@@ -20,13 +20,7 @@ const FILM_CARDS = [
     date: "2024 - 至今",
     color: "#DDD0B8",
     textColor: "#8a7a5a",
-    icon: (
-      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
-        <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
-      </svg>
-    ),
-    link: "/film",
+    emoji: "📖",
   },
   {
     id: "photo",
@@ -37,14 +31,7 @@ const FILM_CARDS = [
     date: "2024 - 至今",
     color: "#C8D8C0",
     textColor: "#5a6a4a",
-    icon: (
-      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-        <rect x="3" y="3" width="18" height="18" rx="2" />
-        <circle cx="8.5" cy="8.5" r="1.5" />
-        <path d="M21 15l-5-5L5 21" />
-      </svg>
-    ),
-    link: "/film",
+    emoji: "📷",
   },
   {
     id: "music",
@@ -55,14 +42,7 @@ const FILM_CARDS = [
     date: "2024 - 至今",
     color: "#DCC8C0",
     textColor: "#7a5a4a",
-    icon: (
-      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-        <path d="M9 18V5l12-2v13" />
-        <circle cx="6" cy="18" r="3" />
-        <circle cx="18" cy="16" r="3" />
-      </svg>
-    ),
-    link: "/film",
+    emoji: "🎧",
   },
   {
     id: "sport",
@@ -73,14 +53,7 @@ const FILM_CARDS = [
     date: "2025 - 至今",
     color: "#D8C8A8",
     textColor: "#6a5a3a",
-    icon: (
-      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-        <circle cx="12" cy="5" r="2" />
-        <path d="M4 17l3.2-2.8L10 16l3-6 3.5 3.5L20 12" />
-        <path d="M10 22l2-6 2 6" />
-      </svg>
-    ),
-    link: "/film",
+    emoji: "🏃",
   },
   {
     id: "meditation",
@@ -91,14 +64,7 @@ const FILM_CARDS = [
     date: "2025 - 至今",
     color: "#C0D0CC",
     textColor: "#4a5a5a",
-    icon: (
-      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-        <circle cx="12" cy="12" r="9" />
-        <path d="M12 7v5l3 3" />
-        <path d="M8 16c1.5 1 6.5 1 8 0" />
-      </svg>
-    ),
-    link: "/film",
+    emoji: "🧘",
   },
   {
     id: "drama",
@@ -109,15 +75,7 @@ const FILM_CARDS = [
     date: "2025 - 至今",
     color: "#D0C8C0",
     textColor: "#5a4a4a",
-    icon: (
-      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-        <rect x="2" y="4" width="20" height="14" rx="2" />
-        <path d="M8 21h8" />
-        <path d="M12 18v3" />
-        <polygon points="10,8 16,11 10,14" fill="currentColor" stroke="none" />
-      </svg>
-    ),
-    link: "/film",
+    emoji: "📺",
   },
 ];
 
@@ -125,14 +83,15 @@ const FILM_CARDS = [
 const SprocketHoles: React.FC<{ position: "top" | "bottom" }> = ({ position }) => (
   <div style={{
     position: "absolute",
-    [position]: 8,
-    left: 14,
-    right: 14,
-    height: 5,
+    [position]: 6,
+    left: 10,
+    right: 10,
+    height: 4,
     display: "flex",
-    gap: 5,
+    gap: 4,
+    pointerEvents: "none",
   }}>
-    {Array.from({ length: 18 }).map((_, idx) => (
+    {Array.from({ length: 16 }).map((_, idx) => (
       <div key={idx} style={{
         flex: 1,
         height: "100%",
@@ -144,29 +103,42 @@ const SprocketHoles: React.FC<{ position: "top" | "bottom" }> = ({ position }) =
   </div>
 );
 
-/* ====== 播放按钮 ====== */
-const PlayButton: React.FC<{ hovered: boolean; color: string }> = ({ hovered, color }) => (
-  <div style={{
-    width: 44,
-    height: 44,
-    borderRadius: "50%",
-    background: hovered ? "rgba(255,255,255,0.95)" : "rgba(255,255,255,0.7)",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    boxShadow: "0 4px 16px rgba(0,0,0,0.15)",
-    transition: "all 0.4s cubic-bezier(0.34,1.56,0.64,1)",
-    transform: hovered ? "scale(1.1)" : "scale(1)",
-    backdropFilter: "blur(4px)",
-  }}>
-    <svg width="18" height="18" viewBox="0 0 24 24" fill={color} stroke="none">
-      <polygon points="8,5 20,12 8,19" />
-    </svg>
-  </div>
-);
-
 const XianqingPage: React.FC = () => {
-  const [hoverCard, setHoverCard] = useState<string | null>(null);
+  const [expanded, setExpanded] = useState(false);
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const isDragging = useRef(false);
+  const startX = useRef(0);
+  const scrollStart = useRef(0);
+
+  /* 拖拽滚动 */
+  const handleMouseDown = (e: React.MouseEvent) => {
+    if (!scrollRef.current) return;
+    isDragging.current = true;
+    startX.current = e.clientX;
+    scrollStart.current = scrollRef.current.scrollLeft;
+    scrollRef.current.style.cursor = "grabbing";
+  };
+
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (!isDragging.current || !scrollRef.current) return;
+    e.preventDefault();
+    const dx = e.clientX - startX.current;
+    scrollRef.current.scrollLeft = scrollStart.current - dx;
+  };
+
+  const handleMouseUp = () => {
+    isDragging.current = false;
+    if (scrollRef.current) {
+      scrollRef.current.style.cursor = "grab";
+    }
+  };
+
+  const handleFrameClick = (e: React.MouseEvent, moduleId: string) => {
+    /* 如果拖拽距离很小才跳转 */
+    if (!isDragging.current) {
+      window.location.href = `/film?module=${moduleId}`;
+    }
+  };
 
   return (
     <div style={{
@@ -302,54 +274,80 @@ const XianqingPage: React.FC = () => {
           </div>
         </div>
 
-        {/* ====== 6个胶片卡片 ====== */}
+        {/* ====== 水平胶片条 ====== */}
         <div style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(3, 1fr)",
-          gap: 28,
-          marginBottom: 56,
           maxWidth: 960,
-          margin: "0 auto 56px",
-        }} className="xianqing-cards">
-          {FILM_CARDS.map((card) => {
-            const isHovered = hoverCard === card.id;
-            return (
-              <Link
-                key={card.id}
-                to={card.link}
-                style={{ textDecoration: "none", color: "inherit" }}
-              >
+          margin: "0 auto",
+        }}>
+          {/* 胶片外壳 */}
+          <div
+            style={{
+              background: "linear-gradient(180deg, #2a2824, #1e1c1a)",
+              borderRadius: 6,
+              overflow: "hidden",
+              height: expanded ? 240 : 80,
+              transition: "height 0.5s cubic-bezier(0.4, 0, 0.2, 1)",
+              cursor: "grab",
+            }}
+            onClick={() => setExpanded(!expanded)}
+          >
+            {/* 胶片滚动区域 */}
+            <div
+              ref={scrollRef}
+              style={{
+                display: "flex",
+                overflowX: "auto",
+                height: "100%",
+                /* 隐藏滚动条 */
+                scrollbarWidth: "none",
+                msOverflowStyle: "none",
+              }}
+              onMouseDown={handleMouseDown}
+              onMouseMove={handleMouseMove}
+              onMouseUp={handleMouseUp}
+              onMouseLeave={handleMouseUp}
+            >
+              {FILM_CARDS.map((card, index) => (
                 <div
+                  key={card.id}
+                  className="xianqing-film-frame"
+                  onClick={(e) => handleFrameClick(e, card.id)}
                   style={{
                     position: "relative",
+                    width: 180,
+                    flexShrink: 0,
+                    height: "100%",
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "center",
+                    justifyContent: "center",
                     cursor: "pointer",
-                    transition: "transform 0.45s cubic-bezier(0.34,1.56,0.64,1), box-shadow 0.45s ease",
-                    transform: isHovered ? "translateY(-8px) scale(1.03)" : "translateY(0) scale(1)",
-                    /* 胶片外壳：深色底 */
-                    background: "linear-gradient(180deg, #2a2824 0%, #1e1c1a 100%)",
-                    borderRadius: 6,
-                    padding: "20px 16px 16px",
-                    boxShadow: isHovered
-                      ? "0 24px 48px -12px rgba(40,36,30,0.4), 0 8px 20px -8px rgba(40,36,30,0.25)"
-                      : "0 12px 32px -8px rgba(40,36,30,0.2)",
+                    /* 帧之间的分隔线 */
+                    borderRight: index < FILM_CARDS.length - 1
+                      ? "1px solid rgba(255,255,255,0.1)"
+                      : "none",
+                    userSelect: "none",
                   }}
-                  onMouseEnter={() => setHoverCard(card.id)}
-                  onMouseLeave={() => setHoverCard(null)}
                 >
-                  {/* 胶片齿孔 */}
+                  {/* 顶部齿孔 */}
                   <SprocketHoles position="top" />
 
                   {/* 画面区域 */}
                   <div style={{
-                    height: 180,
+                    width: "calc(100% - 20px)",
+                    flex: 1,
+                    margin: "12px 0",
                     background: `linear-gradient(145deg, ${card.color} 0%, ${card.color}cc 60%, ${card.color}99 100%)`,
                     borderRadius: 3,
-                    margin: "10px 0",
                     position: "relative",
                     overflow: "hidden",
                     display: "flex",
+                    flexDirection: "column",
                     alignItems: "center",
                     justifyContent: "center",
+                    gap: 4,
+                    transition: "opacity 0.3s ease",
+                    opacity: expanded ? 1 : 0.35,
                   }}>
                     {/* 光晕效果 */}
                     <div style={{
@@ -357,138 +355,75 @@ const XianqingPage: React.FC = () => {
                       inset: 0,
                       background: `radial-gradient(ellipse at 35% 35%, rgba(255,255,255,0.25) 0%, transparent 55%)`,
                     }} />
-                    {/* 噪点纹理 */}
+                    {/* 内容 */}
                     <div style={{
-                      position: "absolute",
-                      inset: 0,
-                      background: `repeating-conic-gradient(rgba(0,0,0,0.015) 0deg 3deg, transparent 3deg 6deg)`,
-                      opacity: 0.5,
-                    }} />
-                    {/* 图标 + 播放按钮 */}
-                    <div style={{ position: "relative", zIndex: 2, display: "flex", flexDirection: "column", alignItems: "center", gap: 12 }}>
-                      <div style={{
-                        color: card.textColor,
-                        opacity: 0.75,
-                        transition: "opacity 0.3s, transform 0.4s",
-                        transform: isHovered ? "scale(1.05)" : "scale(1)",
+                      position: "relative",
+                      zIndex: 2,
+                      display: "flex",
+                      flexDirection: "column",
+                      alignItems: "center",
+                      gap: 4,
+                      transition: "opacity 0.4s ease, transform 0.4s ease",
+                      opacity: expanded ? 1 : 0,
+                      transform: expanded ? "translateY(0)" : "translateY(8px)",
+                    }}>
+                      <span style={{ fontSize: 24, lineHeight: 1 }}>{card.emoji}</span>
+                      <h4 style={{
+                        fontFamily: '"Noto Serif SC", "Songti SC", Georgia, serif',
+                        fontSize: 14,
+                        fontWeight: 600,
+                        color: "#4a3a2a",
+                        margin: 0,
+                        letterSpacing: "0.08em",
                       }}>
-                        {card.icon}
-                      </div>
-                      <PlayButton hovered={isHovered} color={card.textColor} />
+                        {card.title}
+                      </h4>
+                      <p style={{
+                        fontFamily: '"Noto Serif SC", Georgia, serif',
+                        fontSize: 11,
+                        color: "#8a7a6a",
+                        margin: 0,
+                        lineHeight: 1.5,
+                        textAlign: "center",
+                        padding: "0 12px",
+                      }}>
+                        {card.desc}
+                      </p>
                     </div>
                   </div>
 
-                  {/* 胶片齿孔 */}
+                  {/* 底部齿孔 */}
                   <SprocketHoles position="bottom" />
-
-                  {/* 文字信息 */}
-                  <div style={{
-                    position: "relative",
-                    zIndex: 2,
-                    padding: "4px 4px 0",
-                    textAlign: "center",
-                  }}>
-                    <p style={{
-                      fontFamily: '"Courier New", monospace',
-                      fontSize: 9,
-                      color: "rgba(220,210,195,0.35)",
-                      letterSpacing: "0.25em",
-                      margin: "6px 0 0",
-                    }}>
-                      NO. {card.no}
-                    </p>
-                  </div>
                 </div>
+              ))}
+            </div>
+          </div>
 
-                {/* 卡片下方标题区（在胶片框外） */}
-                <div style={{
-                  textAlign: "center",
-                  marginTop: 16,
-                  transition: "transform 0.3s ease",
-                  transform: isHovered ? "translateY(-4px)" : "translateY(0)",
-                }}>
-                  <h3 style={{
-                    fontFamily: '"Noto Serif SC", "Songti SC", Georgia, serif',
-                    fontSize: 18,
-                    fontWeight: 600,
-                    color: "#4a3a2a",
-                    margin: "0 0 4px",
-                    letterSpacing: "0.12em",
-                  }}>
-                    {card.title}
-                  </h3>
-                  <p style={{
-                    fontFamily: '"Courier New", monospace',
-                    fontSize: 9,
-                    color: "#b0a090",
-                    letterSpacing: "0.2em",
-                    margin: "0 0 6px",
-                    textTransform: "uppercase",
-                  }}>
-                    {card.subtitle}
-                  </p>
-                  <p style={{
-                    fontFamily: '"Noto Serif SC", Georgia, serif',
-                    fontSize: 12,
-                    color: "#8a7a6a",
-                    margin: "0 0 4px",
-                    lineHeight: 1.6,
-                    letterSpacing: "0.02em",
-                  }}>
-                    {card.desc}
-                  </p>
-                  <p style={{
-                    fontFamily: '"Courier New", monospace',
-                    fontSize: 10,
-                    color: "#c0b0a0",
-                    letterSpacing: "0.15em",
-                    margin: 0,
-                  }}>
-                    {card.date}
-                  </p>
-                </div>
-              </Link>
-            );
-          })}
-        </div>
-
-        {/* ====== 进入完整胶片空间 ====== */}
-        <div style={{ textAlign: "center", marginTop: 16 }}>
-          <Link
-            to="/film"
+          {/* 展开/收起提示 */}
+          <div
             style={{
-              display: "inline-flex",
-              alignItems: "center",
-              gap: 10,
-              padding: "14px 36px",
-              background: "rgba(180,160,120,0.08)",
-              border: "1px solid rgba(180,160,120,0.25)",
-              borderRadius: 28,
-              color: "#8a7a5a",
-              fontFamily: '"Noto Serif SC", "Songti SC", Georgia, serif',
-              fontSize: 14,
-              letterSpacing: "0.12em",
-              textDecoration: "none",
-              transition: "all 0.35s ease",
+              textAlign: "center",
+              marginTop: 12,
+              cursor: "pointer",
+              userSelect: "none",
             }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.background = "rgba(180,160,120,0.16)";
-              e.currentTarget.style.borderColor = "rgba(180,160,120,0.45)";
-              e.currentTarget.style.transform = "translateY(-3px)";
-              e.currentTarget.style.boxShadow = "0 8px 24px rgba(180,160,120,0.15)";
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.background = "rgba(180,160,120,0.08)";
-              e.currentTarget.style.borderColor = "rgba(180,160,120,0.25)";
-              e.currentTarget.style.transform = "translateY(0)";
-              e.currentTarget.style.boxShadow = "none";
-            }}
+            onClick={() => setExpanded(!expanded)}
           >
-            进入人生放映厅
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
-              <path d="M5 12h14M12 5l7 7-7 7" />
-            </svg>
-          </Link>
+            <p style={{
+              fontFamily: '"Noto Serif SC", "Songti SC", Georgia, serif',
+              fontSize: 12,
+              color: "#a09080",
+              letterSpacing: "0.12em",
+              opacity: 0.6,
+              margin: 0,
+              transition: "opacity 0.3s ease",
+            }}
+              onMouseEnter={(e) => { e.currentTarget.style.opacity = "1"; }}
+              onMouseLeave={(e) => { e.currentTarget.style.opacity = "0.6"; }}
+            >
+              {expanded ? "↑ 收起胶片" : "↓ 展开胶片"}
+            </p>
+          </div>
         </div>
 
         {/* ====== 底部装饰 ====== */}
@@ -521,16 +456,12 @@ const XianqingPage: React.FC = () => {
 
       {/* ====== 响应式样式 ====== */}
       <style>{`
-        @media (max-width: 900px) {
-          .xianqing-cards {
-            grid-template-columns: repeat(2, 1fr) !important;
-            gap: 22px !important;
-          }
+        .xianqing-film-scroll::-webkit-scrollbar {
+          display: none;
         }
-        @media (max-width: 560px) {
-          .xianqing-cards {
-            grid-template-columns: 1fr !important;
-            gap: 20px !important;
+        @media (max-width: 768px) {
+          .xianqing-film-frame {
+            width: 140px !important;
           }
         }
       `}</style>

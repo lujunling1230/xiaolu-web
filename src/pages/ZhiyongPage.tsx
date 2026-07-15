@@ -62,7 +62,21 @@ const HERITAGE_ITEMS = [
 
 const ZhiyongPage: React.FC = () => {
   const [activeSection, setActiveSection] = useState<string>("hero");
+  const [leafAutoFlip, setLeafAutoFlip] = useState<number | undefined>(undefined);
   const navigate = useNavigate();
+
+  // 检测 URL 参数：是否从首页"翻阅我的作品"跳转而来
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("openBook") === "1") {
+      setLeafAutoFlip(800);
+      // 滚动到项目集区域
+      setTimeout(() => {
+        const el = document.getElementById("projects");
+        if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+      }, 300);
+    }
+  }, []);
 
   // 滚动监听，更新当前激活的导航项
   useEffect(() => {
@@ -309,7 +323,7 @@ const ZhiyongPage: React.FC = () => {
           </div>
 
           <div style={{ marginTop: 40, marginBottom: 40 }}>
-            <LeafBook />
+            <LeafBook autoFlipDelay={leafAutoFlip} />
           </div>
         </section>
 

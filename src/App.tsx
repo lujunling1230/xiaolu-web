@@ -1,15 +1,14 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { ThemeProvider, useTheme } from "./context/ThemeContext";
 import SimpleNavbar from "./components/SimpleNavbar";
-import LeafBook from "./components/LeafBook";
 import DynamicBackground from "./components/DynamicBackground";
 import ButterflyCursor from "./components/ButterflyCursor";
 import Footer from "./components/Footer";
 import { initSiteData, loadAdminSession, fetchSiteData } from "./utils/siteData";
 import { isElectron } from "./utils/electron";
 
-type Section = "home" | "about" | "projects" | "lab" | "film" | "mickey";
+type Section = "home" | "about" | "zhongji" | "zhiyong" | "xianqing";
 
 const fadeUp = {
   initial: { opacity: 0, y: 28 },
@@ -24,7 +23,6 @@ const AppContent: React.FC = () => {
   const [current, setCurrent] = useState<Section>("home");
   const [isFullMode, setIsFullMode] = useState(true);
   const [scrolled, setScrolled] = useState(false);
-  const openBookRef = useRef<(() => void) | null>(null);
 
   /* 初始化站点数据 + 恢复管理员会话 + 异步拉取远程最新数据 */
   useEffect(() => {
@@ -47,6 +45,14 @@ const AppContent: React.FC = () => {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
+  /* 监听路由变化：筑基/致用/闲情独立页面时高亮对应导航项 */
+  useEffect(() => {
+    const path = window.location.pathname;
+    if (path.startsWith("/zhongji")) setCurrent("zhongji");
+    else if (path.startsWith("/zhiyong")) setCurrent("zhiyong");
+    else if (path.startsWith("/xianqing")) setCurrent("xianqing");
+  }, []);
+
   useEffect(() => {
     const hash = window.location.hash.replace("#", "");
     if (!hash) return;
@@ -58,7 +64,7 @@ const AppContent: React.FC = () => {
   }, [isFullMode]);
 
   useEffect(() => {
-    const sections = isFullMode ? ["home", "about", "projects"] : ["home"];
+    const sections = isFullMode ? ["home", "about"] : ["home"];
     const observer = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
@@ -74,17 +80,9 @@ const AppContent: React.FC = () => {
     return () => observer.disconnect();
   }, [isFullMode]);
 
-  const handleNavigate = (section: Section, openBook = false) => {
+  const handleNavigate = (section: Section) => {
     const el = document.getElementById(section);
     if (el) el.scrollIntoView({ behavior: "smooth" });
-    // 项目集：仅当明确要求时才翻开树叶书（如"翻阅我的作品"按钮）
-    if (section === "projects" && openBook) {
-      setTimeout(() => { if (openBookRef.current) openBookRef.current(); }, 700);
-    }
-  };
-
-  const registerOpenBook = (fn: () => void) => {
-    openBookRef.current = fn;
   };
 
   return (
@@ -124,9 +122,9 @@ const AppContent: React.FC = () => {
                 <button onClick={() => handleNavigate("about")} className="po-btn po-btn-primary">
                   了解更多
                 </button>
-                <button onClick={() => handleNavigate("projects", true)} className="po-btn po-btn-ghost">
+                <a href="/zhiyong/?openBook=1#projects" className="po-btn po-btn-ghost">
                   翻阅我的作品 📖
-                </button>
+                </a>
               </div>
             </>
           ) : (
@@ -221,17 +219,7 @@ const AppContent: React.FC = () => {
             </div>
           </section>
 
-          {/* ==================== 项目集 ==================== */}
-          <section id="projects" className="po-section po-section-last po-section-projects">
-            <div className="po-section-inner">
-              <motion.h2 {...fadeUp} className="po-section-heading">项目集</motion.h2>
 
-              {/* 叶子书 */}
-              <motion.div {...fadeUp} className="po-leafbook-wrap">
-                <LeafBook registerOpenBook={registerOpenBook} />
-              </motion.div>
-            </div>
-          </section>
         </>
       )}
 

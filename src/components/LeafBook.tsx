@@ -280,74 +280,200 @@ const QuotePage: React.FC<{ project: Project; index: number }> = ({
 };
 
 /* ============================================================
-   PreviewPage — 作品预览页（右页）
+   PreviewPage — 作品预览页（纯文档布局）
    ============================================================ */
 const PreviewPage: React.FC<{
   project: Project;
   index: number;
   onNext: () => void;
   onJump: () => void;
-}> = ({ project, index, onNext, onJump }) => {
+}> = ({ project, index, onJump }) => {
   const pn = getSpreadPageNums(index + 2);
-  const [imageUrl, setImageUrl] = useState(project.imageUrl);
+
+  // SVG 图标组件
+  const PainPointIcon = () => (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="12" cy="12" r="10"/>
+      <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/>
+      <line x1="12" y1="17" x2="12.01" y2="17"/>
+    </svg>
+  );
+
+  const UsersIcon = () => (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+      <circle cx="9" cy="7" r="4"/>
+      <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+      <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+    </svg>
+  );
+
+  const SolutionIcon = () => (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="12" cy="12" r="10"/>
+      <line x1="12" y1="8" x2="12" y2="12"/>
+      <line x1="12" y1="16" x2="12.01" y2="16"/>
+    </svg>
+  );
+
+  const ValueIcon = () => (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+    </svg>
+  );
+
+  const SceneIcon = () => (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
+      <line x1="3" y1="9" x2="21" y2="9"/>
+      <line x1="9" y1="21" x2="9" y2="9"/>
+    </svg>
+  );
+
+  const HighlightIcon = () => (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M12 3l1.5 4.5H18l-3.7 2.7 1.4 4.3L12 12l-3.7 2.5 1.4-4.3L6 7.5h4.5z"/>
+      <path d="M5 19l1 3 3-1-2-2z"/>
+    </svg>
+  );
+
   return (
-    <div className="lb-page-content lb-preview-page">
+    <div className="lb-page-content lb-doc-page">
       <div className="lb-page-vein" />
-      <div className="lb-preview-grid">
-        {/* 左栏 文字 */}
-        <div className="lb-preview-text">
-          <span className="lb-preview-num">
+      <div className="lb-doc-layout">
+        {/* 标题区 */}
+        <div className="lb-doc-header">
+          <span className="lb-doc-num">
             No. {String(index + 1).padStart(2, "0")} / {String(projects.length).padStart(2, "0")}
           </span>
-          <h2 className="lb-preview-title">{project.title}</h2>
-          <div className="lb-preview-pain-wrap">
-            <span className="lb-preview-pain-bar" />
-            <p className="lb-preview-pain">{project.painPoint}</p>
-          </div>
-          <p className="lb-preview-desc">{project.description}</p>
-          {project.tags && project.tags.length > 0 && (
-            <div className="lb-preview-tags">
-              {project.tags.map((t) => (
-                <span key={t} className="lb-preview-tag">{t}</span>
-              ))}
-            </div>
-          )}
-          <div className="lb-preview-btns">
-            <button
-              className="lb-preview-visit"
-              onClick={(e) => {
-                e.stopPropagation();
-                onJump();
-              }}
-            >
-              打开作品 ↗
-            </button>
-            <label className="lb-preview-upload" onClick={(e) => e.stopPropagation()}>
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-              上传图片
-              <input
-                type="file"
-                accept="image/*"
-                style={{ display: "none" }}
-                onChange={(e) => {
-                  e.stopPropagation();
-                  const file = e.target.files?.[0];
-                  if (!file) return;
-                  const reader = new FileReader();
-                  reader.onload = (ev) => {
-                    const base64 = ev.target?.result as string;
-                    if (base64) setImageUrl(base64);
-                  };
-                  reader.readAsDataURL(file);
-                }}
-              />
-            </label>
-          </div>
+          <h2 className="lb-doc-title">{project.title}</h2>
+          <div className="lb-doc-tag">{project.tag}</div>
         </div>
 
-        {/* 右栏 截图 */}
-        <div className="lb-preview-visual">
-          <img src={imageUrl} alt={project.title} className="lb-preview-media" />
+        {/* 内容区 */}
+        <div className="lb-doc-content">
+          {/* 用户痛点 */}
+          <div className="lb-doc-section">
+            <div className="lb-doc-section-header">
+              <PainPointIcon />
+              <span>用户痛点</span>
+            </div>
+            <ul className="lb-doc-list">
+              {project.painPoints.map((item, i) => (
+                <li key={i}>{item}</li>
+              ))}
+            </ul>
+          </div>
+
+          {/* 适合人群 */}
+          <div className="lb-doc-section">
+            <div className="lb-doc-section-header">
+              <UsersIcon />
+              <span>适合人群</span>
+            </div>
+            <ul className="lb-doc-list lb-doc-list-inline">
+              {project.targetUsers.map((item, i) => (
+                <li key={i}><span className="lb-doc-tag-inline">{item}</span></li>
+              ))}
+            </ul>
+          </div>
+
+          {/* 解决方案 */}
+          <div className="lb-doc-section">
+            <div className="lb-doc-section-header">
+              <SolutionIcon />
+              <span>解决方案</span>
+            </div>
+            <ul className="lb-doc-list">
+              {project.solutions.map((item, i) => (
+                <li key={i}>{item}</li>
+              ))}
+            </ul>
+          </div>
+
+          {/* 核心价值 */}
+          <div className="lb-doc-section lb-doc-section-highlight">
+            <div className="lb-doc-section-header">
+              <ValueIcon />
+              <span>核心价值</span>
+            </div>
+            <ul className="lb-doc-list">
+              {project.coreValue.map((item, i) => (
+                <li key={i}>{item}</li>
+              ))}
+            </ul>
+          </div>
+
+          {/* 使用场景 */}
+          <div className="lb-doc-section">
+            <div className="lb-doc-section-header">
+              <SceneIcon />
+              <span>使用场景</span>
+            </div>
+            <ul className="lb-doc-list lb-doc-list-inline">
+              {project.useCases.map((item, i) => (
+                <li key={i}><span className="lb-doc-tag-inline">{item}</span></li>
+              ))}
+            </ul>
+          </div>
+
+          {/* 产品亮点 */}
+          <div className="lb-doc-section">
+            <div className="lb-doc-section-header">
+              <HighlightIcon />
+              <span>产品亮点</span>
+            </div>
+            <ul className="lb-doc-list">
+              {project.highlights.map((item, i) => (
+                <li key={i}>{item}</li>
+              ))}
+            </ul>
+          </div>
+
+          {/* 未来规划（可选） */}
+          {project.futurePlans && project.futurePlans.length > 0 && (
+            <div className="lb-doc-section lb-doc-section-future">
+              <div className="lb-doc-section-header">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="12" cy="12" r="10"/>
+                  <polyline points="12 6 12 12 16 14"/>
+                </svg>
+                <span>未来规划</span>
+              </div>
+              <ul className="lb-doc-list">
+                {project.futurePlans.map((item, i) => (
+                  <li key={i}>{item}</li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </div>
+
+        {/* 技术标签 */}
+        {project.tags && project.tags.length > 0 && (
+          <div className="lb-doc-tech">
+            {project.tags.map(tag => (
+              <span key={tag} className="lb-doc-tech-tag">{tag}</span>
+            ))}
+          </div>
+        )}
+
+        {/* 操作按钮 */}
+        <div className="lb-doc-actions">
+          <button
+            className="lb-doc-visit"
+            onClick={(e) => {
+              e.stopPropagation();
+              onJump();
+            }}
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
+              <polyline points="15 3 21 3 21 9"/>
+              <line x1="10" y1="14" x2="21" y2="3"/>
+            </svg>
+            打开作品
+          </button>
         </div>
       </div>
 
@@ -1628,87 +1754,167 @@ const LeafBook: React.FC<LeafBookProps> = ({ registerOpenBook, flipTriggerRef, a
           animation: lb-hint-pulse 2.8s ease-in-out infinite;
         }
 
-        /* ===== 作品预览页（左右分栏） ===== */
-        .lb-preview-page { display: flex; }
-        .lb-preview-grid {
+        /* ===== 产品文档页 ===== */
+        .lb-doc-page {
+          display: flex;
+          overflow: hidden;
+        }
+        .lb-doc-layout {
           position: relative;
           z-index: 1;
-          display: grid;
-          grid-template-columns: 1.05fr 0.95fr;
           width: 100%;
           height: 100%;
-        }
-        .lb-preview-text {
-          position: relative;
-          z-index: 2;
           display: flex;
           flex-direction: column;
-          padding: 44px 28px 60px;
-          border-right: 1px solid rgba(184, 140, 106, 0.14);
+          padding: 36px 32px 50px;
           overflow-y: auto;
-          scrollbar-width: none;
+          scrollbar-width: thin;
+          scrollbar-color: rgba(140, 110, 80, 0.15) transparent;
         }
-        .lb-preview-text::-webkit-scrollbar { display: none; }
-        .lb-preview-num {
-          font-size: 11px;
+        .lb-doc-layout::-webkit-scrollbar { width: 3px; }
+        .lb-doc-layout::-webkit-scrollbar-thumb {
+          background: rgba(140, 110, 80, 0.15);
+          border-radius: 2px;
+        }
+
+        /* 标题区 */
+        .lb-doc-header {
+          margin-bottom: 20px;
+          padding-bottom: 16px;
+          border-bottom: 1px solid rgba(184, 140, 106, 0.12);
+        }
+        .lb-doc-num {
+          font-size: 10px;
           letter-spacing: 0.2em;
           color: var(--accent);
-          opacity: 0.8;
-          margin-bottom: 14px;
+          opacity: 0.7;
           font-variant-numeric: tabular-nums;
+          display: block;
+          margin-bottom: 8px;
         }
-        .lb-preview-title {
+        .lb-doc-title {
           font-family: "Noto Serif SC", Georgia, serif;
-          font-size: 26px;
+          font-size: 22px;
           font-weight: 700;
           color: var(--lb-text);
-          line-height: 1.25;
-          margin: 0 0 16px;
+          line-height: 1.3;
+          margin: 0 0 8px;
           letter-spacing: 0.02em;
         }
-        .lb-preview-pain-wrap {
+        .lb-doc-tag {
+          font-size: 11px;
+          color: var(--lb-text-soft);
+          opacity: 0.7;
+          letter-spacing: 0.06em;
+        }
+
+        /* 内容区 */
+        .lb-doc-content {
           display: flex;
-          align-items: stretch;
-          gap: 12px;
-          margin-bottom: 16px;
+          flex-direction: column;
+          gap: 14px;
+          flex: 1;
         }
-        .lb-preview-pain-bar {
-          width: 3px;
-          border-radius: 2px;
-          background: var(--accent);
-          flex-shrink: 0;
-          opacity: 0.8;
+        .lb-doc-section {
+          padding: 12px 14px;
+          border-radius: 6px;
+          background: rgba(184, 140, 106, 0.03);
+          border: 1px solid rgba(184, 140, 106, 0.08);
         }
-        .lb-preview-pain {
-          font-family: "Noto Serif SC", Georgia, serif;
-          font-size: 14px;
+        .lb-doc-section-highlight {
+          background: rgba(184, 140, 106, 0.06);
+          border-color: rgba(184, 140, 106, 0.14);
+        }
+        .lb-doc-section-future {
+          background: rgba(122, 154, 130, 0.04);
+          border-color: rgba(122, 154, 130, 0.12);
+        }
+        .lb-doc-section-header {
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          margin-bottom: 8px;
+          font-size: 11px;
           font-weight: 600;
           color: var(--accent);
-          line-height: 1.55;
+          letter-spacing: 0.04em;
+          font-family: "Noto Sans SC", sans-serif;
+        }
+        .lb-doc-section-header svg {
+          flex-shrink: 0;
+        }
+        .lb-doc-list {
           margin: 0;
-        }
-        .lb-preview-desc {
-          font-size: 12px;
-          line-height: 1.8;
-          color: var(--lb-text-soft);
-          margin: 0 0 16px;
-        }
-        .lb-preview-tags {
+          padding: 0;
+          list-style: none;
           display: flex;
+          flex-direction: column;
+          gap: 4px;
+        }
+        .lb-doc-list li {
+          font-size: 11px;
+          line-height: 1.65;
+          color: var(--lb-text-soft);
+          padding-left: 12px;
+          position: relative;
+        }
+        .lb-doc-list li::before {
+          content: "";
+          position: absolute;
+          left: 0;
+          top: 7px;
+          width: 4px;
+          height: 4px;
+          border-radius: 50%;
+          background: rgba(184, 140, 106, 0.45);
+        }
+        .lb-doc-list-inline {
+          flex-direction: row;
           flex-wrap: wrap;
           gap: 6px;
-          margin-bottom: 16px;
         }
-        .lb-preview-tag {
+        .lb-doc-list-inline li {
+          padding-left: 0;
+        }
+        .lb-doc-list-inline li::before { display: none; }
+        .lb-doc-tag-inline {
           font-size: 10px;
-          padding: 3px 9px;
-          border-radius: 6px;
+          padding: 2px 8px;
+          border-radius: 4px;
           background: rgba(184, 140, 106, 0.1);
           color: var(--lb-text-soft);
+          white-space: nowrap;
         }
-        .lb-preview-visit {
-          margin-top: auto;
-          align-self: flex-start;
+
+        /* 技术标签 */
+        .lb-doc-tech {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 5px;
+          margin-top: 14px;
+          padding-top: 12px;
+          border-top: 1px dashed rgba(184, 140, 106, 0.1);
+        }
+        .lb-doc-tech-tag {
+          font-size: 9px;
+          padding: 2px 7px;
+          border-radius: 4px;
+          background: rgba(184, 140, 106, 0.08);
+          color: var(--lb-text-soft);
+          opacity: 0.8;
+          letter-spacing: 0.02em;
+        }
+
+        /* 操作按钮 */
+        .lb-doc-actions {
+          margin-top: 16px;
+          display: flex;
+          justify-content: flex-end;
+        }
+        .lb-doc-visit {
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
           font-size: 12px;
           color: var(--accent);
           font-weight: 500;
@@ -1720,55 +1926,10 @@ const LeafBook: React.FC<LeafBookProps> = ({ registerOpenBook, flipTriggerRef, a
           font-family: "Noto Sans SC", sans-serif;
           transition: border-color 0.25s ease, background 0.25s ease;
         }
-        .lb-preview-visit:hover {
+        .lb-doc-visit:hover {
           border-color: var(--accent);
           background: rgba(184, 140, 106, 0.08);
         }
-        .lb-preview-btns {
-          margin-top: auto;
-          align-self: flex-start;
-          display: flex;
-          gap: 8px;
-        }
-        .lb-preview-upload {
-          display: inline-flex;
-          align-items: center;
-          gap: 4px;
-          font-size: 12px;
-          font-weight: 500;
-          padding: 7px 14px;
-          border-radius: 999px;
-          background: rgba(120, 160, 100, 0.15);
-          border: 1px solid rgba(120, 160, 100, 0.35);
-          color: #5a7a5a;
-          cursor: pointer;
-          font-family: "Noto Sans SC", sans-serif;
-          transition: all 0.25s ease;
-        }
-        .lb-preview-upload:hover {
-          background: rgba(120, 160, 100, 0.25);
-          border-color: rgba(120, 160, 100, 0.5);
-        }
-
-        /* 右栏 截图 */
-        .lb-preview-visual {
-          position: relative;
-          z-index: 2;
-          display: block;
-          width: 100%;
-          height: 100%;
-          overflow: hidden;
-          background: #1a1f1a;
-          cursor: pointer;
-        }
-        .lb-preview-media {
-          width: 100%;
-          height: 100%;
-          object-fit: cover;
-          display: block;
-          transition: transform 0.5s ease;
-        }
-        .lb-preview-visual:hover .lb-preview-media { transform: scale(1.04); }
 
         /* ===== 合上书按钮 ===== */
         .lb-close-btn {
@@ -1905,18 +2066,14 @@ const LeafBook: React.FC<LeafBookProps> = ({ registerOpenBook, flipTriggerRef, a
           .lb-quote-page { padding: 36px 28px; }
           .lb-quote-text { font-size: 17px; line-height: 1.75; }
           .lb-quote-mark { font-size: 48px; }
-          /* 预览页：移动端改为上下分栏 */
-          .lb-preview-grid { grid-template-columns: 1fr; grid-template-rows: 1.2fr 0.8fr; }
-          .lb-preview-text {
-            padding: 24px 18px 14px;
-            border-right: none;
-            border-bottom: 1px solid rgba(184, 140, 106, 0.14);
-          }
-          .lb-preview-title { font-size: 19px; margin-bottom: 10px; }
-          .lb-preview-pain { font-size: 12px; }
-          .lb-preview-desc { font-size: 11px; line-height: 1.65; margin-bottom: 10px; }
-          .lb-preview-tags { margin-bottom: 10px; }
-          .lb-preview-visit { font-size: 11px; padding: 6px 12px; }
+          /* 文档页移动端 */
+          .lb-doc-layout { padding: 24px 18px 40px; }
+          .lb-doc-title { font-size: 18px; }
+          .lb-doc-section { padding: 10px 12px; }
+          .lb-doc-section-header { font-size: 10px; }
+          .lb-doc-list li { font-size: 10px; }
+          .lb-doc-tech-tag { font-size: 8px; }
+          .lb-doc-visit { font-size: 11px; padding: 6px 12px; }
           /* 起名来源页移动端 */
           .lb-origin-title { font-size: 20px; margin-bottom: 20px; }
           .lb-origin-inner { padding: 32px 24px; max-width: 100%; }

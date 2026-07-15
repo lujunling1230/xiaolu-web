@@ -542,7 +542,7 @@ const ZhongjiPage: React.FC = () => {
           onClick={handleUnroll}
           initial={false}
           animate={{
-            scaleY: isRolled ? 0.04 : 1,
+            scaleY: isRolled ? 0.12 : 1,
             opacity: isRolled ? 0.85 : 1,
           }}
           transition={{
@@ -554,7 +554,8 @@ const ZhongjiPage: React.FC = () => {
             flexDirection: "column",
             alignItems: "stretch",
             width: slipWidth,
-            maxHeight: isRolled ? 60 : slipMaxHeight,
+            minHeight: isRolled ? 100 : slipMaxHeight,
+            maxHeight: isRolled ? 140 : slipMaxHeight,
             transformOrigin: "center top",
             cursor: isRolled ? "pointer" : "default",
             boxShadow: "0 10px 30px rgba(0,0,0,0.35), 0 4px 12px rgba(0,0,0,0.2)",
@@ -630,7 +631,7 @@ const ZhongjiPage: React.FC = () => {
                     }}
                   >
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#c4a974" strokeWidth="2" strokeLinecap="round">
-                      <path d="M5 12h14M13 6l6 6-6 6" />
+                      <path d="M12 5v14M6 13l6 6 6-6" />
                     </svg>
                   </motion.div>
                   <p

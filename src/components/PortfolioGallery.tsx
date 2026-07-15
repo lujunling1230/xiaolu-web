@@ -1,27 +1,18 @@
-import { useState, useRef } from "react";
+import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { projects, type Project } from "../data/projects";
 import AddProjectModal from "./AddProjectModal";
 
 /**
- * PortfolioGallery 森林图鉴式项目展示区
+ * PortfolioGallery 产品文档卡片展示区
  *
- * 数据来源：src/data/projects.ts（集中管理，方便扩展）
- * 响应式 Grid 布局（大屏 2 列，小屏 1 列），毛玻璃卡片。
- * 每张卡片像明信片：封面区（图片/视频）+ 标题 + 标签 + 描述。
- * Hover 微浮 + 阴影加深；点击弹出详情 Modal。
- * 视频卡片：封面显示缩略图 + 播放按钮，点击在卡片内播放。
+ * 数据来源：src/data/projects.ts
+ * 响应式 Grid 布局（大屏 2 列，小屏 1 列）。
+ * 每张卡片展示产品文档摘要，点击展开完整产品文档。
+ * 纯文本驱动，无图片。
  *
  * Admin 彩蛋：右下角极小叶片图标，hover 显形，点击弹出添加项目表单。
  */
-
-/* 播放按钮图标 */
-const PlayIcon = () => (
-  <svg width="32" height="32" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <circle cx="16" cy="16" r="15" fill="rgba(255,255,255,0.85)" stroke="rgba(255,255,255,0.9)" strokeWidth="1" />
-    <path d="M13 10L22 16L13 22Z" fill="#5d8a6a" />
-  </svg>
-);
 
 /* 关闭按钮图标 */
 const CloseIcon = () => (
@@ -43,31 +34,50 @@ const LeafIcon = () => (
   </svg>
 );
 
+/* 模块图标 */
+const ModuleIcon = ({ type }: { type: string }) => {
+  const icons: Record<string, React.ReactNode> = {
+    painPoints: (
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+    ),
+    targetUsers: (
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+    ),
+    solutions: (
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+    ),
+    coreValue: (
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+    ),
+    useCases: (
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg>
+    ),
+    highlights: (
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 3l1.5 4.5H18l-3.7 2.7 1.4 4.3L12 12l-3.7 2.5 1.4-4.3L6 7.5h4.5z"/><path d="M5 19l1 3 3-1-2-2z"/></svg>
+    ),
+    futurePlans: (
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+    ),
+  };
+  return <span style={{ display: "inline-flex", color: "var(--accent)" }}>{icons[type] || null}</span>;
+};
+
+const MODULE_META: { key: keyof Project; label: string; isInline?: boolean }[] = [
+  { key: "painPoints", label: "用户痛点" },
+  { key: "targetUsers", label: "适合人群", isInline: true },
+  { key: "solutions", label: "解决方案" },
+  { key: "coreValue", label: "核心价值" },
+  { key: "useCases", label: "使用场景", isInline: true },
+  { key: "highlights", label: "产品亮点" },
+];
+
 /* ===== 单个项目卡片 ===== */
 const ProjectCard: React.FC<{
   item: Project;
   index: number;
   onClick: (item: Project) => void;
 }> = ({ item, index, onClick }) => {
-  const videoRef = useRef<HTMLVideoElement>(null);
-  const [videoPlaying, setVideoPlaying] = useState(false);
-  const hasVideo = !!item.videoUrl;
   const tags = item.tags || [];
-
-  const handleVideoClick = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    const video = videoRef.current;
-    if (!video) return;
-    if (videoPlaying) {
-      video.pause();
-      setVideoPlaying(false);
-    } else {
-      video.play().catch(() => {
-        /* 自动播放被拦截，忽略 */
-      });
-      setVideoPlaying(true);
-    }
-  };
 
   return (
     <motion.article
@@ -78,48 +88,15 @@ const ProjectCard: React.FC<{
       transition={{ duration: 0.5, ease: "easeOut", delay: index * 0.12 }}
       onClick={() => onClick(item)}
     >
-      {/* ① 封面区 */}
-      <div className="gallery-media">
-        {hasVideo ? (
-          <>
-            <video
-              ref={videoRef}
-              className="gallery-cover-video"
-              src={item.videoUrl}
-              poster={item.imageUrl}
-              preload="metadata"
-              playsInline
-              onClick={handleVideoClick}
-              onEnded={() => setVideoPlaying(false)}
-            />
-            {!videoPlaying && (
-              <button
-                className="gallery-play-btn"
-                onClick={handleVideoClick}
-                aria-label="播放视频"
-              >
-                <PlayIcon />
-              </button>
-            )}
-          </>
-        ) : (
-          <img
-            src={item.imageUrl}
-            alt={item.title}
-            className="gallery-cover-img"
-            loading="lazy"
-          />
-        )}
+      {/* 卡片头部 */}
+      <div className="gallery-card-header">
+        <span className="gallery-card-num">{String(index + 1).padStart(2, "0")}</span>
+        <h3 className="gallery-title">{item.title}</h3>
+        <span className="gallery-tag">{item.tag}</span>
       </div>
 
-      {/* ② 标题 */}
-      <h3 className="gallery-title">{item.title}</h3>
-
-      {/* ③ 标签 */}
-      <span className="gallery-tag">{item.tag}</span>
-
-      {/* ④ 描述（前两行） */}
-      <p className="gallery-desc">{item.description}</p>
+      {/* 核心痛点摘要 */}
+      <p className="gallery-desc">{item.painPoints[0]}</p>
 
       {/* 技术标签 */}
       {tags.length > 0 && (
@@ -137,8 +114,6 @@ const ProjectCard: React.FC<{
 const PortfolioGallery: React.FC = () => {
   const [selected, setSelected] = useState<Project | null>(null);
   const [addOpen, setAddOpen] = useState(false);
-
-  const selectedTags = selected?.tags || [];
 
   return (
     <>
@@ -183,38 +158,68 @@ const PortfolioGallery: React.FC = () => {
               <div className="gallery-modal-body">
                 <h2 className="gallery-modal-title">{selected.title}</h2>
                 <span className="gallery-tag">{selected.tag}</span>
-                <p className="gallery-modal-desc">{selected.description}</p>
 
-                {/* 项目截图 —— 缩小为插图，置于文字下方 */}
-                {selected.videoUrl ? (
-                  <video
-                    className="gallery-modal-cover"
-                    src={selected.videoUrl}
-                    poster={selected.imageUrl}
-                    controls
-                    playsInline
-                  />
-                ) : (
-                  <img src={selected.imageUrl} alt={selected.title} className="gallery-modal-cover" />
-                )}
+                {/* 产品文档模块 */}
+                <div className="gallery-modal-modules">
+                  {MODULE_META.map(({ key, label, isInline }) => {
+                    const items = selected[key] as string[];
+                    if (!items || items.length === 0) return null;
+                    return (
+                      <div key={key} className="gallery-modal-module">
+                        <div className="gallery-module-header">
+                          <ModuleIcon type={key as string} />
+                          <span>{label}</span>
+                        </div>
+                        {isInline ? (
+                          <div className="gallery-module-inline">
+                            {items.map((item, i) => (
+                              <span key={i} className="gallery-module-pill">{item}</span>
+                            ))}
+                          </div>
+                        ) : (
+                          <ul className="gallery-module-list">
+                            {items.map((item, i) => (
+                              <li key={i}>{item}</li>
+                            ))}
+                          </ul>
+                        )}
+                      </div>
+                    );
+                  })}
 
-                {selectedTags.length > 0 && (
+                  {/* 未来规划 */}
+                  {selected.futurePlans && selected.futurePlans.length > 0 && (
+                    <div className="gallery-modal-module gallery-modal-module-future">
+                      <div className="gallery-module-header">
+                        <ModuleIcon type="futurePlans" />
+                        <span>未来规划</span>
+                      </div>
+                      <ul className="gallery-module-list">
+                        {selected.futurePlans.map((item, i) => (
+                          <li key={i}>{item}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                </div>
+
+                {/* 技术标签 */}
+                {selected.tags && selected.tags.length > 0 && (
                   <div className="gallery-tech-tags">
-                    {selectedTags.map((t) => (
+                    {selected.tags.map((t) => (
                       <span key={t} className="gallery-tech-tag">{t}</span>
                     ))}
                   </div>
                 )}
-                {selected.link && (
-                  <a
-                    href={selected.link}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="gallery-modal-link"
-                  >
-                    访问项目 →
-                  </a>
-                )}
+
+                <a
+                  href={selected.liveUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="gallery-modal-link"
+                >
+                  打开作品 →
+                </a>
               </div>
             </motion.div>
           </motion.div>
@@ -248,110 +253,77 @@ const PortfolioGallery: React.FC = () => {
           }
         }
 
-        /* ===== 卡片 — 毛玻璃明信片 ===== */
+        /* ===== 卡片 ===== */
         .gallery-card {
           cursor: pointer;
           border-radius: 16px;
           overflow: hidden;
           background: var(--card-bg);
           border: 1px solid var(--border);
-          backdrop-filter: blur(12px);
-          -webkit-backdrop-filter: blur(12px);
           box-shadow: 0 4px 20px -8px rgba(60, 80, 60, 0.1);
           transition: transform 0.3s ease, box-shadow 0.3s ease;
+          padding: 20px 22px 18px;
         }
         .gallery-card:hover {
           transform: translateY(-5px);
           box-shadow: 0 16px 40px -12px rgba(60, 80, 60, 0.2);
         }
 
-        /* ===== 封面区 ===== */
-        .gallery-media {
-          position: relative;
-          width: 100%;
-          height: 200px;
-          overflow: hidden;
-          background: #f0f0f0;
+        /* 卡片头部 */
+        .gallery-card-header {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          margin-bottom: 10px;
+          flex-wrap: wrap;
         }
-        .gallery-cover-img {
-          width: 100%;
-          height: 100%;
-          object-fit: cover;
-          display: block;
-          transition: transform 0.4s ease;
+        .gallery-card-num {
+          font-size: 11px;
+          font-family: "Noto Serif SC", serif;
+          color: var(--accent);
+          opacity: 0.6;
+          letter-spacing: 0.06em;
         }
-        .gallery-card:hover .gallery-cover-img {
-          transform: scale(1.04);
-        }
-        .gallery-cover-video {
-          width: 100%;
-          height: 100%;
-          object-fit: cover;
-          display: block;
-          cursor: pointer;
-        }
-        .gallery-play-btn {
-          position: absolute;
-          top: 50%;
-          left: 50%;
-          transform: translate(-50%, -50%);
-          background: transparent;
-          border: none;
-          cursor: pointer;
-          padding: 0;
-          transition: transform 0.2s ease;
-        }
-        .gallery-play-btn:hover {
-          transform: translate(-50%, -50%) scale(1.1);
-        }
-
-        /* ===== 标题 ===== */
         .gallery-title {
           font-family: "Noto Serif SC", Georgia, serif;
-          font-size: 20px;
+          font-size: 18px;
           font-weight: 600;
           color: var(--text);
-          margin: 20px 20px 8px;
+          margin: 0;
           letter-spacing: 0.02em;
         }
-
-        /* ===== 标签 ===== */
         .gallery-tag {
-          display: inline-block;
-          margin: 0 20px 12px;
-          padding: 4px 12px;
-          font-size: 12px;
+          font-size: 11px;
+          padding: 2px 10px;
           border-radius: 999px;
           background: rgba(122, 154, 130, 0.1);
           color: var(--accent);
           letter-spacing: 0.03em;
+          white-space: nowrap;
         }
 
-        /* ===== 描述 ===== */
+        /* 描述 */
         .gallery-desc {
-          margin: 0 20px 16px;
-          font-size: 14px;
+          margin: 0 0 12px;
+          font-size: 13px;
           line-height: 1.6;
           color: var(--text-soft);
-          display: -webkit-box;
-          -webkit-line-clamp: 2;
-          -webkit-box-orient: vertical;
-          overflow: hidden;
+          opacity: 0.85;
         }
 
-        /* ===== 技术标签 ===== */
+        /* 技术标签 */
         .gallery-tech-tags {
           display: flex;
           flex-wrap: wrap;
-          gap: 6px;
-          padding: 0 20px 20px;
+          gap: 5px;
         }
         .gallery-tech-tag {
-          font-size: 11px;
-          padding: 3px 10px;
-          border-radius: 6px;
+          font-size: 10px;
+          padding: 2px 8px;
+          border-radius: 4px;
           background: rgba(184, 140, 106, 0.08);
           color: var(--text-soft);
+          opacity: 0.8;
         }
 
         /* ===== Modal ===== */
@@ -364,13 +336,11 @@ const PortfolioGallery: React.FC = () => {
           justify-content: center;
           padding: 24px;
           background: rgba(0, 0, 0, 0.35);
-          backdrop-filter: blur(4px);
-          -webkit-backdrop-filter: blur(4px);
         }
         .gallery-modal {
           position: relative;
           width: 100%;
-          max-width: 560px;
+          max-width: 600px;
           max-height: 85vh;
           overflow-y: auto;
           border-radius: 20px;
@@ -398,44 +368,98 @@ const PortfolioGallery: React.FC = () => {
         .gallery-modal-close:hover {
           background: #fff;
         }
-        .gallery-modal-cover {
-          width: 100%;
-          max-width: 420px;
-          height: auto;
-          max-height: 240px;
-          object-fit: cover;
-          display: block;
-          margin: 20px auto 4px;
-          border-radius: 12px;
-          box-shadow: 0 4px 12px rgba(0,0,0,0.05);
-          background: var(--card-bg);
-        }
         .gallery-modal-body {
           padding: 28px;
         }
         .gallery-modal-title {
           font-family: "Noto Serif SC", Georgia, serif;
-          font-size: 24px;
+          font-size: 22px;
           font-weight: 600;
           color: var(--text);
-          margin-bottom: 10px;
+          margin-bottom: 8px;
         }
-        .gallery-modal-desc {
-          font-size: 15px;
-          line-height: 1.8;
+
+        /* 模块网格 */
+        .gallery-modal-modules {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+          gap: 10px;
+          margin: 16px 0;
+        }
+        .gallery-modal-module {
+          padding: 12px 14px;
+          border-radius: 10px;
+          background: rgba(0,0,0,0.02);
+          border: 1px solid var(--border);
+        }
+        .gallery-modal-module-future {
+          background: rgba(184,140,106,0.03);
+          border-style: dashed;
+        }
+        .gallery-module-header {
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          margin-bottom: 8px;
+          font-size: 12px;
+          font-weight: 600;
+          color: var(--accent);
+          letter-spacing: 0.03em;
+          font-family: "Noto Sans SC", sans-serif;
+        }
+        .gallery-module-list {
+          margin: 0;
+          padding: 0;
+          list-style: none;
+          display: flex;
+          flex-direction: column;
+          gap: 4px;
+        }
+        .gallery-module-list li {
+          font-size: 12px;
+          line-height: 1.6;
           color: var(--text-soft);
-          margin: 16px 0 20px;
+          padding-left: 12px;
+          position: relative;
         }
+        .gallery-module-list li::before {
+          content: "";
+          position: absolute;
+          left: 0;
+          top: 7px;
+          width: 4px;
+          height: 4px;
+          border-radius: 50%;
+          background: rgba(122,154,130,0.4);
+        }
+        .gallery-module-inline {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 5px;
+        }
+        .gallery-module-pill {
+          font-size: 11px;
+          padding: 3px 10px;
+          border-radius: 999px;
+          background: rgba(122,154,130,0.08);
+          color: var(--text-soft);
+          white-space: nowrap;
+        }
+
         .gallery-modal-link {
           display: inline-block;
-          margin-top: 8px;
+          margin-top: 12px;
           font-size: 14px;
           color: var(--accent);
           font-weight: 500;
-          transition: color 0.2s ease;
+          text-decoration: none;
+          padding: 7px 16px;
+          border: 1px solid rgba(122,154,130,0.3);
+          border-radius: 999px;
+          transition: background 0.2s ease;
         }
         .gallery-modal-link:hover {
-          color: var(--accent-hover);
+          background: rgba(122,154,130,0.08);
         }
 
         /* ===== Admin 彩蛋入口 ===== */
@@ -468,10 +492,8 @@ const PortfolioGallery: React.FC = () => {
           .gallery-modal {
             max-width: 100%;
           }
-          .gallery-modal-cover {
-            max-width: 100%;
-            max-height: 200px;
-            border-radius: 10px;
+          .gallery-modal-modules {
+            grid-template-columns: 1fr;
           }
           .gallery-admin-fab {
             right: 16px;

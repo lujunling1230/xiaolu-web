@@ -262,7 +262,7 @@ export const projects: Project[] = [
     painPoints: [
       "情绪耗竭时不知从何恢复",
       "大型自我疗愈方案难以执行",
-      '需要"最小行动"快速回血',
+      "需要「最小行动」快速回血",
     ],
     targetUsers: [
       "高敏感人群",
@@ -366,43 +366,5 @@ export const projects: Project[] = [
     ],
     liveUrl: "https://xiaoluweb.com/toolbox/memories",
     tags: ["Framer Motion", "Lightbox", "复古胶片", "叙事设计"],
-  },
-  {
-    id: "life-slices",
-    title: "第七卷胶片",
-    tag: "生活切面音乐馆",
-    painPoints: [
-      "生活中的美好碎片难以聚合",
-      "阅读、音乐、摄影各自独立",
-      "缺乏统一的生活美学呈现",
-    ],
-    targetUsers: [
-      "文艺青年",
-      "生活记录者",
-      "追求生活质感的人群",
-    ],
-    solutions: [
-      "把生活切成 6 个切面：阅读、摄影、音乐、运动、冥想、追剧",
-      "立体手绘胶卷动画展开",
-      "每个切面可独立记录内容",
-    ],
-    coreValue: [
-      "一卷胶片，六个画面",
-      "生活不是电影，但可以把每一天都拍成胶片",
-      "充满生活质感的记录方式",
-    ],
-    useCases: [
-      "阅读书单管理",
-      "音乐收藏展示",
-      "摄影作品集",
-      "追剧记录",
-    ],
-    highlights: [
-      "胶卷动画展开效果",
-      "6 大生活模块",
-      "数据持久化",
-    ],
-    liveUrl: "https://xiaoluweb.com/film",
-    tags: ["Framer Motion", "Web Audio", "胶卷美学", "CRUD", "数据持久化"],
   },
 ];

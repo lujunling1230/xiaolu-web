@@ -8,7 +8,7 @@ import { Link } from "react-router-dom";
  * Logo 强化、主次分明、移动端汉堡菜单
  * ============================================================ */
 
-type Section = "home" | "about" | "zhongji" | "zhiyong" | "xianqing";
+type Section = "home" | "about" | "projects" | "mickey";
 
 interface SimpleNavbarProps {
   current: Section;
@@ -18,15 +18,14 @@ interface SimpleNavbarProps {
 }
 
 /** 主 / 次导航拆分 */
-const PRIMARY_KEYS = ["home", "about"] as const;
-const SECONDARY_KEYS = ["zhongji", "zhiyong", "xianqing"] as const;
+const PRIMARY_KEYS = ["home", "about", "projects"] as const;
+const SECONDARY_KEYS = ["mickey"] as const;
 
 const LABEL_MAP: Record<string, { label: string; icon?: string; href: string | null }> = {
   home:    { label: "首页",    href: null },
   about:   { label: "关于我",  href: null },
-  zhongji: { label: "筑基",    href: "/zhongji" },
-  zhiyong: { label: "致用",    href: "/zhiyong" },
-  xianqing:{ label: "闲情",    href: "/xianqing" },
+  projects:{ label: "项目集",  icon: "🍃", href: null },
+  mickey:  { label: "妙妙工具箱", href: "/mickey" },
 };
 
 const SimpleNavbar: React.FC<SimpleNavbarProps> = ({

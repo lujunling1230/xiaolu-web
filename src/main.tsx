@@ -16,6 +16,10 @@ import LifeFilmPage from "./pages/LifeFilmPage";
 import HealingRoomPage from "./pages/HealingRoomPage";
 import MusicPage from "./pages/toolbox/MusicPage";
 import MickeyLaunchpad from "./pages/MickeyLaunchpad";
+import BookstoreIndex from "./pages/BookstoreIndex";
+import ZhongjiPage from "./pages/ZhongjiPage";
+import ZhiyongPage from "./pages/ZhiyongPage";
+import XianqingPage from "./pages/XianqingPage";
 import "./index.css";
 
 /** 路由切换时回到页面顶部，避免新页面继承上一页的滚动位置 */
@@ -33,9 +37,18 @@ createRoot(document.getElementById("root")!).render(
     <BrowserRouter>
       <ScrollToTop />
       <Routes>
-        {/* 首页：森林疗愈室（原有单页应用） */}
+        {/* 首页：原作品集 + 小鹿书局三书陈列 */}
         <Route path="/" element={<App />} />
-        {/* /forest 别名：米奇妙妙屋中「森林疗愈室」入口专用，指向同一组件 */}
+        {/* 筑基书页（卷一-卷六） */}
+        <Route path="/zhongji/" element={<ZhongjiPage />} />
+        {/* 致用书页（工具箱+非遗双栏） */}
+        <Route path="/zhiyong/" element={<ZhiyongPage />} />
+        {/* 闲情书页（卷七胶片流） */}
+        <Route path="/xianqing/" element={<XianqingPage />} />
+        {/* 小鹿书局独立页面（备用） */}
+        <Route path="/bookstore" element={<BookstoreIndex />} />
+        {/* ============ 旧路由保留 ============ */}
+        {/* 森林疗愈室 */}
         <Route path="/forest" element={<App />} />
         {/* 疗愈室独立页面 */}
         <Route path="/healing" element={<HealingRoomPage />} />

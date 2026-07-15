@@ -399,101 +399,35 @@ const AdvicePage: React.FC = () => {
         </div>
       </div>
 
-      {/* ===== 纯 CSS 3D 透视杂货店场景 ===== */}
-      <div className="shop-scene" aria-hidden="true">
-        {/* 天空背景 */}
-        <div className="shop-sky" />
+      {/* ===== 背景图 ===== */}
+      <div className="advice-bg" aria-hidden="true" />
+      <div className="advice-bg-overlay" aria-hidden="true" />
 
-        {/* 二楼层 */}
-        <div className="shop-second-floor">
-          <div className="shop-sf-left">
-            <div className="shop-sf-window" />
-          </div>
-          <div className="shop-sf-center">
-            <div className="shop-sf-basket" />
-            <div className="shop-sf-ac" />
-          </div>
-          <div className="shop-sf-right">
-            <div className="shop-sf-balcony" />
-          </div>
-        </div>
+      {/* ===== 牛奶箱（左下角固定） ===== */}
+      <MilkBox
+        isOpen={phase === "reading"}
+        isGlow={phase === "reply-arrived"}
+        isShake={mailboxShake}
+        onClick={openMailbox}
+      />
 
-        {/* 三店铺 */}
-        <div className="shop-row">
-          {/* 左侧：井貰屋 */}
-          <div className="shop-left">
-            <div className="shop-left-sign">井貰屋</div>
-            <div className="shop-left-wall">
-              <div className="shop-left-window">
-                <div className="shop-book shop-book-1" />
-                <div className="shop-book shop-book-2" />
-                <div className="shop-book shop-book-3" />
+      {/* ===== 公告板（右下角） ===== */}
+      <div className="notice-board" ref={aboutRef}>
+        <div className="notice-board-wood">
+          <div className="notice-pin" />
+          <div className="notice-sticky-list">
+            {STICKIES.map((text, i) => (
+              <div className="notice-sticky" key={i}>
+                <p>{text}</p>
               </div>
-              <div className="shop-left-door" />
-            </div>
+            ))}
           </div>
-
-          {/* 中间：解忧杂货店 */}
-          <div className="shop-center">
-            <div className="shop-center-sign">解忧杂货店</div>
-            <div className="shop-awning" />
-            <div className="shop-center-wall">
-              <div className="shop-postbox">POST</div>
-              <div className="shop-stool" />
-              <div className="shop-lamp" />
-              <div className="shop-center-door">
-                <div className="shop-door-poster p1" />
-                <div className="shop-door-poster p2" />
-                <div className="shop-door-poster p3" />
-                <div className="shop-door-handle" />
-              </div>
-              <div className="shop-door-side-text">大切な 荷物</div>
-              <div className="shop-sign-vertical">
-                <div className="shop-sign-v-text">詩篇玉藻</div>
-              </div>
-            </div>
-          </div>
-
-          {/* 右侧：传玉 */}
-          <div className="shop-right">
-            <div className="shop-right-sign">传玉</div>
-            <div className="shop-right-door" />
-          </div>
-        </div>
-
-        {/* 地面 */}
-        <div className="shop-floor" />
-
-        {/* 牛奶箱 - 叠加在邮筒位置 */}
-        <div className="milk-box-position">
-          <MilkBox
-            isOpen={phase === "reading"}
-            isGlow={phase === "reply-arrived"}
-            isShake={mailboxShake}
-            onClick={openMailbox}
-          />
-        </div>
-
-        {/* 公告板 - 叠加在竖立招牌位置 */}
-        <div className="notice-board-position">
-          <div className="notice-board" ref={aboutRef}>
-            <div className="notice-board-wood">
-              <div className="notice-pin" />
-              <div className="notice-sticky-list">
-                {STICKIES.map((text, i) => (
-                  <div className="notice-sticky" key={i}>
-                    <p>{text}</p>
-                  </div>
-                ))}
-              </div>
-              <div className="notice-about-panel notice-about-panel--open">
-                <div className="notice-about-content">
-                  <h3>关于这间店</h3>
-                  <p>人与人，因烦恼而相连。浪矢爷爷相信，每个咨询者心中早已有了答案，写信只是为了确认自己的选择。</p>
-                  <p>我们不过是在时间长河里，替你亮着一盏灯。愿这间杂货店，能接住你那些无处安放的迷茫，让你有勇气对自己说出那句——"我决定了"。</p>
-                  <p className="notice-about-sign">——致每一个写信的你</p>
-                </div>
-              </div>
+          <div className="notice-about-panel notice-about-panel--open">
+            <div className="notice-about-content">
+              <h3>关于这间店</h3>
+              <p>人与人，因烦恼而相连。浪矢爷爷相信，每个咨询者心中早已有了答案，写信只是为了确认自己的选择。</p>
+              <p>我们不过是在时间长河里，替你亮着一盏灯。愿这间杂货店，能接住你那些无处安放的迷茫，让你有勇气对自己说出那句——"我决定了"。</p>
+              <p className="notice-about-sign">——致每一个写信的你</p>
             </div>
           </div>
         </div>
@@ -617,8 +551,6 @@ const AdvicePage: React.FC = () => {
         </AnimatePresence>
       </div>
 
-      {/* 牛奶箱已移入 .shop-scene 内部 */}
-
       {/* 回信飞入动画 */}
       <AnimatePresence>
         {replyFlyingIn && (
@@ -707,8 +639,6 @@ const AdvicePage: React.FC = () => {
         </motion.section>
       )}
 
-      {/* 公告板已移入 .shop-scene 内部 */}
-
       {/* ===== Toast 提示 ===== */}
       {toast && <div className="advice-toast">{toast}</div>}
 
@@ -733,661 +663,48 @@ const AdvicePage: React.FC = () => {
         }
 
         /* ---------- z-index 层级 ---------- */
-        .advice-page > *:not(.shop-scene):not(.intro-overlay):not(.advice-letter):not(.advice-letterbox) {
+        .advice-page > *:not(.advice-bg):not(.advice-bg-overlay):not(.intro-overlay):not(.advice-letter):not(.advice-letterbox) {
           position: relative; z-index: 2;
         }
         .advice-topbar, .advice-hero, .advice-main { z-index: 2; position: relative; }
 
         /* ============================================================
-           纯 CSS 3D 透视杂货店场景
+           纯 CSS 3D 透视杂货店场景（三店铺并排）
            ============================================================ */
-        .shop-scene {
+        /* ---------- 背景图（cover 铺满全屏） ---------- */
+        .advice-bg {
           position: fixed;
-          inset: 0;
-          z-index: 0;
-          perspective: 800px;
-          overflow: hidden;
-          background: #1A110A;
-        }
-
-        /* --- 天空 / 夜空 --- */
-        .shop-scene::before {
-          content: "";
-          position: absolute;
-          inset: 0;
-          background: linear-gradient(180deg,
-            #0D0A08 0%,
-            #1A110A 30%,
-            #2A1B14 60%,
-            #3E2723 100%);
+          top: 0; left: 0; right: 0; bottom: 0;
+          background-image: url('/advice-shop-bg-v2.jpg?v=1');
+          background-repeat: no-repeat;
+          background-position: center center;
+          background-size: cover;
+          -webkit-background-size: cover;
           z-index: 0;
         }
 
-        /* --- 地面（透视） --- */
-        .shop-floor {
-          position: absolute;
-          bottom: 0;
-          left: -10%;
-          right: -10%;
-          height: 38%;
-          background: linear-gradient(180deg, #2A1B14 0%, #1A110A 100%);
-          transform: rotateX(25deg);
-          transform-origin: bottom center;
+        /* 轻微暗色叠加（保持原图明亮度） */
+        .advice-bg-overlay {
+          position: fixed; inset: 0;
+          background: rgba(0, 0, 0, 0.12);
           z-index: 1;
-          border-top: 2px solid rgba(93, 64, 55, 0.3);
-        }
-        /* 地面木纹 */
-        .shop-floor::before {
-          content: "";
-          position: absolute;
-          inset: 0;
-          background-image:
-            url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.1'/%3E%3C/svg%3E");
-          opacity: 0.6;
-        }
-
-        /* --- 墙壁 --- */
-        .shop-wall {
-          position: absolute;
-          top: 22%;
-          left: 15%;
-          right: 15%;
-          height: 42%;
-          background: linear-gradient(180deg, #3E2723 0%, #4E342E 50%, #3E2723 100%);
-          border-radius: 2px 2px 0 0;
-          z-index: 2;
-          box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
-        }
-        /* 墙壁木纹 */
-        .shop-wall::before {
-          content: "";
-          position: absolute;
-          inset: 0;
-          background-image:
-            url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.08'/%3E%3C/svg%3E");
-          border-radius: 2px 2px 0 0;
-          opacity: 0.7;
-        }
-        /* 墙壁底边阴影 */
-        .shop-wall::after {
-          content: "";
-          position: absolute;
-          bottom: -8px;
-          left: 0;
-          right: 0;
-          height: 8px;
-          background: linear-gradient(180deg, rgba(0,0,0,0.3), transparent);
-        }
-
-        /* --- 屋顶 --- */
-        .shop-roof {
-          position: absolute;
-          top: 10%;
-          left: 10%;
-          right: 10%;
-          height: 16%;
-          z-index: 3;
-          background: #2A1B14;
-          clip-path: polygon(5% 100%, 50% 0%, 95% 100%);
-          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
-        }
-        /* 屋顶纹理 */
-        .shop-roof::before {
-          content: "";
-          position: absolute;
-          inset: 0;
-          background-image:
-            url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='80' height='80'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='1.2' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.12'/%3E%3C/svg%3E");
-          clip-path: polygon(5% 100%, 50% 0%, 95% 100%);
-          opacity: 0.5;
-        }
-
-        /* --- 招牌 --- */
-        .shop-sign {
-          position: absolute;
-          top: 15%;
-          left: 50%;
-          transform: translateX(-50%);
-          z-index: 4;
-          background: linear-gradient(135deg, #FFF8E1 0%, #F5E6C8 100%);
-          border: 3px solid #5D4037;
-          border-radius: 4px;
-          padding: 10px 28px;
-          text-align: center;
-          box-shadow:
-            0 4px 12px rgba(0, 0, 0, 0.35),
-            inset 0 1px 0 rgba(255, 255, 255, 0.5);
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          gap: 4px;
-        }
-        .shop-sign-text {
-          font-family: "Ma Shan Zheng", "Noto Serif SC", serif;
-          font-size: clamp(18px, 3.5vw, 32px);
-          color: #3E2723;
-          letter-spacing: 0.15em;
-          text-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);
-          line-height: 1.2;
-        }
-        .shop-sign-sub {
-          font-size: clamp(8px, 1.2vw, 11px);
-          color: rgba(93, 64, 55, 0.6);
-          letter-spacing: 0.2em;
-          text-transform: uppercase;
-        }
-
-        /* --- 门 --- */
-        .shop-door {
-          position: absolute;
-          top: 30%;
-          left: 50%;
-          transform: translateX(-50%);
-          width: 16%;
-          height: 34%;
-          z-index: 5;
-          background: linear-gradient(180deg, #5D4037 0%, #4E342E 60%, #3E2723 100%);
-          border: 2px solid #3E2723;
-          border-bottom: none;
-          border-radius: 3px 3px 0 0;
-          box-shadow:
-            inset 0 0 8px rgba(0, 0, 0, 0.3),
-            0 2px 8px rgba(0, 0, 0, 0.4);
-        }
-        /* 门木纹 */
-        .shop-door::before {
-          content: "";
-          position: absolute;
-          inset: 0;
-          background-image:
-            url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='60' height='60'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='1.0' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.06'/%3E%3C/svg%3E");
-          border-radius: 3px 3px 0 0;
-        }
-        /* 门板装饰线 */
-        .shop-door-panel {
-          position: absolute;
-          top: 10%;
-          left: 15%;
-          right: 15%;
-          bottom: 10%;
-          border: 1px solid rgba(93, 64, 55, 0.4);
-          border-radius: 2px;
-        }
-        /* 门把手 */
-        .shop-door-handle {
-          position: absolute;
-          top: 50%;
-          right: 18%;
-          transform: translateY(-50%);
-          width: clamp(6px, 1vw, 10px);
-          height: clamp(12px, 2vw, 22px);
-          background: radial-gradient(circle at 30% 30%, #C0A060, #8B7332);
-          border-radius: 3px;
-          box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
-        }
-
-        /* --- 左窗 --- */
-        .shop-window-left {
-          position: absolute;
-          top: 28%;
-          left: 24%;
-          width: 14%;
-          height: 22%;
-          z-index: 5;
-          background: rgba(255, 220, 150, 0.6);
-          border: 3px solid #3E2723;
-          border-radius: 2px;
-          box-shadow:
-            0 0 20px rgba(255, 200, 100, 0.2),
-            inset 0 0 15px rgba(255, 220, 150, 0.3),
-            0 2px 8px rgba(0, 0, 0, 0.3);
-        }
-        /* 窗户十字格 */
-        .shop-window-pane {
-          position: absolute;
-          inset: 0;
-        }
-        .shop-window-pane::before {
-          content: "";
-          position: absolute;
-          top: 0;
-          bottom: 0;
-          left: 50%;
-          transform: translateX(-50%);
-          width: 3px;
-          background: #3E2723;
-        }
-        .shop-window-pane::after {
-          content: "";
-          position: absolute;
-          left: 0;
-          right: 0;
-          top: 50%;
-          transform: translateY(-50%);
-          height: 3px;
-          background: #3E2723;
-        }
-
-        /* --- 右窗 --- */
-        .shop-window-right {
-          position: absolute;
-          top: 28%;
-          right: 24%;
-          width: 14%;
-          height: 22%;
-          z-index: 5;
-          background: rgba(255, 220, 150, 0.6);
-          border: 3px solid #3E2723;
-          border-radius: 2px;
-          box-shadow:
-            0 0 20px rgba(255, 200, 100, 0.2),
-            inset 0 0 15px rgba(255, 220, 150, 0.3),
-            0 2px 8px rgba(0, 0, 0, 0.3);
-        }
-
-        /* --- 门口暖黄灯光 --- */
-        .shop-light {
-          position: absolute;
-          top: 35%;
-          left: 50%;
-          transform: translateX(-50%);
-          width: 40%;
-          height: 45%;
-          z-index: 4;
-          background: radial-gradient(
-            ellipse at center bottom,
-            rgba(255, 220, 150, 0.15) 0%,
-            rgba(255, 200, 100, 0.06) 40%,
-            transparent 70%
-          );
           pointer-events: none;
         }
+
+        .advice-page > *:not(.advice-bg):not(.advice-bg-overlay):not(.intro-overlay):not(.advice-letter):not(.advice-letterbox) {
+          position: relative; z-index: 2;
+        }
+        .advice-topbar, .advice-hero, .advice-main { z-index: 2; position: relative; }
 
         /* ============================================================
-           开场动画（纯 CSS @keyframes，5秒，每次进入都播放）
-           ============================================================ */
-        .intro-overlay {
-          position: fixed; inset: 0; z-index: 100;
-          display: flex; flex-direction: column;
-          align-items: center; justify-content: center;
-          overflow: hidden;
-          pointer-events: none;
-          animation: intro-exit 5.2s ease-out forwards;
-        }
-
-        @keyframes intro-exit {
-          0%, 92% { opacity: 1; visibility: visible; }
-          100% { opacity: 0; visibility: hidden; }
-        }
-
-        .intro-backdrop {
-          position: absolute; inset: 0;
-          background: #000;
-          animation: intro-backdrop-fade 5s ease-out forwards;
-        }
-        @keyframes intro-backdrop-fade {
-          0%, 10% { opacity: 1; }
-          25% { opacity: 0; }
-          100% { opacity: 0; }
-        }
-
-        .intro-sign {
-          position: absolute; top: 28%; left: 50%;
-          transform: translate(-50%, -50%);
-          text-align: center; z-index: 2;
-          animation: intro-sign-show 5s ease-out forwards;
-        }
-        @keyframes intro-sign-show {
-          0%, 10% { opacity: 0; filter: blur(8px); transform: translate(-50%, -50%) scale(0.92); }
-          25%, 70% { opacity: 1; filter: blur(0); transform: translate(-50%, -50%) scale(1); }
-          85%, 100% { opacity: 0; }
-        }
-
-        .intro-sign-title {
-          font-family: "Ma Shan Zheng", "Noto Serif SC", serif;
-          font-size: 36px; color: #FFCCBC;
-          margin: 0 0 8px; letter-spacing: 0.15em;
-          text-shadow: 0 2px 12px rgba(0,0,0,0.5);
-        }
-        .intro-sign-sub {
-          font-size: 11px; color: rgba(188,170,164,0.6);
-          letter-spacing: 0.2em; text-transform: uppercase;
-        }
-
-        .intro-scene {
-          position: absolute; bottom: 18%; left: 50%;
-          display: flex; flex-direction: column;
-          align-items: center; gap: 20px;
-          z-index: 2;
-          animation: intro-scene-slide 5s ease-out forwards;
-        }
-        @keyframes intro-scene-slide {
-          0%, 25% { opacity: 0; transform: translate(-50%, 40px); }
-          40%, 70% { opacity: 1; transform: translate(-50%, 0); }
-          85%, 100% { opacity: 0; }
-        }
-
-        .intro-scene-mailbox {
-          width: 48px; height: 62px;
-          background: linear-gradient(180deg, #4A7C59, #3A6347);
-          border-radius: 4px;
-          position: relative;
-          box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-        }
-        .intro-scene-mailbox::before {
-          content: "";
-          position: absolute; top: -5px; left: -2px; right: -2px;
-          height: 10px;
-          background: linear-gradient(180deg, #5A9469, #4A7C59);
-          border-radius: 2px;
-        }
-
-        .intro-scene-board {
-          width: 130px; height: 85px;
-          background: linear-gradient(135deg, #6D4C41, #5D4037);
-          border-radius: 4px;
-          border: 2px solid #3E2723;
-          position: relative;
-          box-shadow: 0 2px 8px rgba(0,0,0,0.25);
-          display: flex; align-items: center; justify-content: center;
-        }
-
-        .intro-scene-note {
-          background: #FFF8E1;
-          padding: 8px 12px;
-          border-radius: 2px;
-          box-shadow: 0 2px 6px rgba(0,0,0,0.15);
-          animation: intro-note-fall 5s ease-out forwards;
-        }
-        @keyframes intro-note-fall {
-          0%, 40% { opacity: 0; transform: translateY(-30px) rotate(-8deg); }
-          52%, 70% { opacity: 1; transform: translateY(0) rotate(3deg); }
-          85%, 100% { opacity: 0; }
-        }
-
-        .intro-scene-note-text {
-          overflow: hidden;
-          white-space: nowrap;
-          width: 0;
-          font-family: "Ma Shan Zheng", serif;
-          font-size: 13px;
-          color: #5D4037;
-          margin: 0;
-          animation: intro-note-type 5s steps(13) forwards;
-        }
-        @keyframes intro-note-type {
-          0%, 50% { width: 0; }
-          75%, 100% { width: 100%; }
-        }
-
-        /* ---------- 顶栏 ---------- */
-        .advice-topbar {
-          display: flex; align-items: center; justify-content: space-between;
-          max-width: 560px; margin: 0 auto; padding: 20px 4px 0;
-        }
-        .advice-back {
-          position: fixed;
-          left: 16px; top: 16px;
-          z-index: 30;
-          font-size: 13px; color: rgba(255,204,188,0.85); text-decoration: none;
-          letter-spacing: 0.04em;
-          transition: color 0.25s ease, transform 0.25s ease;
-          display: inline-flex; align-items: center;
-          text-shadow: 0 1px 4px rgba(0,0,0,0.5);
-          padding: 6px 12px;
-          border-radius: 6px;
-          background: rgba(0,0,0,0.25);
-          backdrop-filter: blur(2px);
-        }
-        .advice-back:hover { color: #FFCCBC; transform: translateX(-3px); background: rgba(0,0,0,0.35); }
-        .advice-topbar-meta {
-          font-size: 10px; color: rgba(255,204,188,0.4);
-          letter-spacing: 0.28em; text-transform: uppercase;
-          text-shadow: 0 1px 4px rgba(0,0,0,0.3);
-        }
-
-        /* ---------- 标题区 ---------- */
-        .advice-hero {
-          max-width: 560px; margin: 0 auto;
-          padding: 24px 4px 28px; text-align: center;
-        }
-        .advice-title {
-          font-family: "Noto Serif SC", Georgia, serif;
-          font-size: 24px; font-weight: 700;
-          color: #FFCCBC; margin: 0 0 8px; letter-spacing: 0.1em;
-          text-shadow: 0 2px 8px rgba(0,0,0,0.4);
-        }
-        .advice-subtitle {
-          font-size: 13px; color: rgba(188,170,164,0.8);
-          margin: 0; letter-spacing: 0.06em;
-          text-shadow: 0 1px 4px rgba(0,0,0,0.3);
-        }
-
-        /* ---------- 主交互区 ---------- */
-        .advice-main {
-          max-width: 560px; margin: 0 auto;
-          min-height: 200px;
-          position: relative;
-        }
-
-        /* ---------- 牛皮纸卡片（回信/信件箱项） ---------- */
-        .advice-reply, .advice-letterbox-item {
-          background-color: #F5F0E1;
-          background-image:
-            url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.95' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.05'/%3E%3C/svg%3E");
-        }
-
-        /* ---------- 写信便签卡片（贴在牛奶箱上的黄色便签纸） ---------- */
-        .advice-letter {
-          position: fixed;
-          left: 26%;
-          bottom: 186px;
-          transform: translateX(-50%) rotate(-1.5deg);
-          width: 300px;
-          max-width: 85vw;
-          z-index: 10;
-          padding: 18px 22px 20px;
-          border-radius: 3px 12px 10px 4px;
-          border: 1px solid rgba(180, 150, 60, 0.5);
-          background-image:
-            url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='2.0' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100' height='100' filter='url(%23n)' opacity='0.07'/%3E%3C/svg%3E"),
-            linear-gradient(135deg, #FFF9C4 0%, #F5E76E 100%);
-          background-blend-mode: overlay;
-          opacity: 0.95;
-          box-shadow:
-            0 6px 16px rgba(0,0,0,0.12),
-            0 1px 3px rgba(0,0,0,0.08);
-          animation: sticky-note-appear 0.4s ease-out;
-        }
-        .advice-letter::before {
-          content: "";
-          position: absolute;
-          top: -8px; left: 50%;
-          margin-left: -5px;
-          width: 10px; height: 16px;
-          background: rgba(180,150,60,0.35);
-          border-radius: 2px 2px 3px 3px;
-          box-shadow: 0 1px 3px rgba(0,0,0,0.15);
-        }
-        @keyframes sticky-note-appear {
-          from { opacity: 0; transform: translateX(-50%) translateY(8px) rotate(-3deg); }
-          to   { opacity: 1; transform: translateX(-50%) translateY(0) rotate(-1.5deg); }
-        }
-
-        /* × 关闭按钮 */
-        .advice-letter-close {
-          position: absolute;
-          top: -6px; right: -6px;
-          width: 20px; height: 20px;
-          border: none; background: none;
-          font-size: 11px; color: #8D6E63;
-          cursor: pointer; padding: 0;
-          display: flex; align-items: center; justify-content: center;
-          border-radius: 50%;
-          transition: background 0.2s ease, color 0.2s ease;
-          font-family: serif;
-          line-height: 1;
-          background: rgba(255,255,255,0.6);
-          box-shadow: 0 1px 3px rgba(0,0,0,0.12);
-        }
-        .advice-letter-close:hover {
-          background: rgba(161,136,127,0.15);
-          color: #5D4037;
-        }
-        .advice-letter-greeting {
-          font-family: "Ma Shan Zheng", "Noto Serif SC", serif;
-          font-size: 14px; color: #5D4037;
-          margin: 0 0 10px; letter-spacing: 0.06em;
-        }
-        .advice-input {
-          width: 100%; border: 1px solid rgba(180,150,60,0.3);
-          border-radius: 4px;
-          resize: none; outline: none;
-          background: rgba(255,255,245,0.85);
-          font-family: inherit;
-          font-size: 13px; line-height: 1.8;
-          color: #5D4037; letter-spacing: 0.02em;
-          padding: 10px 12px;
-          box-sizing: border-box;
-          transition: border-color 0.25s ease, box-shadow 0.25s ease;
-        }
-        .advice-input::placeholder { color: #BCAAA4; }
-        .advice-input:focus {
-          border-color: rgba(180,150,60,0.6);
-          box-shadow: 0 0 0 2px rgba(180,150,60,0.12);
-        }
-
-        /* ---------- 投递按钮 ---------- */
-        .advice-submit {
-          display: inline-flex; align-items: center;
-          justify-content: center; gap: 8px;
-          width: 100%; margin-top: 20px;
-          padding: 10px; border: 1px solid rgba(180,150,60,0.4); border-radius: 6px;
-          font-size: 14px; font-family: inherit;
-          font-weight: 500; letter-spacing: 0.06em;
-          color: #5D4037; background: rgba(245,235,170,0.7);
-          box-shadow: 0 2px 6px rgba(0,0,0,0.08);
-          transition: transform 0.15s ease, background 0.25s ease, box-shadow 0.25s ease;
-          will-change: transform;
-        }
-        .advice-submit:hover:not(:disabled) {
-          background: rgba(240,225,140,0.85); transform: translateY(-1px);
-          box-shadow: 0 3px 10px rgba(0,0,0,0.12);
-        }
-        .advice-submit:disabled { opacity: 0.4; cursor: not-allowed; background: rgba(245,235,170,0.4); }
-        .advice-submit-icon { display: inline-flex; align-items: center; }
-
-        /* ---------- 信纸飞入动画（从右下角便签位置起飞） ---------- */
-        .advice-flying-letter {
-          position: fixed;
-          right: 10%;
-          bottom: 20%;
-          z-index: 60;
-          pointer-events: none;
-          filter: drop-shadow(0 4px 8px rgba(0,0,0,0.3));
-        }
-
-        /* ---------- 等待回信 ---------- */
-        .advice-waiting {
-          text-align: center;
-          padding: 40px 0 20px;
-        }
-        .advice-waiting-icon {
-          font-size: 28px; margin-bottom: 12px;
-          display: inline-block;
-        }
-        .advice-waiting-text {
-          font-family: "Ma Shan Zheng", serif;
-          font-size: 16px; color: #FFCCBC; margin: 0 0 8px;
-          text-shadow: 0 1px 6px rgba(0,0,0,0.3);
-        }
-        .advice-waiting-hint {
-          font-size: 12px; color: rgba(188,170,164,0.6);
-          margin: 0; letter-spacing: 0.04em;
-        }
-
-        /* ---------- 回信已到达提示 ---------- */
-        .advice-arrived {
-          text-align: center;
-          padding: 30px 0;
-        }
-        .advice-arrived-text {
-          font-family: "Ma Shan Zheng", serif;
-          font-size: 16px; color: #FFCCBC; margin: 0 0 8px;
-          text-shadow: 0 1px 6px rgba(0,0,0,0.3);
-          letter-spacing: 0.04em;
-        }
-        .advice-arrived-hint {
-          font-size: 12px; color: rgba(188,170,164,0.5);
-          margin: 0; letter-spacing: 0.04em;
-        }
-
-        /* ---------- 回信卡片 ---------- */
-        .advice-reply {
-          position: relative;
-          padding: 28px 24px 52px; border-radius: 12px;
-          box-shadow: 0 8px 28px rgba(0,0,0,0.35);
-          transition: transform 0.3s ease, box-shadow 0.3s ease;
-        }
-        .advice-reply-close {
-          position: absolute; top: 14px; right: 14px; z-index: 3;
-          width: 30px; height: 30px; border-radius: 50%;
-          border: none; background: rgba(93,64,55,0.08);
-          color: #8D6E63; display: flex; align-items: center; justify-content: center;
-          cursor: pointer; transition: background 0.2s ease, color 0.2s ease, transform 0.2s ease;
-        }
-        .advice-reply-close:hover { background: rgba(93,64,55,0.15); color: #5D4037; transform: rotate(90deg); }
-        .advice-reply:hover {
-          transform: translateY(-3px);
-          box-shadow: 0 14px 36px rgba(0,0,0,0.4);
-        }
-
-        .advice-reply-text-wrap {
-          overflow: hidden;
-          clip-path: inset(0 100% 0 0);
-          transition: clip-path 1.2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-        }
-        .advice-reply-text-wrap--reveal { clip-path: inset(0 0% 0 0); }
-
-        .advice-reply-dear {
-          font-family: "Ma Shan Zheng", "Noto Serif SC", serif;
-          font-size: 14px; color: #8D6E63;
-          margin: 0 0 14px; letter-spacing: 0.04em;
-        }
-        .advice-reply-text {
-          font-family: "Noto Serif SC", Georgia, serif;
-          font-size: 15px; line-height: 1.8;
-          color: #4E342E; margin: 0 0 12px;
-          letter-spacing: 0.02em; white-space: pre-wrap;
-        }
-        .advice-reply-sign {
-          font-size: 12px; color: #A1887F;
-          text-align: right; margin: 0 0 20px;
-          font-style: italic; letter-spacing: 0.04em;
-        }
-
-        .advice-again {
-          display: block; margin: 0 auto;
-          padding: 6px 20px;
-          border: 1px dashed rgba(180,150,60,0.4); border-radius: 999px;
-          background: transparent; font-size: 12px; font-family: inherit;
-          font-weight: 400; color: #8D6E63; letter-spacing: 0.05em;
-          transition: background 0.25s ease, border-color 0.25s ease, transform 0.2s ease;
-        }
-        .advice-again:hover {
-          background: rgba(255,255,255,0.3); border-color: rgba(180,150,60,0.6);
-          transform: translateY(-1px);
-        }
-
-        /* ============================================================
-           牛奶箱（做旧绿漆质感 · 全部露出）
+           牛奶箱（做旧绿漆质感 · 左下角固定）
            ============================================================ */
         .milk-box {
-          position: absolute;
-          bottom: 10%;
-          left: 18%;
+          position: fixed;
+          bottom: calc(var(--vh) * -52);
+          left: 34%;
           transform: translateX(-50%);
-          z-index: 10;
+          z-index: 15;
           cursor: pointer;
           border: none;
           background: none;
@@ -1787,11 +1104,11 @@ const AdvicePage: React.FC = () => {
            公告板（融入右侧黄色木板 · 暖黄旧木牌）
            ============================================================ */
         .notice-board {
-          position: absolute;
-          right: 4%;
-          bottom: 12%;
+          position: fixed;
+          left: 68%;
+          bottom: calc(var(--vh) * 24);
           z-index: 10;
-          width: 252px; height: 500px;
+          width: 252px;height: 500px;
           opacity: 1;
           transition: all 0.3s ease;
         }
@@ -1922,14 +1239,28 @@ const AdvicePage: React.FC = () => {
           .intro-sign-title { font-size: 28px; }
           .intro-scene-mailbox { width: 36px; height: 48px; }
           .intro-scene-board { width: 100px; height: 65px; }
-          /* 场景移动端微调 */
-          .shop-wall { left: 8%; right: 8%; height: 44%; }
-          .shop-roof { left: 5%; right: 5%; }
-          .shop-door { width: 22%; height: 36%; top: 32%; }
-          .shop-window-left { left: 16%; width: 18%; top: 30%; }
-          .shop-window-right { right: 16%; width: 18%; top: 30%; }
-          .shop-sign { padding: 8px 20px; }
-          .shop-floor { height: 40%; }
+          .milk-box {
+            bottom: calc(var(--vh) * -40);
+            left: 34%;
+          }
+          .milk-body { width: 80px; height: 100px; }
+          .milk-upper { height: 52px; }
+          .milk-rain-guard { height: 24px; left: -6px; right: -6px; }
+          .milk-lower { height: 92px; }
+          .milk-divider { height: 4px; }
+          .milk-sticker { width: 32px; height: 24px; }
+          .milk-sticker span { font-size: 8px; }
+          .advice-letter {
+            left: 50%;
+            bottom: 35%;
+            transform: translateX(-50%) rotate(-1deg);
+          }
+          .notice-board {
+            left: auto;
+            right: 4%;
+            bottom: 15%;
+            width: 200px;
+          }
         }
         @media (min-width: 769px) {
           .advice-letter, .advice-reply, .advice-letterbox {

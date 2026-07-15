@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>筑基 · 数字造物论</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;700&display=swap');
+        
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Noto Serif SC', serif;
+            color: #333;
+            background-color: #f5f5f5;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 3rem;
+            position: relative;
+        }
+        
+        .back-button {
+            position: absolute;
+            left: 1rem;
+            top: 1rem;
+            padding: 0.5rem 1rem;
+            background: #f0f0f0;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            color: #333;
+            text-decoration: none;
+            font-size: 0.9rem;
+        }
+        
+        .back-button:hover {
+            background: #e0e0e0;
+        }
+        
+        .main-title {
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+        }
+        
+        .subtitle {
+            font-size: 1rem;
+            color: #666;
+        }
+        
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1rem;
+        }
+        
+        .volume {
+            background: white;
+            padding: 1.5rem;
+            border-radius: 4px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            text-align: center;
+        }
+        
+        .volume-title {
+            font-size: 1.5rem;
+            margin-bottom: 0.5rem;
+        }
+        
+        .volume-description {
+            font-size: 0.9rem;
+            color: #666;
+        }
+        
+        .volume-1 {
+            grid-column: 1 / span 3;
+            background: #333;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+    <div class="header">
+        <a href="/" class="back-button">← 返回主站</a>
+        <h1 class="main-title">筑基 · 数字造物论</h1>
+        <p class="subtitle">数字时代的创造方法论</p>
+    </div>
+        
+        <div class="grid">
+            <div class="volume volume-1">
+                <h2 class="volume-title">卷一 技术底色</h2>
+                <p class="volume-description">编程语言、算法与数据结构、计算机系统原理等基础技术素养</p>
+            </div>
+            
+            <div class="volume">
+                <h2 class="volume-title">卷二 设计思维</h2>
+                <p class="volume-description">用户研究、交互设计、视觉表达等创造方法论</p>
+            </div>
+            
+            <div class="volume">
+                <h2 class="volume-title">卷三 系统架构</h2>
+                <p class="volume-description">软件工程、分布式系统、领域驱动设计等构建方法</p>
+            </div>
+            
+            <div class="volume">
+                <h2 class="volume-title">卷四 数据洞察</h2>
+                <p class="volume-description">数据分析、机器学习、可视化等数据驱动方法</p>
+            </div>
+            
+            <div class="volume">
+                <h2 class="volume-title">卷五 创造工具</h2>
+                <p class="volume-description">开发工具链、设计软件、效率工具等生产力装备</p>
+            </div>
+            
+            <div class="volume">
+                <h2 class="volume-title">卷六 文化语境</h2>
+                <p class="volume-description">技术伦理、设计哲学、数字人文等跨界思考</p>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

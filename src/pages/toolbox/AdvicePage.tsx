@@ -663,10 +663,15 @@ const AdvicePage: React.FC = () => {
         }
 
         /* ---------- z-index 层级 ---------- */
-        .advice-page > *:not(.advice-bg):not(.advice-bg-overlay):not(.intro-overlay):not(.advice-letter):not(.advice-letterbox) {
+        .advice-page > *:not(.advice-bg):not(.advice-bg-overlay):not(.intro-overlay):not(.advice-letter):not(.advice-letterbox):not(.advice-topbar):not(.milk-box):not(.notice-board):not(.advice-miao) {
           position: relative; z-index: 2;
         }
-        .advice-topbar, .advice-hero, .advice-main { z-index: 2; position: relative; }
+        .advice-topbar {
+          position: fixed !important; top: 16px; left: 16px; z-index: 50 !important;
+          display: flex; align-items: center; gap: 12px;
+          padding: 0;
+        }
+        .advice-hero, .advice-main { z-index: 2; position: relative; }
 
         /* ============================================================
            纯 CSS 3D 透视杂货店场景（三店铺并排）
@@ -700,11 +705,11 @@ const AdvicePage: React.FC = () => {
            牛奶箱（做旧绿漆质感 · 左下角固定）
            ============================================================ */
         .milk-box {
-          position: fixed;
-          bottom: calc(var(--vh) * -52);
-          left: 34%;
+          position: fixed !important;
+          bottom: 15px;
+          left: 35%;
           transform: translateX(-50%);
-          z-index: 15;
+          z-index: 15 !important;
           cursor: pointer;
           border: none;
           background: none;
@@ -1104,14 +1109,288 @@ const AdvicePage: React.FC = () => {
            公告板（融入右侧黄色木板 · 暖黄旧木牌）
            ============================================================ */
         .notice-board {
-          position: fixed;
+          position: fixed !important;
           left: 68%;
-          bottom: calc(var(--vh) * 24);
-          z-index: 10;
+          bottom: 138px;
+          z-index: 10 !important;
           width: 252px;height: 500px;
           opacity: 1;
           transition: all 0.3s ease;
         }
+
+        /* ---------- 返回按钮与顶栏 ---------- */
+        .advice-back {
+          position: relative;
+          font-size: 13px; color: rgba(255,204,188,0.85); text-decoration: none;
+          letter-spacing: 0.04em;
+          transition: color 0.25s ease, transform 0.25s ease;
+          display: inline-flex; align-items: center;
+          text-shadow: 0 1px 4px rgba(0,0,0,0.5);
+          padding: 6px 12px;
+          border-radius: 6px;
+          background: rgba(0,0,0,0.25);
+        }
+        .advice-back:hover { color: #FFCCBC; transform: translateX(-3px); background: rgba(0,0,0,0.35); }
+        .advice-topbar-meta {
+          font-size: 10px; color: rgba(255,204,188,0.4);
+          letter-spacing: 0.28em; text-transform: uppercase;
+          text-shadow: 0 1px 4px rgba(0,0,0,0.3);
+        }
+
+        /* ---------- 标题区 ---------- */
+        .advice-hero {
+          max-width: 560px; margin: 0 auto;
+          padding: 24px 4px 28px; text-align: center;
+        }
+        .advice-title {
+          font-family: "Noto Serif SC", Georgia, serif;
+          font-size: 24px; font-weight: 700;
+          color: #FFCCBC; margin: 0 0 8px; letter-spacing: 0.1em;
+          text-shadow: 0 2px 8px rgba(0,0,0,0.4);
+        }
+        .advice-subtitle {
+          font-size: 13px; color: rgba(188,170,164,0.8);
+          margin: 0; letter-spacing: 0.06em;
+          text-shadow: 0 1px 4px rgba(0,0,0,0.3);
+        }
+
+        /* ---------- 主交互区 ---------- */
+        .advice-main {
+          max-width: 560px; margin: 0 auto;
+          padding: 0 4vw;
+        }
+
+        /* ---------- 写信便签 ---------- */
+        .advice-letter {
+          position: fixed;
+          left: 34%;
+          bottom: 28%;
+          transform: translateX(-50%) rotate(-1.5deg);
+          width: 300px;
+          max-width: 85vw;
+          z-index: 20;
+          padding: 18px 22px 20px;
+          border-radius: 3px 12px 10px 4px;
+          border: 1px solid rgba(180, 150, 60, 0.5);
+          background-image:
+            url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='100' height='100'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='2.0' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100' height='100' filter='url(%23n)' opacity='0.07'/%3E%3C/svg%3E"),
+            linear-gradient(135deg, #FFF9C4 0%, #F5E76E 100%);
+          background-blend-mode: overlay;
+          opacity: 0.95;
+          box-shadow:
+            0 6px 16px rgba(0,0,0,0.12),
+            0 1px 3px rgba(0,0,0,0.08);
+          animation: sticky-note-appear 0.4s ease-out;
+        }
+        .advice-letter::before {
+          content: "";
+          position: absolute;
+          top: -8px; left: 50%;
+          margin-left: -5px;
+          width: 10px; height: 16px;
+          background: rgba(180,150,60,0.35);
+          border-radius: 2px 2px 3px 3px;
+          box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+        }
+        @keyframes sticky-note-appear {
+          from { opacity: 0; transform: translateX(-50%) translateY(8px) rotate(-3deg); }
+          to   { opacity: 1; transform: translateX(-50%) translateY(0) rotate(-1.5deg); }
+        }
+
+        /* × 关闭按钮 */
+        .advice-letter-close {
+          position: absolute;
+          top: -6px; right: -6px;
+          width: 20px; height: 20px;
+          border: none; background: none;
+          font-size: 11px; color: #8D6E63;
+          cursor: pointer; padding: 0;
+          display: flex; align-items: center; justify-content: center;
+          border-radius: 50%;
+          transition: background 0.2s ease, color 0.2s ease;
+          font-family: serif;
+          line-height: 1;
+          background: rgba(255,255,255,0.6);
+          box-shadow: 0 1px 3px rgba(0,0,0,0.12);
+        }
+        .advice-letter-close:hover { background: #fff; color: #5D4037; }
+
+        .advice-letter-greeting {
+          font-family: "Ma Shan Zheng", "Noto Serif SC", serif;
+          font-size: 14px; color: #5D4037;
+          margin: 0 0 10px; letter-spacing: 0.06em;
+        }
+        .advice-input {
+          width: 100%; border: 1px solid rgba(180,150,60,0.3);
+          border-radius: 4px;
+          resize: none; outline: none;
+          background: rgba(255,255,245,0.85);
+          font-family: inherit;
+          font-size: 13px; line-height: 1.8;
+          color: #5D4037; letter-spacing: 0.02em;
+          padding: 10px 12px;
+          min-height: 100px;
+          box-sizing: border-box;
+          transition: border-color 0.25s ease, box-shadow 0.25s ease;
+        }
+        .advice-input:focus {
+          border-color: rgba(180,150,60,0.6);
+          box-shadow: 0 0 0 3px rgba(245,235,170,0.3);
+        }
+        .advice-input::placeholder {
+          color: rgba(93,64,55,0.35);
+        }
+        .advice-submit {
+          display: inline-flex; align-items: center;
+          justify-content: center; gap: 8px;
+          width: 100%; margin-top: 20px;
+          padding: 10px; border: 1px solid rgba(180,150,60,0.4); border-radius: 6px;
+          font-size: 14px; font-family: inherit;
+          font-weight: 500; letter-spacing: 0.06em;
+          color: #5D4037; background: rgba(245,235,170,0.7);
+          box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+          cursor: pointer;
+          transition: all 0.25s ease;
+        }
+        .advice-submit:hover:not(:disabled) {
+          background: rgba(240,225,140,0.85); transform: translateY(-1px);
+          box-shadow: 0 3px 10px rgba(0,0,0,0.12);
+        }
+        .advice-submit:disabled { opacity: 0.4; cursor: not-allowed; background: rgba(245,235,170,0.4); }
+        .advice-submit-icon { display: inline-flex; align-items: center; }
+
+        /* ---------- 信纸飞入动画 ---------- */
+        .advice-flying-letter {
+          position: fixed;
+          right: 10%;
+          bottom: 20%;
+          z-index: 60;
+          pointer-events: none;
+          filter: drop-shadow(0 4px 8px rgba(0,0,0,0.3));
+        }
+
+        /* ---------- 等待回复 ---------- */
+        .advice-waiting {
+          text-align: center;
+          padding: 40px 0 20px;
+        }
+        .advice-waiting-icon {
+          font-size: 28px; margin-bottom: 12px;
+          display: inline-block;
+        }
+        .advice-waiting-text {
+          font-family: "Noto Serif SC", serif;
+          font-size: 13px; color: rgba(188,170,164,0.7);
+          margin: 0; letter-spacing: 0.04em;
+        }
+
+        /* ---------- 回复信封 ---------- */
+        .advice-arrived {
+          text-align: center;
+          padding: 30px 0;
+        }
+        .advice-arrived-text {
+          font-family: "Ma Shan Zheng", serif;
+          font-size: 16px; color: #FFCCBC; margin: 0 0 8px;
+          text-shadow: 0 1px 6px rgba(0,0,0,0.3);
+          letter-spacing: 0.04em;
+        }
+        .advice-reply {
+          position: relative;
+          padding: 28px 24px 52px; border-radius: 12px;
+          box-shadow: 0 8px 28px rgba(0,0,0,0.35);
+          transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        .advice-reply-close {
+          position: absolute; top: 14px; right: 14px; z-index: 3;
+          width: 30px; height: 30px; border-radius: 50%;
+          border: none; background: rgba(93,64,55,0.08);
+          color: #8D6E63; display: flex; align-items: center; justify-content: center;
+          cursor: pointer; transition: background 0.2s ease, color 0.2s ease, transform 0.2s ease;
+        }
+        .advice-reply-close:hover { background: rgba(93,64,55,0.15); color: #5D4037; transform: rotate(90deg); }
+        .advice-reply:hover {
+          transform: translateY(-3px);
+          box-shadow: 0 14px 36px rgba(0,0,0,0.4);
+        }
+        .advice-reply-text-wrap {
+          overflow: hidden;
+          clip-path: inset(0 100% 0 0);
+          transition: clip-path 1.2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+        }
+        .advice-reply-text-wrap--reveal { clip-path: inset(0 0% 0 0); }
+        .advice-reply-dear {
+          font-family: "Ma Shan Zheng", "Noto Serif SC", serif;
+          font-size: 14px; color: #8D6E63;
+          margin: 0 0 14px; letter-spacing: 0.04em;
+        }
+        .advice-reply-text {
+          font-family: "Noto Serif SC", Georgia, serif;
+          font-size: 15px; line-height: 1.8;
+          color: #4E342E; margin: 0 0 12px;
+          letter-spacing: 0.02em; white-space: pre-wrap;
+        }
+        .advice-reply-sign {
+          font-size: 12px; color: #A1887F;
+          text-align: right; margin: 0 0 20px;
+          font-style: italic; letter-spacing: 0.04em;
+        }
+        .advice-again {
+          display: block; margin: 0 auto;
+          padding: 6px 20px;
+          border: 1px dashed rgba(180,150,60,0.4); border-radius: 999px;
+          background: transparent; font-size: 12px; font-family: inherit;
+          font-weight: 400; color: #8D6E63; letter-spacing: 0.05em;
+          transition: background 0.25s ease, border-color 0.25s ease, transform 0.2s ease;
+        }
+        .advice-again:hover {
+          background: rgba(180,150,60,0.1); border-color: rgba(180,150,60,0.6);
+          transform: translateY(-1px);
+        }
+
+        /* ---------- 投信箱 ---------- */
+        .advice-letterbox {
+          position: fixed;
+          right: 24px;
+          bottom: 24px;
+          z-index: 30;
+          width: 280px;
+          max-width: 85vw;
+          max-height: 60vh;
+          overflow-y: auto;
+          border-radius: 10px;
+          border: 1px solid rgba(180, 150, 60, 0.35);
+          background: rgba(255, 249, 196, 0.92);
+          box-shadow: 0 8px 28px rgba(0,0,0,0.15);
+          padding: 20px;
+          animation: sticky-note-appear 0.3s ease-out;
+        }
+        .advice-letterbox-summary {
+          padding: 14px 16px;
+          border-bottom: 1px solid rgba(180,150,60,0.2);
+          display: flex; flex-direction: column; gap: 10px;
+        }
+        .advice-letterbox-detail-inner {
+          padding: 0 16px 16px;
+        }
+        .advice-letterbox-envelope,
+        .advice-letterbox-reply {
+          padding: 14px 16px;
+          border-radius: 8px;
+        }
+        .advice-letterbox-close {
+          position: absolute;
+          top: -6px; right: -6px;
+          width: 22px; height: 22px;
+          border: none; background: rgba(255,255,255,0.7);
+          border-radius: 50%;
+          font-size: 12px; color: #8D6E63;
+          cursor: pointer; display: flex;
+          align-items: center; justify-content: center;
+          box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+          transition: background 0.2s ease;
+        }
+        .advice-letterbox-close:hover { background: #fff; }
 
         .notice-board-wood {
           background: rgba(245, 220, 120, 0.85);
@@ -1183,22 +1462,115 @@ const AdvicePage: React.FC = () => {
           font-style: italic; margin-top: 10px;
         }
 
-        /* ---------- 响应式 ---------- */
+        /* ============================================================
+           开场动画（纯 CSS @keyframes，5秒，每次进入都播放）
+           ============================================================ */
+        .intro-overlay {
+          position: fixed; inset: 0; z-index: 100;
+          display: flex; flex-direction: column;
+          align-items: center; justify-content: center;
+          pointer-events: none;
+        }
+        .intro-backdrop {
+          position: absolute; inset: 0;
+          background: rgba(42, 27, 20, 0.85);
+          animation: intro-backdrop-fade 5s ease-out forwards;
+        }
+        @keyframes intro-backdrop-fade {
+          0% { opacity: 1; }
+          60% { opacity: 1; }
+          100% { opacity: 0; pointer-events: none; }
+        }
+        .intro-sign {
+          position: relative; z-index: 1;
+          text-align: center;
+          animation: intro-sign-show 5s ease-out forwards;
+        }
+        @keyframes intro-sign-show {
+          0% { opacity: 0; transform: scale(0.9); }
+          15% { opacity: 1; transform: scale(1); }
+          60% { opacity: 1; }
+          100% { opacity: 0; transform: translateY(-20px); pointer-events: none; }
+        }
+        .intro-sign-title {
+          font-family: "Noto Serif SC", Georgia, serif;
+          font-size: 42px; font-weight: 700;
+          color: #F5E6D0; margin: 0 0 8px;
+          letter-spacing: 0.08em;
+          text-shadow: 0 2px 12px rgba(0,0,0,0.4);
+        }
+        .intro-sign-sub {
+          font-size: 14px; color: #D4A373;
+          letter-spacing: 0.15em; margin: 0;
+          text-transform: uppercase;
+        }
+        .intro-scene {
+          position: relative; z-index: 1;
+          display: flex; align-items: flex-end; gap: 24px;
+          margin-top: 40px;
+          animation: intro-scene-slide 5s ease-out forwards;
+        }
+        @keyframes intro-scene-slide {
+          0% { opacity: 0; transform: translateY(30px); }
+          20% { opacity: 1; transform: translateY(0); }
+          60% { opacity: 1; }
+          100% { opacity: 0; transform: translateY(-10px); pointer-events: none; }
+        }
+        .intro-scene-mailbox {
+          width: 48px; height: 64px;
+          background: linear-gradient(180deg, #5A8A38, #3A5C24);
+          border-radius: 4px 4px 2px 2px;
+          box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+          position: relative;
+        }
+        .intro-scene-mailbox::before {
+          content: "";
+          position: absolute; top: 8px; left: 50%;
+          transform: translateX(-50%);
+          width: 60%; height: 6px;
+          background: #2D4A20;
+          border-radius: 3px;
+        }
+        .intro-scene-board {
+          width: 140px; height: 90px;
+          background: rgba(245, 220, 120, 0.85);
+          border: 1px solid rgba(100, 60, 20, 0.4);
+          border-radius: 4px;
+          padding: 8px;
+          box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+          display: flex; align-items: center; justify-content: center;
+        }
+        .intro-scene-note {
+          background: rgba(255,250,235,0.8);
+          padding: 6px 10px;
+          border-radius: 2px;
+          box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+          transform: rotate(-2deg);
+        }
+        .intro-scene-note-text {
+          font-family: "Noto Serif SC", serif;
+          font-size: 11px; color: #5C3A21;
+          margin: 0; white-space: nowrap;
+        }
+
+        /* ---------- 响应式（手机竖屏） ---------- */
         @media (max-width: 768px) {
           .advice-page { padding: 0 0 60px; }
-          .advice-topbar { padding: 16px 16px 0; }
+          .advice-topbar { top: 12px; left: 12px; }
           .advice-hero { padding: 0; height: 0; }
           .advice-main { padding: 0 4vw; }
           .advice-miao-svg { width: 48px; height: 48px; }
           .advice-miao-label { font-size: 9px; }
-          .advice-reply {
-            padding: 16px; padding-bottom: 48px;
-          }
-          /* 写信便签：移动端缩小 */
+          .advice-reply { padding: 16px; padding-bottom: 48px; }
+
+          /* 背景图：底部对齐，确保牛奶箱和公告板可见 */
+          .advice-bg { background-position: center bottom; }
+
+          /* 写信便签 */
           .advice-letter {
-            left: 35%;
-            bottom: 22%;
-            transform: translateX(-50%);
+            left: 50%;
+            bottom: 35%;
+            transform: translateX(-50%) rotate(-1deg);
             width: 85vw;
             max-width: 340px;
             padding: 16px 18px;
@@ -1218,8 +1590,9 @@ const AdvicePage: React.FC = () => {
           .advice-letterbox-detail-inner { padding: 0 14px 14px; }
           .advice-letterbox-envelope,
           .advice-letterbox-reply { padding: 12px; }
-          /* 牛奶箱：移动端缩小 */
-          .milk-box { bottom: 8%; left: 12%; }
+
+          /* 牛奶箱：移动端底部定位 */
+          .milk-box { bottom: 8%; left: 32%; }
           .milk-body { width: 72px; height: 90px; }
           .milk-upper { height: 46px; }
           .milk-rain-guard { height: 20px; left: -4px; right: -4px; }
@@ -1227,40 +1600,14 @@ const AdvicePage: React.FC = () => {
           .milk-divider { height: 3px; }
           .milk-sticker { width: 28px; height: 20px; }
           .milk-sticker span { font-size: 7px; }
-          .advice-letter {
-            left: 50%;
-            bottom: 35%;
-            transform: translateX(-50%) rotate(-1deg);
-          }
-          /* 公告板：移动端缩小 */
-          .notice-board { right: 3%; bottom: 8%; width: 180px; height: auto; }
+
+          /* 公告板：移动端右侧底部 */
+          .notice-board { left: auto; right: 4%; bottom: 12%; width: 180px; height: auto; }
           .advice-miao { bottom: 8px; right: 16px; }
           .notice-board-wood { padding: 12px; }
           .intro-sign-title { font-size: 28px; }
           .intro-scene-mailbox { width: 36px; height: 48px; }
           .intro-scene-board { width: 100px; height: 65px; }
-          .milk-box {
-            bottom: calc(var(--vh) * -40);
-            left: 34%;
-          }
-          .milk-body { width: 80px; height: 100px; }
-          .milk-upper { height: 52px; }
-          .milk-rain-guard { height: 24px; left: -6px; right: -6px; }
-          .milk-lower { height: 92px; }
-          .milk-divider { height: 4px; }
-          .milk-sticker { width: 32px; height: 24px; }
-          .milk-sticker span { font-size: 8px; }
-          .advice-letter {
-            left: 50%;
-            bottom: 35%;
-            transform: translateX(-50%) rotate(-1deg);
-          }
-          .notice-board {
-            left: auto;
-            right: 4%;
-            bottom: 15%;
-            width: 200px;
-          }
         }
         @media (min-width: 769px) {
           .advice-letter, .advice-reply, .advice-letterbox {

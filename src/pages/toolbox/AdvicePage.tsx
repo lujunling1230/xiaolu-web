@@ -1568,7 +1568,7 @@ const AdvicePage: React.FC = () => {
 
           /* 写信便签 */
           .advice-letter {
-            left: 50%;
+            left: 60%;
             bottom: 35%;
             transform: translateX(-50%) rotate(-1deg);
             width: 85vw;
@@ -1592,7 +1592,7 @@ const AdvicePage: React.FC = () => {
           .advice-letterbox-reply { padding: 12px; }
 
           /* 牛奶箱：移动端底部定位 */
-          .milk-box { bottom: 20%; left: 24%; }
+          .milk-box { bottom: 15%; left: 24%; }
           .milk-body { width: 86px; height: 108px; }
           .milk-upper { height: 54px; }
           .milk-rain-guard { height: 24px; left: -6px; right: -6px; }

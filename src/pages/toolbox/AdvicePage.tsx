@@ -1592,7 +1592,7 @@ const AdvicePage: React.FC = () => {
           .advice-letterbox-reply { padding: 12px; }
 
           /* 牛奶箱：移动端底部定位 */
-          .milk-box { bottom: 12%; left: 24%; }
+          .milk-box { bottom: 20%; left: 24%; }
           .milk-body { width: 86px; height: 108px; }
           .milk-upper { height: 54px; }
           .milk-rain-guard { height: 24px; left: -6px; right: -6px; }

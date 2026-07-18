@@ -695,7 +695,7 @@ const TravelPage: React.FC = () => {
             <p>愿后来者，持此卷，少走弯路，多遇良辰。</p>
           </div>
 
-          <div className="travel-hero-signature">
+          <div className="travel-hero-signature" style={{ display: 'none' }}>
             <span className="travel-hero-name">—— 漫游使 小叶 识</span>
             <div className="travel-hero-seal"><span>漫游</span></div>
           </div>
@@ -840,8 +840,8 @@ const TravelPage: React.FC = () => {
             </svg>
           </div>
 
-          {/* 迷你放大镜 */}
-          <div className="travel-mini-map">
+          {/* 迷你放大镜（已隐藏） */}
+          <div className="travel-mini-map" style={{ display: 'none' }}>
             <svg viewBox="0 0 100 72">
               <circle cx="50" cy="36" r="28" fill="none" stroke="#C8B898" strokeWidth="1" opacity="0.5" />
               <path d="M72 58 L85 70" stroke="#C8B898" strokeWidth="2" strokeLinecap="round" opacity="0.5" />

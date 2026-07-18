@@ -1991,18 +1991,11 @@ const LeafBook: React.FC<LeafBookProps> = ({ registerOpenBook, flipTriggerRef, a
             height: 520px;
             max-height: 72vh;
           }
-          /* 目录对页：移动端改为单页堆叠 */
+          /* 目录对页：移动端保持双页但缩小字号 */
           .lb-spread {
-            flex-direction: column;
-            padding: 6px;
-            overflow-y: auto;
-            scrollbar-width: thin;
-            scrollbar-color: rgba(140, 110, 80, 0.15) transparent;
-          }
-          .lb-spread::-webkit-scrollbar { width: 3px; }
-          .lb-spread::-webkit-scrollbar-thumb {
-            background: rgba(140, 110, 80, 0.15);
-            border-radius: 2px;
+            flex-direction: row;
+            padding: 4px;
+            overflow: hidden;
           }
           .lb-spread-page {
             border-radius: 6px;
@@ -2083,9 +2076,9 @@ const LeafBook: React.FC<LeafBookProps> = ({ registerOpenBook, flipTriggerRef, a
           /* 按钮 */
           .lb-close-btn { bottom: 12px; right: 12px; padding: 6px 12px; font-size: 11px; }
           .lb-page-number { font-size: 10px; bottom: 10px; left: 50%; transform: translateX(-50%); }
-          /* 双页展开容器：移动端改为单列 */
+          /* 双页展开容器：移动端保持左右排列 */
           .lb-spread-container {
-            flex-direction: column;
+            flex-direction: row;
           }
           .lb-spread-half {
             border-radius: 6px;

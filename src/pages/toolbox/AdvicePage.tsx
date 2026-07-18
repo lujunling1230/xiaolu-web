@@ -1568,7 +1568,7 @@ const AdvicePage: React.FC = () => {
 
           /* 写信便签 */
           .advice-letter {
-            left: 38%;
+            left: 30%;
             bottom: 35%;
             transform: translateX(-50%) rotate(-1deg);
             width: 85vw;
@@ -1593,7 +1593,7 @@ const AdvicePage: React.FC = () => {
 
           /* 牛奶箱：移动端底部定位 */
           .milk-box { bottom: 12%; left: 13%; }
-          .milk-body { width: 86px; height: 108px; }
+          .milk-body { width: 86px; height: 120px; }
           .milk-upper { height: 54px; }
           .milk-rain-guard { height: 24px; left: -6px; right: -6px; }
           .milk-lower { height: 98px; }
@@ -1603,7 +1603,7 @@ const AdvicePage: React.FC = () => {
 
           /* 公告板：移动端右侧底部 */
           .notice-board { left: auto; right: 2%; bottom: 8%; width: 126px; height: 60vh; }
-          .advice-miao { bottom: 4px; right: 10%; }
+          .advice-miao { bottom: 2px; right: 14%; }
           .notice-board-wood { padding: 12px; }
           .intro-sign-title { font-size: 28px; }
           .intro-scene-mailbox { width: 36px; height: 48px; }

@@ -424,7 +424,7 @@ const MickeyLaunchpad: React.FC = () => {
           .mickey-icon { font-size: 30px; }
           .mickey-moon { width: 64px; height: 64px; top: 5%; right: 5%; }
           .mickey-grid { grid-template-columns: repeat(3, 1fr); gap: 28px 14px; }
-          .mickey-tool-wrap:last-child { grid-column: 2; }
+          .mickey-tool-wrap:last-child { grid-column: 3; }
         }
       `}</style>
     </div>

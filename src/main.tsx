@@ -63,7 +63,7 @@ createRoot(document.getElementById("root")!).render(
         <Route path="/toolbox/inventory" element={<InventoryPage />} />
         {/* /toolbox/supplies 别名：米奇妙妙屋中「物资管家」入口专用，指向同一组件 */}
         <Route path="/toolbox/supplies" element={<InventoryPage />} />
-        {/* 解忧杂货铺：治愈系问答空间 */}
+        {/* 解忧杂货店：治愈系问答空间 */}
         <Route path="/toolbox/advice" element={<AdvicePage />} />
         {/* 通关清单：游戏化 To-Do */}
         <Route path="/toolbox/quests" element={<QuestLogPage />} />

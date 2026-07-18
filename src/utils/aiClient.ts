@@ -1,6 +1,6 @@
 /**
  * AI 通用调用客户端
- * 与「解忧杂货铺」共用同一套环境变量配置
+ * 与「解忧杂货店」共用同一套环境变量配置
  */
 
 export interface CallAIOptions {

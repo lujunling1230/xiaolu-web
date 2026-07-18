@@ -1592,7 +1592,7 @@ const AdvicePage: React.FC = () => {
           .advice-letterbox-reply { padding: 12px; }
 
           /* 牛奶箱：移动端底部定位 */
-          .milk-box { bottom: 8%; left: 20%; }
+          .milk-box { bottom: 12%; left: 16%; }
           .milk-body { width: 86px; height: 108px; }
           .milk-upper { height: 54px; }
           .milk-rain-guard { height: 24px; left: -6px; right: -6px; }
@@ -1602,7 +1602,7 @@ const AdvicePage: React.FC = () => {
           .milk-sticker span { font-size: 8px; }
 
           /* 公告板：移动端右侧底部 */
-          .notice-board { left: auto; right: 2%; bottom: 8%; width: 150px; height: auto; }
+          .notice-board { left: auto; right: 2%; bottom: 8%; width: 126px; height: auto; }
           .advice-miao { bottom: 8px; right: 16px; }
           .notice-board-wood { padding: 12px; }
           .intro-sign-title { font-size: 28px; }

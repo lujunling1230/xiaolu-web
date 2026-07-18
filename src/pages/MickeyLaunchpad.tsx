@@ -6,7 +6,7 @@ import { Link } from "react-router-dom";
  * 妙妙工具箱 · Mickey Launchpad
  *
  * 深色星空背景 + 闪烁星辰 + 金色发光圆形卡片。
- * 9 个工具，4-4-1 布局，第 9 个（时光博物馆）位于解忧杂货铺正下方。
+ * 9 个工具，4-4-1 布局，第 9 个（时光博物馆）位于解忧杂货店正下方。
  */
 
 /* ===== 工具数据（严格按图） ===== */
@@ -87,7 +87,7 @@ const tools: Tool[] = [
   { name: "爱情公寓", slogan: "3601·3602·3603 全员在线", icon: <ApartmentIcon />, url: "/toolbox/answer", glow: true, hoverHint: "聊聊呗" },
   { name: "通关清单", slogan: "把人生变成一场 RPG。", icon: "🎯", url: "/toolbox/quests", glow: true, hoverHint: "命中目标！" },
   { name: "物资管家", slogan: "库存与保质期管理", icon: "📦", url: "/toolbox/supplies", glow: true, hoverHint: "清点一下" },
-  { name: "解忧杂货铺", slogan: "总有一句话，能解开你的心结。", icon: "🕯️", url: "/toolbox/advice", glow: true, hoverHint: "进来坐坐？" },
+  { name: "解忧杂货店", slogan: "总有一句话，能解开你的心结。", icon: "🕯️", url: "/toolbox/advice", glow: true, hoverHint: "进来坐坐？" },
   { name: "漫游指南", slogan: "走过的路，看过的云。", icon: "🗺️", url: "/toolbox/travel", glow: true, hoverHint: "出发吧" },
   { name: "回血清单", slogan: "允许一切崩塌，只做一件极小的事。", icon: "🔋", url: "/toolbox/recharge", glow: true, hoverHint: "充一会儿电" },
   { name: "解压馆", slogan: "允许一切崩塌。", icon: <MendingHeartIcon />, url: "/toolbox/games", glow: true, hoverHint: "捏碎它" },
@@ -331,14 +331,14 @@ const MickeyLaunchpad: React.FC = () => {
           font-size: 16px; color: #d0daf5; margin: 0; letter-spacing: 0.06em;
         }
 
-        /* 工具网格 — 4-4-1 布局，每排4个，第9个落在第一列（解忧杂货铺正下方） */
+        /* 工具网格 — 4-4-1 布局，每排4个，第9个落在第一列（解忧杂货店正下方） */
         .mickey-grid {
           position: relative; z-index: 2;
           max-width: 820px; margin: 0 auto;
           display: grid; grid-template-columns: repeat(4, 1fr); gap: 36px 20px;
           padding: 8px 4px 0;
         }
-        /* 时光博物馆：位于解忧杂货铺正下方（第三行第一列） */
+        /* 时光博物馆：位于解忧杂货店正下方（第三行第一列） */
         .mickey-tool-wrap:last-child {
           grid-column: 1;
         }

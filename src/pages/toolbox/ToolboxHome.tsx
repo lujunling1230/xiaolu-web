@@ -58,7 +58,7 @@ const ToolboxHome: React.FC = () => {
       navigate(`/toolbox/inventory${fromQuery}`);
       return;
     }
-    // 万能百事通：进入解忧杂货铺（已替换原"万能百事通"）
+    // 万能百事通：进入解忧杂货店（已替换原"万能百事通"）
     if (title === "万能百事通") {
       navigate(`/toolbox/advice${fromQuery}`);
       return;

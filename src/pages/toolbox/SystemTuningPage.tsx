@@ -2075,7 +2075,7 @@ const SystemTuningPage: React.FC = () => {
                           <div className="wx-me-narrative" onClick={() => window.open("/toolbox/advice", "_self")}>
                             <span className="wx-me-narrative-icon">🕯️</span>
                             <div className="wx-me-narrative-content">
-                              <div className="wx-me-narrative-label">解忧杂货铺</div>
+                              <div className="wx-me-narrative-label">解忧杂货店</div>
                               <div className="wx-me-narrative-text">总有一句话，能解开你的心结。</div>
                             </div>
                           </div>

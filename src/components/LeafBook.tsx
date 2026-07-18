@@ -28,7 +28,7 @@ const ROUTES: string[] = [
   "/toolbox/answer",      // 1 系统调频
   "/toolbox/quests",      // 2 通关清单
   "/toolbox/supplies",    // 3 物资管家
-  "/toolbox/advice",      // 4 解忧杂货铺
+  "/toolbox/advice",      // 4 解忧杂货店
   "/toolbox/travel",      // 5 漫游指南
   "/toolbox/recharge",    // 6 回血清单
   "/toolbox/games",       // 7 解压馆

@@ -183,7 +183,7 @@ export const projects: Project[] = [
   },
   {
     id: "advice-shop",
-    title: "解忧杂货铺",
+    title: "解忧杂货店",
     tag: "治愈系问答空间",
     painPoints: [
       "用户需要即时的情感慰藉",

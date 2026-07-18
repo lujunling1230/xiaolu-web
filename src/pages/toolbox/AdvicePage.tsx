@@ -1568,7 +1568,7 @@ const AdvicePage: React.FC = () => {
 
           /* 写信便签 */
           .advice-letter {
-            left: 20%;
+            left: 15%;
             bottom: 35%;
             transform: translateX(-50%) rotate(-1deg);
             width: 85vw;

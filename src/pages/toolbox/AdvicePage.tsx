@@ -1568,7 +1568,7 @@ const AdvicePage: React.FC = () => {
 
           /* 写信便签 */
           .advice-letter {
-            left: 15%;
+            left: 12%;
             bottom: 35%;
             transform: translateX(-50%) rotate(-1deg);
             width: 85vw;
@@ -1602,7 +1602,7 @@ const AdvicePage: React.FC = () => {
           .milk-sticker span { font-size: 8px; }
 
           /* 公告板：移动端右侧底部 */
-          .notice-board { left: auto; right: 2%; bottom: 8%; width: 126px; height: 45vh; overflow-y: auto; }
+          .notice-board { left: auto; right: 2%; bottom: 4%; width: 126px; height: 45vh; overflow-y: auto; }
           .advice-miao { bottom: 16px !important; right: 14% !important; z-index: 20 !important; position: fixed !important; }
           .notice-board-wood { padding: 12px; }
           .intro-sign-title { font-size: 28px; }

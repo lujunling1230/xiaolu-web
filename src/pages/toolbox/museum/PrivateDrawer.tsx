@@ -25,6 +25,7 @@ interface PrivateItem {
   createdAt: number;
   rotation: number;
   widthPercent: number;
+  hidden?: boolean;
 }
 
 /* ============================================================
@@ -44,10 +45,6 @@ function randomRotation(): number {
   return -5 + Math.random() * 10;
 }
 
-function randomWidth(): number {
-  return 55 + Math.random() * 40;
-}
-
 /** Deterministic pseudo-random from string seed (0..1) */
 function seededRandom(seed: string): number {
   let hash = 0;
@@ -56,10 +53,6 @@ function seededRandom(seed: string): number {
     hash = ((hash << 5) - hash + ch) | 0;
   }
   return Math.abs(Math.sin(hash + 1)) % 1;
-}
-
-function stableMarginLeft(id: string): number {
-  return seededRandom(id + "-ml") < 0.25 ? -(8 + seededRandom(id + "-ml2") * 8) : 0;
 }
 
 function stablePadding(id: string): number {
@@ -85,6 +78,96 @@ function saveItems(items: PrivateItem[]): void {
 }
 
 /* ============================================================
+   Lock Progress Ring Component
+   ============================================================ */
+
+function LockProgressRing({
+  progress,
+  visible,
+}: {
+  progress: number;
+  visible: boolean;
+}) {
+  const radius = 56;
+  const stroke = 3;
+  const normalizedRadius = radius - stroke;
+  const circumference = normalizedRadius * 2 * Math.PI;
+  const strokeDashoffset = circumference - (progress / 100) * circumference;
+
+  return (
+    <svg
+      width={radius * 2}
+      height={radius * 2}
+      viewBox={`0 0 ${radius * 2} ${radius * 2}`}
+      style={{
+        position: "absolute",
+        top: "50%",
+        left: "50%",
+        transform: "translate(-50%, -50%)",
+        opacity: visible ? 1 : 0,
+        transition: "opacity 0.2s",
+        pointerEvents: "none",
+      }}
+    >
+      {/* Background circle */}
+      <circle
+        stroke="rgba(196, 149, 58, 0.12)"
+        fill="transparent"
+        strokeWidth={stroke}
+        r={normalizedRadius}
+        cx={radius}
+        cy={radius}
+      />
+      {/* Progress circle */}
+      <circle
+        stroke="#c4953a"
+        fill="transparent"
+        strokeWidth={stroke}
+        strokeLinecap="round"
+        strokeDasharray={`${circumference} ${circumference}`}
+        style={{
+          strokeDashoffset,
+          transformOrigin: "50% 50%",
+          transform: "rotate(-90deg)",
+          transition: "stroke-dashoffset 0.06s linear",
+        } as React.CSSProperties}
+        r={normalizedRadius}
+        cx={radius}
+        cy={radius}
+      />
+    </svg>
+  );
+}
+
+/* ============================================================
+   Toast Component
+   ============================================================ */
+
+function Toast({ visible }: { visible: boolean }) {
+  return (
+    <div
+      style={{
+        position: "absolute",
+        top: "50%",
+        left: "50%",
+        transform: "translate(-50%, -50%)",
+        opacity: visible ? 1 : 0,
+        transition: "opacity 0.3s",
+        pointerEvents: "none",
+        zIndex: 100,
+        fontSize: "15px",
+        fontFamily: "'Noto Serif SC', serif",
+        color: "#8a7a6a",
+        letterSpacing: "2px",
+        whiteSpace: "nowrap",
+      }}
+    >
+      已收到。
+    </div>
+  );
+}
+
+/* ============================================================
    Component
    ============================================================ */
 
@@ -101,12 +184,22 @@ export default function PrivateDrawer({ isOpen, onClose }: PrivateDrawerProps) {
   } | null>(null);
   const [inputValue, setInputValue] = useState("");
   const [unlocking, setUnlocking] = useState(false);
+  const [lockProgress, setLockProgress] = useState(0);
+  const [lockPressing, setLockPressing] = useState(false);
+  const [wobbleDegrees, setWobbleDegrees] = useState(0);
+  const [wobbleSigns, setWobbleSigns] = useState<Record<string, number>>({});
+  const [toastVisible, setToastVisible] = useState(false);
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
 
   /* ---- Refs ---- */
   const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const unlockTimer = useRef<ReturnType<typeof setInterval> | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const editRef = useRef<HTMLTextAreaElement>(null);
+  const lastScrollTop = useRef(0);
+  const wobbleTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   /* ---- Load items on mount / when opened ---- */
   useEffect(() => {
@@ -126,45 +219,144 @@ export default function PrivateDrawer({ isOpen, onClose }: PrivateDrawerProps) {
   useEffect(() => {
     if (editingId && editRef.current) {
       editRef.current.focus();
-      // Place cursor at end
       const len = editRef.current.value.length;
       editRef.current.setSelectionRange(len, len);
     }
   }, [editingId]);
 
-  /* ---- Cleanup long press timer on unmount ---- */
+  /* ---- Cleanup timers on unmount ---- */
   useEffect(() => {
     return () => {
       if (longPressTimer.current) clearTimeout(longPressTimer.current);
+      if (unlockTimer.current) clearInterval(unlockTimer.current);
+      if (wobbleTimeout.current) clearTimeout(wobbleTimeout.current);
+      if (toastTimer.current) clearTimeout(toastTimer.current);
     };
   }, []);
 
   /* ---- Close context menu on any click ---- */
   useEffect(() => {
-    const handleClick = () => setContextMenu(null);
+    const handleClick = () => {
+      setContextMenu(null);
+      setConfirmDeleteId(null);
+    };
     if (contextMenu) {
       window.addEventListener("click", handleClick, true);
       return () => window.removeEventListener("click", handleClick, true);
     }
   }, [contextMenu]);
 
-  /* ---- Handlers ---- */
-  const handleUnlock = useCallback(() => {
-    setUnlocking(true);
-    setTimeout(() => {
-      setUnlocked(true);
-      setUnlocking(false);
-    }, 500);
+  /* ---- Scroll wobble effect ---- */
+  const handleScroll = useCallback(() => {
+    if (!scrollRef.current) return;
+    const scrollTop = scrollRef.current.scrollTop;
+    const velocity = Math.abs(scrollTop - lastScrollTop.current);
+    lastScrollTop.current = scrollTop;
+
+    const wobbleAmount = Math.min(velocity * 0.15, 3);
+    setWobbleDegrees(wobbleAmount);
+
+    // Generate new random signs for each card
+    setWobbleSigns((prev) => {
+      const next: Record<string, number> = {};
+      for (const key of Object.keys(prev)) {
+        next[key] = Math.random() > 0.5 ? 1 : -1;
+      }
+      return next;
+    });
+
+    if (wobbleTimeout.current) clearTimeout(wobbleTimeout.current);
+    wobbleTimeout.current = setTimeout(() => {
+      setWobbleDegrees(0);
+    }, 150);
   }, []);
 
+  /* ---- Sync wobble signs with visible items ---- */
+  useEffect(() => {
+    if (unlocked) {
+      setWobbleSigns((prev) => {
+        const next: Record<string, number> = { ...prev };
+        for (const item of items) {
+          if (next[item.id] === undefined) {
+            next[item.id] = Math.random() > 0.5 ? 1 : -1;
+          }
+        }
+        return next;
+      });
+    }
+  }, [items, unlocked]);
+
+  /* ---- Toast helper ---- */
+  const showToast = useCallback(() => {
+    if (toastTimer.current) clearTimeout(toastTimer.current);
+    setToastVisible(true);
+    toastTimer.current = setTimeout(() => {
+      setToastVisible(false);
+    }, 1700);
+  }, []);
+
+  /* ---- Lock long press handlers (2 seconds) ---- */
+  const handleLockPressStart = useCallback(
+    (e: React.MouseEvent | React.TouchEvent) => {
+      e.preventDefault();
+      setLockPressing(true);
+      setLockProgress(0);
+
+      // Progress animation: fill over 2 seconds
+      const startTime = Date.now();
+      const duration = 2000;
+
+      const tick = () => {
+        const elapsed = Date.now() - startTime;
+        const progress = Math.min((elapsed / duration) * 100, 100);
+        setLockProgress(progress);
+        if (progress < 100) {
+          unlockTimer.current = requestAnimationFrame(tick);
+        }
+      };
+      unlockTimer.current = requestAnimationFrame(tick) as unknown as ReturnType<typeof setInterval>;
+
+      // Fire unlock after 2 seconds
+      longPressTimer.current = setTimeout(() => {
+        setUnlocking(true);
+        setLockPressing(false);
+        setLockProgress(0);
+        if (unlockTimer.current) {
+          cancelAnimationFrame(unlockTimer.current as unknown as number);
+          unlockTimer.current = null;
+        }
+        setTimeout(() => {
+          setUnlocked(true);
+          setUnlocking(false);
+        }, 500);
+      }, 2000);
+    },
+    []
+  );
+
+  const handleLockPressEnd = useCallback(() => {
+    if (longPressTimer.current) {
+      clearTimeout(longPressTimer.current);
+      longPressTimer.current = null;
+    }
+    if (unlockTimer.current) {
+      cancelAnimationFrame(unlockTimer.current as unknown as number);
+      unlockTimer.current = null;
+    }
+    setLockPressing(false);
+    setLockProgress(0);
+  }, []);
+
+  /* ---- Handlers ---- */
   const handleClose = useCallback(() => {
     setUnlocked(false);
     setUnlocking(false);
     setContextMenu(null);
     setEditingId(null);
     setInputValue("");
+    handleLockPressEnd();
     onClose();
-  }, [onClose]);
+  }, [onClose, handleLockPressEnd]);
 
   const handleAddItem = useCallback(() => {
     const text = inputValue.trim();
@@ -174,20 +366,20 @@ export default function PrivateDrawer({ isOpen, onClose }: PrivateDrawerProps) {
       content: text,
       createdAt: Date.now(),
       rotation: randomRotation(),
-      widthPercent: randomWidth(),
+      widthPercent: 55 + Math.random() * 40,
     };
     setItems((prev) => [...prev, newItem]);
     setInputValue("");
     if (textareaRef.current) {
       textareaRef.current.value = "";
     }
-    // Scroll to bottom after adding
+    showToast();
     setTimeout(() => {
       if (scrollRef.current) {
         scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
       }
     }, 100);
-  }, [inputValue]);
+  }, [inputValue, showToast]);
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -201,8 +393,8 @@ export default function PrivateDrawer({ isOpen, onClose }: PrivateDrawerProps) {
 
   const handleLongPressStart = useCallback(
     (e: React.TouchEvent | React.MouseEvent, itemId: string) => {
-      // Dismiss existing menu
       setContextMenu(null);
+      setConfirmDeleteId(null);
       longPressTimer.current = setTimeout(() => {
         let clientX: number;
         let clientY: number;
@@ -267,13 +459,31 @@ export default function PrivateDrawer({ isOpen, onClose }: PrivateDrawerProps) {
     [handleEditSave]
   );
 
+  const handleHide = useCallback((itemId: string) => {
+    setContextMenu(null);
+    setConfirmDeleteId(null);
+    setItems((prev) =>
+      prev.map((item) =>
+        item.id === itemId ? { ...item, hidden: true } : item
+      )
+    );
+  }, []);
+
   const handleDelete = useCallback(
     (itemId: string) => {
+      if (confirmDeleteId !== itemId) {
+        setConfirmDeleteId(itemId);
+        return;
+      }
       setContextMenu(null);
+      setConfirmDeleteId(null);
       setItems((prev) => prev.filter((item) => item.id !== itemId));
     },
-    []
+    [confirmDeleteId]
   );
+
+  /* ---- Visible items (exclude hidden) ---- */
+  const visibleItems = items.filter((item) => !item.hidden);
 
   /* ---- Render ---- */
   return (
@@ -302,9 +512,8 @@ export default function PrivateDrawer({ isOpen, onClose }: PrivateDrawerProps) {
                 exit={{ opacity: 0 }}
                 transition={{ duration: 0.5, ease: "easeInOut" }}
                 style={styles.lockContainer}
-                onClick={handleUnlock}
               >
-                {/* Lock SVG */}
+                {/* Lock with progress ring */}
                 <motion.div
                   animate={
                     unlocking
@@ -327,6 +536,10 @@ export default function PrivateDrawer({ isOpen, onClose }: PrivateDrawerProps) {
                   }
                   style={styles.lockSvgWrap}
                 >
+                  <LockProgressRing
+                    progress={lockProgress}
+                    visible={lockPressing}
+                  />
                   <svg
                     width="80"
                     height="100"
@@ -337,7 +550,7 @@ export default function PrivateDrawer({ isOpen, onClose }: PrivateDrawerProps) {
                     {/* Shackle */}
                     <motion.path
                       d="M24 42 V32 C24 18 32 8 40 8 C48 8 56 18 56 32 V42"
-                      stroke="#8b5e3c"
+                      stroke="#8B6B4F"
                       strokeWidth="6"
                       strokeLinecap="round"
                       fill="none"
@@ -348,14 +561,27 @@ export default function PrivateDrawer({ isOpen, onClose }: PrivateDrawerProps) {
                       }
                       transition={{ duration: 0.4, ease: "easeOut" }}
                     />
-                    {/* Lock body */}
+                    {/* Lock body with metallic gradient */}
+                    <defs>
+                      <linearGradient
+                        id="lockBodyGrad"
+                        x1="16"
+                        y1="40"
+                        x2="64"
+                        y2="80"
+                        gradientUnits="userSpaceOnUse"
+                      >
+                        <stop offset="0%" stopColor="#A08060" />
+                        <stop offset="100%" stopColor="#6B4B2F" />
+                      </linearGradient>
+                    </defs>
                     <motion.rect
                       x="16"
                       y="40"
                       width="48"
                       height="40"
                       rx="5"
-                      fill="#b87333"
+                      fill="url(#lockBodyGrad)"
                       animate={
                         unlocking
                           ? { scale: 0.85, opacity: 0 }
@@ -372,12 +598,12 @@ export default function PrivateDrawer({ isOpen, onClose }: PrivateDrawerProps) {
                       height="36"
                       rx="4"
                       fill="none"
-                      stroke="#9a6229"
+                      stroke="#7B5B3F"
                       strokeWidth="1"
                       opacity="0.4"
                     />
                     {/* Keyhole outer */}
-                    <circle cx="40" cy="56" r="5" fill="#12100e" />
+                    <circle cx="40" cy="56" r="5" fill="#1a1a1a" />
                     {/* Keyhole inner */}
                     <rect
                       x="38"
@@ -385,7 +611,7 @@ export default function PrivateDrawer({ isOpen, onClose }: PrivateDrawerProps) {
                       width="4"
                       height="8"
                       rx="1"
-                      fill="#12100e"
+                      fill="#1a1a1a"
                     />
                     {/* Highlight */}
                     <rect
@@ -394,7 +620,7 @@ export default function PrivateDrawer({ isOpen, onClose }: PrivateDrawerProps) {
                       width="12"
                       height="3"
                       rx="1.5"
-                      fill="#d4956a"
+                      fill="#c4953a"
                       opacity="0.35"
                     />
                   </svg>
@@ -424,7 +650,7 @@ export default function PrivateDrawer({ isOpen, onClose }: PrivateDrawerProps) {
                   animate={unlocking ? { opacity: 0 } : { opacity: 0.45 }}
                   transition={{ duration: 0.3, delay: 0.1 }}
                 >
-                  （点击解锁）
+                  （长按铜锁以打开）
                 </motion.p>
               </motion.div>
             ) : (
@@ -450,8 +676,16 @@ export default function PrivateDrawer({ isOpen, onClose }: PrivateDrawerProps) {
                 </div>
 
                 {/* Scrollable content */}
-                <div ref={scrollRef} className="pd-scroll" style={styles.scrollArea}>
-                  {items.length === 0 ? (
+                <div
+                  ref={scrollRef}
+                  className="pd-scroll"
+                  style={styles.scrollArea}
+                  onScroll={handleScroll}
+                >
+                  {/* Toast */}
+                  <Toast visible={toastVisible} />
+
+                  {visibleItems.length === 0 ? (
                     <div style={styles.emptyState}>
                       <p style={styles.emptyLine1}>抽屉是空的。</p>
                       <p style={styles.emptyLine2}>
@@ -464,14 +698,16 @@ export default function PrivateDrawer({ isOpen, onClose }: PrivateDrawerProps) {
                       </p>
                     </div>
                   ) : (
-                    <div style={styles.collage}>
+                    <div className="pd-collage">
                       <AnimatePresence>
-                        {items.map((item, idx) => {
+                        {visibleItems.map((item, idx) => {
                           const isEditing = editingId === item.id;
                           const showTape = idx % 3 === 1;
-                          const ml = stableMarginLeft(item.id);
                           const pad = stablePadding(item.id);
                           const tapeRotation = -3 + seededRandom(item.id + "-tape") * 6;
+                          const sign = wobbleSigns[item.id] ?? 1;
+                          const totalRotation =
+                            item.rotation + sign * wobbleDegrees;
 
                           return (
                             <motion.div
@@ -488,10 +724,12 @@ export default function PrivateDrawer({ isOpen, onClose }: PrivateDrawerProps) {
                               className="pd-card"
                               style={{
                                 ...styles.card,
-                                width: `${item.widthPercent}%`,
-                                transform: `rotate(${item.rotation}deg)`,
-                                marginLeft: `${ml}px`,
+                                transform: `rotate(${totalRotation}deg)`,
                                 padding: `${pad}px`,
+                                transition:
+                                  wobbleDegrees === 0
+                                    ? "transform 1.2s cubic-bezier(0.25, 0.46, 0.45, 0.94)"
+                                    : "none",
                               }}
                               onTouchStart={(e) =>
                                 handleLongPressStart(e, item.id)
@@ -552,8 +790,8 @@ export default function PrivateDrawer({ isOpen, onClose }: PrivateDrawerProps) {
                     value={inputValue}
                     onChange={(e) => setInputValue(e.target.value)}
                     onKeyDown={handleKeyDown}
-                    placeholder="(这里没有对错，只有真实……)"
-                    className="pd-textarea pd-scroll"
+                    placeholder="(这里没有对错，只有真实......)"
+                    className="pd-textarea"
                     style={styles.textarea}
                     rows={2}
                   />
@@ -597,19 +835,49 @@ export default function PrivateDrawer({ isOpen, onClose }: PrivateDrawerProps) {
                   style={styles.ctxBtn}
                   onClick={() => handleEdit(contextMenu.itemId)}
                 >
-                  修改
+                  再说一会儿
                 </button>
                 <div style={styles.ctxDivider} />
                 <button
                   className="pd-ctx-btn"
-                  style={{ ...styles.ctxBtn, color: "#8b4444" }}
+                  style={styles.ctxBtn}
+                  onClick={() => handleHide(contextMenu.itemId)}
+                >
+                  收到角落去了
+                </button>
+                <div style={styles.ctxDivider} />
+                <button
+                  className="pd-ctx-btn"
+                  style={{
+                    ...styles.ctxBtn,
+                    color:
+                      confirmDeleteId === contextMenu.itemId
+                        ? "#a05040"
+                        : "#8a7a6a",
+                  }}
                   onClick={() => handleDelete(contextMenu.itemId)}
                 >
-                  删除
+                  {confirmDeleteId === contextMenu.itemId
+                    ? "确定扔掉？"
+                    : "扔掉"}
                 </button>
               </motion.div>
             )}
           </AnimatePresence>
+
+          {/* ======== LOCK INTERACTION OVERLAY ======== */}
+          {!unlocked && (
+            <motion.div
+              key="lock-interaction-overlay"
+              style={styles.lockInteractionOverlay}
+              onMouseDown={handleLockPressStart}
+              onMouseUp={handleLockPressEnd}
+              onMouseLeave={handleLockPressEnd}
+              onTouchStart={handleLockPressStart}
+              onTouchEnd={handleLockPressEnd}
+              onTouchCancel={handleLockPressEnd}
+            />
+          )}
         </motion.div>
       )}
     </AnimatePresence>
@@ -625,12 +893,12 @@ const styles: Record<string, React.CSSProperties> = {
     position: "fixed",
     inset: 0,
     zIndex: 9999,
-    background: "#12100e",
+    background: "#1a1a1a",
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
     fontFamily: "'Noto Serif SC', serif",
-    color: "#f5edd6",
+    color: "#8a7a6a",
     overflow: "hidden",
     userSelect: "none",
   },
@@ -640,15 +908,22 @@ const styles: Record<string, React.CSSProperties> = {
     flexDirection: "column",
     alignItems: "center",
     justifyContent: "center",
-    cursor: "pointer",
     gap: "16px",
     padding: "40px",
+    position: "relative",
   },
   lockSvgWrap: {
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
     marginBottom: "8px",
+    position: "relative",
+  },
+  lockInteractionOverlay: {
+    position: "absolute",
+    inset: 0,
+    zIndex: 10000,
+    cursor: "pointer",
   },
   lockTitle: {
     fontSize: "22px",
@@ -660,7 +935,7 @@ const styles: Record<string, React.CSSProperties> = {
   },
   lockSubtitle: {
     fontSize: "14px",
-    color: "#8a7d72",
+    color: "#8a7a6a",
     fontFamily: "'Noto Serif SC', serif",
     margin: 0,
     letterSpacing: "1px",
@@ -679,8 +954,7 @@ const styles: Record<string, React.CSSProperties> = {
     inset: 0,
     display: "flex",
     flexDirection: "column",
-    background:
-      "radial-gradient(ellipse at 12% 8%, rgba(255,190,100,0.1) 0%, transparent 45%), radial-gradient(ellipse at 50% 50%, #1a1816 0%, #12100e 100%)",
+    background: `radial-gradient(ellipse at 15% 10%, rgba(200,168,130,0.08) 0%, transparent 50%), radial-gradient(ellipse at 50% 50%, #2a2520 0%, #1a1a1a 100%)`,
   },
   topBar: {
     display: "flex",
@@ -691,7 +965,7 @@ const styles: Record<string, React.CSSProperties> = {
   },
   topBarTitle: {
     fontSize: "15px",
-    color: "#8a7d72",
+    color: "#8a7a6a",
     fontFamily: "'Ma Shan Zheng', 'Caveat', cursive, serif",
     letterSpacing: "2px",
   },
@@ -712,6 +986,7 @@ const styles: Record<string, React.CSSProperties> = {
     overflowX: "hidden",
     padding: "8px 24px 16px",
     WebkitOverflowScrolling: "touch" as const,
+    position: "relative",
   },
   /* Empty state */
   emptyState: {
@@ -744,25 +1019,16 @@ const styles: Record<string, React.CSSProperties> = {
     margin: 0,
     lineHeight: 2,
   },
-  /* Collage */
-  collage: {
-    display: "flex",
-    flexWrap: "wrap" as const,
-    alignContent: "flex-start",
-    gap: "6px",
-    paddingTop: "4px",
-  },
   /* Card */
   card: {
     position: "relative",
-    backgroundColor: "#f5edd6",
+    backgroundColor: "#5a4a3a",
     borderRadius: "2px",
     boxShadow:
-      "2px 3px 12px rgba(0,0,0,0.45), -1px -1px 4px rgba(0,0,0,0.15)",
+      "2px 3px 12px rgba(0,0,0,0.45), -1px -1px 4px rgba(0,0,0,0.15), inset 0 0 20px rgba(90,74,58,0.3)",
     cursor: "default",
     boxSizing: "border-box" as const,
     willChange: "transform, opacity",
-    transition: "box-shadow 0.2s",
   },
   tape: {
     position: "absolute" as const,
@@ -771,14 +1037,14 @@ const styles: Record<string, React.CSSProperties> = {
     width: "48px",
     height: "14px",
     marginLeft: "-24px",
-    backgroundColor: "rgba(255,245,210,0.28)",
+    backgroundColor: "rgba(196,149,58,0.18)",
     borderRadius: "1px",
     pointerEvents: "none" as const,
     zIndex: 1,
   },
   cardText: {
     margin: 0,
-    color: "#4a3b31",
+    color: "#8a7a6a",
     fontFamily: "'Ma Shan Zheng', 'Caveat', cursive, serif",
     lineHeight: 1.7,
     wordBreak: "break-word" as const,
@@ -788,10 +1054,10 @@ const styles: Record<string, React.CSSProperties> = {
   editTextarea: {
     width: "100%",
     minHeight: "60px",
-    background: "rgba(255,255,255,0.15)",
-    border: "1px solid rgba(196,149,58,0.3)",
+    background: "rgba(255,255,255,0.08)",
+    border: "1px solid rgba(196,149,58,0.25)",
     borderRadius: "2px",
-    color: "#4a3b31",
+    color: "#8a7a6a",
     fontFamily: "'Ma Shan Zheng', 'Caveat', cursive, serif",
     fontSize: "15px",
     lineHeight: 1.7,
@@ -813,7 +1079,7 @@ const styles: Record<string, React.CSSProperties> = {
     background: "#1e1c18",
     border: "1px solid #2e2a24",
     borderRadius: "4px",
-    color: "#c4b8a8",
+    color: "#8a7a6a",
     fontFamily: "'Courier New', monospace",
     fontSize: "14px",
     lineHeight: 1.6,
@@ -841,29 +1107,29 @@ const styles: Record<string, React.CSSProperties> = {
   contextMenu: {
     position: "fixed" as const,
     zIndex: 10001,
-    background: "#1e1c18",
-    border: "1px solid #3e362e",
+    background: "rgba(0,0,0,0.85)",
+    border: "none",
     borderRadius: "6px",
     padding: "4px 0",
     boxShadow: "0 6px 24px rgba(0,0,0,0.6)",
-    minWidth: "80px",
+    minWidth: "100px",
   },
   ctxBtn: {
     display: "block",
     width: "100%",
     background: "none",
     border: "none",
-    color: "#c4b8a8",
+    color: "#8a7a6a",
     fontFamily: "'Noto Serif SC', serif",
     fontSize: "13px",
-    padding: "8px 20px",
+    padding: "10px 20px",
     cursor: "pointer",
     textAlign: "left" as const,
     transition: "background 0.15s",
   },
   ctxDivider: {
     height: "1px",
-    background: "#2e2a24",
+    background: "rgba(138,122,106,0.12)",
     margin: "2px 0",
   },
 };
@@ -873,6 +1139,13 @@ const styles: Record<string, React.CSSProperties> = {
    ============================================================ */
 
 const CSS = `
+  /* Waterfall layout using CSS columns */
+  .pd-collage {
+    columns: 3;
+    column-gap: 8px;
+    padding-top: 4px;
+  }
+
   /* Focus states */
   .pd-textarea:focus {
     border-color: #c4953a !important;
@@ -880,7 +1153,7 @@ const CSS = `
 
   /* Context menu buttons hover */
   .pd-ctx-btn:hover {
-    background: rgba(255,190,100,0.08);
+    background: rgba(196,149,58,0.06);
   }
 
   /* Close button hover */
@@ -908,11 +1181,13 @@ const CSS = `
     background: #3e362e;
   }
 
-  /* Card selection disabled */
+  /* Card styles for waterfall layout */
   .pd-card {
     -webkit-user-select: none;
     user-select: none;
     -webkit-touch-callout: none;
+    break-inside: avoid;
+    margin-bottom: 8px;
   }
   .pd-card p {
     -webkit-user-select: text;

@@ -1030,7 +1030,7 @@ const DustParticles: React.FC = () => {
         delay: Math.random() * 12,
         duration: Math.random() * 10 + 14,
         size: Math.random() * 3 + 1.5,
-        drift: (Math.random() - 0.5) * 60,
+        drift: (Math.random() - 0.5) * 80 - 40 + Math.random() * 80,
       })),
     []
   );
@@ -1038,13 +1038,10 @@ const DustParticles: React.FC = () => {
   return (
     <div className="museum-dust-layer" aria-hidden="true">
       {dusts.map((d, i) => (
-        <motion.span
+        <span
           key={i}
           className="museum-dust"
-          style={{ left: `${d.left}%`, width: d.size, height: d.size }}
-          initial={{ y: -20, opacity: 0 }}
-          animate={{ y: "110vh", opacity: [0, 0.6, 0.6, 0], x: d.drift }}
-          transition={{ duration: d.duration, delay: d.delay, repeat: Infinity, ease: "linear" }}
+          style={{ left: `${d.left}%`, width: d.size, height: d.size, "--drift": `${d.drift}px`, "--fall-duration": `${d.duration}s`, "--fall-delay": `${d.delay}s` } as React.CSSProperties}
         />
       ))}
     </div>
@@ -1246,58 +1243,121 @@ const MuseumPage: React.FC = () => {
   // 借展分享（生成海报）
   const handleLendExhibit = useCallback((card: { title: string; year: string; description: string; imageUrl?: string }) => {
     const canvas = document.createElement("canvas");
-    canvas.width = 600;
-    canvas.height = 800;
+    canvas.width = 1080;
+    canvas.height = 1350;
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
-    // 背景
-    ctx.fillStyle = "#3d2c2e";
-    ctx.fillRect(0, 0, 600, 800);
+    // 背景 #FAF8F3
+    ctx.fillStyle = "#FAF8F3";
+    ctx.fillRect(0, 0, 1080, 1350);
 
-    // 装饰线
-    ctx.strokeStyle = "rgba(176,141,87,0.3)";
-    ctx.lineWidth = 1;
-    ctx.strokeRect(40, 40, 520, 720);
-
-    // 展品标题
-    ctx.fillStyle = "#b08d57";
-    ctx.font = "bold 28px serif";
-    ctx.textAlign = "center";
-    ctx.fillText(card.title, 300, 320);
-
-    // 年份
-    ctx.fillStyle = "rgba(184,168,144,0.6)";
-    ctx.font = "16px monospace";
-    ctx.fillText(card.year, 300, 360);
-
-    // 描述（自动换行）
-    ctx.fillStyle = "rgba(232,220,200,0.7)";
-    ctx.font = "15px serif";
-    const lines = [];
-    let line = "";
-    for (const char of card.description) {
-      const testLine = line + char;
-      if (ctx.measureText(testLine).width > 440) {
-        lines.push(line);
-        line = char;
-      } else {
-        line = testLine;
-      }
+    // 噪点纹理
+    const noiseData = ctx.getImageData(0, 0, 1080, 1350);
+    for (let i = 0; i < noiseData.data.length; i += 4) {
+      const n = (Math.random() - 0.5) * 18;
+      noiseData.data[i] += n;
+      noiseData.data[i + 1] += n;
+      noiseData.data[i + 2] += n;
     }
-    if (line) lines.push(line);
-    lines.slice(0, 6).forEach((l, i) => ctx.fillText(l, 300, 400 + i * 24));
+    ctx.putImageData(noiseData, 0, 0);
 
-    // 底部署名
-    ctx.fillStyle = "rgba(176,141,87,0.5)";
-    ctx.font = "14px serif";
-    ctx.fillText("来自小鹿的时光博物馆", 300, 720);
+    // 装饰边框
+    ctx.strokeStyle = "rgba(176,141,87,0.3)";
+    ctx.lineWidth = 1.5;
+    ctx.strokeRect(60, 60, 960, 1230);
 
-    // 下载
-    const link = document.createElement("a");
-    link.download = `时光博物馆_${card.title}.png`;
-    link.href = canvas.toDataURL("image/png");
-    link.click();
+    // 图片区域（80%宽度）
+    if (card.imageUrl) {
+      const img = new Image();
+      img.crossOrigin = "anonymous";
+      img.onload = () => {
+        ctx.save();
+        const imgW = 864;
+        const imgH = 540;
+        const imgX = (1080 - imgW) / 2;
+        const imgY = 140;
+        // sepia(0.15) via filter
+        ctx.filter = "sepia(0.15)";
+        ctx.drawImage(img, imgX, imgY, imgW, imgH);
+        ctx.restore();
+        // 边框
+        ctx.strokeStyle = "rgba(139,107,79,0.4)";
+        ctx.lineWidth = 1;
+        ctx.strokeRect(imgX, imgY, imgW, imgH);
+        drawTextContent(ctx, card, 720);
+      };
+      img.onerror = () => {
+        drawTextContent(ctx, card, 200);
+      };
+      img.src = card.imageUrl;
+    } else {
+      drawTextContent(ctx, card, 200);
+    }
+
+    function drawTextContent(ctx2: CanvasRenderingContext2D, c: typeof card, startY: number) {
+      // 展品标题 - 手写风
+      ctx2.fillStyle = "#3d2c2e";
+      ctx2.font = "italic bold 42px 'Georgia', serif";
+      ctx2.textAlign = "center";
+      const titleLines = wrapText(ctx2, c.title, 880);
+      titleLines.forEach((l: string, i: number) => {
+        ctx2.fillText(l, 540, startY + i * 56);
+      });
+
+      // 年份
+      ctx2.fillStyle = "rgba(139,115,85,0.8)";
+      ctx2.font = "24px 'Courier New', monospace";
+      ctx2.fillText(c.year, 540, startY + titleLines.length * 56 + 40);
+
+      // 分隔线
+      ctx2.strokeStyle = "rgba(176,141,87,0.3)";
+      ctx2.lineWidth = 1;
+      ctx2.beginPath();
+      ctx2.moveTo(300, startY + titleLines.length * 56 + 64);
+      ctx2.lineTo(780, startY + titleLines.length * 56 + 64);
+      ctx2.stroke();
+
+      // 描述
+      ctx2.fillStyle = "rgba(74,58,46,0.7)";
+      ctx2.font = "italic 22px 'Georgia', serif";
+      const descStartY = startY + titleLines.length * 56 + 100;
+      const descLines = wrapText(ctx2, c.description, 800);
+      descLines.slice(0, 6).forEach((l: string, i: number) => {
+        ctx2.fillText(l, 540, descStartY + i * 34);
+      });
+
+      // 底部署名
+      ctx2.fillStyle = "rgba(176,141,87,0.6)";
+      ctx2.font = "italic 20px 'Georgia', serif";
+      ctx2.fillText("来自小鹿的时光博物馆", 540, 1240);
+
+      // 下载
+      downloadPoster(canvas, c.title);
+    }
+
+    function wrapText(ctx2: CanvasRenderingContext2D, text: string, maxWidth: number): string[] {
+      const lines: string[] = [];
+      let line = "";
+      for (const char of text) {
+        const testLine = line + char;
+        if (ctx2.measureText(testLine).width > maxWidth) {
+          lines.push(line);
+          line = char;
+        } else {
+          line = testLine;
+        }
+      }
+      if (line) lines.push(line);
+      return lines;
+    }
+
+    function downloadPoster(cvs: HTMLCanvasElement, title: string) {
+      const link = document.createElement("a");
+      link.download = `时光博物馆_${title}.png`;
+      link.href = cvs.toDataURL("image/png");
+      link.click();
+    }
   }, []);
 
   // 获取 section 标题和 emoji
@@ -1313,7 +1373,13 @@ const MuseumPage: React.FC = () => {
   };
 
   return (
-    <div className="museum-page">
+    <div className="museum-page" style={{ '--mouse-x': `${mousePos.x}%`, '--mouse-y': `${mousePos.y}%` } as React.CSSProperties} onMouseMove={(e: React.MouseEvent) => {
+      const rect = e.currentTarget.getBoundingClientRect();
+      setMousePos({
+        x: ((e.clientX - rect.left) / rect.width) * 100,
+        y: ((e.clientY - rect.top) / rect.height) * 100,
+      });
+    }}>
       <DustParticles />
 
       {/* 顶部返回 */}
@@ -1370,7 +1436,8 @@ const MuseumPage: React.FC = () => {
           </div>
         </div>
 
-        <VintageGallery title="耳机里的青春 BGM" emoji="🎵" cards={sortedBgms}
+        <div className="zone-music">
+        <VintageGallery title="耳机里的青春 BGM" subtitle="耳机插上的那一刻，世界就只剩下旋律。" emoji="🎵" cards={sortedBgms}
           onAdd={(data) => setCardModal({ mode: "add", section: "bgm", data: { ...data, id: "", year: data.year || String(new Date().getFullYear()) } })}
           onEdit={(card) => setCardModal({ mode: "edit", section: "bgm", data: card })}
           onDelete={(id) => handleCardDelete(id, "bgm")}
@@ -1381,8 +1448,10 @@ const MuseumPage: React.FC = () => {
           onLendExhibit={handleLendExhibit}
           spotlightActiveId={spotlightCardId}
           onSpotlightToggle={(id) => setSpotlightCardId(prev => prev === id ? null : id)} />
+        </div>
 
-        <VintageGallery title="电视里的乌托邦" emoji="📺" cards={sortedTvs}
+        <div className="zone-film">
+        <VintageGallery title="电视里的乌托邦" subtitle="那些年，屏幕里住着另一个世界。" emoji="📺" cards={sortedTvs}
           onAdd={(data) => setCardModal({ mode: "add", section: "tv", data: { ...data, id: "", year: data.year || String(new Date().getFullYear()) } })}
           onEdit={(card) => setCardModal({ mode: "edit", section: "tv", data: card })}
           onDelete={(id) => handleCardDelete(id, "tv")}
@@ -1393,8 +1462,10 @@ const MuseumPage: React.FC = () => {
           onLendExhibit={handleLendExhibit}
           spotlightActiveId={spotlightCardId}
           onSpotlightToggle={(id) => setSpotlightCardId(prev => prev === id ? null : id)} />
+        </div>
 
-        <VintageGallery title="网络初现时的印记" emoji="📱" cards={sortedNets}
+        <div className="zone-net">
+        <VintageGallery title="网络初现时的印记" subtitle="每一个网址，都是通往旧时光的门。" emoji="📱" cards={sortedNets}
           onAdd={(data) => setCardModal({ mode: "add", section: "net", data: { ...data, id: "", year: data.year || String(new Date().getFullYear()) } })}
           onEdit={(card) => setCardModal({ mode: "edit", section: "net", data: card })}
           onDelete={(id) => handleCardDelete(id, "net")}
@@ -1405,6 +1476,7 @@ const MuseumPage: React.FC = () => {
           onLendExhibit={handleLendExhibit}
           spotlightActiveId={spotlightCardId}
           onSpotlightToggle={(id) => setSpotlightCardId(prev => prev === id ? null : id)} />
+        </div>
       </section>
 
       {/* ===== 展厅二：荣耀之路 ===== */}
@@ -1417,6 +1489,7 @@ const MuseumPage: React.FC = () => {
           </div>
         </div>
 
+        <div className="zone-honor-wall">
         {/* 垂直时间轴 */}
         <div className="museum-timeline-v">
           {sortedHonors.map((m, i) => (
@@ -1446,8 +1519,9 @@ const MuseumPage: React.FC = () => {
           {/* 起点标注 */}
           <div className="museum-timeline-start">
             <span className="museum-honor-dot museum-honor-dot-start" />
-            <span className="museum-timeline-start-label">🏁 起点</span>
+            <span className="museum-timeline-start-label">起点</span>
           </div>
+        </div>
         </div>
       </section>
 
@@ -1490,19 +1564,20 @@ const MuseumPage: React.FC = () => {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 20 }}
+            transition={{ duration: 1.2, ease: "easeOut" }}
             style={{
               position: "fixed", bottom: 100, right: 28, zIndex: 2000,
-              maxWidth: 260, padding: "16px 18px",
+              maxWidth: 280, padding: "18px 20px",
               background: "rgba(250,248,243,0.95)", border: "1px solid rgba(176,141,87,0.4)",
               borderRadius: 12, boxShadow: "0 8px 32px rgba(74,58,46,0.2)",
             }}
             onClick={() => setCuratorNote(null)}
           >
-            <div style={{ fontSize: 11, color: "#8a7d72", fontFamily: "'PingFang SC', sans-serif", marginBottom: 6, letterSpacing: "1px" }}>馆长侧写</div>
+            <div style={{ fontSize: 11, color: "#8a7d72", fontFamily: "'PingFang SC', sans-serif", marginBottom: 8, letterSpacing: "1px" }}>馆长侧写</div>
             {curatorNote.loading ? (
               <div style={{ fontSize: 13, color: "#b08d57", fontFamily: "'Noto Serif SC', serif" }}>正在撰写...</div>
             ) : (
-              <div style={{ fontSize: 14, color: "#4a3b31", fontFamily: "'Noto Serif SC', serif", lineHeight: 1.8, fontStyle: "italic" }}>{curatorNote.text}</div>
+              <div style={{ fontSize: 14, color: "#4a3b31", fontFamily: "'Noto Serif SC', Georgia, serif", lineHeight: 2.0, fontStyle: "italic", textIndent: "2em" }}>{curatorNote.text}</div>
             )}
           </motion.div>
         )}
@@ -1566,11 +1641,17 @@ const MuseumPage: React.FC = () => {
         .museum-page .museum-card-collection,
         .museum-page .museum-honor-card { cursor: pointer; }
 
-        .museum-page { position: relative; min-height: 100vh; overflow: hidden; color: #e8dcc8; background: radial-gradient(120% 80% at 50% 0%, #4a3a2e 0%, #3d2c2e 45%, #2a1f20 100%); font-family: "Noto Sans SC", system-ui, sans-serif; padding: 0 24px 120px; }
+        .museum-page { position: relative; min-height: 100vh; overflow: hidden; color: #e8dcc8; background: radial-gradient(circle at var(--mouse-x, 50%) var(--mouse-y, 30%), rgba(176,141,87,0.08) 0%, transparent 40%), radial-gradient(120% 80% at 50% 0%, #4a3a2e 0%, #3d2c2e 45%, #2a1f20 100%); font-family: "Noto Sans SC", system-ui, sans-serif; padding: 0 24px 120px; }
 
         /* 尘埃粒子 */
         .museum-dust-layer { position: absolute; inset: 0; z-index: 0; pointer-events: none; overflow: hidden; }
-        .museum-dust { position: absolute; top: 0; border-radius: 50%; background: ${GOLD}; opacity: 0; }
+        .museum-dust { position: absolute; top: -10px; border-radius: 50%; background: ${GOLD}; opacity: 0; animation: museum-fall var(--fall-duration, 18s) var(--fall-delay, 0s) linear infinite; }
+        @keyframes museum-fall {
+          0% { transform: translateY(-10px) translateX(0); opacity: 0; }
+          10% { opacity: 0.6; }
+          90% { opacity: 0.6; }
+          100% { transform: translateY(100vh) translateX(var(--drift, 20px)); opacity: 0; }
+        }
 
         /* 顶部 */
         .museum-topbar { position: relative; z-index: 2; display: flex; align-items: center; justify-content: space-between; max-width: 960px; margin: 0 auto; padding: 26px 4px 0; }
@@ -1595,7 +1676,8 @@ const MuseumPage: React.FC = () => {
         .vintage-section { margin-bottom: 48px; }
         .vintage-section-header { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; padding-bottom: 12px; border-bottom: 1px dashed rgba(139,109,79,0.4); }
         .vintage-section-emoji { font-size: 24px; filter: grayscale(0.3); }
-        .vintage-section-title { font-family: "Noto Serif SC", Georgia, serif; font-size: 18px; font-weight: 600; color: ${VINTAGE_BROWN}; margin: 0; letter-spacing: 0.08em; }
+        .vintage-section-title { font-family: "Noto Serif SC", Georgia, serif; font-size: 18px; font-weight: 600; color: ${VINTAGE_BROWN}; margin: 0 0 2px; letter-spacing: 0.08em; }
+        .vintage-section-subtitle { font-size: 12px; color: #9a8a78; margin: 0; font-style: italic; line-height: 1.4; }
 
         /* 添加按钮 */
         .museum-add-btn {
@@ -1642,6 +1724,7 @@ const MuseumPage: React.FC = () => {
         .vintage-card-body {
           height: 160px; padding: 12px 16px 12px;
           flex-shrink: 0; display: flex; flex-direction: column;
+          position: relative;
         }
         .vintage-card-title {
           font-family: "Noto Serif SC", Georgia, serif;
@@ -1705,7 +1788,7 @@ const MuseumPage: React.FC = () => {
         .museum-timeline-v { position: relative; padding-left: 8px; }
         .museum-timeline-v::before { content: ""; position: absolute; left: 21px; top: 8px; bottom: 8px; width: 2px; background: linear-gradient(to bottom, ${GOLD}, rgba(176,141,87,0.2)); }
         .museum-honor-row { position: relative; display: flex; gap: 28px; margin-bottom: 36px; }
-        .museum-honor-node { flex-shrink: 0; width: 44px; display: flex; flex-direction: column; align-items: center; padding-top: 18px; z-index: 1; }
+        .museum-honor-node { flex-shrink: 0; width: 44px; display: flex; flex-direction: column; align-items: center; padding-top: 18px; z-index: 1; position: relative; }
         .museum-honor-dot { width: 14px; height: 14px; border-radius: 50%; background: ${GOLD}; border: 3px solid #3d2c2e; box-shadow: 0 0 12px rgba(176,141,87,0.6); }
         .museum-honor-year { margin-top: 8px; font-family: "Courier New", monospace; font-size: 12px; font-weight: 700; color: ${GOLD}; }
         .museum-honor-card { position: relative; flex: 1; display: flex; gap: 20px; background: #f5edd6; border: 1px solid rgba(176,141,87,0.5); border-radius: 8px; overflow: hidden; box-shadow: 0 10px 30px -12px rgba(0,0,0,0.6); transition: transform 0.3s ease, box-shadow 0.3s ease; }
@@ -1790,14 +1873,221 @@ const MuseumPage: React.FC = () => {
           .museum-honor-img .museum-film-img { min-height: 160px; }
         }
 
-        /* ===== 聚光灯效应 ===== */
+        /* ===== 聚光灯效应（升级版） ===== */
         .museum-hall { position: relative; z-index: 2; max-width: 960px; margin: 0 auto 72px; transition: filter 0.6s ease; }
-        .museum-hall.spotlight-dimmed > *:not(.spotlight-active) { opacity: 0.25; transition: opacity 0.6s ease; pointer-events: none; }
-        .vintage-card.spotlight-active { transform: scale(1.04); box-shadow: 0 12px 40px rgba(176,141,87,0.5), 0 0 0 2px rgba(176,141,87,0.3); transition: all 0.4s ease; z-index: 10; position: relative; }
+        .museum-hall.spotlight-dimmed > *:not(.spotlight-active-zone) { filter: brightness(0.3); transition: filter 0.6s ease; pointer-events: none; }
+        .vintage-card.spotlight-active { transform: translateY(-8px) scale(1.04); box-shadow: 0 16px 48px rgba(176,141,87,0.5), 0 0 60px rgba(255,248,231,0.15); transition: all 0.4s ease; z-index: 10; position: relative; }
+        .vintage-card.spotlight-active::before {
+          content: "";
+          position: absolute; top: -80px; left: 50%; transform: translateX(-50%);
+          width: 400px; height: 200px;
+          background: radial-gradient(ellipse, rgba(255,248,231,0.2) 0%, transparent 70%);
+          pointer-events: none; z-index: 20;
+        }
 
         /* 管理员按钮（移除 backdrop-filter） */
         .museum-admin-btn-no-blur { background: rgba(255,255,255,0.9) !important; backdrop-filter: none !important; }
         .museum-publish-btn-no-blur { background: rgba(141,154,139,0.85) !important; backdrop-filter: none !important; }
+
+        /* ============================================================
+           Zone-Specific Backgrounds
+           ============================================================ */
+
+        /* 光影记忆 (Film) */
+        .zone-film {
+          background: #4a2028;
+          padding: 24px;
+          border-radius: 12px;
+          position: relative;
+          overflow: hidden;
+          margin-bottom: 24px;
+        }
+        .zone-film::before {
+          content: "";
+          position: absolute; inset: 0;
+          background: repeating-linear-gradient(45deg, transparent, transparent 4px, rgba(139,26,26,0.08) 4px, rgba(139,26,26,0.08) 5px);
+          pointer-events: none; opacity: 0.6;
+        }
+        .zone-film::after {
+          content: "";
+          position: absolute; inset: 0;
+          background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+          pointer-events: none; opacity: 0.5;
+        }
+
+        /* 声纹记忆 (Music) */
+        .zone-music {
+          background: #3a2e1a;
+          padding: 24px;
+          border-radius: 12px;
+          position: relative;
+          overflow: hidden;
+          margin-bottom: 24px;
+        }
+        .zone-music::before {
+          content: "";
+          position: absolute; inset: 0;
+          background: repeating-linear-gradient(0deg, transparent, transparent 8px, rgba(74,56,32,0.1) 8px, rgba(74,56,32,0.1) 9px);
+          pointer-events: none;
+        }
+
+        /* 数字足迹 (Net) */
+        .zone-net {
+          background: #1a2e1a;
+          padding: 24px;
+          border-radius: 12px;
+          position: relative;
+          overflow: hidden;
+          margin-bottom: 24px;
+        }
+        .zone-net::before {
+          content: "";
+          position: absolute; inset: 0;
+          background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(51,255,51,0.03) 2px, rgba(51,255,51,0.03) 3px);
+          pointer-events: none;
+        }
+        .zone-net::after {
+          content: "";
+          position: absolute; inset: 0;
+          background: radial-gradient(ellipse at center, transparent 50%, rgba(0,0,0,0.4) 100%);
+          pointer-events: none;
+        }
+
+        /* 荣誉墙 (Honor) */
+        .zone-honor-wall {
+          background: linear-gradient(135deg, #F5F0E8, #EDE5D8, #DDD5C8, #F5F0E8);
+          padding: 32px 24px;
+          border-radius: 12px;
+          position: relative;
+        }
+        .zone-honor-wall::before {
+          content: "";
+          position: absolute; inset: 0;
+          background: radial-gradient(ellipse at 30% 40%, rgba(255,255,255,0.3) 0%, transparent 50%),
+                      radial-gradient(ellipse at 70% 60%, rgba(200,190,175,0.2) 0%, transparent 40%);
+          pointer-events: none; border-radius: 12px;
+        }
+
+        /* ============================================================
+           Zone-Specific Card Enhancements
+           ============================================================ */
+
+        /* Film zone cards */
+        .zone-film .vintage-card { border-color: #8B1A1A; }
+        .zone-film .vintage-card::before,
+        .zone-film .vintage-card::after {
+          content: "";
+          position: absolute; left: 8px; right: 8px; height: 6px;
+          background: repeating-linear-gradient(90deg, transparent 0px, transparent 8px, rgba(0,0,0,0.15) 8px, rgba(0,0,0,0.15) 14px, transparent 14px, transparent 20px);
+          z-index: 2;
+        }
+        .zone-film .vintage-card::before { top: 2px; }
+        .zone-film .vintage-card::after { bottom: 2px; }
+        .zone-film .vintage-card-hero::after {
+          content: "";
+          position: absolute; inset: 0;
+          background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0,0,0,0.04) 2px, rgba(0,0,0,0.04) 4px);
+          pointer-events: none; z-index: 1;
+        }
+        .zone-film .vintage-year-stamp-overlay { background: #8B1A1A; }
+
+        /* Music zone cards */
+        .zone-music .vintage-card {
+          border: 1px solid #8B7355;
+          box-shadow: inset 0 0 0 1px rgba(139,115,85,0.3), 0 4px 12px rgba(0,0,0,0.15);
+        }
+        .zone-music .vintage-card-body::after {
+          content: "";
+          position: absolute; bottom: 8px; right: 10px;
+          width: 24px; height: 24px; border-radius: 50%;
+          background: radial-gradient(circle at 40% 40%, #d4af37, #b08d57, #8b6b4f);
+          box-shadow: 0 1px 4px rgba(0,0,0,0.3); z-index: 2;
+        }
+
+        /* Net zone cards */
+        .zone-net .vintage-card {
+          border: 1px solid rgba(51,255,51,0.6);
+          box-shadow: inset 0 0 0 1px rgba(51,255,51,0.15);
+        }
+        .zone-net .vintage-card-hero-img {
+          filter: sepia(0.3) hue-rotate(80deg) !important;
+        }
+        .zone-net .vintage-year-stamp-overlay {
+          background: #1a3a1a; color: #33FF33;
+          font-family: 'Courier New', monospace;
+          border: none; box-shadow: 0 0 4px rgba(51,255,51,0.3);
+        }
+        .zone-net .vintage-card:hover {
+          animation: crt-glitch 200ms ease-in-out;
+        }
+        @keyframes crt-glitch {
+          0% { transform: translate(0, 0); }
+          20% { transform: translate(-1px, 1px); }
+          40% { transform: translate(1px, -1px); }
+          60% { transform: translate(-1px, 0); }
+          80% { transform: translate(0, 1px); }
+          100% { transform: translate(0, 0); }
+        }
+        .zone-net .vintage-section-title {
+          font-family: 'Courier New', monospace;
+          color: #33FF33;
+        }
+
+        /* Honor wall card enhancements */
+        .zone-honor-wall .museum-honor-card {
+          border: 2px solid rgba(176,141,87,0.8);
+          box-shadow: 0 2px 20px rgba(176,141,87,0.3), inset 0 1px 0 rgba(255,255,255,0.6);
+          background: #F5F0E8;
+        }
+        .zone-honor-wall .museum-honor-dot {
+          box-shadow: 0 0 8px rgba(176,141,87,0.6), 0 2px 6px rgba(176,141,87,0.4);
+        }
+        .zone-honor-wall .honor-card-img {
+          border: 2px solid #b08d57;
+          box-shadow: 0 0 8px rgba(176,141,87,0.6);
+        }
+        .zone-honor-wall .museum-honor-node::before {
+          content: "";
+          position: absolute;
+          width: 2px; height: 6px;
+          background: rgba(176,141,87,0.5);
+          top: -8px;
+        }
+
+        /* ============================================================
+           Honor Wall Text Color (light bg = dark text)
+           ============================================================ */
+        .zone-honor-wall .museum-honor-title,
+        .zone-honor-wall .museum-hall-sub,
+        .zone-honor-wall .museum-card-title,
+        .zone-honor-wall .museum-card-desc,
+        .zone-honor-wall .museum-honor-reflection,
+        .zone-honor-wall .museum-honor-year,
+        .zone-honor-wall .museum-timeline-start-label {
+          color: #3d2c2e;
+        }
+        .zone-honor-wall .museum-hall-roman {
+          color: #b08d57;
+        }
+        .zone-honor-wall .museum-timeline-v::before {
+          background: linear-gradient(to bottom, #b08d57, rgba(176,141,87,0.3));
+        }
+        .zone-honor-wall .museum-honor-dot {
+          border-color: #F5F0E8;
+        }
+        .zone-honor-wall .museum-honor-year {
+          color: #5c4033;
+        }
+        .zone-honor-wall .museum-honor-reflection {
+          color: #5c4033;
+          border-left-color: #b08d57;
+        }
+        .zone-honor-wall .museum-reflection-mark {
+          color: #b08d57;
+        }
+        .zone-honor-wall .museum-card-zoom-hint {
+          color: #8a7a64;
+        }
       `}</style>
     </div>
   );

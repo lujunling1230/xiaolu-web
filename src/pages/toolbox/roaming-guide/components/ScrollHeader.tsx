@@ -44,21 +44,42 @@ export default function ScrollHeader({ onScrollToMap }: ScrollHeaderProps) {
           border-radius: 9px;
           box-shadow: 2px 0 8px rgba(0,0,0,0.2), -2px 0 8px rgba(0,0,0,0.2);
         }
-        /* 木纹纹理叠加 */
+        /* 木纹纹理叠加 - 主纹 */
         .travel-scroll-shaft::before {
           content: ""; position: absolute; inset: 0;
           border-radius: 9px;
-          background: repeating-linear-gradient(
-            0deg,
-            transparent 0px, transparent 6px,
-            rgba(0,0,0,0.04) 6px, rgba(0,0,0,0.04) 7px
-          );
+          background:
+            repeating-linear-gradient(
+              0deg,
+              transparent 0px, transparent 6px,
+              rgba(0,0,0,0.04) 6px, rgba(0,0,0,0.04) 7px
+            ),
+            repeating-linear-gradient(
+              2deg,
+              transparent 0px, transparent 14px,
+              rgba(0,0,0,0.025) 14px, rgba(0,0,0,0.025) 15px
+            ),
+            repeating-linear-gradient(
+              -1deg,
+              transparent 0px, transparent 22px,
+              rgba(60,40,20,0.03) 22px, rgba(60,40,20,0.03) 23px
+            );
         }
-        /* 高光条 */
+        /* 高光条 + 装饰性凸起圆点 */
         .travel-scroll-shaft::after {
           content: ""; position: absolute;
           top: 4px; bottom: 4px; left: 4px; width: 4px;
           background: linear-gradient(180deg, rgba(255,255,255,0.15) 0%, rgba(255,255,255,0.05) 50%, rgba(255,255,255,0.12) 100%);
+          border-radius: 2px;
+          /* 装饰性凸起：用 box-shadow 模拟轴杆上的小圆点 */
+          box-shadow:
+            0 30px 0 1px rgba(90,70,50,0.25),
+            0 80px 0 1px rgba(90,70,50,0.2),
+            0 140px 0 1px rgba(90,70,50,0.25),
+            0 200px 0 1px rgba(90,70,50,0.2),
+            0 260px 0 1px rgba(90,70,50,0.25),
+            0 320px 0 1px rgba(90,70,50,0.2),
+            0 380px 0 1px rgba(90,70,50,0.25);
           border-radius: 2px;
         }
 
@@ -87,6 +108,16 @@ export default function ScrollHeader({ onScrollToMap }: ScrollHeaderProps) {
           bottom: -4px;
           border-radius: 3px 3px 6px 6px;
         }
+        /* 轴头金属环效果 */
+        .travel-scroll-knob-top::before,
+        .travel-scroll-knob-bottom::before {
+          content: ""; position: absolute; inset: -2px;
+          border-radius: inherit;
+          border: 1.5px solid rgba(180,160,120,0.4);
+          box-shadow:
+            inset 0 0 3px rgba(200,180,140,0.2),
+            0 0 2px rgba(200,180,140,0.15);
+        }
         /* 轴头装饰线 */
         .travel-scroll-knob-top::after,
         .travel-scroll-knob-bottom::after {
@@ -107,6 +138,10 @@ export default function ScrollHeader({ onScrollToMap }: ScrollHeaderProps) {
           opacity: 0;
           clip-path: inset(0 50% 0 50%);
           transition: clip-path 2.5s cubic-bezier(0.65, 0, 0.35, 1), opacity 0.6s ease 1.2s;
+          /* [7] 纸张纤维纹理叠加 */
+          background-image:
+            repeating-linear-gradient(90deg, transparent 0px, transparent 100px, rgba(139,125,107,0.02) 100px, rgba(139,125,107,0.02) 101px),
+            repeating-linear-gradient(0deg, transparent 0px, transparent 80px, rgba(139,125,107,0.015) 80px, rgba(139,125,107,0.015) 81px);
         }
         .travel-hero.unrolled .travel-hero-content {
           clip-path: inset(0 0% 0 0%);
@@ -123,6 +158,96 @@ export default function ScrollHeader({ onScrollToMap }: ScrollHeaderProps) {
         }
         .travel-hero.unrolled .travel-hero-content::before {
           opacity: 1;
+        }
+        /* [1] 宣纸做旧纹理叠加 */
+        .travel-hero-content::after {
+          content: ""; position: absolute; inset: 0;
+          pointer-events: none; z-index: 0;
+          background:
+            radial-gradient(ellipse 80px 60px at 15% 20%, rgba(180,160,120,0.06) 0%, transparent 70%),
+            radial-gradient(ellipse 60px 80px at 85% 70%, rgba(160,140,100,0.05) 0%, transparent 70%),
+            radial-gradient(ellipse 100px 40px at 50% 90%, rgba(170,150,110,0.04) 0%, transparent 70%),
+            radial-gradient(ellipse 50px 70px at 70% 15%, rgba(175,155,115,0.04) 0%, transparent 70%),
+            radial-gradient(ellipse 70px 50px at 30% 80%, rgba(165,145,105,0.05) 0%, transparent 70%);
+          mix-blend-mode: multiply;
+        }
+
+        /* [3] 卷轴边缘装饰线 - 左侧 */
+        .travel-hero-border-line-left {
+          position: absolute; top: 20px; bottom: 20px; left: 16px; width: 1px;
+          background: linear-gradient(180deg, transparent, rgba(92,58,33,0.15) 10%, rgba(92,58,33,0.15) 90%, transparent);
+          opacity: 0;
+          transition: opacity 1s ease 2.5s;
+          z-index: 0; pointer-events: none;
+        }
+        .travel-hero.unrolled .travel-hero-border-line-left { opacity: 1; }
+        .travel-hero-border-line-left::before {
+          content: ""; position: absolute; top: 8px; left: -3px;
+          width: 7px; height: 7px; border-radius: 50%;
+          border: 0.8px solid rgba(92,58,33,0.2);
+          background: transparent;
+        }
+        .travel-hero-border-line-left::after {
+          content: ""; position: absolute; bottom: 8px; left: -3px;
+          width: 7px; height: 7px; border-radius: 50%;
+          border: 0.8px solid rgba(92,58,33,0.2);
+          background: transparent;
+        }
+        /* [3] 卷轴边缘装饰线 - 右侧 */
+        .travel-hero-border-line-right {
+          position: absolute; top: 20px; bottom: 20px; right: 16px; width: 1px;
+          background: linear-gradient(180deg, transparent, rgba(92,58,33,0.15) 10%, rgba(92,58,33,0.15) 90%, transparent);
+          opacity: 0;
+          transition: opacity 1s ease 2.5s;
+          z-index: 0; pointer-events: none;
+        }
+        .travel-hero.unrolled .travel-hero-border-line-right { opacity: 1; }
+        .travel-hero-border-line-right::before {
+          content: ""; position: absolute; top: 8px; left: -3px;
+          width: 7px; height: 7px; border-radius: 50%;
+          border: 0.8px solid rgba(92,58,33,0.2);
+          background: transparent;
+        }
+        .travel-hero-border-line-right::after {
+          content: ""; position: absolute; bottom: 8px; left: -3px;
+          width: 7px; height: 7px; border-radius: 50%;
+          border: 0.8px solid rgba(92,58,33,0.2);
+          background: transparent;
+        }
+
+        /* [2] 水墨山水淡影装饰 */
+        .travel-hero-landscape {
+          position: absolute; bottom: 0; left: 0; right: 0;
+          height: 120px; opacity: 0;
+          background: linear-gradient(180deg, transparent 0%, #5c3a21 100%);
+          clip-path: polygon(0% 100%, 0% 60%, 8% 45%, 15% 55%, 22% 35%, 30% 50%, 38% 30%, 45% 45%, 52% 25%, 60% 40%, 68% 20%, 75% 35%, 82% 15%, 90% 30%, 95% 40%, 100% 50%, 100% 100%);
+          pointer-events: none; z-index: 0;
+          transition: opacity 1.5s ease 3s;
+        }
+        .travel-hero.unrolled .travel-hero-landscape { opacity: 0.06; }
+        /* 第二层远山（更淡、更远） */
+        .travel-hero-landscape-far {
+          position: absolute; bottom: 0; left: 0; right: 0;
+          height: 80px; opacity: 0;
+          background: linear-gradient(180deg, transparent 0%, #5c3a21 100%);
+          clip-path: polygon(0% 100%, 0% 70%, 5% 55%, 12% 60%, 20% 45%, 28% 55%, 35% 40%, 42% 50%, 50% 38%, 58% 48%, 65% 35%, 72% 45%, 80% 30%, 88% 42%, 95% 50%, 100% 55%, 100% 100%);
+          pointer-events: none; z-index: 0;
+          transition: opacity 1.5s ease 3.2s;
+        }
+        .travel-hero.unrolled .travel-hero-landscape-far { opacity: 0.03; }
+
+        /* [4] 松竹装饰 SVG */
+        .travel-hero-decor {
+          position: absolute; pointer-events: none; z-index: 0;
+          opacity: 0;
+          transition: opacity 1s ease 3s;
+        }
+        .travel-hero.unrolled .travel-hero-decor { opacity: 1; }
+        .travel-hero-decor.left {
+          bottom: 24px; left: 20px;
+        }
+        .travel-hero-decor.right {
+          top: 24px; right: 20px;
         }
 
         /* ---- 返回按钮 ---- */
@@ -203,13 +328,16 @@ export default function ScrollHeader({ onScrollToMap }: ScrollHeaderProps) {
           font-family: "KaiTi", "STKaiti", "Noto Serif SC", serif;
         }
 
-        /* 红色印章 */
+        /* [6] 红色印章 - 增加做旧效果 */
         .travel-hero-seal {
           width: 40px; height: 40px;
           background: #C53D43; border: 2px solid #A82830;
           display: flex; align-items: center; justify-content: center;
           position: relative;
-          box-shadow: 0 1px 4px rgba(197,61,67,0.3);
+          box-shadow:
+            0 0 0 1px rgba(197, 61, 67, 0.3),
+            inset 0 0 4px rgba(0,0,0,0.1),
+            0 1px 4px rgba(197,61,67,0.3);
           opacity: 0; transform: scale(0.6) rotate(15deg);
           transition: opacity 0.6s ease 3.9s, transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) 3.9s;
         }
@@ -217,6 +345,17 @@ export default function ScrollHeader({ onScrollToMap }: ScrollHeaderProps) {
         .travel-hero-seal::before {
           content: ""; position: absolute; inset: 3px;
           border: 1px solid rgba(255,255,255,0.25);
+        }
+        /* 做旧不规则纹理叠加 */
+        .travel-hero-seal::after {
+          content: ""; position: absolute; inset: 0;
+          border-radius: 1px;
+          background:
+            radial-gradient(ellipse 8px 6px at 20% 30%, rgba(0,0,0,0.08) 0%, transparent 70%),
+            radial-gradient(ellipse 6px 8px at 75% 65%, rgba(0,0,0,0.06) 0%, transparent 70%),
+            radial-gradient(ellipse 5px 5px at 50% 80%, rgba(0,0,0,0.05) 0%, transparent 70%),
+            radial-gradient(ellipse 7px 4px at 85% 20%, rgba(0,0,0,0.07) 0%, transparent 70%);
+          pointer-events: none;
         }
         .travel-hero-seal span {
           color: #fff; font-size: 12px; font-weight: 700;
@@ -311,7 +450,8 @@ export default function ScrollHeader({ onScrollToMap }: ScrollHeaderProps) {
           .travel-hero-content, .travel-back,
           .travel-hero-title, .travel-hero-ornament, .travel-hero-year,
           .travel-hero-text p, .travel-hero-signature, .travel-hero-seal,
-          .travel-hero-stamp, .travel-dust {
+          .travel-hero-stamp, .travel-dust, .travel-hero-landscape, .travel-hero-landscape-far,
+          .travel-hero-border-line-left, .travel-hero-border-line-right, .travel-hero-decor {
             transition: none !important;
             animation: none !important;
           }
@@ -337,8 +477,28 @@ export default function ScrollHeader({ onScrollToMap }: ScrollHeaderProps) {
           .travel-hero:not(.unrolled) .travel-dust {
             opacity: 1; transform: none; filter: none;
           }
+          .travel-hero:not(.unrolled) .travel-hero-landscape,
+          .travel-hero:not(.unrolled) .travel-hero-landscape-far {
+            opacity: 1;
+          }
+          .travel-hero:not(.unrolled) .travel-hero-border-line-left,
+          .travel-hero:not(.unrolled) .travel-hero-border-line-right {
+            opacity: 1;
+          }
+          .travel-hero:not(.unrolled) .travel-hero-decor {
+            opacity: 1;
+          }
         }
       `}</style>
+      {/* SVG 滤镜定义（用于印章做旧） */}
+      <svg style={{ position: 'absolute', width: 0, height: 0 }} aria-hidden="true">
+        <defs>
+          <filter id="rough-edge">
+            <feTurbulence type="fractalNoise" baseFrequency="0.04" numOctaves="4" result="noise" />
+            <feDisplacementMap in="SourceGraphic" in2="noise" scale="1.5" xChannelSelector="R" yChannelSelector="G" />
+          </filter>
+        </defs>
+      </svg>
       <header className={`travel-hero ${scrollUnrolled ? "unrolled" : ""}`}>
         {/* ---- 左侧仿真卷轴 ---- */}
         <div className="travel-scroll-rod left">
@@ -362,6 +522,36 @@ export default function ScrollHeader({ onScrollToMap }: ScrollHeaderProps) {
           ← 返回妙妙工具箱
         </Link>
         <div className="travel-hero-content">
+          {/* [3] 卷轴边缘装饰线 - 左右各一条 */}
+          <div className="travel-hero-border-line-left" />
+          <div className="travel-hero-border-line-right" />
+
+          {/* [4] 松竹装饰 - 左下角 */}
+          <svg className="travel-hero-decor left" width="60" height="80" viewBox="0 0 60 80" aria-hidden="true">
+            <path d="M10 80 Q12 50 8 30 Q6 20 10 10 Q14 5 12 0" stroke="#5c3a21" strokeWidth="0.8" fill="none" opacity="0.08"/>
+            <ellipse cx="6" cy="25" rx="8" ry="3" fill="#6B8E4E" opacity="0.06" transform="rotate(-30 6 25)"/>
+            <ellipse cx="14" cy="18" rx="7" ry="2.5" fill="#6B8E4E" opacity="0.06" transform="rotate(20 14 18)"/>
+            <ellipse cx="8" cy="35" rx="6" ry="2" fill="#6B8E4E" opacity="0.05" transform="rotate(-15 8 35)"/>
+            <ellipse cx="16" cy="30" rx="5" ry="2" fill="#6B8E4E" opacity="0.04" transform="rotate(35 16 30)"/>
+            <ellipse cx="5" cy="42" rx="7" ry="2.5" fill="#6B8E4E" opacity="0.05" transform="rotate(-25 5 42)"/>
+          </svg>
+          {/* [4] 梅花装饰 - 右上角 */}
+          <svg className="travel-hero-decor right" width="55" height="70" viewBox="0 0 55 70" aria-hidden="true">
+            <path d="M45 0 Q43 20 46 40 Q48 50 44 60 Q40 66 42 70" stroke="#5c3a21" strokeWidth="0.7" fill="none" opacity="0.07"/>
+            <circle cx="40" cy="15" r="3.5" fill="none" stroke="#C53D43" strokeWidth="0.6" opacity="0.06"/>
+            <circle cx="48" cy="22" r="3" fill="none" stroke="#C53D43" strokeWidth="0.6" opacity="0.05"/>
+            <circle cx="38" cy="28" r="2.8" fill="none" stroke="#C53D43" strokeWidth="0.5" opacity="0.05"/>
+            <circle cx="50" cy="12" r="2.5" fill="none" stroke="#C53D43" strokeWidth="0.5" opacity="0.04"/>
+            {/* 梅花花蕊小点 */}
+            <circle cx="40" cy="15" r="0.8" fill="#C53D43" opacity="0.05"/>
+            <circle cx="48" cy="22" r="0.6" fill="#C53D43" opacity="0.04"/>
+          </svg>
+
+          {/* [2] 水墨山水淡影 - 远山 */}
+          <div className="travel-hero-landscape-far" />
+          {/* [2] 水墨山水淡影 - 近山 */}
+          <div className="travel-hero-landscape" />
+
           <h1 className="travel-hero-title">漫游指南</h1>
           <div className="travel-hero-ornament" />
           <div className="travel-hero-year">丙午年 · 启程</div>

@@ -157,7 +157,7 @@ function Toast({ visible }: { visible: boolean }) {
         zIndex: 100,
         fontSize: "15px",
         fontFamily: "'Noto Serif SC', serif",
-        color: "#8a7a6a",
+        color: "#c4b8a0",
         letterSpacing: "2px",
         whiteSpace: "nowrap",
       }}
@@ -193,7 +193,7 @@ export default function PrivateDrawer({ isOpen, onClose }: PrivateDrawerProps) {
 
   /* ---- Refs ---- */
   const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const unlockTimer = useRef<ReturnType<typeof setInterval> | null>(null);
+  const unlockTimer = useRef<number | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const editRef = useRef<HTMLTextAreaElement>(null);
@@ -228,7 +228,7 @@ export default function PrivateDrawer({ isOpen, onClose }: PrivateDrawerProps) {
   useEffect(() => {
     return () => {
       if (longPressTimer.current) clearTimeout(longPressTimer.current);
-      if (unlockTimer.current) clearInterval(unlockTimer.current);
+      if (unlockTimer.current !== null) cancelAnimationFrame(unlockTimer.current);
       if (wobbleTimeout.current) clearTimeout(wobbleTimeout.current);
       if (toastTimer.current) clearTimeout(toastTimer.current);
     };
@@ -314,15 +314,15 @@ export default function PrivateDrawer({ isOpen, onClose }: PrivateDrawerProps) {
           unlockTimer.current = requestAnimationFrame(tick);
         }
       };
-      unlockTimer.current = requestAnimationFrame(tick) as unknown as ReturnType<typeof setInterval>;
+      unlockTimer.current = requestAnimationFrame(tick);
 
       // Fire unlock after 2 seconds
       longPressTimer.current = setTimeout(() => {
         setUnlocking(true);
         setLockPressing(false);
         setLockProgress(0);
-        if (unlockTimer.current) {
-          cancelAnimationFrame(unlockTimer.current as unknown as number);
+        if (unlockTimer.current !== null) {
+          cancelAnimationFrame(unlockTimer.current);
           unlockTimer.current = null;
         }
         setTimeout(() => {
@@ -339,8 +339,8 @@ export default function PrivateDrawer({ isOpen, onClose }: PrivateDrawerProps) {
       clearTimeout(longPressTimer.current);
       longPressTimer.current = null;
     }
-    if (unlockTimer.current) {
-      cancelAnimationFrame(unlockTimer.current as unknown as number);
+    if (unlockTimer.current !== null) {
+      cancelAnimationFrame(unlockTimer.current);
       unlockTimer.current = null;
     }
     setLockPressing(false);
@@ -721,60 +721,64 @@ export default function PrivateDrawer({ isOpen, onClose }: PrivateDrawerProps) {
                                 delay: Math.min(idx * 0.04, 0.5),
                                 ease: "easeOut",
                               }}
-                              className="pd-card"
-                              style={{
-                                ...styles.card,
-                                transform: `rotate(${totalRotation}deg)`,
-                                padding: `${pad}px`,
-                                transition:
-                                  wobbleDegrees === 0
-                                    ? "transform 1.2s cubic-bezier(0.25, 0.46, 0.45, 0.94)"
-                                    : "none",
-                              }}
-                              onTouchStart={(e) =>
-                                handleLongPressStart(e, item.id)
-                              }
-                              onTouchEnd={handleLongPressEnd}
-                              onTouchCancel={handleLongPressEnd}
-                              onMouseDown={(e) =>
-                                handleLongPressStart(e, item.id)
-                              }
-                              onMouseUp={handleLongPressEnd}
-                              onMouseLeave={handleLongPressEnd}
-                              onContextMenu={(e) => e.preventDefault()}
+                              style={{ width: "100%" }}
                             >
-                              {/* Tape decoration */}
-                              {showTape && (
-                                <div
-                                  style={{
-                                    ...styles.tape,
-                                    transform: `rotate(${tapeRotation}deg)`,
-                                  }}
-                                />
-                              )}
+                              <div
+                                className="pd-card"
+                                style={{
+                                  ...styles.card,
+                                  transform: `rotate(${totalRotation}deg)`,
+                                  padding: `${pad}px`,
+                                  transition:
+                                    wobbleDegrees === 0
+                                      ? "transform 1.2s cubic-bezier(0.25, 0.46, 0.45, 0.94)"
+                                      : "none",
+                                }}
+                                onTouchStart={(e) =>
+                                  handleLongPressStart(e, item.id)
+                                }
+                                onTouchEnd={handleLongPressEnd}
+                                onTouchCancel={handleLongPressEnd}
+                                onMouseDown={(e) =>
+                                  handleLongPressStart(e, item.id)
+                                }
+                                onMouseUp={handleLongPressEnd}
+                                onMouseLeave={handleLongPressEnd}
+                                onContextMenu={(e) => e.preventDefault()}
+                              >
+                                {/* Tape decoration */}
+                                {showTape && (
+                                  <div
+                                    style={{
+                                      ...styles.tape,
+                                      transform: `rotate(${tapeRotation}deg)`,
+                                    }}
+                                  />
+                                )}
 
-                              {isEditing ? (
-                                <textarea
-                                  ref={editRef}
-                                  className="pd-textarea"
-                                  value={editContent}
-                                  onChange={(e) =>
-                                    setEditContent(e.target.value)
-                                  }
-                                  onBlur={handleEditSave}
-                                  onKeyDown={handleEditKeyDown}
-                                  style={styles.editTextarea}
-                                />
-                              ) : (
-                                <p
-                                  style={{
-                                    ...styles.cardText,
-                                    fontSize: `${14 + (idx % 5)}px`,
-                                  }}
-                                >
-                                  {item.content}
-                                </p>
-                              )}
+                                {isEditing ? (
+                                  <textarea
+                                    ref={editRef}
+                                    className="pd-textarea"
+                                    value={editContent}
+                                    onChange={(e) =>
+                                      setEditContent(e.target.value)
+                                    }
+                                    onBlur={handleEditSave}
+                                    onKeyDown={handleEditKeyDown}
+                                    style={styles.editTextarea}
+                                  />
+                                ) : (
+                                  <p
+                                    style={{
+                                      ...styles.cardText,
+                                      fontSize: `${14 + (idx % 5)}px`,
+                                    }}
+                                  >
+                                    {item.content}
+                                  </p>
+                                )}
+                              </div>
                             </motion.div>
                           );
                         })}
@@ -927,7 +931,7 @@ const styles: Record<string, React.CSSProperties> = {
   },
   lockTitle: {
     fontSize: "22px",
-    color: "#c4953a",
+    color: "#d4a84a",
     fontFamily: "'Noto Serif SC', serif",
     fontWeight: 600,
     letterSpacing: "4px",
@@ -935,14 +939,14 @@ const styles: Record<string, React.CSSProperties> = {
   },
   lockSubtitle: {
     fontSize: "14px",
-    color: "#8a7a6a",
+    color: "#b0a090",
     fontFamily: "'Noto Serif SC', serif",
     margin: 0,
     letterSpacing: "1px",
   },
   lockHint: {
     fontSize: "13px",
-    color: "#6b6259",
+    color: "#8a7e72",
     fontFamily: "'Noto Serif SC', serif",
     margin: 0,
     marginTop: "8px",
@@ -972,7 +976,7 @@ const styles: Record<string, React.CSSProperties> = {
   closeBtn: {
     background: "none",
     border: "none",
-    color: "#6b6259",
+    color: "#a09080",
     fontSize: "14px",
     fontFamily: "'Noto Serif SC', serif",
     cursor: "pointer",
@@ -1000,21 +1004,21 @@ const styles: Record<string, React.CSSProperties> = {
   },
   emptyLine1: {
     fontSize: "18px",
-    color: "#6b6259",
+    color: "#a09080",
     fontFamily: "'Ma Shan Zheng', 'Caveat', cursive, serif",
     margin: "0 0 20px",
     letterSpacing: "2px",
   },
   emptyLine2: {
     fontSize: "15px",
-    color: "#5a5249",
+    color: "#8a7e72",
     fontFamily: "'Ma Shan Zheng', 'Caveat', cursive, serif",
     margin: "0 0 12px",
     lineHeight: 1.8,
   },
   emptyLine3: {
     fontSize: "14px",
-    color: "#4a4440",
+    color: "#7a7068",
     fontFamily: "'Ma Shan Zheng', 'Caveat', cursive, serif",
     margin: 0,
     lineHeight: 2,
@@ -1022,10 +1026,10 @@ const styles: Record<string, React.CSSProperties> = {
   /* Card */
   card: {
     position: "relative",
-    backgroundColor: "#5a4a3a",
+    backgroundColor: "#3e342a",
     borderRadius: "2px",
     boxShadow:
-      "2px 3px 12px rgba(0,0,0,0.45), -1px -1px 4px rgba(0,0,0,0.15), inset 0 0 20px rgba(90,74,58,0.3)",
+      "2px 3px 12px rgba(0,0,0,0.45), -1px -1px 4px rgba(0,0,0,0.15), inset 0 0 20px rgba(90,74,58,0.2)",
     cursor: "default",
     boxSizing: "border-box" as const,
     willChange: "transform, opacity",
@@ -1044,9 +1048,9 @@ const styles: Record<string, React.CSSProperties> = {
   },
   cardText: {
     margin: 0,
-    color: "#8a7a6a",
+    color: "#c4b8a0",
     fontFamily: "'Ma Shan Zheng', 'Caveat', cursive, serif",
-    lineHeight: 1.7,
+    lineHeight: 1.8,
     wordBreak: "break-word" as const,
     whiteSpace: "pre-wrap" as const,
   },

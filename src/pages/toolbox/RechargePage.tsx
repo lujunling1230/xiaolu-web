@@ -1,15 +1,36 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Link } from "react-router-dom";
-import RechargeRecommend from "./RechargeRecommend";
-import { saveCompletion } from "./rechargeTags";
+import {
+  type UserState,
+  type Recommendation,
+  type Badge,
+  type MoodType,
+  type WeatherType,
+  type EnergyLevel,
+  type EnergyTag,
+  type CompletionRecord,
+  TAGGED_NODES,
+  WEATHER_MAP,
+  MOOD_MAP,
+  TAG_MAP,
+  SCENE_PRESETS,
+  getRecommendations,
+  loadHistory,
+  saveCompletion,
+  getTodayCount,
+  getStreakDays,
+  getBadges,
+  extractPreferenceKeywords,
+  loadUserState,
+  saveUserState,
+} from "./rechargeTags";
 
 /**
  * 回血清单 · 微型能量站
  *
- * 核心隐喻：补充生命能量 / 充电。
- * 垂直能量节点流：每件小事是一个胶囊电池节点，点击接通电量。
- * 第101个隐藏电源：哲学节点，允许自己永远充不满电。
+ * 四Tab架构：首页 / 清单 / 统计 / 我的
+ * 延续暖白心电图设计语言，主色 #7C6A9A / 浅紫 #B8A9D9
  */
 
 /* ============================================================
@@ -228,7 +249,26 @@ const playZap = () => {
 };
 
 /* ============================================================
-   能量节点组件
+   反馈 Toast 消息
+   ============================================================ */
+const feedbackMessages = [
+  "太棒了，能量 +10",
+  "一件小事，一份治愈",
+  "你正在好好照顾自己",
+  "今天也很努力呢",
+  "温柔地充好了一格电",
+  "又多了一件值得记录的小事",
+  "生活因为这些小事闪闪发光",
+  "你值得被温柔以待",
+];
+
+/* ============================================================
+   Tab 类型
+   ============================================================ */
+type TabKey = "home" | "list" | "stats" | "me";
+
+/* ============================================================
+   能量节点组件（清单Tab用）
    ============================================================ */
 interface NodeProps {
   node: EnergyNode;
@@ -408,16 +448,796 @@ const StationCat: React.FC<{ state: "sleep" | "stare" | "yawn" }> = ({ state }) 
 );
 
 /* ============================================================
+   心情/精力/天气 扩展映射（6种心情 + 滑块 + 4种天气）
+   ============================================================ */
+const MOOD_EXTENDED: { key: string; label: string; icon: string; moodType: MoodType }[] = [
+  { key: "happy", label: "开心", icon: "😄", moodType: "happy" },
+  { key: "calm", label: "平静", icon: "😌", moodType: "happy" },
+  { key: "tired", label: "疲惫", icon: "😴", moodType: "tired" },
+  { key: "low", label: "低落", icon: "😔", moodType: "low" },
+  { key: "anxious", label: "焦虑", icon: "😰", moodType: "anxious" },
+  { key: "angry", label: "烦躁", icon: "😡", moodType: "anxious" },
+];
+
+const WEATHER_EXTENDED: { key: WeatherType; label: string; icon: string }[] = [
+  { key: "sunny", label: "晴天", icon: "☀️" },
+  { key: "cloudy", label: "阴天", icon: "☁️" },
+  { key: "rainy", label: "雨天", icon: "🌧️" },
+  { key: "snowy", label: "雪天", icon: "❄️" },
+];
+
+/* ============================================================
+   Tab 1 — 首页
+   ============================================================ */
+const HomePage: React.FC<{
+  doneIds: Set<number>;
+  onToggle: (id: number) => void;
+  onShowBadge: (badge: Badge) => void;
+}> = ({ doneIds, onToggle, onShowBadge }) => {
+  const savedState = useMemo(() => loadUserState(), []);
+  const [selectedMood, setSelectedMood] = useState<string>(savedState?.mood || "happy");
+  const [energyValue, setEnergyValue] = useState<number>(savedState?.energy === "high" ? 9 : savedState?.energy === "medium" ? 5 : 2);
+  const [selectedWeather, setSelectedWeather] = useState<WeatherType>(savedState?.weather || "sunny");
+  const [recommendations, setRecommendations] = useState<Recommendation[]>([]);
+  const [hasGenerated, setHasGenerated] = useState(false);
+  const [toasts, setToasts] = useState<{ id: number; text: string; icon: string }[]>([]);
+  const [badges, setBadges] = useState<Badge[]>([]);
+  const [todayCount, setTodayCount] = useState(0);
+  const [streak, setStreak] = useState(0);
+
+  const historyKeywords = useMemo(() => {
+    const history = loadHistory();
+    return extractPreferenceKeywords(history);
+  }, []);
+
+  useEffect(() => {
+    const tc = getTodayCount();
+    const sd = getStreakDays();
+    const history = loadHistory();
+    setTodayCount(tc);
+    setStreak(sd);
+    setBadges(getBadges(history, sd, tc));
+  }, []);
+
+  const energyLevel = useMemo((): EnergyLevel => {
+    if (energyValue >= 7) return "high";
+    if (energyValue >= 4) return "medium";
+    return "low";
+  }, [energyValue]);
+
+  const moodType = useMemo((): MoodType => {
+    const found = MOOD_EXTENDED.find(m => m.key === selectedMood);
+    return found ? found.moodType : "happy";
+  }, [selectedMood]);
+
+  const generateRecommendations = useCallback(() => {
+    const state: UserState = { mood: moodType, weather: selectedWeather, energy: energyLevel };
+    saveUserState(state);
+    const recs = getRecommendations(state, doneIds, historyKeywords, 5);
+    setRecommendations(recs);
+    setHasGenerated(true);
+  }, [moodType, selectedWeather, energyLevel, doneIds, historyKeywords]);
+
+  const handleDoIt = useCallback((rec: Recommendation) => {
+    onToggle(rec.node.id);
+    saveCompletion(rec.node.id);
+    const newTodayCount = getTodayCount();
+    const newStreak = getStreakDays();
+    const newHistory = loadHistory();
+    const newBadges = getBadges(newHistory, newStreak, newTodayCount);
+    setTodayCount(newTodayCount);
+    setStreak(newStreak);
+    setBadges(newBadges);
+
+    // 检查新徽章
+    for (const b of newBadges) {
+      if (b.unlocked && badges.find(pb => pb.id === b.id)?.unlocked === false) {
+        onShowBadge(b);
+        break;
+      }
+    }
+    setBadges(newBadges);
+
+    // Toast
+    const msg = feedbackMessages[Math.floor(Math.random() * feedbackMessages.length)];
+    const toast = { id: Date.now(), text: msg, icon: rec.node.icon };
+    setToasts(prev => [...prev, toast]);
+    setTimeout(() => setToasts(prev => prev.filter(t => t.id !== toast.id)), 3000);
+  }, [onToggle, onShowBadge, badges]);
+
+  return (
+    <div className="tab-home">
+      {/* 今日充能进度 */}
+      <div className="home-progress-card">
+        <div className="home-progress-header">
+          <span className="home-progress-title">今日充能</span>
+          <span className="home-progress-count">{todayCount} / 5</span>
+        </div>
+        <div className="home-progress-bar">
+          <motion.div
+            className="home-progress-fill"
+            initial={{ width: 0 }}
+            animate={{ width: `${Math.min((todayCount / 5) * 100, 100)}%` }}
+            transition={{ duration: 0.5, ease: "easeOut" }}
+          />
+        </div>
+        {streak > 0 && <span className="home-streak">连续 {streak} 天</span>}
+      </div>
+
+      {/* 状态选择器 */}
+      <div className="home-state-section">
+        <h3 className="home-section-label">现在的你</h3>
+
+        {/* 心情 */}
+        <div className="home-state-row">
+          <span className="home-state-key">心情</span>
+          <div className="home-state-options">
+            {MOOD_EXTENDED.map(m => (
+              <button
+                key={m.key}
+                className={`home-mood-btn ${selectedMood === m.key ? "active" : ""}`}
+                onClick={() => setSelectedMood(m.key)}
+              >
+                <span className="home-mood-icon">{m.icon}</span>
+                <span className="home-mood-label">{m.label}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* 精力值 */}
+        <div className="home-state-row">
+          <span className="home-state-key">精力</span>
+          <div className="home-energy-slider-wrap">
+            <input
+              type="range"
+              min={1}
+              max={10}
+              value={energyValue}
+              onChange={e => setEnergyValue(Number(e.target.value))}
+              className="home-energy-slider"
+            />
+            <span className="home-energy-value">{energyValue}</span>
+          </div>
+        </div>
+
+        {/* 天气 */}
+        <div className="home-state-row">
+          <span className="home-state-key">天气</span>
+          <div className="home-state-options">
+            {WEATHER_EXTENDED.map(w => (
+              <button
+                key={w.key}
+                className={`home-weather-btn ${selectedWeather === w.key ? "active" : ""}`}
+                onClick={() => setSelectedWeather(w.key)}
+              >
+                <span className="home-weather-icon">{w.icon}</span>
+                <span className="home-weather-label">{w.label}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <button className="home-recommend-btn" onClick={generateRecommendations}>
+          <span className="home-recommend-btn-icon">✨</span>
+          AI 帮我推荐
+        </button>
+      </div>
+
+      {/* 推荐结果卡片 */}
+      <AnimatePresence mode="wait">
+        {hasGenerated && (
+          <motion.div
+            className="home-results"
+            initial={{ opacity: 0, y: 16 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.35 }}
+          >
+            <h3 className="home-section-label">为你推荐</h3>
+            <div className="home-rec-cards">
+              {recommendations.map((rec, i) => (
+                <motion.div
+                  key={rec.node.id}
+                  className="home-rec-card"
+                  initial={{ opacity: 0, y: 12 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.3, delay: i * 0.06 }}
+                >
+                  <div className="home-rec-card-top">
+                    <span className="home-rec-card-icon">{rec.node.icon}</span>
+                    <div className="home-rec-card-content">
+                      <p className="home-rec-card-name">
+                        {rec.node.text.length > 20 ? rec.node.text.slice(0, 20) + "…" : rec.node.text}
+                      </p>
+                      <p className="home-rec-card-reason">{rec.reason}</p>
+                      <div className="home-rec-card-tags">
+                        {rec.node.tags.slice(0, 2).map(tag => (
+                          <span
+                            key={tag}
+                            className="home-rec-tag"
+                            style={{ borderColor: TAG_MAP[tag].color, color: TAG_MAP[tag].color }}
+                          >
+                            {TAG_MAP[tag].label}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+                  <button className="home-rec-card-action" onClick={() => handleDoIt(rec)}>
+                    执行
+                  </button>
+                </motion.div>
+              ))}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Toast */}
+      <div className="home-toast-container">
+        <AnimatePresence>
+          {toasts.map(t => (
+            <motion.div
+              key={t.id}
+              className="home-toast"
+              initial={{ opacity: 0, y: 20, scale: 0.9 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: -10, scale: 0.9 }}
+              transition={{ duration: 0.3 }}
+            >
+              <span className="home-toast-icon">{t.icon}</span>
+              <span className="home-toast-text">{t.text}</span>
+            </motion.div>
+          ))}
+        </AnimatePresence>
+      </div>
+    </div>
+  );
+};
+
+/* ============================================================
+   Tab 2 — 清单
+   ============================================================ */
+const ListPage: React.FC<{
+  doneIds: Set<number>;
+  onToggle: (id: number) => void;
+  hiddenFound: boolean;
+  catState: "sleep" | "stare" | "yawn";
+  onHiddenClick: () => void;
+}> = ({ doneIds, onToggle, hiddenFound, catState, onHiddenClick }) => {
+  const [activeTag, setActiveTag] = useState<EnergyTag | "all">("all");
+
+  const filteredNodes = useMemo(() => {
+    if (activeTag === "all") return nodes;
+    return nodes.filter(n => {
+      const tagged = TAGGED_NODES.find(tn => tn.id === n.id);
+      return tagged && tagged.tags.includes(activeTag as EnergyTag);
+    });
+  }, [activeTag]);
+
+  return (
+    <div className="tab-list">
+      {/* 标签筛选 */}
+      <div className="list-filter-bar">
+        <button
+          className={`list-filter-btn ${activeTag === "all" ? "active" : ""}`}
+          onClick={() => setActiveTag("all")}
+        >全部</button>
+        {(Object.keys(TAG_MAP) as EnergyTag[]).map(tag => (
+          <button
+            key={tag}
+            className={`list-filter-btn ${activeTag === tag ? "active" : ""}`}
+            onClick={() => setActiveTag(tag)}
+          >
+            <span>{TAG_MAP[tag].icon}</span>
+            {TAG_MAP[tag].label}
+          </button>
+        ))}
+      </div>
+
+      {/* 列表 */}
+      <div className="energy-flow">
+        {filteredNodes.map((node, i) => (
+          <EnergyNodeItem
+            key={node.id}
+            node={node}
+            index={i}
+            done={doneIds.has(node.id)}
+            onToggle={onToggle}
+          />
+        ))}
+
+        {/* 第101个隐藏电源 */}
+        {activeTag === "all" && (
+          <div className="hidden-node-zone">
+            <button
+              className={`hidden-node ${hiddenFound ? "found" : ""}`}
+              onClick={onHiddenClick}
+              aria-label="隐藏电源"
+            />
+            <div className="station-cat-wrap">
+              <StationCat state={catState} />
+            </div>
+          </div>
+        )}
+        {activeTag === "all" && (
+          <p className="circuit-hint">电路末端还有一个预留接口……</p>
+        )}
+      </div>
+    </div>
+  );
+};
+
+/* ============================================================
+   Tab 3 — 统计
+   ============================================================ */
+const StatsPage: React.FC = () => {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+
+  const stats = useMemo(() => {
+    const history = loadHistory();
+    const totalCount = history.length;
+    const streak = getStreakDays();
+    const todayCount = getTodayCount();
+    const totalEnergy = totalCount * 10;
+
+    // 标签分布
+    const tagCounts: Record<string, number> = {};
+    for (const tagKey of Object.keys(TAG_MAP)) {
+      tagCounts[tagKey] = 0;
+    }
+    for (const r of history) {
+      for (const tag of r.tags) {
+        if (tagCounts[tag] !== undefined) tagCounts[tag]++;
+      }
+    }
+    const maxTagCount = Math.max(1, ...Object.values(tagCounts));
+
+    // 14天能量折线数据
+    const dailyCounts: { date: string; count: number }[] = [];
+    const now = new Date();
+    for (let i = 13; i >= 0; i--) {
+      const d = new Date(now);
+      d.setDate(d.getDate() - i);
+      d.setHours(0, 0, 0, 0);
+      const nextD = new Date(d);
+      nextD.setDate(nextD.getDate() + 1);
+      const count = history.filter(r => r.timestamp >= d.getTime() && r.timestamp < nextD.getTime()).length;
+      const month = d.getMonth() + 1;
+      const day = d.getDate();
+      dailyCounts.push({ date: `${month}/${day}`, count });
+    }
+
+    // 最近8条完成记录
+    const recentRecords = history.slice(-8).reverse();
+
+    // 徽章
+    const badges = getBadges(history, streak, todayCount);
+
+    return { totalCount, streak, todayCount, totalEnergy, tagCounts, maxTagCount, dailyCounts, recentRecords, badges };
+  }, []);
+
+  // 14天折线图 Canvas
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const dpr = window.devicePixelRatio || 1;
+    const rect = canvas.getBoundingClientRect();
+    const w = rect.width;
+    const h = rect.height;
+    canvas.width = w * dpr;
+    canvas.height = h * dpr;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+    ctx.scale(dpr, dpr);
+
+    const pad = { top: 20, right: 16, bottom: 28, left: 32 };
+    const chartW = w - pad.left - pad.right;
+    const chartH = h - pad.top - pad.bottom;
+    const data = stats.dailyCounts;
+    const maxVal = Math.max(5, ...data.map(d => d.count));
+
+    // 网格线
+    ctx.strokeStyle = "rgba(180,170,160,0.12)";
+    ctx.lineWidth = 1;
+    for (let i = 0; i <= 4; i++) {
+      const y = pad.top + (chartH / 4) * i;
+      ctx.beginPath();
+      ctx.moveTo(pad.left, y);
+      ctx.lineTo(pad.left + chartW, y);
+      ctx.stroke();
+    }
+
+    // Y轴标签
+    ctx.fillStyle = "#b8aa9a";
+    ctx.font = "10px sans-serif";
+    ctx.textAlign = "right";
+    for (let i = 0; i <= 4; i++) {
+      const y = pad.top + (chartH / 4) * i;
+      const val = Math.round(maxVal - (maxVal / 4) * i);
+      ctx.fillText(String(val), pad.left - 6, y + 3);
+    }
+
+    // 数据点坐标
+    const points = data.map((d, i) => ({
+      x: pad.left + (chartW / (data.length - 1)) * i,
+      y: pad.top + chartH - (d.count / maxVal) * chartH,
+    }));
+
+    // 渐变填充
+    const gradient = ctx.createLinearGradient(0, pad.top, 0, pad.top + chartH);
+    gradient.addColorStop(0, "rgba(124,106,154,0.25)");
+    gradient.addColorStop(1, "rgba(124,106,154,0.02)");
+    ctx.beginPath();
+    ctx.moveTo(points[0].x, pad.top + chartH);
+    for (const p of points) ctx.lineTo(p.x, p.y);
+    ctx.lineTo(points[points.length - 1].x, pad.top + chartH);
+    ctx.closePath();
+    ctx.fillStyle = gradient;
+    ctx.fill();
+
+    // 折线
+    ctx.beginPath();
+    ctx.moveTo(points[0].x, points[0].y);
+    for (let i = 1; i < points.length; i++) {
+      ctx.lineTo(points[i].x, points[i].y);
+    }
+    ctx.strokeStyle = "#7C6A9A";
+    ctx.lineWidth = 2;
+    ctx.lineJoin = "round";
+    ctx.stroke();
+
+    // 数据点
+    for (const p of points) {
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, 3, 0, Math.PI * 2);
+      ctx.fillStyle = "#FFFFFF";
+      ctx.fill();
+      ctx.strokeStyle = "#7C6A9A";
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+    }
+
+    // X轴日期标签
+    ctx.fillStyle = "#b8aa9a";
+    ctx.font = "9px sans-serif";
+    ctx.textAlign = "center";
+    for (let i = 0; i < data.length; i += 2) {
+      ctx.fillText(data[i].date, points[i].x, pad.top + chartH + 16);
+    }
+  }, [stats.dailyCounts]);
+
+  return (
+    <div className="tab-stats">
+      {/* 2x2 总览 */}
+      <div className="stats-overview">
+        <div className="stats-card stats-card-green">
+          <span className="stats-card-value">{stats.totalCount}</span>
+          <span className="stats-card-label">累计完成</span>
+        </div>
+        <div className="stats-card stats-card-gold">
+          <span className="stats-card-value">{stats.streak}</span>
+          <span className="stats-card-label">连续打卡</span>
+        </div>
+        <div className="stats-card stats-card-purple">
+          <span className="stats-card-value">{stats.todayCount}</span>
+          <span className="stats-card-label">今日完成</span>
+        </div>
+        <div className="stats-card stats-card-pink">
+          <span className="stats-card-value">{stats.totalEnergy}</span>
+          <span className="stats-card-label">累计能量</span>
+        </div>
+      </div>
+
+      {/* 标签分布条形图 */}
+      <div className="stats-section">
+        <h3 className="stats-section-label">标签分布</h3>
+        <div className="stats-tag-bars">
+          {(Object.keys(TAG_MAP) as EnergyTag[]).map(tag => {
+            const count = stats.tagCounts[tag] || 0;
+            const pct = stats.maxTagCount > 0 ? (count / stats.maxTagCount) * 100 : 0;
+            return (
+              <div key={tag} className="stats-tag-bar-row">
+                <span className="stats-tag-bar-label">
+                  {TAG_MAP[tag].icon} {TAG_MAP[tag].label}
+                </span>
+                <div className="stats-tag-bar-track">
+                  <motion.div
+                    className="stats-tag-bar-fill"
+                    initial={{ width: 0 }}
+                    animate={{ width: `${pct}%` }}
+                    transition={{ duration: 0.6, ease: "easeOut" }}
+                    style={{ background: TAG_MAP[tag].color }}
+                  />
+                </div>
+                <span className="stats-tag-bar-count">{count}</span>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* 14天能量折线图 */}
+      <div className="stats-section">
+        <h3 className="stats-section-label">近14天能量曲线</h3>
+        <div className="stats-chart-wrap">
+          <canvas ref={canvasRef} className="stats-chart-canvas" />
+        </div>
+      </div>
+
+      {/* 最近8条完成时间线 */}
+      <div className="stats-section">
+        <h3 className="stats-section-label">最近完成</h3>
+        <div className="stats-timeline">
+          {stats.recentRecords.length === 0 && (
+            <p className="stats-timeline-empty">还没有完成记录，去清单里打卡吧</p>
+          )}
+          {stats.recentRecords.map((rec, i) => {
+            const node = TAGGED_NODES.find(n => n.id === rec.id);
+            const d = new Date(rec.timestamp);
+            const timeStr = `${d.getMonth() + 1}/${d.getDate()} ${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+            return (
+              <div key={rec.timestamp + i} className="stats-timeline-item">
+                <div className="stats-timeline-dot" />
+                {i < stats.recentRecords.length - 1 && <div className="stats-timeline-line" />}
+                <div className="stats-timeline-content">
+                  <span className="stats-timeline-icon">{node?.icon || "📝"}</span>
+                  <span className="stats-timeline-text">
+                    {node ? (node.text.length > 24 ? node.text.slice(0, 24) + "…" : node.text) : `#${rec.id}`}
+                  </span>
+                  <span className="stats-timeline-time">{timeStr}</span>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* 徽章墙 */}
+      <div className="stats-section">
+        <h3 className="stats-section-label">徽章墙</h3>
+        <div className="stats-badges">
+          {stats.badges.map(badge => (
+            <div key={badge.id} className={`stats-badge-item ${badge.unlocked ? "unlocked" : "locked"}`} title={badge.description}>
+              <span className="stats-badge-icon">{badge.unlocked ? badge.icon : "🔒"}</span>
+              <span className="stats-badge-label">{badge.label}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+/* ============================================================
+   Tab 4 — 我的
+   ============================================================ */
+const MePage: React.FC = () => {
+  const [aboutOpen, setAboutOpen] = useState(false);
+
+  const userData = useMemo(() => {
+    const history = loadHistory();
+    const totalCount = history.length;
+    const streak = getStreakDays();
+    const todayCount = getTodayCount();
+
+    // 等级
+    let level = 0;
+    if (totalCount >= 1) level = 1;
+    if (totalCount >= 10) level = 2;
+    if (totalCount >= 30) level = 3;
+    if (totalCount >= 50) level = 4;
+    if (totalCount >= 100) level = 5;
+
+    // 头像
+    const avatars = ["🌱", "🌿", "🍀", "🌻", "⭐", "🌟"];
+    const avatar = avatars[level] || "🌱";
+
+    // 标签偏好
+    const tagFreq: Record<string, number> = {};
+    for (const r of history) {
+      for (const tag of r.tags) {
+        tagFreq[tag] = (tagFreq[tag] || 0) + 1;
+      }
+    }
+    const topTags = Object.entries(tagFreq)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 3)
+      .map(([tag]) => tag);
+
+    return { totalCount, streak, todayCount, level, avatar, topTags };
+  }, []);
+
+  const handleReset = useCallback(() => {
+    if (window.confirm("确定要重置所有数据吗？这将清除所有打卡记录和历史数据，无法恢复。")) {
+      localStorage.removeItem(STORAGE_KEY);
+      localStorage.removeItem("recharge_count_ts");
+      localStorage.removeItem(DONE_KEY);
+      localStorage.removeItem("recharge_history");
+      localStorage.removeItem("recharge_user_state");
+      window.location.reload();
+    }
+  }, []);
+
+  const handleExport = useCallback(() => {
+    const data = {
+      version: 1,
+      exportedAt: new Date().toISOString(),
+      doneIds: JSON.parse(localStorage.getItem(DONE_KEY) || "[]"),
+      count: Number(localStorage.getItem(STORAGE_KEY) || "0"),
+      history: JSON.parse(localStorage.getItem("recharge_history") || "[]"),
+      userState: JSON.parse(localStorage.getItem("recharge_user_state") || "null"),
+    };
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `recharge-backup-${new Date().toISOString().slice(0, 10)}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }, []);
+
+  return (
+    <div className="tab-me">
+      {/* 用户卡片 */}
+      <div className="me-user-card">
+        <div className="me-user-avatar">{userData.avatar}</div>
+        <div className="me-user-info">
+          <span className="me-user-name">回血达人</span>
+          <span className="me-user-level">Lv.{userData.level}</span>
+        </div>
+        <div className="me-user-stats">
+          <div className="me-user-stat">
+            <span className="me-user-stat-value">{userData.totalCount}</span>
+            <span className="me-user-stat-label">累计</span>
+          </div>
+          <div className="me-user-stat">
+            <span className="me-user-stat-value">{userData.streak}</span>
+            <span className="me-user-stat-label">连续</span>
+          </div>
+          <div className="me-user-stat">
+            <span className="me-user-stat-value">{userData.todayCount}</span>
+            <span className="me-user-stat-label">今日</span>
+          </div>
+        </div>
+      </div>
+
+      {/* 回血偏好 */}
+      <div className="me-section">
+        <h3 className="me-section-label">回血偏好</h3>
+        <div className="me-preference-tags">
+          {userData.topTags.length === 0 && (
+            <span className="me-preference-empty">完成更多小事后，这里会显示你的偏好</span>
+          )}
+          {userData.topTags.map(tag => (
+            <span key={tag} className="me-preference-tag" style={{ borderColor: TAG_MAP[tag as EnergyTag]?.color, color: TAG_MAP[tag as EnergyTag]?.color }}>
+              {TAG_MAP[tag as EnergyTag]?.icon} {TAG_MAP[tag as EnergyTag]?.label}
+            </span>
+          ))}
+        </div>
+      </div>
+
+      {/* 设置列表 */}
+      <div className="me-section">
+        <h3 className="me-section-label">设置</h3>
+        <div className="me-settings">
+          <button className="me-settings-btn" onClick={handleReset}>
+            <span className="me-settings-icon">🔄</span>
+            <span className="me-settings-text">重置数据</span>
+            <span className="me-settings-arrow">›</span>
+          </button>
+          <button className="me-settings-btn" onClick={handleExport}>
+            <span className="me-settings-icon">📤</span>
+            <span className="me-settings-text">导出数据</span>
+            <span className="me-settings-arrow">›</span>
+          </button>
+          <button className="me-settings-btn" onClick={() => setAboutOpen(true)}>
+            <span className="me-settings-icon">ℹ️</span>
+            <span className="me-settings-text">关于</span>
+            <span className="me-settings-arrow">›</span>
+          </button>
+        </div>
+      </div>
+
+      {/* 关于弹窗 */}
+      <AnimatePresence>
+        {aboutOpen && (
+          <motion.div
+            className="about-overlay"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setAboutOpen(false)}
+          >
+            <motion.div
+              className="about-popup"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 20 }}
+              transition={{ duration: 0.4 }}
+              onClick={e => e.stopPropagation()}
+            >
+              <button className="about-close" onClick={() => setAboutOpen(false)}>✕</button>
+              <h2 className="about-title">回血清单</h2>
+              <p className="about-version">v2.0</p>
+              <p className="about-desc">
+                每天做一件滋养自己的小事，像充电一样慢慢回血。
+                100件治愈小事，AI智能推荐，帮你找到最适合当下的能量补给。
+              </p>
+              <div className="about-deco" />
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  );
+};
+
+/* ============================================================
+   底部导航
+   ============================================================ */
+const TAB_ITEMS: { key: TabKey; label: string; icon: string }[] = [
+  { key: "home", label: "首页", icon: "🏠" },
+  { key: "list", label: "清单", icon: "📋" },
+  { key: "stats", label: "统计", icon: "📊" },
+  { key: "me", label: "我的", icon: "👤" },
+];
+
+const BottomNav: React.FC<{ active: TabKey; onChange: (tab: TabKey) => void }> = ({ active, onChange }) => (
+  <nav className="bottom-nav">
+    {TAB_ITEMS.map(item => (
+      <button
+        key={item.key}
+        className={`bottom-nav-item ${active === item.key ? "active" : ""}`}
+        onClick={() => onChange(item.key)}
+      >
+        <span className="bottom-nav-icon">{item.icon}</span>
+        <span className="bottom-nav-label">{item.label}</span>
+      </button>
+    ))}
+  </nav>
+);
+
+/* ============================================================
+   徽章解锁弹窗
+   ============================================================ */
+const BadgePopup: React.FC<{ badge: Badge; onClose: () => void }> = ({ badge, onClose }) => (
+  <motion.div
+    className="badge-unlock-overlay"
+    initial={{ opacity: 0 }}
+    animate={{ opacity: 1 }}
+    exit={{ opacity: 0 }}
+    onClick={onClose}
+  >
+    <motion.div
+      className="badge-unlock-popup"
+      initial={{ opacity: 0, y: 30, scale: 0.9 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      exit={{ opacity: 0, y: 30, scale: 0.9 }}
+      transition={{ duration: 0.5, ease: "easeOut" }}
+      onClick={e => e.stopPropagation()}
+    >
+      <div className="badge-unlock-icon">{badge.icon}</div>
+      <h3 className="badge-unlock-title">解锁新徽章</h3>
+      <p className="badge-unlock-name">{badge.label}</p>
+      <p className="badge-unlock-desc">{badge.description}</p>
+      <button className="badge-unlock-close" onClick={onClose}>收下</button>
+    </motion.div>
+  </motion.div>
+);
+
+/* ============================================================
    主组件
    ============================================================ */
 const RechargePage: React.FC = () => {
+  const [activeTab, setActiveTab] = useState<TabKey>("home");
   const [doneIds, setDoneIds] = useState<Set<number>>(loadDoneIds);
   const [weekCount, setWeekCount] = useState<number>(getWeekStartCount);
   const [countBump, setCountBump] = useState(0);
   const [hiddenFound, setHiddenFound] = useState(false);
   const [catState, setCatState] = useState<"sleep" | "stare" | "yawn">("sleep");
+  const [newBadge, setNewBadge] = useState<Badge | null>(null);
   const catTriggered = useRef(false);
-  const scrollRef = useRef<HTMLDivElement>(null);
 
   const handleToggle = useCallback((id: number) => {
     setDoneIds((prev) => {
@@ -426,7 +1246,6 @@ const RechargePage: React.FC = () => {
         next.delete(id);
       } else {
         next.add(id);
-        // 增加计数
         setWeekCount((c) => {
           const nc = c + 1;
           try {
@@ -436,7 +1255,6 @@ const RechargePage: React.FC = () => {
           return nc;
         });
         setCountBump((n) => n + 1);
-        // 保存完成记录（用于推荐偏好学习）
         saveCompletion(id);
       }
       try {
@@ -446,16 +1264,6 @@ const RechargePage: React.FC = () => {
     });
   }, []);
 
-  // 加载时心电图跳动
-  useEffect(() => {
-    const el = scrollRef.current;
-    if (!el) return;
-    el.classList.add("ecg-pulse");
-    const t = setTimeout(() => el.classList.remove("ecg-pulse"), 1200);
-    return () => clearTimeout(t);
-  }, []);
-
-  // 第101个节点点击 → 小猫联动
   const handleHiddenClick = () => {
     setHiddenFound(true);
     if (!catTriggered.current) {
@@ -467,71 +1275,98 @@ const RechargePage: React.FC = () => {
   };
 
   return (
-    <div className="recharge-page" ref={scrollRef}>
-      {/* 顶部返回 */}
-      <header className="recharge-topbar">
-        <Link to="/mickey" className="recharge-back">
-          ← 回到妙妙工具箱
-        </Link>
-        <span className="recharge-topbar-meta">Recharge Station</span>
-      </header>
+    <div className="recharge-page">
+      {/* 顶部返回 + 标题区（仅首页Tab显示） */}
+      {activeTab === "home" && (
+        <>
+          <header className="recharge-topbar">
+            <Link to="/mickey" className="recharge-back">
+              ← 回到妙妙工具箱
+            </Link>
+            <span className="recharge-topbar-meta">Recharge Station</span>
+          </header>
+          <section className="recharge-hero">
+            <motion.h1
+              className="recharge-title"
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.7, ease: "easeOut" }}
+            >
+              今日充能计划
+            </motion.h1>
+            <motion.p
+              className="recharge-subtitle"
+              initial={{ opacity: 0, y: 16 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.7, delay: 0.15, ease: "easeOut" }}
+            >
+              每天拔掉一根消耗能量的线，接入一件滋养自己的小事。
+            </motion.p>
+          </section>
+        </>
+      )}
 
-      {/* 标题区 */}
-      <section className="recharge-hero">
-        <motion.h1
-          className="recharge-title"
-          initial={{ opacity: 0, y: 16 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.7, ease: "easeOut" }}
-        >
-          今日充能计划
-        </motion.h1>
-        <motion.p
-          className="recharge-subtitle"
-          initial={{ opacity: 0, y: 16 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.7, delay: 0.15, ease: "easeOut" }}
-        >
-          每天拔掉一根消耗能量的线，接入一件滋养自己的小事。
-        </motion.p>
-      </section>
+      {/* Tab 内容区 */}
+      <div className="recharge-content">
+        <AnimatePresence mode="wait">
+          {activeTab === "home" && (
+            <motion.div
+              key="home"
+              className="tab-panel"
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -20 }}
+              transition={{ duration: 0.25 }}
+            >
+              <HomePage doneIds={doneIds} onToggle={handleToggle} onShowBadge={setNewBadge} />
+            </motion.div>
+          )}
+          {activeTab === "list" && (
+            <motion.div
+              key="list"
+              className="tab-panel"
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -20 }}
+              transition={{ duration: 0.25 }}
+            >
+              <ListPage
+                doneIds={doneIds}
+                onToggle={handleToggle}
+                hiddenFound={hiddenFound}
+                catState={catState}
+                onHiddenClick={handleHiddenClick}
+              />
+            </motion.div>
+          )}
+          {activeTab === "stats" && (
+            <motion.div
+              key="stats"
+              className="tab-panel"
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -20 }}
+              transition={{ duration: 0.25 }}
+            >
+              <StatsPage />
+            </motion.div>
+          )}
+          {activeTab === "me" && (
+            <motion.div
+              key="me"
+              className="tab-panel"
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -20 }}
+              transition={{ duration: 0.25 }}
+            >
+              <MePage />
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
 
-      {/* 智能推荐面板 */}
-      <RechargeRecommend
-        doneIds={doneIds}
-        onToggle={handleToggle}
-      />
-
-      {/* 能量节点流 */}
-      <section className="energy-flow">
-        {nodes.map((node, i) => (
-          <EnergyNodeItem
-            key={node.id}
-            node={node}
-            index={i}
-            done={doneIds.has(node.id)}
-            onToggle={handleToggle}
-          />
-        ))}
-
-        {/* 第101个隐藏电源 */}
-        <div className="hidden-node-zone">
-          <button
-            className={`hidden-node ${hiddenFound ? "found" : ""}`}
-            onClick={handleHiddenClick}
-            aria-label="隐藏电源"
-          />
-          {/* 小猫 */}
-          <div className="station-cat-wrap">
-            <StationCat state={catState} />
-          </div>
-        </div>
-
-        {/* 底部暗示文字 */}
-        <p className="circuit-hint">电路末端还有一个预留接口……</p>
-      </section>
-
-      {/* 能量计数（固定右下角，毛玻璃） */}
+      {/* 能量计数（固定右下角） */}
       <motion.div
         className="recharge-counter"
         key={countBump}
@@ -545,14 +1380,22 @@ const RechargePage: React.FC = () => {
         </span>
       </motion.div>
 
+      {/* 底部导航 */}
+      <BottomNav active={activeTab} onChange={setActiveTab} />
+
       {/* 第101弹窗 */}
       <AnimatePresence>
         {hiddenFound && <HiddenPopup onClose={() => setHiddenFound(false)} />}
       </AnimatePresence>
 
+      {/* 徽章解锁弹窗 */}
+      <AnimatePresence>
+        {newBadge && <BadgePopup badge={newBadge} onClose={() => setNewBadge(null)} />}
+      </AnimatePresence>
+
       <style>{`
         .recharge-page, .recharge-page * { cursor: auto; }
-        .recharge-page a, .recharge-page button { cursor: pointer; }
+        .recharge-page a, .recharge-page button, .recharge-page input { cursor: pointer; }
 
         .recharge-page {
           min-height: 100vh;
@@ -562,23 +1405,11 @@ const RechargePage: React.FC = () => {
           background-size: 400px 120px;
           background-repeat: repeat;
           font-family: "Noto Sans SC", system-ui, sans-serif;
-          padding: 0 24px 100px;
+          padding: 0 24px 0;
           position: relative;
         }
-        /* 心电图加载跳动 */
-        .recharge-page.ecg-pulse::before {
-          content: ""; position: fixed; inset: 0; pointer-events: none; z-index: 0;
-          background: url(${ECG_PATTERN});
-          background-size: 400px 120px;
-          animation: ecg-flash 1.2s ease-out;
-        }
-        @keyframes ecg-flash {
-          0% { opacity: 0; }
-          20% { opacity: 0.4; }
-          100% { opacity: 0; }
-        }
 
-        /* 顶部 */
+        /* ===== 顶部 ===== */
         .recharge-topbar {
           display: flex; align-items: center; justify-content: space-between;
           max-width: 720px; margin: 0 auto; padding: 24px 4px 0;
@@ -593,7 +1424,7 @@ const RechargePage: React.FC = () => {
           font-size: 11px; color: #b8aa9a; letter-spacing: 0.28em; text-transform: uppercase;
         }
 
-        /* 标题区 */
+        /* ===== 标题区 ===== */
         .recharge-hero {
           max-width: 720px; margin: 0 auto; padding: 36px 4px 24px; text-align: center;
           position: relative; z-index: 2;
@@ -607,15 +1438,60 @@ const RechargePage: React.FC = () => {
           font-size: 14px; color: #9a8a7e; margin: 0; letter-spacing: 0.04em; line-height: 1.6;
         }
 
+        /* ===== Tab内容区 ===== */
+        .recharge-content {
+          max-width: 720px;
+          margin: 0 auto;
+          padding-bottom: 80px;
+          position: relative;
+          z-index: 2;
+        }
+        .tab-panel {
+          min-height: 50vh;
+        }
+
+        /* ===== 能量计数 ===== */
+        .recharge-counter {
+          position: fixed; bottom: 72px; right: 20px; z-index: 40;
+          display: flex; align-items: center; gap: 8px;
+          padding: 8px 14px; border-radius: 999px;
+          background: #FFFFFF;
+          border: 1px solid rgba(180,170,160,0.2);
+          box-shadow: 0 4px 16px -6px rgba(120,100,80,0.15);
+        }
+        .recharge-counter-emoji { font-size: 13px; }
+        .recharge-counter-text { font-size: 12px; color: #6b5e50; letter-spacing: 0.03em; }
+        .recharge-counter-text b { color: #4cba4c; font-size: 14px; }
+
+        /* ===== 底部导航 ===== */
+        .bottom-nav {
+          position: fixed; bottom: 0; left: 0; right: 0; z-index: 50;
+          display: flex; align-items: center; justify-content: space-around;
+          height: 56px;
+          background: #FFFFFF;
+          border-top: 1px solid rgba(180,170,160,0.15);
+          box-shadow: 0 -2px 12px rgba(160,150,140,0.06);
+        }
+        .bottom-nav-item {
+          display: flex; flex-direction: column; align-items: center; gap: 2px;
+          padding: 6px 12px;
+          background: none; border: none;
+          font-family: "Noto Sans SC", system-ui, sans-serif;
+          transition: color 0.25s ease;
+          color: #b8aa9a;
+        }
+        .bottom-nav-item.active {
+          color: #7C6A9A;
+        }
+        .bottom-nav-icon { font-size: 18px; line-height: 1; }
+        .bottom-nav-label { font-size: 10px; letter-spacing: 0.04em; }
+
         /* ===== 能量节点流 ===== */
         .energy-flow {
           max-width: 680px; margin: 0 auto; padding: 8px 4px 0;
           position: relative; z-index: 2;
         }
-
-        .energy-node {
-          position: relative; padding: 4px 0;
-        }
+        .energy-node { position: relative; padding: 4px 0; }
 
         /* 连接线 */
         .energy-line {
@@ -651,22 +1527,20 @@ const RechargePage: React.FC = () => {
           display: flex; align-items: center; gap: 10px;
           width: 100%; padding: 11px 14px;
           border: 1px solid rgba(180,170,160,0.15);
-          border-radius: 12px; background: rgba(255,253,248,0.6);
-          backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px);
+          border-radius: 12px; background: rgba(255,253,248,0.85);
           transition: all 0.3s ease;
           font-family: inherit; text-align: left;
         }
         .energy-node.hovered .energy-capsule {
           border-color: rgba(220,160,80,0.3);
-          background: rgba(255,253,248,0.85);
+          background: rgba(255,253,248,0.95);
           box-shadow: 0 4px 16px -6px rgba(220,160,80,0.15);
         }
         .energy-node.charged .energy-capsule {
           border-color: rgba(100,220,120,0.35);
-          background: rgba(240,255,242,0.7);
+          background: rgba(240,255,242,0.75);
           box-shadow: 0 2px 12px -4px rgba(100,220,120,0.15);
         }
-
         .energy-icon {
           flex-shrink: 0; width: 28px; height: 28px;
           display: flex; align-items: center; justify-content: center;
@@ -675,7 +1549,6 @@ const RechargePage: React.FC = () => {
           transition: filter 0.3s ease;
         }
         .energy-node.charged .energy-icon { filter: grayscale(0); }
-
         .energy-text {
           flex: 1; font-size: 13px; color: #6b5e50; line-height: 1.5;
           letter-spacing: 0.01em;
@@ -702,9 +1575,7 @@ const RechargePage: React.FC = () => {
           position: absolute; inset: 1px; border-radius: 1px;
           width: 0; transition: width 0.4s cubic-bezier(0.4,0,0.2,1);
         }
-        .energy-battery.filled .energy-battery-body {
-          border-color: rgba(100,220,120,0.6);
-        }
+        .energy-battery.filled .energy-battery-body { border-color: rgba(100,220,120,0.6); }
         .energy-battery.filled .energy-battery-fill {
           width: calc(100% - 2px);
           background: linear-gradient(90deg, #6adc6a, #4cba4c);
@@ -758,39 +1629,21 @@ const RechargePage: React.FC = () => {
           0%, 100% { transform: translateX(0); }
           50% { transform: translateX(1px); }
         }
-
-        /* 底部暗示 */
         .circuit-hint {
           text-align: center; font-size: 11px; color: #5a5048;
           opacity: 0.25; letter-spacing: 0.1em; margin: 20px 0 0;
         }
 
-        /* ===== 能量计数 ===== */
-        .recharge-counter {
-          position: fixed; bottom: 24px; right: 24px; z-index: 40;
-          display: flex; align-items: center; gap: 8px;
-          padding: 10px 18px; border-radius: 999px;
-          background: rgba(255,253,248,0.7);
-          backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
-          border: 1px solid rgba(180,170,160,0.2);
-          box-shadow: 0 8px 24px -10px rgba(120,100,80,0.2);
-        }
-        .recharge-counter-emoji { font-size: 14px; }
-        .recharge-counter-text { font-size: 13px; color: #6b5e50; letter-spacing: 0.03em; }
-        .recharge-counter-text b { color: #4cba4c; font-size: 15px; }
-
         /* ===== 第101弹窗 — 叶之书的微光 ===== */
         .hidden-overlay {
           position: fixed; inset: 0; z-index: 200;
           display: flex; align-items: center; justify-content: center; padding: 24px;
-          background: rgba(200, 195, 185, 0.25);
-          backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+          background: rgba(200, 195, 185, 0.3);
         }
         .hidden-popup {
           position: relative; max-width: 420px; width: 100%; padding: 40px 48px;
           border-radius: 20px; text-align: center;
-          background: rgba(245, 250, 247, 0.85);
-          backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+          background: rgba(245, 250, 247, 0.95);
           border: 1px solid rgba(180, 220, 190, 0.4);
           box-shadow: 0 2px 8px rgba(160, 180, 150, 0.06), 0 8px 28px rgba(0,0,0,0.03), 0 18px 52px rgba(0,0,0,0.025), 0 0 24px rgba(180, 220, 190, 0.12);
         }
@@ -816,19 +1669,482 @@ const RechargePage: React.FC = () => {
           background: linear-gradient(90deg, transparent, rgba(180, 220, 190, 0.6), transparent);
         }
 
+        /* ===== 徽章解锁弹窗 ===== */
+        .badge-unlock-overlay {
+          position: fixed; inset: 0; z-index: 200;
+          display: flex; align-items: center; justify-content: center; padding: 24px;
+          background: rgba(200, 195, 185, 0.3);
+        }
+        .badge-unlock-popup {
+          text-align: center; max-width: 320px; width: 100%;
+          padding: 36px 32px 28px; border-radius: 20px;
+          background: rgba(245, 250, 247, 0.95);
+          border: 1px solid rgba(180, 220, 190, 0.4);
+          box-shadow: 0 2px 8px rgba(160, 180, 150, 0.06), 0 8px 28px rgba(0,0,0,0.03), 0 0 24px rgba(180, 220, 190, 0.12);
+        }
+        .badge-unlock-icon { font-size: 48px; margin-bottom: 12px; }
+        .badge-unlock-title {
+          font-family: "Noto Serif SC", Georgia, serif;
+          font-size: 18px; font-weight: 600; color: #3a3a3a;
+          margin: 0 0 8px; letter-spacing: 0.1em;
+        }
+        .badge-unlock-name { font-size: 15px; color: #5a5048; margin: 0 0 6px; letter-spacing: 0.06em; }
+        .badge-unlock-desc { font-size: 12px; color: #9a8a7e; margin: 0 0 20px; letter-spacing: 0.03em; }
+        .badge-unlock-close {
+          padding: 8px 28px; border: 1px solid rgba(100, 220, 120, 0.35);
+          border-radius: 10px; background: rgba(240, 255, 242, 0.7);
+          font-family: "Noto Sans SC", system-ui, sans-serif;
+          font-size: 13px; color: #4a8a5a; cursor: pointer;
+          transition: all 0.25s ease; letter-spacing: 0.04em;
+        }
+        .badge-unlock-close:hover {
+          background: rgba(240, 255, 242, 0.9);
+          box-shadow: 0 2px 8px rgba(100, 220, 120, 0.12);
+        }
+
+        /* ===== Tab 1 — 首页 ===== */
+        .tab-home { padding: 0 4px; }
+        .home-progress-card {
+          padding: 16px; border-radius: 16px; margin-bottom: 20px;
+          background: #FFFFFF; border: 1px solid rgba(180,170,160,0.1);
+          box-shadow: 0 2px 12px rgba(160,150,140,0.04);
+        }
+        .home-progress-header {
+          display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;
+        }
+        .home-progress-title {
+          font-family: "Noto Serif SC", Georgia, serif;
+          font-size: 15px; color: #5a5048; font-weight: 600; letter-spacing: 0.04em;
+        }
+        .home-progress-count { font-size: 13px; color: #4cba4c; font-weight: 500; }
+        .home-progress-bar {
+          width: 100%; height: 6px; border-radius: 3px;
+          background: rgba(180,170,160,0.12); overflow: hidden;
+        }
+        .home-progress-fill {
+          height: 100%; border-radius: 3px;
+          background: linear-gradient(90deg, #6adc6a, #4cba4c);
+          box-shadow: 0 0 6px rgba(100, 220, 120, 0.4);
+        }
+        .home-streak {
+          display: inline-block; margin-top: 6px;
+          font-size: 11px; color: #b8aa9a; letter-spacing: 0.04em;
+        }
+        .home-section-label {
+          font-family: "Noto Serif SC", Georgia, serif;
+          font-size: 14px; font-weight: 600; color: #7C6A9A;
+          letter-spacing: 0.06em; margin: 16px 0 10px;
+        }
+        .home-state-section {
+          background: #FFFFFF; border-radius: 16px; padding: 16px;
+          border: 1px solid rgba(180,170,160,0.1);
+          box-shadow: 0 2px 12px rgba(160,150,140,0.04);
+          margin-bottom: 20px;
+        }
+        .home-state-row {
+          display: flex; align-items: center; gap: 10px; margin-bottom: 10px;
+        }
+        .home-state-row:last-child { margin-bottom: 0; }
+        .home-state-key {
+          flex-shrink: 0; width: 32px; font-size: 12px; color: #9a8a7e;
+          text-align: right; letter-spacing: 0.04em;
+        }
+        .home-state-options {
+          display: flex; gap: 6px; flex-wrap: wrap; flex: 1;
+        }
+        .home-mood-btn {
+          display: flex; flex-direction: column; align-items: center; gap: 3px;
+          padding: 8px 10px; border: 1px solid rgba(180,170,160,0.12);
+          border-radius: 10px; background: rgba(253,251,247,0.6);
+          font-family: inherit; font-size: 10px; color: #9a8a7e;
+          transition: all 0.25s ease; min-width: 44px;
+        }
+        .home-mood-btn:hover { border-color: rgba(124,106,154,0.3); background: rgba(253,251,247,0.9); }
+        .home-mood-btn.active {
+          border-color: rgba(124,106,154,0.5); background: rgba(184,169,217,0.15);
+          box-shadow: 0 2px 8px rgba(124,106,154,0.1);
+        }
+        .home-mood-icon { font-size: 18px; }
+        .home-mood-label { font-size: 10px; letter-spacing: 0.02em; }
+
+        .home-energy-slider-wrap {
+          flex: 1; display: flex; align-items: center; gap: 10px;
+        }
+        .home-energy-slider {
+          flex: 1; height: 6px; border-radius: 3px; appearance: none;
+          background: rgba(180,170,160,0.15); outline: none;
+          -webkit-appearance: none;
+        }
+        .home-energy-slider::-webkit-slider-thumb {
+          -webkit-appearance: none; width: 18px; height: 18px;
+          border-radius: 50%; background: #7C6A9A; border: 2px solid #FFFFFF;
+          box-shadow: 0 1px 4px rgba(124,106,154,0.3); cursor: pointer;
+        }
+        .home-energy-slider::-moz-range-thumb {
+          width: 18px; height: 18px; border-radius: 50%;
+          background: #7C6A9A; border: 2px solid #FFFFFF;
+          box-shadow: 0 1px 4px rgba(124,106,154,0.3); cursor: pointer;
+        }
+        .home-energy-value {
+          flex-shrink: 0; width: 24px; text-align: center;
+          font-size: 14px; font-weight: 600; color: #7C6A9A;
+        }
+
+        .home-weather-btn {
+          display: flex; align-items: center; gap: 4px;
+          padding: 7px 12px; border: 1px solid rgba(180,170,160,0.12);
+          border-radius: 10px; background: rgba(253,251,247,0.6);
+          font-family: inherit; font-size: 12px; color: #9a8a7e;
+          transition: all 0.25s ease;
+        }
+        .home-weather-btn:hover { border-color: rgba(124,106,154,0.3); background: rgba(253,251,247,0.9); }
+        .home-weather-btn.active {
+          border-color: rgba(124,106,154,0.5); background: rgba(184,169,217,0.15);
+          box-shadow: 0 2px 8px rgba(124,106,154,0.1);
+        }
+        .home-weather-icon { font-size: 14px; }
+        .home-weather-label { font-size: 11px; }
+
+        .home-recommend-btn {
+          width: 100%; margin-top: 14px; padding: 12px;
+          border: none; border-radius: 12px;
+          background: linear-gradient(135deg, #7C6A9A, #B8A9D9);
+          font-family: "Noto Serif SC", Georgia, serif;
+          font-size: 14px; font-weight: 600; color: #FFFFFF;
+          letter-spacing: 0.06em;
+          transition: all 0.3s ease;
+          box-shadow: 0 4px 16px rgba(124,106,154,0.2);
+        }
+        .home-recommend-btn:hover {
+          box-shadow: 0 6px 20px rgba(124,106,154,0.3);
+          transform: translateY(-1px);
+        }
+        .home-recommend-btn-icon { margin-right: 6px; }
+
+        .home-results { padding-bottom: 8px; }
+        .home-rec-cards { display: flex; flex-direction: column; gap: 10px; }
+        .home-rec-card {
+          display: flex; align-items: center; justify-content: space-between; gap: 12px;
+          padding: 14px 16px; border-radius: 14px;
+          background: #FFFFFF; border: 1px solid rgba(180,170,160,0.1);
+          box-shadow: 0 2px 10px rgba(160,150,140,0.04);
+          transition: all 0.25s ease;
+        }
+        .home-rec-card:hover {
+          border-color: rgba(124,106,154,0.2);
+          box-shadow: 0 4px 16px rgba(124,106,154,0.08);
+        }
+        .home-rec-card-top {
+          display: flex; align-items: flex-start; gap: 10px; flex: 1; min-width: 0;
+        }
+        .home-rec-card-icon {
+          flex-shrink: 0; width: 32px; height: 32px;
+          display: flex; align-items: center; justify-content: center;
+          font-size: 18px; background: rgba(184,169,217,0.1);
+          border-radius: 8px;
+        }
+        .home-rec-card-content { flex: 1; min-width: 0; }
+        .home-rec-card-name {
+          font-size: 13px; color: #5a5048; margin: 0 0 4px; line-height: 1.4;
+          letter-spacing: 0.01em;
+        }
+        .home-rec-card-reason {
+          font-size: 11px; color: #b8aa9a; margin: 0 0 4px; letter-spacing: 0.02em;
+        }
+        .home-rec-card-tags { display: flex; gap: 6px; flex-wrap: wrap; }
+        .home-rec-tag {
+          font-size: 10px; padding: 2px 6px; border-radius: 4px;
+          border: 1px solid; opacity: 0.8; letter-spacing: 0.02em;
+        }
+        .home-rec-card-action {
+          flex-shrink: 0; padding: 7px 16px; border-radius: 8px;
+          border: 1px solid rgba(100,220,120,0.3); background: rgba(240,255,242,0.6);
+          font-family: "Noto Sans SC", system-ui, sans-serif;
+          font-size: 12px; color: #4a8a5a; white-space: nowrap;
+          transition: all 0.25s ease;
+        }
+        .home-rec-card-action:hover {
+          border-color: rgba(100,220,120,0.5); background: rgba(240,255,242,0.85);
+          box-shadow: 0 2px 8px rgba(100,220,120,0.12);
+        }
+
+        /* 首页 Toast */
+        .home-toast-container {
+          position: fixed; bottom: 80px; left: 50%; transform: translateX(-50%);
+          z-index: 100; display: flex; flex-direction: column-reverse;
+          gap: 8px; align-items: center; pointer-events: none;
+        }
+        .home-toast {
+          display: flex; align-items: center; gap: 8px;
+          padding: 10px 20px; border-radius: 12px; background: #FFFFFF;
+          border: 1px solid rgba(180,220,190,0.3);
+          box-shadow: 0 4px 16px rgba(100,120,100,0.1);
+          white-space: nowrap;
+        }
+        .home-toast-icon { font-size: 16px; }
+        .home-toast-text { font-size: 13px; color: #5a5048; letter-spacing: 0.03em; }
+
+        /* ===== Tab 2 — 清单 ===== */
+        .tab-list { padding: 0 4px; }
+        .list-filter-bar {
+          display: flex; gap: 6px; flex-wrap: wrap; padding: 8px 0 16px;
+          position: sticky; top: 0; z-index: 5;
+          background: #FDFBF7;
+        }
+        .list-filter-btn {
+          display: flex; align-items: center; gap: 3px;
+          padding: 6px 12px; border-radius: 8px;
+          border: 1px solid rgba(180,170,160,0.12); background: #FFFFFF;
+          font-family: "Noto Sans SC", system-ui, sans-serif;
+          font-size: 12px; color: #9a8a7e; transition: all 0.25s ease;
+        }
+        .list-filter-btn:hover { border-color: rgba(124,106,154,0.3); color: #7C6A9A; }
+        .list-filter-btn.active {
+          border-color: rgba(124,106,154,0.5); background: rgba(184,169,217,0.12);
+          color: #7C6A9A; font-weight: 500;
+        }
+
+        /* ===== Tab 3 — 统计 ===== */
+        .tab-stats { padding: 0 4px; }
+        .stats-overview {
+          display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px;
+        }
+        .stats-card {
+          padding: 18px 16px; border-radius: 16px; text-align: center;
+          display: flex; flex-direction: column; gap: 4px;
+        }
+        .stats-card-green { background: linear-gradient(135deg, rgba(76,186,76,0.12), rgba(76,186,76,0.04)); }
+        .stats-card-gold { background: linear-gradient(135deg, rgba(255,217,61,0.15), rgba(255,217,61,0.04)); }
+        .stats-card-purple { background: linear-gradient(135deg, rgba(124,106,154,0.15), rgba(184,169,217,0.06)); }
+        .stats-card-pink { background: linear-gradient(135deg, rgba(255,143,163,0.15), rgba(255,143,163,0.04)); }
+        .stats-card-value {
+          font-family: "Noto Serif SC", Georgia, serif;
+          font-size: 28px; font-weight: 700; color: #3a3a3a;
+        }
+        .stats-card-label { font-size: 11px; color: #9a8a7e; letter-spacing: 0.04em; }
+
+        .stats-section { margin-bottom: 24px; }
+        .stats-section-label {
+          font-family: "Noto Serif SC", Georgia, serif;
+          font-size: 14px; font-weight: 600; color: #7C6A9A;
+          letter-spacing: 0.06em; margin: 0 0 12px;
+        }
+
+        /* 标签分布条形图 */
+        .stats-tag-bars { display: flex; flex-direction: column; gap: 10px; }
+        .stats-tag-bar-row {
+          display: flex; align-items: center; gap: 10px;
+        }
+        .stats-tag-bar-label {
+          flex-shrink: 0; width: 80px; font-size: 12px; color: #6b5e50;
+          letter-spacing: 0.02em; text-align: right;
+        }
+        .stats-tag-bar-track {
+          flex: 1; height: 8px; border-radius: 4px;
+          background: rgba(180,170,160,0.1); overflow: hidden;
+        }
+        .stats-tag-bar-fill {
+          height: 100%; border-radius: 4px;
+          transition: width 0.6s cubic-bezier(0.4,0,0.2,1);
+        }
+        .stats-tag-bar-count {
+          flex-shrink: 0; width: 24px; font-size: 12px; color: #9a8a7e;
+          text-align: left;
+        }
+
+        /* Canvas 折线图 */
+        .stats-chart-wrap {
+          width: 100%; height: 200px; border-radius: 12px;
+          background: #FFFFFF; border: 1px solid rgba(180,170,160,0.1);
+          box-shadow: 0 2px 8px rgba(160,150,140,0.04);
+          padding: 8px;
+        }
+        .stats-chart-canvas { width: 100%; height: 100%; display: block; }
+
+        /* 时间线 */
+        .stats-timeline { position: relative; padding-left: 20px; }
+        .stats-timeline-empty {
+          font-size: 12px; color: #b8aa9a; text-align: center;
+          padding: 20px 0; letter-spacing: 0.04em;
+        }
+        .stats-timeline-item {
+          position: relative; padding: 8px 0;
+        }
+        .stats-timeline-dot {
+          position: absolute; left: -20px; top: 16px;
+          width: 8px; height: 8px; border-radius: 50%;
+          background: #B8A9D9; border: 2px solid #FFFFFF;
+        }
+        .stats-timeline-line {
+          position: absolute; left: -17px; top: 28px;
+          width: 2px; height: calc(100% - 8px);
+          background: rgba(184,169,217,0.2);
+        }
+        .stats-timeline-content {
+          display: flex; align-items: center; gap: 8px;
+        }
+        .stats-timeline-icon { font-size: 14px; flex-shrink: 0; }
+        .stats-timeline-text {
+          flex: 1; font-size: 12px; color: #6b5e50;
+          white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+        }
+        .stats-timeline-time {
+          flex-shrink: 0; font-size: 10px; color: #b8aa9a;
+          letter-spacing: 0.02em;
+        }
+
+        /* 徽章墙 */
+        .stats-badges {
+          display: flex; gap: 10px; flex-wrap: wrap;
+        }
+        .stats-badge-item {
+          display: flex; flex-direction: column; align-items: center; gap: 6px;
+          width: 72px; padding: 14px 8px; border-radius: 12px;
+          background: #FFFFFF; border: 1px solid rgba(180,170,160,0.1);
+          box-shadow: 0 2px 8px rgba(160,150,140,0.04);
+          transition: all 0.25s ease;
+        }
+        .stats-badge-item.unlocked {
+          border-color: rgba(255,217,61,0.3);
+          background: rgba(255,253,248,0.95);
+        }
+        .stats-badge-item.locked { opacity: 0.5; }
+        .stats-badge-icon { font-size: 24px; }
+        .stats-badge-label { font-size: 10px; color: #9a8a7e; letter-spacing: 0.02em; }
+        .stats-badge-item.unlocked .stats-badge-label { color: #5a5048; }
+
+        /* ===== Tab 4 — 我的 ===== */
+        .tab-me { padding: 0 4px; }
+        .me-user-card {
+          display: flex; flex-direction: column; align-items: center; gap: 12px;
+          padding: 32px 24px 24px; border-radius: 20px; margin-bottom: 24px;
+          background: linear-gradient(135deg, #3a3356, #5a4a72);
+          box-shadow: 0 4px 20px rgba(60,50,80,0.2);
+        }
+        .me-user-avatar { font-size: 48px; }
+        .me-user-info { display: flex; align-items: center; gap: 8px; }
+        .me-user-name {
+          font-family: "Noto Serif SC", Georgia, serif;
+          font-size: 18px; font-weight: 600; color: #FFFFFF;
+          letter-spacing: 0.06em;
+        }
+        .me-user-level {
+          font-size: 12px; padding: 2px 10px; border-radius: 10px;
+          background: rgba(255,217,61,0.2); color: #FFD93D;
+          letter-spacing: 0.04em; font-weight: 500;
+        }
+        .me-user-stats {
+          display: flex; gap: 32px; margin-top: 8px;
+        }
+        .me-user-stat {
+          display: flex; flex-direction: column; align-items: center; gap: 2px;
+        }
+        .me-user-stat-value {
+          font-family: "Noto Serif SC", Georgia, serif;
+          font-size: 20px; font-weight: 700; color: #FFFFFF;
+        }
+        .me-user-stat-label {
+          font-size: 10px; color: rgba(255,255,255,0.6); letter-spacing: 0.04em;
+        }
+
+        .me-section { margin-bottom: 24px; }
+        .me-section-label {
+          font-family: "Noto Serif SC", Georgia, serif;
+          font-size: 14px; font-weight: 600; color: #7C6A9A;
+          letter-spacing: 0.06em; margin: 0 0 10px;
+        }
+        .me-preference-tags {
+          display: flex; gap: 8px; flex-wrap: wrap;
+        }
+        .me-preference-empty {
+          font-size: 12px; color: #b8aa9a; letter-spacing: 0.02em;
+        }
+        .me-preference-tag {
+          font-size: 12px; padding: 5px 12px; border-radius: 8px;
+          border: 1px solid; background: #FFFFFF;
+          letter-spacing: 0.02em;
+        }
+
+        .me-settings { display: flex; flex-direction: column; gap: 2px; }
+        .me-settings-btn {
+          display: flex; align-items: center; gap: 12px;
+          padding: 14px 16px; border-radius: 12px;
+          background: #FFFFFF; border: 1px solid rgba(180,170,160,0.1);
+          font-family: "Noto Sans SC", system-ui, sans-serif;
+          font-size: 14px; color: #5a5048; text-align: left;
+          transition: all 0.25s ease; width: 100%;
+        }
+        .me-settings-btn:hover {
+          background: rgba(253,251,247,0.8);
+          border-color: rgba(180,170,160,0.2);
+        }
+        .me-settings-icon { font-size: 16px; }
+        .me-settings-text { flex: 1; letter-spacing: 0.02em; }
+        .me-settings-arrow { color: #b8aa9a; font-size: 18px; }
+
+        /* 关于弹窗 */
+        .about-overlay {
+          position: fixed; inset: 0; z-index: 200;
+          display: flex; align-items: center; justify-content: center; padding: 24px;
+          background: rgba(200, 195, 185, 0.3);
+        }
+        .about-popup {
+          position: relative; max-width: 380px; width: 100%;
+          padding: 36px 32px 28px; border-radius: 20px; text-align: center;
+          background: rgba(245, 250, 247, 0.95);
+          border: 1px solid rgba(180, 220, 190, 0.4);
+          box-shadow: 0 2px 8px rgba(160, 180, 150, 0.06), 0 8px 28px rgba(0,0,0,0.03), 0 0 24px rgba(180, 220, 190, 0.12);
+        }
+        .about-close {
+          position: absolute; top: 16px; right: 20px;
+          font-size: 14px; color: #9aaa9a; background: none; border: none;
+          padding: 4px 8px; cursor: pointer; transition: color 0.3s ease;
+          font-family: "Noto Sans SC", system-ui, sans-serif;
+        }
+        .about-close:hover { color: #5a5048; }
+        .about-title {
+          font-family: "Noto Serif SC", Georgia, serif;
+          font-size: 22px; font-weight: 600; color: #3a3a3a;
+          margin: 0 0 6px; letter-spacing: 0.1em;
+        }
+        .about-version { font-size: 12px; color: #b8aa9a; margin: 0 0 12px; }
+        .about-desc {
+          font-size: 13px; color: #6b5e50; margin: 0; line-height: 1.7;
+          letter-spacing: 0.03em;
+        }
+        .about-deco {
+          width: 40px; height: 1px; margin: 20px auto 0;
+          background: linear-gradient(90deg, transparent, rgba(180, 220, 190, 0.6), transparent);
+        }
+
         /* ===== 移动端 ===== */
         @media (max-width: 640px) {
-          .recharge-page { padding: 0 16px 80px; }
+          .recharge-page { padding: 0 16px 0; }
           .energy-capsule { padding: 10px 12px; gap: 8px; }
           .energy-icon { width: 24px; font-size: 14px; }
           .energy-text { font-size: 12px; }
           .energy-battery-body { width: 18px; height: 10px; }
           .station-cat-wrap { right: 5%; }
-          .recharge-counter { bottom: 16px; right: 16px; padding: 8px 14px; }
+          .recharge-counter { bottom: 64px; right: 12px; padding: 6px 10px; }
+          .recharge-counter-text { font-size: 11px; }
           .hidden-popup { padding: 32px 28px; border-radius: 16px; }
-          .hidden-title { font-size: 22px; letter-spacing: 0.08em; }
-          .hidden-text { font-size: 14px; line-height: 1.8; }
+          .hidden-title { font-size: 22px; }
+          .hidden-text { font-size: 14px; }
           .hidden-close { top: 12px; right: 14px; font-size: 12px; }
+          .bottom-nav { height: 52px; }
+          .bottom-nav-icon { font-size: 16px; }
+          .bottom-nav-label { font-size: 9px; }
+          .home-mood-btn { padding: 6px 8px; min-width: 38px; }
+          .home-mood-icon { font-size: 16px; }
+          .home-mood-label { font-size: 9px; }
+          .stats-card-value { font-size: 24px; }
+          .stats-chart-wrap { height: 170px; }
+          .stats-badge-item { width: 64px; padding: 12px 6px; }
+          .me-user-card { padding: 24px 16px 20px; }
+          .me-user-avatar { font-size: 40px; }
+          .me-user-name { font-size: 16px; }
+          .me-user-stats { gap: 24px; }
+          .me-user-stat-value { font-size: 18px; }
         }
       `}</style>
     </div>

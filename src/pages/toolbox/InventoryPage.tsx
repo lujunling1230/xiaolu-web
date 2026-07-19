@@ -155,10 +155,7 @@ const PILLS: {
   },
 ];
 
-const VL_API_BASE = "https://dashscope.aliyuncs.com/compatible-mode/v1";
 const VL_MODEL = "qwen-vl-plus";
-const _VL_API_KEY = "sk-ws-H.EMIDEPD.99KW.MEUCIFKj_RNhEpPBBXnpRLNoN9YrqKrpnP8CWD2nnG9gbONOAiEAhKjGJeLvxkepCGn8rIPBiSUk_8LhvRGYDorqwVLM_i8";
-function getApiKey(): string { return _VL_API_KEY; }
 
 interface VLItem {
   name: string;
@@ -171,35 +168,14 @@ interface VLItem {
 
 async function recognizeWithVL(base64Image: string): Promise<VLItem[] | null> {
   try {
-    const response = await fetch(`${VL_API_BASE}/chat/completions`, {
+    const response = await fetch("/api/ai-vl", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${getApiKey()}`,
-      },
-      body: JSON.stringify({
-        model: VL_MODEL,
-        messages: [
-          {
-            role: "user",
-            content: [
-              {
-                type: "text",
-                text: '识别图片中的物品，返回JSON数组。每个物品包含：name（名称，必填）、count（数量，数字）、unit（单位，如瓶/盒/袋/罐/箱/个/支）、expiryDate（到期日，YYYY-MM-DD格式，如不确定可留空）、location（存放位置，如冰箱/浴室/储物间/厨房/客厅/卧室）、confidence（置信度0-100）。只返回JSON数组，不要其他文字。格式示例：[{"name":"牛奶","count":2,"unit":"瓶","expiryDate":"2025-08-15","location":"冰箱","confidence":95}]',
-              },
-              {
-                type: "image_url",
-                image_url: { url: base64Image },
-              },
-            ],
-          },
-        ],
-        response_format: { type: "json_object" },
-      }),
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ base64Image }),
     });
     if (!response.ok) return null;
     const data = await response.json();
-    const content = data.choices?.[0]?.message?.content;
+    const content = data?.content;
     if (!content) return null;
     const parsed = JSON.parse(content);
     if (Array.isArray(parsed)) return parsed as VLItem[];

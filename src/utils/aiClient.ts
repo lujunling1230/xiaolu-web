@@ -1,12 +1,15 @@
 /**
  * AI 通用调用客户端
- * 与「解忧杂货店」共用同一套环境变量配置
+ *
+ * 所有请求通过自有服务端代理 /api/ai 转发，
+ * 前端不持有任何 API Key。
  */
 
 export interface CallAIOptions {
   model?: string;
   temperature?: number;
   maxTokens?: number;
+  signal?: AbortSignal;
 }
 
 /**
@@ -21,36 +24,25 @@ export async function callAI(
   messages: { role: string; content: string }[],
   options: CallAIOptions = {}
 ): Promise<string> {
-  const apiUrl = import.meta.env.VITE_AI_API_URL;
-  const apiKey = import.meta.env.VITE_AI_API_KEY;
-
-  if (!apiUrl || !apiKey) {
-    console.warn("[aiClient] 环境变量缺失：VITE_AI_API_URL 或 VITE_AI_API_KEY 未配置");
-    return "🍃 信号受到干扰，请稍后再试… —— 调频师 (FM 95.8)";
-  }
-
   const {
     model = "deepseek-r1",
     temperature = 0.7,
     maxTokens = 200,
+    signal,
   } = options;
 
   try {
-    const response = await fetch(apiUrl, {
+    const response = await fetch("/api/ai", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${apiKey}`,
-      },
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
+        systemPrompt,
+        messages,
         model,
-        messages: [
-          { role: "system", content: systemPrompt },
-          ...messages,
-        ],
         temperature,
-        max_tokens: maxTokens,
+        maxTokens,
       }),
+      signal,
     });
 
     if (!response.ok) {
@@ -58,7 +50,7 @@ export async function callAI(
       let errInfo = "";
       try {
         const errJson = await response.json();
-        errInfo = errJson?.error?.message || JSON.stringify(errJson);
+        errInfo = errJson?.error || JSON.stringify(errJson);
       } catch {
         errInfo = await response.text();
       }
@@ -67,7 +59,7 @@ export async function callAI(
     }
 
     const data = await response.json();
-    const content = data?.choices?.[0]?.message?.content;
+    const content = data?.content;
 
     if (typeof content === "string" && content.trim()) {
       return content.trim();
@@ -76,6 +68,9 @@ export async function callAI(
     console.warn("[aiClient] 响应格式异常:", data);
     return "🍃 信号受到干扰，请稍后再试… —— 调频师 (FM 95.8)";
   } catch (err) {
+    if (err instanceof DOMException && err.name === "AbortError") {
+      return "";
+    }
     console.warn("[aiClient] 请求异常:", err);
     return "🍃 信号受到干扰，请稍后再试… —— 调频师 (FM 95.8)";
   }

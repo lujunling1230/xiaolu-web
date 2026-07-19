@@ -1,6 +1,7 @@
 import { useMemo, useRef, useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Link } from "react-router-dom";
+import { callAI } from "../../utils/aiClient";
 
 /**
  * 解忧杂货店 · The Advice Shop
@@ -270,33 +271,9 @@ const AdvicePage: React.FC = () => {
 你回：
 累了就歇歇，这没什么丢人的。今天先不急着做决定，去睡个好觉，明天醒来，答案自会来敲你的门。`;
 
-    const apiKey = import.meta.env.VITE_API_KEY;
-    const baseUrl = import.meta.env.VITE_BASE_URL;
-    const model = import.meta.env.VITE_MODEL;
-
-    if (!baseUrl || !apiKey) {
-      await wait(600);
-      const fallback = "网有点卡，稍等一会儿呗。";
-      setReply(fallback);
-      afterReplyReady(fallback);
-      return;
-    }
-
     try {
-      const res = await fetch(baseUrl, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
-        body: JSON.stringify({
-          model: model || "deepseek-r1",
-          messages: [{ role: "system", content: systemPrompt }, { role: "user", content: question }],
-          stream: false,
-        }),
-        signal: controller.signal,
-      });
-      if (!res.ok) throw new Error(`接口返回 ${res.status}`);
-      const data = await res.json();
-      const fullText = data.choices?.[0]?.message?.content || "";
-      if (!fullText) throw new Error("空回复");
+      const fullText = await callAI(systemPrompt, [{ role: "user", content: question }], { maxTokens: 300, signal: controller.signal });
+      if (!fullText || fullText.includes("信号受到干扰")) throw new Error("空回复");
 
       for (let i = 0; i < fullText.length; i++) { await wait(20); }
       setReply(fullText);

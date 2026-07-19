@@ -22,15 +22,28 @@ interface UseAIAssistantReturn {
 }
 
 async function callAI(action: string, payload: Record<string, unknown>) {
-  const res = await fetch("/api/ai-travel", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ action, payload }),
-  });
-  const json = await res.json();
-  if (!res.ok) throw new Error(json.error || "AI 服务调用失败");
-  if (json.error) throw new Error(json.error);
-  return json;
+  try {
+    const res = await fetch("/api/ai-travel", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action, payload }),
+    });
+    // 先检查响应体是否为空
+    const text = await res.text();
+    if (!text || text.trim().length === 0) {
+      throw new Error("AI 服务返回为空，请稍后重试");
+    }
+    // 尝试解析 JSON
+    const json = JSON.parse(text);
+    if (!res.ok) throw new Error(json.error || "AI 服务调用失败");
+    if (json.error) throw new Error(json.error);
+    return json;
+  } catch (e: unknown) {
+    if (e instanceof SyntaxError) {
+      throw new Error("AI 服务响应格式异常，请稍后重试");
+    }
+    throw e;
+  }
 }
 
 export function useAIAssistant(

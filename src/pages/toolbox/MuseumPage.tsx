@@ -764,7 +764,7 @@ const VintageCard: React.FC<{
                   className="museum-card-hero-badge"
                   title="馆长侧写"
                   onClick={(e) => { e.stopPropagation(); if (onCuratorNote) onCuratorNote(card.id, card.title, card.year); }}
-                  style={{ opacity: 0, left: "auto", right: "auto", top: 8, right: 8, zIndex: 5 }}
+                  style={{ opacity: 0, top: 8, right: 8, zIndex: 5 }}
                 >
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
                     <path d="M12 2L2 7L12 12L22 7L12 2Z" fill="#b08d57" />
@@ -868,7 +868,13 @@ const VintageGallery: React.FC<{
   onLendExhibit?: (card: VintageCard) => void;
   spotlightActiveId?: string | null;
   onSpotlightToggle?: (id: string) => void;
-}> = ({ title, subtitle, emoji, cards, onAdd, onEdit, onDelete, onImageUpload, onImageDelete, verifyAdmin, onCuratorNote, onLendExhibit, spotlightActiveId, onSpotlightToggle }) => (
+}> = ({ title, subtitle, emoji, cards, onAdd, onEdit, onDelete, onImageUpload, onImageDelete, verifyAdmin, onCuratorNote, onLendExhibit, spotlightActiveId, onSpotlightToggle }) => {
+  const emptyTexts: Record<string, string[]> = {
+    "耳机里的青春 BGM": ["耳机里还没有响起任何旋律。", "但你一定记得，那副有线耳机在口袋里缠成一团的日子。"],
+    "电视里的乌托邦": ["这面墙上还没有挂上任何影像。", "也许你的第一部电视剧记忆，正在来的路上。"],
+    "网络初现时的印记": ["信号还连接着，但屏幕上暂时一片空白。", "你还记得第一次拨号上网时的那个声音吗？"],
+  };
+  return (
   <div className="vintage-section">
     <div className="vintage-section-header">
       <span className="vintage-section-emoji">{emoji}</span>
@@ -881,6 +887,13 @@ const VintageGallery: React.FC<{
         className="museum-add-btn"
       >+ 添加</button>
     </div>
+    {cards.length === 0 ? (
+      <div style={{ padding: "32px 16px", textAlign: "center" }}>
+        {(emptyTexts[title] || []).map((line, i) => (
+          <p key={i} style={{ fontFamily: "'Noto Serif SC', Georgia, serif", fontSize: i === 0 ? 15 : 13, color: i === 0 ? "#b8a890" : "#8a7a64", fontStyle: "italic", lineHeight: 1.8, margin: i === 0 ? "0 0 6px" : 0 }}>{line}</p>
+        ))}
+      </div>
+    ) : (
     <div className="vintage-gallery-scroll">
       <div className="vintage-gallery-track">
         <AnimatePresence mode="popLayout">
@@ -892,8 +905,10 @@ const VintageGallery: React.FC<{
         </AnimatePresence>
       </div>
     </div>
+    )}
   </div>
 );
+};
 
 /* ============================================================
    荣耀成就卡片组件（增强版 - 含图片上传）
@@ -1392,6 +1407,11 @@ const MuseumPage: React.FC = () => {
       <section className="museum-hero">
         <motion.h1 className="museum-hero-title" initial={{ opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7 }}>时光博物馆</motion.h1>
         <motion.p className="museum-hero-sub" initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7, delay: 0.15 }}>每一步都算数。</motion.p>
+        <motion.p className="museum-hero-guide" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 2, delay: 0.5 }}>
+          欢迎来到你的展览。
+          <br />这里陈列着你精心挑选的记忆——
+          <br />每一件都经过你的同意，才得以面世。
+        </motion.p>
       </section>
 
       {/* 私藏匣入口 */}
@@ -1485,14 +1505,19 @@ const MuseumPage: React.FC = () => {
           <span className="museum-hall-roman">II</span>
           <div>
             <h2 className="museum-hall-title">荣耀之路</h2>
-            <p className="museum-hall-sub">每一步都算数。</p>
+            <p className="museum-hall-sub">被认真走过的路，终将成为勋章。</p>
           </div>
         </div>
 
         <div className="zone-honor-wall">
         {/* 垂直时间轴 */}
         <div className="museum-timeline-v">
-          {sortedHonors.map((m, i) => (
+          {sortedHonors.length === 0 ? (
+            <div style={{ padding: "40px 16px", textAlign: "center" }}>
+              <p style={{ fontFamily: "'Noto Serif SC', Georgia, serif", fontSize: 15, color: "#6b5a4a", fontStyle: "italic", lineHeight: 1.8, margin: "0 0 6px" }}>这面墙还在等它的第一枚勋章。</p>
+              <p style={{ fontFamily: "'Noto Serif SC', Georgia, serif", fontSize: 13, color: "#8a7a64", fontStyle: "italic", lineHeight: 1.8, margin: 0 }}>不急。所有被认真走过的时间，终将被看见。</p>
+            </div>
+          ) : (sortedHonors.map((m, i) => (
             <motion.div
               key={m.id}
               className="museum-honor-row"
@@ -1515,7 +1540,7 @@ const MuseumPage: React.FC = () => {
                 verifyAdmin={verifyAdmin}
               />
             </motion.div>
-          ))}
+          )))}
           {/* 起点标注 */}
           <div className="museum-timeline-start">
             <span className="museum-honor-dot museum-honor-dot-start" />
@@ -1663,6 +1688,7 @@ const MuseumPage: React.FC = () => {
         .museum-hero { position: relative; z-index: 2; max-width: 960px; margin: 0 auto; padding: 56px 4px 48px; text-align: center; }
         .museum-hero-title { font-family: "Noto Serif SC", Georgia, serif; font-size: clamp(34px, 5.5vw, 54px); font-weight: 700; color: ${GOLD}; margin: 0 0 14px; letter-spacing: 0.06em; text-shadow: 0 0 30px rgba(176,141,87,0.3); }
         .museum-hero-sub { font-size: 16px; color: #b8a890; margin: 0; letter-spacing: 0.12em; font-style: italic; }
+        .museum-hero-guide { font-size: 20px; color: rgba(232,220,200,0.5); font-family: 'Noto Serif SC', Georgia, serif; margin: 20px 0 0; line-height: 2; letter-spacing: 1px; text-align: center; }
 
         /* 展厅 */
         .museum-hall { position: relative; z-index: 2; max-width: 960px; margin: 0 auto 72px; }

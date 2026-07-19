@@ -1,0 +1,35 @@
+/* 漫游指南主题变量 —— 小叶书局文艺风格 */
+:root {
+  /* 纸张色调 */
+  --rg-paper: #F5F0E6;
+  --rg-paper-deep: #EDE5D5;
+  --rg-paper-light: #FAF9F6;
+
+  /* 墨色 */
+  --rg-ink: #5c3a21;
+  --rg-ink-light: #8B7D6B;
+  --rg-ink-faint: #C8B898;
+
+  /* 木色 */
+  --rg-wood-dark: #5C4538;
+  --rg-wood: #7A6655;
+  --rg-wood-light: #A08060;
+  --rg-wood-highlight: #B89A78;
+
+  /* 功能色 */
+  --rg-amber: rgba(196, 148, 82, 0.85);
+  --rg-amber-solid: #C49452;
+  --rg-pine: rgba(93, 138, 106, 0.7);
+  --rg-pine-solid: #5D8A6A;
+  --rg-seal-red: #C53D43;
+  --rg-gold: rgba(212, 180, 100, 0.9);
+
+  /* 字体 */
+  --rg-font-serif: "KaiTi", "STKaiti", "Noto Serif SC", serif;
+  --rg-font-hand: "KaiTi", "STKaiti", serif;
+
+  /* 阴影 */
+  --rg-shadow-soft: 0 2px 8px rgba(60, 40, 20, 0.08);
+  --rg-shadow-medium: 0 4px 14px rgba(200, 146, 74, 0.25);
+  --rg-shadow-card: 0 8px 24px rgba(0, 0, 0, 0.12);
+}

@@ -249,7 +249,7 @@ const EditModal: React.FC<{
       onClick={onClose}
     >
       <div
-        className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl"
+        className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl border border-[#ece8e0]"
         onClick={(e) => e.stopPropagation()}
       >
         <h3 className="mb-4 text-lg font-semibold text-gray-800">编辑物品</h3>
@@ -262,7 +262,7 @@ const EditModal: React.FC<{
               onChange={(e) =>
                 setForm((f) => ({ ...f, name: e.target.value }))
               }
-              className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm outline-none transition-colors focus:border-[#5d8a6a]"
+              className="w-full rounded-xl border border-[#e4e0d8] bg-white/60 px-3 py-2 text-sm outline-none transition-all focus:border-[#5d8a6a] focus:bg-white"
             />
           </div>
           <div className="grid grid-cols-2 gap-3">
@@ -278,7 +278,7 @@ const EditModal: React.FC<{
                     count: Math.max(1, Number(e.target.value) || 1),
                   }))
                 }
-                className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm outline-none transition-colors focus:border-[#5d8a6a]"
+                className="w-full rounded-xl border border-[#e4e0d8] bg-white/60 px-3 py-2 text-sm outline-none transition-all focus:border-[#5d8a6a] focus:bg-white"
               />
             </div>
             <div>
@@ -288,7 +288,7 @@ const EditModal: React.FC<{
                 onChange={(e) =>
                   setForm((f) => ({ ...f, unit: e.target.value as Unit }))
                 }
-                className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm outline-none transition-colors focus:border-[#5d8a6a]"
+                className="w-full rounded-xl border border-[#e4e0d8] bg-white/60 px-3 py-2 text-sm outline-none transition-all focus:border-[#5d8a6a] focus:bg-white"
               >
                 {UNITS.map((u) => (
                   <option key={u} value={u}>
@@ -306,7 +306,7 @@ const EditModal: React.FC<{
               onChange={(e) =>
                 setForm((f) => ({ ...f, expiryDate: e.target.value }))
               }
-              className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm outline-none transition-colors focus:border-[#5d8a6a]"
+              className="w-full rounded-xl border border-[#e4e0d8] bg-white/60 px-3 py-2 text-sm outline-none transition-all focus:border-[#5d8a6a] focus:bg-white"
             />
           </div>
           <div>
@@ -316,7 +316,7 @@ const EditModal: React.FC<{
               onChange={(e) =>
                 setForm((f) => ({ ...f, location: e.target.value as Location }))
               }
-              className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm outline-none transition-colors focus:border-[#5d8a6a]"
+              className="w-full rounded-xl border border-[#e4e0d8] bg-white/60 px-3 py-2 text-sm outline-none transition-all focus:border-[#5d8a6a] focus:bg-white"
             >
               {LOCATIONS.map((l) => (
                 <option key={l} value={l}>
@@ -329,14 +329,14 @@ const EditModal: React.FC<{
         <div className="mt-6 flex gap-3">
           <button
             onClick={onClose}
-            className="flex-1 rounded-lg border border-gray-200 py-2.5 text-sm text-gray-600 transition-colors hover:bg-gray-50"
+            className="flex-1 rounded-xl border border-[#e4e0d8] py-2.5 text-sm text-gray-600 transition-all hover:bg-gray-50 active:scale-[0.98]"
           >
             取消
           </button>
           <button
             onClick={handleSubmit}
             disabled={!canSave}
-            className="flex-1 rounded-lg bg-[#5d8a6a] py-2.5 text-sm font-medium text-white transition-colors hover:bg-[#4d7a5a] disabled:cursor-not-allowed disabled:opacity-50"
+            className="flex-1 rounded-xl bg-[#5d8a6a] py-2.5 text-sm font-medium text-white shadow-sm transition-all hover:bg-[#4d7a5a] hover:shadow-md active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
           >
             保存修改
           </button>
@@ -359,7 +359,7 @@ const PhotoGuideModal: React.FC<{
       onClick={onClose}
     >
       <div
-        className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-xl"
+        className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-2xl border border-[#ece8e0]"
         onClick={(e) => e.stopPropagation()}
       >
         <h3 className="mb-3 text-lg font-semibold text-gray-800">
@@ -386,7 +386,7 @@ const PhotoGuideModal: React.FC<{
         <div className="mt-6 flex gap-3">
           <button
             onClick={onClose}
-            className="flex-1 rounded-lg border border-gray-200 py-2.5 text-sm text-gray-600 transition-colors hover:bg-gray-50"
+            className="flex-1 rounded-xl border border-[#e4e0d8] py-2.5 text-sm text-gray-600 transition-all hover:bg-gray-50 active:scale-[0.98]"
           >
             取消
           </button>
@@ -497,7 +497,7 @@ const PhotoConfirmModal: React.FC<{
                     onChange={(e) =>
                       onUpdateCandidate(c.id, { name: e.target.value })
                     }
-                    className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm outline-none transition-colors focus:border-[#5d8a6a]"
+                    className="w-full rounded-xl border border-[#e4e0d8] bg-white/60 px-3 py-2 text-sm outline-none transition-all focus:border-[#5d8a6a] focus:bg-white"
                   />
                 </div>
 
@@ -515,7 +515,7 @@ const PhotoConfirmModal: React.FC<{
                           count: Math.max(1, Number(e.target.value) || 1),
                         })
                       }
-                      className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm outline-none transition-colors focus:border-[#5d8a6a]"
+                      className="w-full rounded-xl border border-[#e4e0d8] bg-white/60 px-3 py-2 text-sm outline-none transition-all focus:border-[#5d8a6a] focus:bg-white"
                     />
                   </div>
                   <div>
@@ -527,7 +527,7 @@ const PhotoConfirmModal: React.FC<{
                       onChange={(e) =>
                         onUpdateCandidate(c.id, { unit: e.target.value })
                       }
-                      className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm outline-none transition-colors focus:border-[#5d8a6a]"
+                      className="w-full rounded-xl border border-[#e4e0d8] bg-white/60 px-3 py-2 text-sm outline-none transition-all focus:border-[#5d8a6a] focus:bg-white"
                     >
                       {UNITS.map((u) => (
                         <option key={u} value={u}>
@@ -549,7 +549,7 @@ const PhotoConfirmModal: React.FC<{
                       onChange={(e) =>
                         onUpdateCandidate(c.id, { expiryDate: e.target.value })
                       }
-                      className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm outline-none transition-colors focus:border-[#5d8a6a]"
+                      className="w-full rounded-xl border border-[#e4e0d8] bg-white/60 px-3 py-2 text-sm outline-none transition-all focus:border-[#5d8a6a] focus:bg-white"
                     />
                   </div>
                   <div>
@@ -561,7 +561,7 @@ const PhotoConfirmModal: React.FC<{
                       onChange={(e) =>
                         onUpdateCandidate(c.id, { location: e.target.value })
                       }
-                      className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm outline-none transition-colors focus:border-[#5d8a6a]"
+                      className="w-full rounded-xl border border-[#e4e0d8] bg-white/60 px-3 py-2 text-sm outline-none transition-all focus:border-[#5d8a6a] focus:bg-white"
                     >
                       {LOCATIONS.map((l) => (
                         <option key={l} value={l}>
@@ -579,14 +579,14 @@ const PhotoConfirmModal: React.FC<{
         <div className="mt-6 flex gap-3">
           <button
             onClick={onRetake}
-            className="flex-1 rounded-lg border border-gray-200 py-2.5 text-sm text-gray-600 transition-colors hover:bg-gray-50"
+            className="flex-1 rounded-xl border border-[#e4e0d8] py-2.5 text-sm text-gray-600 transition-all hover:bg-gray-50 active:scale-[0.98]"
           >
             重新拍照
           </button>
           <button
             onClick={() => onConfirm(selected)}
             disabled={selected.length === 0}
-            className="flex-1 rounded-lg bg-[#5d8a6a] py-2.5 text-sm font-medium text-white transition-colors hover:bg-[#4d7a5a] disabled:cursor-not-allowed disabled:opacity-50"
+            className="flex-1 rounded-xl bg-[#5d8a6a] py-2.5 text-sm font-medium text-white shadow-sm transition-all hover:bg-[#4d7a5a] hover:shadow-md active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
           >
             确认入库 ({selected.length})
           </button>
@@ -661,13 +661,97 @@ const InventoryPage: React.FC = () => {
     );
   }, [items, filter, today]);
 
-  /* —— 最早过期物品（智慧规划） —— */
-  const earliest = useMemo<InventoryItem | null>(() => {
-    if (items.length === 0) return null;
-    return [...items].sort((a, b) =>
-      a.expiryDate.localeCompare(b.expiryDate)
-    )[0];
-  }, [items]);
+  /* —— AI 管家小贴士 —— */
+  const aiTips = useMemo(() => {
+    if (items.length === 0) return [];
+
+    const sorted = [...items]
+      .map((it) => ({ ...it, days: daysUntil(it.expiryDate, today) }))
+      .sort((a, b) => a.days - b.days);
+
+    const tips: { id: string; emoji: string; text: string; urgent: boolean; itemId: string }[] = [];
+    const usedNames = new Set<string>();
+
+    // 第一优先：<=7 天的物品，逐条生成提示
+    for (const it of sorted) {
+      if (tips.length >= 3) break;
+      if (it.days > 7) continue;
+      if (usedNames.has(it.name)) continue;
+      usedNames.add(it.name);
+
+      if (it.days < 0) {
+        tips.push({
+          id: `tip-${it.id}`,
+          emoji: "🚨",
+          text: `${it.name}已过期 ${Math.abs(it.days)} 天，建议尽快处理或丢弃。`,
+          urgent: true,
+          itemId: it.id,
+        });
+      } else if (it.days === 0) {
+        tips.push({
+          id: `tip-${it.id}`,
+          emoji: "⏰",
+          text: `${it.name}今天到期，请尽快使用！`,
+          urgent: true,
+          itemId: it.id,
+        });
+      } else if (it.days <= 3) {
+        tips.push({
+          id: `tip-${it.id}`,
+          emoji: "🔥",
+          text: `${it.name}仅剩 ${it.days} 天，建议优先使用。`,
+          urgent: true,
+          itemId: it.id,
+        });
+      } else {
+        tips.push({
+          id: `tip-${it.id}`,
+          emoji: "📌",
+          text: `${it.name}将在 ${it.days} 天后过期，建议近期安排使用。`,
+          urgent: true,
+          itemId: it.id,
+        });
+      }
+    }
+
+    // 第二优先：如果不足 3 条，检查是否有同类高频物品可补货提示
+    if (tips.length < 3) {
+      const nameCount = new Map<string, number>();
+      for (const it of items) {
+        nameCount.set(it.name, (nameCount.get(it.name) || 0) + 1);
+      }
+      for (const [name, count] of nameCount) {
+        if (tips.length >= 3) break;
+        if (count >= 2 && !usedNames.has(name)) {
+          tips.push({
+            id: `tip-restock-${name}`,
+            emoji: "🛒",
+            text: `检测到您常备${name}（当前 ${count} 件），库存充足时别忘了及时补货。`,
+            urgent: false,
+            itemId: "",
+          });
+        }
+      }
+    }
+
+    // 第三优先：还不足 3 条，从 >7 天的物品中挑最近的
+    if (tips.length < 3) {
+      for (const it of sorted) {
+        if (tips.length >= 3) break;
+        if (it.days <= 7 || usedNames.has(it.name)) continue;
+        usedNames.add(it.name);
+        tips.push({
+          id: `tip-${it.id}`,
+          emoji: "💡",
+          text: `${it.name}还剩 ${it.days} 天到期，状态良好。`,
+          urgent: false,
+          itemId: it.id,
+        });
+      }
+    }
+
+    return tips;
+  }, [items, today]);
 
   /* —— 表单校验 —— */
   const canAdd =
@@ -715,10 +799,6 @@ const InventoryPage: React.FC = () => {
       }, 300);
     });
   };
-
-  const earliestDays = earliest
-    ? daysUntil(earliest.expiryDate, today)
-    : Infinity;
 
   /* —— 拍照识别 handlers —— */
   const handlePhotoClick = () => {
@@ -859,16 +939,16 @@ const InventoryPage: React.FC = () => {
       )}
 
       {/* —— 顶栏 —— */}
-      <header className="border-b border-gray-200 bg-white">
+      <header className="border-b border-[#ece8e0] bg-white/70 backdrop-blur-sm">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
           <Link
             to={`/mickey${fromQuery}`}
-            className="text-sm text-gray-500 transition-colors hover:text-[#5d8a6a]"
+            className="text-sm text-gray-500 transition-all hover:text-[#5d8a6a] hover:translate-x-[-2px] inline-block"
           >
             ← 妙妙工具箱
           </Link>
           <div className="flex items-center gap-2">
-            <span className="h-2 w-2 rounded-full bg-[#5d8a6a]" />
+            <span className="h-2 w-2 rounded-full bg-[#5d8a6a] shadow-[0_0_0_3px_rgba(93,138,106,0.15)]" />
             <span className="text-xs uppercase tracking-[0.2em] text-gray-400">
               Inventory Prophet
             </span>
@@ -879,7 +959,7 @@ const InventoryPage: React.FC = () => {
       {/* —— 标题区 —— */}
       <div className="mx-auto max-w-6xl px-6 pb-6 pt-8">
         <h1 className="text-2xl font-semibold text-gray-900">物资管家</h1>
-        <p className="mt-1 text-sm text-gray-500">
+        <p className="mt-1.5 text-sm text-gray-500 leading-relaxed">
           资源管理与反浪费 · 把每一件物品用在它最好的时候
         </p>
       </div>
@@ -889,7 +969,7 @@ const InventoryPage: React.FC = () => {
         {/* ============ 左侧 ============ */}
         <aside className="space-y-6 lg:sticky lg:top-6">
           {/* 入库登记 */}
-          <section className="rounded-xl border border-gray-200 bg-white p-5">
+          <section className="rounded-2xl border border-[#ece8e0] bg-white/80 p-5">
             <h2 className="mb-4 flex items-center gap-2 text-sm font-semibold text-gray-700">
               <span className="h-1 w-4 rounded-full bg-[#5d8a6a]" />
               入库登记
@@ -908,7 +988,7 @@ const InventoryPage: React.FC = () => {
               type="button"
               onClick={handlePhotoClick}
               disabled={isRecognizing}
-              className="mb-3 flex w-full items-center justify-center gap-2 rounded-lg border-2 border-dashed border-gray-300 py-2.5 text-sm text-gray-600 transition-colors hover:border-[#5d8a6a] hover:text-[#5d8a6a] disabled:cursor-not-allowed disabled:opacity-50"
+              className="mb-3 flex w-full items-center justify-center gap-2 rounded-xl border-2 border-dashed border-gray-300 py-2.5 text-sm text-gray-600 transition-all hover:border-[#5d8a6a] hover:bg-[#5d8a6a]/5 hover:text-[#5d8a6a] hover:shadow-sm disabled:cursor-not-allowed disabled:opacity-50"
             >
               {isRecognizing ? "识别中..." : "📷 拍照识别物品"}
             </button>
@@ -925,7 +1005,7 @@ const InventoryPage: React.FC = () => {
                   onChange={(e) =>
                     setForm((f) => ({ ...f, name: e.target.value }))
                   }
-                  className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm outline-none transition-colors focus:border-[#5d8a6a] focus:ring-1 focus:ring-[#5d8a6a]/30"
+                  className="w-full rounded-xl border border-[#e4e0d8] bg-white/60 px-3 py-2 text-sm outline-none transition-all focus:border-[#5d8a6a] focus:bg-white focus:ring-1 focus:ring-[#5d8a6a]/20"
                 />
               </div>
 
@@ -944,7 +1024,7 @@ const InventoryPage: React.FC = () => {
                         count: Math.max(1, Number(e.target.value) || 1),
                       }))
                     }
-                    className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm outline-none transition-colors focus:border-[#5d8a6a] focus:ring-1 focus:ring-[#5d8a6a]/30"
+                    className="w-full rounded-xl border border-[#e4e0d8] bg-white/60 px-3 py-2 text-sm outline-none transition-all focus:border-[#5d8a6a] focus:bg-white focus:ring-1 focus:ring-[#5d8a6a]/20"
                   />
                 </div>
                 <div>
@@ -956,7 +1036,7 @@ const InventoryPage: React.FC = () => {
                     onChange={(e) =>
                       setForm((f) => ({ ...f, unit: e.target.value as Unit }))
                     }
-                    className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm outline-none transition-colors focus:border-[#5d8a6a] focus:ring-1 focus:ring-[#5d8a6a]/30"
+                    className="w-full rounded-xl border border-[#e4e0d8] bg-white/60 px-3 py-2 text-sm outline-none transition-all focus:border-[#5d8a6a] focus:bg-white focus:ring-1 focus:ring-[#5d8a6a]/30"
                   >
                     {UNITS.map((u) => (
                       <option key={u} value={u}>
@@ -977,7 +1057,7 @@ const InventoryPage: React.FC = () => {
                   onChange={(e) =>
                     setForm((f) => ({ ...f, expiryDate: e.target.value }))
                   }
-                  className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm outline-none transition-colors focus:border-[#5d8a6a] focus:ring-1 focus:ring-[#5d8a6a]/30"
+                  className="w-full rounded-xl border border-[#e4e0d8] bg-white/60 px-3 py-2 text-sm outline-none transition-all focus:border-[#5d8a6a] focus:bg-white focus:ring-1 focus:ring-[#5d8a6a]/20"
                 />
               </div>
 
@@ -993,7 +1073,7 @@ const InventoryPage: React.FC = () => {
                       location: e.target.value as Location,
                     }))
                   }
-                  className="w-full rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm outline-none transition-colors focus:border-[#5d8a6a] focus:ring-1 focus:ring-[#5d8a6a]/30"
+                  className="w-full rounded-xl border border-[#e4e0d8] bg-white/60 px-3 py-2 text-sm outline-none transition-all focus:border-[#5d8a6a] focus:bg-white focus:ring-1 focus:ring-[#5d8a6a]/30"
                 >
                   {LOCATIONS.map((l) => (
                     <option key={l} value={l}>
@@ -1007,57 +1087,60 @@ const InventoryPage: React.FC = () => {
                 type="button"
                 onClick={handleAdd}
                 disabled={!canAdd}
-                className="w-full rounded-lg bg-[#5d8a6a] py-2.5 text-sm font-medium text-white transition-colors hover:bg-[#4d7a5a] disabled:cursor-not-allowed disabled:opacity-50"
+                className="w-full rounded-xl bg-[#5d8a6a] py-2.5 text-sm font-medium text-white shadow-sm transition-all hover:bg-[#4d7a5a] hover:shadow-md active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
               >
                 确认入库
               </button>
             </div>
           </section>
 
-          {/* 赏味期限建议 */}
-          <section className="rounded-xl border border-gray-200 bg-white p-5">
+          {/* AI 管家小贴士 */}
+          <section className="rounded-2xl border border-[#ece8e0] bg-white/80 p-5">
             <h2 className="mb-3 flex items-center gap-2 text-sm font-semibold text-gray-700">
-              <span className="h-1 w-4 rounded-full bg-amber-400" />
-              赏味期限
+              <span className="h-1 w-4 rounded-full bg-[#5d8a6a]" />
+              AI 管家小贴士
             </h2>
 
-            {earliest ? (() => {
-              const isUrgent = earliestDays <= 30;
-              return (
-                <div style={{
-                  display: "flex", flexDirection: "column", alignItems: "center", gap: 12, padding: "12px 0"
-                }}>
-                  <p style={{
-                    fontSize: 12, fontWeight: 500, textAlign: "center",
-                    background: "rgba(255,255,255,0.6)",
-                    borderRadius: 20, padding: "6px 14px",
-                    color: isUrgent ? "#D46B4D" : "#557C55",
-                  }}>
-                    {isUrgent ? "🔥" : "🍃"}&nbsp;
-                    {isUrgent ? "赏味期限将至，宜趁鲜启用。" : "余量丰盈，且容它静候时光。"}
-                  </p>
-                  <p style={{ fontSize: 13, color: "#6B7280", textAlign: "center" }}>
-                    {earliest.name} · {earliest.count}{earliest.unit}
-                  </p>
-                  <button
-                    type="button"
-                    onClick={() => handleDelete(earliest.id)}
-                    style={{
-                      fontSize: 12, fontWeight: 500, padding: "6px 18px",
-                      border: `1.5px solid ${isUrgent ? "#D46B4D" : "#557C55"}`,
-                      borderRadius: 999, background: "transparent",
-                      color: isUrgent ? "#D46B4D" : "#557C55",
-                      cursor: "pointer", transition: "all 0.2s",
-                    }}
-                  >
-                    {isUrgent ? "立即消耗" : "留着以后"}
-                  </button>
-                </div>
-              );
-            })() : (
+            {aiTips.length === 0 ? (
               <p className="text-sm text-gray-400">
-                暂无物品。先在上方入库，我来帮你规划。
+                暂无物品。先在上方入库，我来帮您规划。
               </p>
+            ) : (
+              <div className="space-y-2.5">
+                {aiTips.map((tip) => (
+                  <div
+                    key={tip.id}
+                    className={`flex items-start gap-2.5 rounded-xl px-3 py-2.5 text-sm transition-colors ${
+                      tip.urgent
+                        ? "bg-amber-50/70"
+                        : "bg-gray-50/70"
+                    }`}
+                  >
+                    <span className="mt-0.5 shrink-0 text-base leading-none">
+                      {tip.emoji}
+                    </span>
+                    <p
+                      className={`flex-1 leading-relaxed ${
+                        tip.urgent ? "text-amber-800" : "text-gray-600"
+                      }`}
+                    >
+                      {tip.text}
+                    </p>
+                    {tip.itemId && (
+                      <button
+                        type="button"
+                        onClick={() => handleDelete(tip.itemId)}
+                        className="shrink-0 self-center rounded-full border border-current px-2.5 py-0.5 text-xs opacity-70 transition-opacity hover:opacity-100"
+                        style={{
+                          color: tip.urgent ? "#D46B4D" : "#5d8a6a",
+                        }}
+                      >
+                        {tip.urgent ? "消耗" : "移除"}
+                      </button>
+                    )}
+                  </div>
+                ))}
+              </div>
             )}
           </section>
         </aside>
@@ -1075,7 +1158,7 @@ const InventoryPage: React.FC = () => {
                   type="button"
                   onClick={() => setFilter((prev) => (prev === p.key ? "all" : p.key))}
                   className={cn(
-                    "flex items-center gap-2 rounded-full border px-4 py-2 text-sm transition-colors",
+                    "flex items-center gap-2 rounded-full border px-4 py-2 text-sm transition-all hover:shadow-sm active:scale-[0.97]",
                     active ? p.active : p.idle
                   )}
                 >
@@ -1090,7 +1173,7 @@ const InventoryPage: React.FC = () => {
               <button
                 type="button"
                 onClick={() => setFilter("all")}
-                className="self-center text-xs text-gray-400 transition-colors hover:text-gray-600"
+                className="self-center text-xs text-gray-400 transition-all hover:text-gray-600 hover:translate-x-[-2px]"
               >
                 显示全部
               </button>
@@ -1098,7 +1181,7 @@ const InventoryPage: React.FC = () => {
           </section>
 
           {/* 库存列表 */}
-          <section className="overflow-hidden rounded-xl border border-gray-200 bg-white">
+          <section className="overflow-hidden rounded-2xl border border-[#ece8e0] bg-white/80">
             <div className="flex items-center justify-between border-b border-gray-100 px-5 py-3">
               <h2 className="text-sm font-semibold text-gray-700">
                 库存列表

@@ -11,6 +11,7 @@ import RechargePage from "./pages/toolbox/RechargePage";
 import MuseumPage from "./pages/toolbox/MuseumPage";
 import StressReliefPage from "./pages/toolbox/StressReliefPage";
 import TravelPage from "./pages/toolbox/TravelPage";
+import RoamingGuidePage from "./pages/toolbox/roaming-guide";
 import SystemTuningPage from "./pages/toolbox/SystemTuningPage";
 import LifeFilmPage from "./pages/LifeFilmPage";
 import HealingRoomPage from "./pages/HealingRoomPage";
@@ -75,6 +76,7 @@ createRoot(document.getElementById("root")!).render(
         <Route path="/toolbox/recharge" element={<RechargePage />} />
         {/* 漫游指南：旅行足迹与攻略 */}
         <Route path="/toolbox/travel" element={<TravelPage />} />
+        <Route path="/toolbox/roaming-guide" element={<RoamingGuidePage />} />
         {/* 系统调频：5% 微改变认知工具 */}
         <Route path="/toolbox/answer" element={<SystemTuningPage />} />
         {/* 作品详情占位页 */}

@@ -21,7 +21,6 @@ const SEED_KEYS = {
   honors: "museum_honors",
   nets: "museum_nets",
   tvs: "museum_tvs",
-  ih: "museum_ih",
 } as const;
 
 function genId(): string {
@@ -83,22 +82,6 @@ interface HonorItem {
   reflection?: string;
 }
 
-interface IntangibleHeritage {
-  id: string;
-  title: string;
-  subtitle: string;
-  description: string;
-  year: string;
-  imageUrl?: string;
-  mediaLink?: string;
-  mediaType?: "video" | "audio" | "image";
-  craftsmanName?: string;
-  craftsmanDesc?: string;
-  craftsmanAvatar?: string;
-  status?: "活态传承" | "濒危" | "复兴中" | "国家级非遗";
-  region?: string;
-}
-
 /* ============================================================
    默认数据
    ============================================================ */
@@ -142,65 +125,6 @@ const DEFAULT_HONORS: HonorItem[] = [
   { id: "honor-3", year: "2023", title: "数据库管理系统职业技能等级证书", description: "获得数据库管理系统职业技能等级证书，掌握数据核心技术。", imageUrl: "", reflection: "每项技能的积累，都是未来最扎实的底气。" },
   { id: "honor-4", year: "2024", title: "网络与信息安全管理员职业技能等级证书", description: "获得网络与信息安全管理员职业技能等级证书，守护网络安全。", imageUrl: "", reflection: "技术越深入，越明白责任有多重。" },
   { id: "honor-5", year: "2025", title: "英语四级证书", description: "通过大学英语四级考试（CET-4），语言能力迈上新台阶。", imageUrl: "", reflection: "语言是通向更大世界的桥梁。" },
-];
-
-const DEFAULT_HERITAGE: IntangibleHeritage[] = [
-  {
-    id: "ih-1",
-    title: "苗银锻造技艺",
-    subtitle: "千年锤炼，方成一器",
-    description: "苗族银饰锻造技艺是苗族文化的精髓，锤揲、焊接、錾刻，每一道工序都承载着民族的记忆与美学。一套银冠，是母亲传给女儿的祝福，是祖先留下的根脉。",
-    year: "2024",
-    imageUrl: "/images/ih-miaosilver.jpg",
-    mediaLink: "",
-    mediaType: "image",
-    craftsmanName: "杨秀英",
-    craftsmanDesc: "贵州黔东南苗族银饰锻造技艺省级传承人，从事银饰锻造四十余年，致力于将这门古老技艺传授给更多年轻人。",
-    status: "国家级非遗",
-    region: "贵州 · 黔东南",
-  },
-  {
-    id: "ih-2",
-    title: "昆曲",
-    subtitle: "百戏之祖，水磨腔韵",
-    description: "昆曲之美，美在唱腔的水磨调，美在身段的写意之美。以曲叙事，以情动人，那一声婉转，是六百年文人雅士对美的极致追求。",
-    year: "2023",
-    imageUrl: "/images/ih-kunqu.jpg",
-    mediaLink: "",
-    mediaType: "image",
-    craftsmanName: "张继青",
-    craftsmanDesc: '昆曲国家级非遗传承人，"张三梦"演绎者，年逾七旬仍登台献艺，培养了大批青年昆曲演员。',
-    status: "活态传承",
-    region: "江苏 · 苏州",
-  },
-  {
-    id: "ih-3",
-    title: "皮影戏",
-    subtitle: "一纸光影，演绎千古",
-    description: "灯光穿过兽皮剪影，在白布上投下万千故事。牛皮为纸，刀代笔，一幕幕忠孝节义，在方寸之间流转千年。",
-    year: "2022",
-    imageUrl: "/images/ih-shadow.jpg",
-    mediaLink: "",
-    mediaType: "image",
-    craftsmanName: "秦礼刚",
-    craftsmanDesc: "湖北皮影戏传承人，数十年来坚守方寸戏台，将传统剧目与现代题材结合，让皮影戏在乡村与城市间找到新观众。",
-    status: "复兴中",
-    region: "湖北 · 潜江",
-  },
-  {
-    id: "ih-4",
-    title: "古琴艺术",
-    subtitle: "七弦之上，天地之间",
-    description: "古琴不只是乐器，是中国文人的精神图腾。伯牙子期，以琴会心；嵇康临刑，奏《广陵散》。每一段琴音，都是一段生命的悟道。",
-    year: "2023",
-    imageUrl: "/images/ih-guqin.jpg",
-    mediaLink: "",
-    mediaType: "image",
-    craftsmanName: "李祥霆",
-    craftsmanDesc: "国家级非遗古琴艺术传承人，中央音乐学院教授，出版专著十余部，致力于古琴的国际化传播与教学。",
-    status: "活态传承",
-    region: "北京",
-  },
 ];
 
 /* ============================================================
@@ -1114,8 +1038,6 @@ const MuseumPage: React.FC = () => {
   const [tvs, setTvs] = useState<VintageCard[]>(() => loadData(SEED_KEYS.tvs, DEFAULT_TVS));
   const [nets, setNets] = useState<VintageCard[]>(() => loadData(SEED_KEYS.nets, DEFAULT_NETS));
   const [honors, setHonors] = useState<HonorItem[]>(() => loadData(SEED_KEYS.honors, DEFAULT_HONORS));
-  const [heritages] = useState<IntangibleHeritage[]>(() => loadData(SEED_KEYS.ih, DEFAULT_HERITAGE));
-  const [ihModal, setIhModal] = useState<IntangibleHeritage | null>(null);
 
   const { isAdmin: adminMode, verifyAdmin, AdminGuardUI } = useAdminGuard();
 
@@ -1302,59 +1224,6 @@ const MuseumPage: React.FC = () => {
           verifyAdmin={verifyAdmin} />
       </section>
 
-      {/* ===== 非遗特展区 ===== */}
-      <section className="museum-hall museum-ih-section">
-        <div className="museum-ih-head">
-          <span className="museum-ih-icon">🏛️</span>
-          <div>
-            <h2 className="museum-ih-title">■ 非遗特展区</h2>
-            <p className="museum-ih-sub">那些被忽略的手艺，正在等待被看见。</p>
-          </div>
-        </div>
-        <p className="museum-ih-quote">流行会过时，但根脉不会。</p>
-        <div className="museum-ih-scroll">
-          <div className="museum-ih-track">
-            {heritages.map((item) => (
-              <motion.div
-                key={item.id}
-                className="museum-ih-card"
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.4 }}
-                whileHover={{ y: -6, scale: 1.02 }}
-                onClick={() => setIhModal(item)}
-                style={{ cursor: "pointer" }}
-              >
-                <div className="museum-ih-card-hero">
-                  {item.imageUrl ? (
-                    <img src={item.imageUrl} alt={item.title} className="museum-ih-card-img" />
-                  ) : (
-                    <div className="museum-ih-card-placeholder">
-                      <span className="museum-ih-card-emoji">
-                        {item.title === "苗银锻造技艺" ? "🥈" : item.title === "昆曲" ? "🎭" : item.title === "皮影戏" ? "🎬" : "🎵"}
-                      </span>
-                    </div>
-                  )}
-                  <div className="museum-ih-card-gradient" />
-                  <div className="museum-ih-card-play">
-                    <span>▶</span>
-                  </div>
-                  <div className="museum-ih-card-status">{item.status}</div>
-                  <div className="museum-ih-card-year">{item.year}</div>
-                </div>
-                <div className="museum-ih-card-body">
-                  <h4 className="museum-ih-card-title">{item.title}</h4>
-                  <p className="museum-ih-card-subtitle">{item.subtitle}</p>
-                  <div className="museum-ih-card-divider" />
-                  <p className="museum-ih-card-region">📍 {item.region}</p>
-                </div>
-              </motion.div>
-            ))}
-          </div>
-        </div>
-        <p className="museum-ih-footer-quote">这些手艺，正在等待下一个十年。</p>
-      </section>
-
       {/* ===== 展厅二：荣耀之路 ===== */}
       <section className="museum-hall">
         <div className="museum-hall-head">
@@ -1416,70 +1285,6 @@ const MuseumPage: React.FC = () => {
             sectionTitle={getSectionTitle(cardModal.section)}
             emoji={getSectionEmoji(cardModal.section)}
           />
-        )}
-      </AnimatePresence>
-
-      <AnimatePresence>
-        {ihModal && (
-          <motion.div
-            style={{ position: "fixed", inset: 0, zIndex: 500, display: "flex", alignItems: "center", justifyContent: "center", background: "rgba(20,12,10,0.92)" }}
-            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-            onClick={() => setIhModal(null)}
-          >
-            <motion.div
-              style={{ background: "#f9f5f0", border: `2px solid ${VINTAGE_BROWN}60`, borderRadius: 16, padding: "32px 28px", maxWidth: 520, width: "90%", maxHeight: "80vh", overflowY: "auto", boxShadow: "0 12px 40px rgba(92,64,51,0.3)" }}
-              initial={{ scale: 0.85, y: 30 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.85, y: 30 }}
-              transition={{ type: "spring", stiffness: 200, damping: 20 }}
-              onClick={e => e.stopPropagation()}
-            >
-              {/* 关闭按钮 */}
-              <button onClick={() => setIhModal(null)} style={{ position: "absolute", top: 16, right: 16, width: 32, height: 32, border: "none", borderRadius: "50%", background: "rgba(139,107,79,0.15)", color: VINTAGE_BROWN, fontSize: 16, cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>×</button>
-
-              {/* 图片区 */}
-              {ihModal.imageUrl && (
-                <div style={{ width: "100%", height: 200, borderRadius: 12, overflow: "hidden", marginBottom: 20, position: "relative" }}>
-                  <img src={ihModal.imageUrl} alt={ihModal.title} style={{ width: "100%", height: "100%", objectFit: "cover", filter: "sepia(0.1) contrast(1.02)" }} />
-                </div>
-              )}
-
-              {/* 标题 */}
-              <h2 style={{ fontFamily: "Noto Serif SC, Georgia, serif", fontSize: 22, fontWeight: 700, color: VINTAGE_DEEP, margin: "0 0 4px" }}>{ihModal.title}</h2>
-              <p style={{ fontFamily: "Noto Serif SC, serif", fontSize: 13, color: VINTAGE_BROWN, margin: "0 0 16px", fontStyle: "italic" }}>{ihModal.subtitle}</p>
-
-              {/* 标签行 */}
-              <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginBottom: 16 }}>
-                {ihModal.status && (
-                  <span style={{ padding: "4px 10px", borderRadius: 4, background: "#8B7355", color: "#fff", fontSize: 12, fontFamily: "Noto Serif SC, serif" }}>{ihModal.status}</span>
-                )}
-                {ihModal.region && (
-                  <span style={{ padding: "4px 10px", borderRadius: 4, background: "rgba(139,107,79,0.15)", color: VINTAGE_BROWN, fontSize: 12, fontFamily: "Noto Serif SC, serif" }}>📍 {ihModal.region}</span>
-                )}
-                <span style={{ padding: "4px 10px", borderRadius: 4, background: "rgba(139,107,79,0.15)", color: VINTAGE_BROWN, fontSize: 12, fontFamily: "Noto Serif SC, serif" }}>{ihModal.year}</span>
-              </div>
-
-              {/* 描述 */}
-              <p style={{ fontFamily: "Noto Serif SC, serif", fontSize: 14, lineHeight: 1.8, color: "#5D4037", margin: "0 0 20px" }}>{ihModal.description}</p>
-
-              {/* 传承人 */}
-              {ihModal.craftsmanName && (
-                <div style={{ padding: 16, borderRadius: 10, background: "linear-gradient(135deg, #f5edd8 0%, #e8d8c0 100%)", border: `1px solid ${VINTAGE_BROWN}30`, marginBottom: 16 }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 12, marginBottom: 8 }}>
-                    <div style={{ width: 40, height: 40, borderRadius: "50%", background: VINTAGE_BROWN, display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18, color: "#fff" }}>👤</div>
-                    <div>
-                      <p style={{ fontFamily: "Noto Serif SC, serif", fontSize: 15, fontWeight: 600, color: VINTAGE_DEEP, margin: 0 }}>{ihModal.craftsmanName}</p>
-                      <p style={{ fontSize: 11, color: VINTAGE_BROWN, margin: "2px 0 0" }}>传承人</p>
-                    </div>
-                  </div>
-                  {ihModal.craftsmanDesc && (
-                    <p style={{ fontFamily: "Noto Serif SC, serif", fontSize: 13, lineHeight: 1.7, color: "#6B5A4A", margin: 0 }}>{ihModal.craftsmanDesc}</p>
-                  )}
-                </div>
-              )}
-
-              {/* 底部按钮 */}
-              <button onClick={() => setIhModal(null)} style={{ width: "100%", padding: "12px 16px", border: "none", borderRadius: 8, background: VINTAGE_BROWN, color: "#fff", fontSize: 14, cursor: "pointer", fontFamily: "Noto Serif SC, serif" }}>合上</button>
-            </motion.div>
-          </motion.div>
         )}
       </AnimatePresence>
 
@@ -1749,68 +1554,6 @@ const MuseumPage: React.FC = () => {
         .museum-reflection-mark { font-family: "Noto Serif SC", Georgia, serif; font-size: 22px; color: ${GOLD}; margin-right: 2px; line-height: 0; }
         .museum-card-zoom-hint { position: absolute; bottom: 10px; right: 10px; z-index: 2; font-size: 11px; color: #8a7a64; opacity: 0; transition: opacity 0.3s ease; }
         .museum-honor-card:hover .museum-card-zoom-hint { opacity: 0.9; }
-
-        /* ===== 非遗特展区 ===== */
-        .museum-ih-section { background: rgba(250,248,243,0.04); border-radius: 12px; padding: 28px 24px 20px; margin-bottom: 72px; border: 1px solid rgba(176,141,87,0.12); }
-        .museum-ih-head { display: flex; align-items: center; gap: 14px; margin-bottom: 8px; }
-        .museum-ih-icon { font-size: 28px; opacity: 0.8; }
-        .museum-ih-title { font-family: "Noto Serif SC", Georgia, serif; font-size: 24px; font-weight: 700; color: ${GOLD}; margin: 0 0 4px; letter-spacing: 0.04em; }
-        .museum-ih-sub { font-size: 13px; color: #9a8a78; margin: 0; font-style: italic; }
-        .museum-ih-quote { font-family: "Noto Serif SC", serif; font-size: 14px; color: ${VINTAGE_BROWN}; font-style: italic; margin: 12px 0 20px; padding-left: 14px; border-left: 2px solid ${GOLD}; opacity: 0.85; }
-        .museum-ih-footer-quote { font-family: "Noto Serif SC", serif; font-size: 13px; color: #8a7a64; font-style: italic; text-align: center; margin-top: 20px; letter-spacing: 0.04em; }
-
-        .museum-ih-scroll { overflow-x: auto; padding-bottom: 16px; scrollbar-width: thin; scrollbar-color: ${VINTAGE_BROWN} transparent; }
-        .museum-ih-scroll::-webkit-scrollbar { height: 6px; }
-        .museum-ih-scroll::-webkit-scrollbar-thumb { background: rgba(139,109,79,0.4); border-radius: 3px; }
-        .museum-ih-track { display: flex; gap: 20px; padding: 8px 4px; }
-
-        .museum-ih-card {
-          position: relative; flex-shrink: 0; width: 280px; height: 340px;
-          background: #FAF8F3;
-          border: 1px solid #D7CCC8; border-radius: 12px;
-          box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-          transition: all 0.35s ease; overflow: hidden;
-          display: flex; flex-direction: column;
-        }
-        .museum-ih-card:hover {
-          box-shadow: 0 12px 28px rgba(92,64,51,0.18), 0 0 0 1px rgba(176,141,87,0.2);
-        }
-
-        .museum-ih-card-hero { position: relative; width: 100%; height: 180px; flex-shrink: 0; overflow: hidden; border-radius: 12px 12px 0 0; }
-        .museum-ih-card-img { width: 100%; height: 100%; object-fit: cover; filter: sepia(0.1) contrast(1.02) brightness(0.98); transition: transform 0.4s ease; }
-        .museum-ih-card:hover .museum-ih-card-img { transform: scale(1.05); }
-        .museum-ih-card-placeholder { width: 100%; height: 100%; background: linear-gradient(135deg, #F5EDD8 0%, #E8D8C0 100%); display: flex; align-items: center; justify-content: center; }
-        .museum-ih-card-emoji { font-size: 48px; }
-        .museum-ih-card-gradient { position: absolute; left: 0; right: 0; bottom: 0; height: 60%; background: linear-gradient(to bottom, transparent 0%, rgba(62,39,35,0.55) 100%); pointer-events: none; }
-        .museum-ih-card-play {
-          position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-          width: 44px; height: 44px; border-radius: 50%;
-          background: rgba(255,255,255,0.92); border: 2px solid ${GOLD};
-          display: flex; align-items: center; justify-content: center;
-          font-size: 14px; color: ${VINTAGE_DEEP}; opacity: 0; transition: all 0.3s ease;
-          box-shadow: 0 2px 8px rgba(0,0,0,0.15);
-        }
-        .museum-ih-card:hover .museum-ih-card-play { opacity: 1; transform: translate(-50%, -50%) scale(1.1); }
-        .museum-ih-card-status {
-          position: absolute; top: 10px; right: 10px; z-index: 5;
-          padding: 4px 10px; border-radius: 20px;
-          background: rgba(139,107,79,0.85); color: #fff;
-          font-size: 11px; font-family: "Noto Serif SC", serif; letter-spacing: 0.04em;
-          opacity: 0; transition: opacity 0.3s ease;
-        }
-        .museum-ih-card:hover .museum-ih-card-status { opacity: 1; }
-        .museum-ih-card-year {
-          position: absolute; top: 10px; left: 10px; z-index: 5;
-          padding: 3px 8px; background: #8B7355; color: #fff;
-          font-family: "Courier New", monospace; font-size: 11px; font-weight: 700;
-          border-radius: 2px; box-shadow: 2px 2px 0 rgba(0,0,0,0.15);
-        }
-
-        .museum-ih-card-body { height: 160px; padding: 14px 16px 12px; flex-shrink: 0; display: flex; flex-direction: column; }
-        .museum-ih-card-title { font-family: "Noto Serif SC", Georgia, serif; font-size: 16px; font-weight: 600; color: #3E2723; margin: 0 0 4px; line-height: 1.4; }
-        .museum-ih-card-subtitle { font-family: "Noto Serif SC", serif; font-size: 12px; color: #8B6B4F; margin: 0 0 8px; font-style: italic; }
-        .museum-ih-card-divider { width: 40px; height: 1px; background: #E0D6D0; margin: 0 0 10px; }
-        .museum-ih-card-region { font-size: 12px; color: #9a8a78; margin: auto 0 0; font-family: "Noto Serif SC", serif; }
 
         /* 胶片显影 */
         .museum-film-wrap { position: relative; overflow: hidden; background: #2a1f20; }

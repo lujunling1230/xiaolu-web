@@ -1250,56 +1250,71 @@ const AdvicePage: React.FC = () => {
         /* ---------- 等待回复 ---------- */
         .advice-waiting {
           text-align: center;
-          padding: 40px 0 20px;
+          padding: 40px 24px 20px;
+          background: rgba(42,27,20,0.55);
+          border-radius: 16px;
+          margin: 0 auto;
+          max-width: 320px;
+          box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+          backdrop-filter: none;
         }
         .advice-waiting-icon {
-          font-size: 28px; margin-bottom: 12px;
+          font-size: 32px; margin-bottom: 14px;
           display: inline-block;
+          filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
         }
         .advice-waiting-text {
           font-family: "Noto Serif SC", serif;
-          font-size: 15px; color: #FFCCBC;
-          margin: 0 0 6px; letter-spacing: 0.04em;
-          text-shadow: 0 1px 6px rgba(0,0,0,0.5);
+          font-size: 16px; color: #FFF8F0;
+          margin: 0 0 8px; letter-spacing: 0.06em;
+          text-shadow: 0 1px 8px rgba(0,0,0,0.6);
+          font-weight: 500;
         }
         .advice-waiting-hint {
           font-family: "Noto Serif SC", serif;
-          font-size: 13px; color: rgba(188,170,164,0.9);
+          font-size: 13px; color: rgba(255,220,190,0.85);
           margin: 0; letter-spacing: 0.04em;
-          text-shadow: 0 1px 4px rgba(0,0,0,0.4);
+          text-shadow: 0 1px 4px rgba(0,0,0,0.5);
         }
 
         /* ---------- 回复信封 ---------- */
         .advice-arrived {
           text-align: center;
-          padding: 30px 0;
+          padding: 32px 24px;
+          background: rgba(42,27,20,0.55);
+          border-radius: 16px;
+          margin: 0 auto;
+          max-width: 320px;
+          box-shadow: 0 4px 20px rgba(0,0,0,0.3);
         }
         .advice-arrived-text {
           font-family: "Ma Shan Zheng", serif;
-          font-size: 18px; color: #FFCCBC; margin: 0 0 8px;
-          text-shadow: 0 1px 6px rgba(0,0,0,0.5);
-          letter-spacing: 0.04em;
+          font-size: 20px; color: #FFF8F0; margin: 0 0 10px;
+          text-shadow: 0 1px 8px rgba(0,0,0,0.6);
+          letter-spacing: 0.06em;
         }
         .advice-arrived-hint {
           font-family: "Noto Serif SC", serif;
-          font-size: 14px; color: rgba(188,170,164,0.95);
+          font-size: 14px; color: rgba(255,220,190,0.9);
           margin: 0; letter-spacing: 0.04em;
-          text-shadow: 0 1px 4px rgba(0,0,0,0.4);
+          text-shadow: 0 1px 4px rgba(0,0,0,0.5);
         }
         .advice-reply {
           position: relative;
           padding: 28px 24px 52px; border-radius: 12px;
-          box-shadow: 0 8px 28px rgba(0,0,0,0.35);
+          background: rgba(62,42,32,0.88);
+          border: 1px solid rgba(180,150,60,0.2);
+          box-shadow: 0 8px 28px rgba(0,0,0,0.45);
           transition: transform 0.3s ease, box-shadow 0.3s ease;
         }
         .advice-reply-close {
           position: absolute; top: 14px; right: 14px; z-index: 3;
           width: 30px; height: 30px; border-radius: 50%;
-          border: none; background: rgba(93,64,55,0.08);
-          color: #8D6E63; display: flex; align-items: center; justify-content: center;
+          border: none; background: rgba(255,248,232,0.1);
+          color: rgba(255,220,190,0.7); display: flex; align-items: center; justify-content: center;
           cursor: pointer; transition: background 0.2s ease, color 0.2s ease, transform 0.2s ease;
         }
-        .advice-reply-close:hover { background: rgba(93,64,55,0.15); color: #5D4037; transform: rotate(90deg); }
+        .advice-reply-close:hover { background: rgba(255,248,232,0.2); color: #FFF8F0; transform: rotate(90deg); }
         .advice-reply:hover {
           transform: translateY(-3px);
           box-shadow: 0 14px 36px rgba(0,0,0,0.4);
@@ -1312,31 +1327,34 @@ const AdvicePage: React.FC = () => {
         .advice-reply-text-wrap--reveal { clip-path: inset(0 0% 0 0); }
         .advice-reply-dear {
           font-family: "Ma Shan Zheng", "Noto Serif SC", serif;
-          font-size: 14px; color: #8D6E63;
+          font-size: 15px; color: #FFCCBC;
           margin: 0 0 14px; letter-spacing: 0.04em;
+          text-shadow: 0 1px 4px rgba(0,0,0,0.3);
         }
         .advice-reply-text {
           font-family: "Noto Serif SC", Georgia, serif;
-          font-size: 15px; line-height: 1.8;
-          color: #4E342E; margin: 0 0 12px;
+          font-size: 15px; line-height: 1.9;
+          color: #F5E6D0; margin: 0 0 12px;
           letter-spacing: 0.02em; white-space: pre-wrap;
+          text-shadow: 0 1px 3px rgba(0,0,0,0.2);
         }
         .advice-reply-sign {
-          font-size: 12px; color: #A1887F;
+          font-size: 12px; color: rgba(255,220,190,0.7);
           text-align: right; margin: 0 0 20px;
           font-style: italic; letter-spacing: 0.04em;
         }
         .advice-again {
           display: block; margin: 0 auto;
-          padding: 6px 20px;
-          border: 1px dashed rgba(180,150,60,0.4); border-radius: 999px;
-          background: transparent; font-size: 12px; font-family: inherit;
-          font-weight: 400; color: #8D6E63; letter-spacing: 0.05em;
-          transition: background 0.25s ease, border-color 0.25s ease, transform 0.2s ease;
+          padding: 8px 24px;
+          border: 1px solid rgba(255,220,190,0.3); border-radius: 999px;
+          background: rgba(255,248,232,0.08); font-size: 13px; font-family: inherit;
+          font-weight: 500; color: #FFCCBC; letter-spacing: 0.06em;
+          transition: background 0.25s ease, border-color 0.25s ease, transform 0.2s ease, color 0.2s ease;
+          text-shadow: 0 1px 4px rgba(0,0,0,0.3);
         }
         .advice-again:hover {
-          background: rgba(180,150,60,0.1); border-color: rgba(180,150,60,0.6);
-          transform: translateY(-1px);
+          background: rgba(255,248,232,0.15); border-color: rgba(255,220,190,0.5);
+          transform: translateY(-1px); color: #FFF8F0;
         }
 
         /* ---------- 投信箱 ---------- */

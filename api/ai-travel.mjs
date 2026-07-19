@@ -121,7 +121,8 @@ export default async function handler(req, res) {
           { role: "user", content: userPrompt },
         ],
         temperature: 0.8,
-        max_tokens: 2000,
+        max_tokens: 4096,
+        response_format: { type: "json_object" },
       }),
     });
 
@@ -138,14 +139,31 @@ export default async function handler(req, res) {
       return res.status(502).json({ error: "AI 返回内容为空" });
     }
 
-    // 解析 JSON（可能被 markdown code block 包裹）
+    // 解析 JSON —— 多策略鲁棒提取
     let parsed;
     try {
-      // 尝试提取 JSON 块
-      const jsonMatch = content.match(/```(?:json)?\s*([\s\S]*?)```/) || [null, content];
-      parsed = JSON.parse(jsonMatch[1].trim());
+      // 策略 1：直接解析（response_format 已强制 JSON）
+      try {
+        parsed = JSON.parse(content.trim());
+      } catch (e1) {
+        // 策略 2：从 markdown code block 提取
+        const jsonMatch = content.match(/```(?:json)?\s*([\s\S]*?)```/);
+        if (jsonMatch) {
+          parsed = JSON.parse(jsonMatch[1].trim());
+        } else {
+          // 策略 3：提取第一个 { 到最后一个 } 之间的内容
+          const firstBrace = content.indexOf("{");
+          const lastBrace = content.lastIndexOf("}");
+          if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
+            const jsonStr = content.slice(firstBrace, lastBrace + 1);
+            parsed = JSON.parse(jsonStr);
+          } else {
+            throw e1;
+          }
+        }
+      }
     } catch (e) {
-      console.error("[ai-travel] JSON parse error:", e.message, "content:", content);
+      console.error("[ai-travel] JSON parse error:", e.message, "content (first 500):", content.slice(0, 500));
       // 如果解析失败，返回原始内容让前端处理
       return res.status(200).json({ raw: content, error: "AI 返回格式异常，已使用备用推荐" });
     }

@@ -61,6 +61,19 @@ const INTERESTS = [
   "海岛度假",
 ] as const;
 
+// 常用中国旅游城市库（用于"生成攻略"Tab 的城市下拉）
+const POPULAR_CITIES = [
+  "北京", "上海", "广州", "深圳", "杭州", "成都", "重庆", "西安",
+  "南京", "苏州", "厦门", "长沙", "武汉", "青岛", "大连", "昆明",
+  "大理", "丽江", "桂林", "三亚", "拉萨", "西宁", "兰州", "敦煌",
+  "张家界", "凤凰", "景德镇", "黄山", "无锡", "扬州", "绍兴", "宁波",
+  "福州", "泉州", "潮州", "汕头", "北海", "贵阳", "遵义", "九江",
+  "洛阳", "开封", "平遥", "大同", "承德", "哈尔滨", "长春", "沈阳",
+  "呼和浩特", "银川", "乌鲁木齐", "吐鲁番", "喀什", "阿勒泰", "稻城",
+  "康定", "西双版纳", "腾冲", "香格里拉", "日喀则", "林芝", "青海湖",
+  "秦皇岛", "威海", "烟台", "连云港", "舟山", "北海", "海口", "文昌",
+] as const;
+
 const COMPANIONS = [
   { label: "独行", value: "独行" },
   { label: "情侣", value: "情侣" },
@@ -191,6 +204,30 @@ export default function AIAssistantPanel({
     if (matched) {
       onSavePlan(matched, lastGenerateResult);
       showToast("攻略已保存到城市记忆");
+    } else {
+      // 城市不在列表中，自动创建一个新城市记录
+      const newCity: City = {
+        id: Date.now(),
+        name: selectedCity,
+        province: "未知",
+        coord: { lng: 0, lat: 0 },
+        slogan: lastGenerateResult.plan.summary?.slice(0, 20) || "AI 推荐攻略",
+        imageUrl: "",
+        days: lastGenerateResult.plan.days || 3,
+        play: [],
+        eat: [],
+        stay: "",
+        tips: "",
+        light_source: "ai_recommend",
+        explore_count: 0,
+        manual_guide: "",
+        ai_plan: lastGenerateResult.plan,
+        weather_tags: [],
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      };
+      onSavePlan(newCity, lastGenerateResult);
+      showToast("攻略已保存为新城市记忆");
     }
   };
 
@@ -602,11 +639,26 @@ function ForwardTab({
           onChange={(e) => onSelectCity(e.target.value)}
         >
           <option value="">请选择城市</option>
-          {cities.map((c) => (
-            <option key={c.id} value={c.name}>
-              {c.name}（{c.province}）
-            </option>
-          ))}
+          {/* 用户已添加的城市优先显示 */}
+          {cities.length > 0 && (
+            <optgroup label="我的城市记忆">
+              {cities.map((c) => (
+                <option key={c.id} value={c.name}>
+                  {c.name}（{c.province}）
+                </option>
+              ))}
+            </optgroup>
+          )}
+          {/* 常用中国旅游城市库 */}
+          <optgroup label="热门旅游城市">
+            {POPULAR_CITIES.filter(
+              (name) => !cities.some((c) => c.name === name)
+            ).map((name) => (
+              <option key={name} value={name}>
+                {name}
+              </option>
+            ))}
+          </optgroup>
         </select>
       </section>
 

@@ -1718,12 +1718,12 @@ const MuseumPage: React.FC = () => {
         .vintage-gallery-scroll { overflow-x: auto; padding-bottom: 16px; scrollbar-width: thin; scrollbar-color: ${VINTAGE_BROWN} transparent; }
         .vintage-gallery-scroll::-webkit-scrollbar { height: 6px; }
         .vintage-gallery-scroll::-webkit-scrollbar-thumb { background: rgba(139,109,79,0.4); border-radius: 3px; }
-        .vintage-gallery-track { display: flex; gap: 20px; padding: 8px 4px; }
+        .vintage-gallery-track { display: flex; gap: 20px; padding: 8px 4px; align-items: flex-start; }
 
         /* 时代回响卡片（杂志风：图片50% + 文字50%） */
         .vintage-card {
           position: relative; flex-shrink: 0; width: 280px;
-          height: 320px; /* 固定高度：160px 图片 + 160px 文字 */
+          min-height: 280px;
           background: #FAF8F3;
           border: 1px solid #D7CCC8; border-radius: 12px;
           box-shadow: 0 4px 12px rgba(0,0,0,0.08);
@@ -1748,7 +1748,7 @@ const MuseumPage: React.FC = () => {
 
         /* 文字区域（紧凑杂志排版） */
         .vintage-card-body {
-          height: 160px; padding: 12px 16px 12px;
+          padding: 12px 16px 12px;
           flex-shrink: 0; display: flex; flex-direction: column;
           position: relative;
         }
@@ -1766,8 +1766,7 @@ const MuseumPage: React.FC = () => {
         .vintage-card-desc {
           font-family: "Noto Serif SC", Georgia, serif;
           font-size: 13px; line-height: 1.5; color: #5D4037;
-          margin: 0; flex: 1; overflow: hidden;
-          display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+          margin: 0; flex: 1;
         }
         /* 引用（带前缀符号） */
         .vintage-card-quote {
@@ -1889,9 +1888,9 @@ const MuseumPage: React.FC = () => {
 
         /* 移动端 */
         @media (max-width: 640px) {
-          .vintage-card { width: 100%; max-width: 320px; height: 320px; }
+          .vintage-card { width: 100%; max-width: 320px; min-height: 280px; }
           .vintage-card-hero { height: 160px; }
-          .vintage-card-body { height: 160px; padding: 12px; }
+          .vintage-card-body { padding: 12px; }
           .vintage-section-header { gap: 10px; }
           .vintage-section-title { font-size: 16px; }
           .museum-honor-card { flex-direction: column; }

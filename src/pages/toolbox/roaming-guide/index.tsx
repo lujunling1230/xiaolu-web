@@ -86,12 +86,22 @@ export default function RoamingGuidePage() {
 
   /* AI 保存攻略 */
   const handleSavePlan = useCallback((city: City, result: AIForwardGenerateResponse) => {
-    updateCity({
-      ...city,
-      ai_plan: result.plan,
-      updated_at: new Date().toISOString(),
-    });
-  }, [updateCity]);
+    const existing = cities.find(c => c.id === city.id || c.name === city.name);
+    if (existing) {
+      // 更新已有城市的 AI 计划
+      updateCity({
+        ...existing,
+        ai_plan: result.plan,
+        updated_at: new Date().toISOString(),
+      });
+    } else {
+      // 新城市，自动添加
+      addCity({
+        ...city,
+        ai_plan: result.plan,
+      } as Omit<City, "id" | "created_at" | "updated_at">);
+    }
+  }, [cities, addCity, updateCity]);
 
   return (
     <div className="rg-page" style={{

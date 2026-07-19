@@ -3,6 +3,12 @@
  *
  * 时光博物馆的私密抽屉 —— 收藏那些无处安放的、碎片化的、不愿示人的心事。
  * 设计理念："Intimate Chaos" —— 深夜、台灯、旧木抽屉、揉皱的纸条。
+ *
+ * v2 优化：
+ *   - 拼贴式布局（随机尺寸、角度倾斜、轻微重叠）
+ *   - 深炭灰背景 + 纸张木纹纹理 + Bokeh 光斑
+ *   - 滚动阻尼 + 点击卡片聚焦放大 + 背景模糊
+ *   - 图标文案：锁上（抽屉拉手）、藏进去（图钉）
  */
 
 import { useState, useRef, useEffect, useCallback } from "react";
@@ -25,6 +31,7 @@ interface PrivateItem {
   createdAt: number;
   rotation: number;
   widthPercent: number;
+  heightRatio: number; // 1:1 or 4:3
   hidden?: boolean;
 }
 
@@ -41,8 +48,14 @@ function genId(): string {
   return `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 }
 
+/** 随机倾斜角度 -2° ~ +2° */
 function randomRotation(): number {
-  return -5 + Math.random() * 10;
+  return -2 + Math.random() * 4;
+}
+
+/** 随机宽高比：1:1 或 4:3 */
+function randomHeightRatio(): number {
+  return Math.random() > 0.5 ? 1 : 0.75; // 1 = square, 0.75 = 4:3
 }
 
 /** Deterministic pseudo-random from string seed (0..1) */
@@ -56,13 +69,23 @@ function seededRandom(seed: string): number {
 }
 
 function stablePadding(id: string): number {
-  return 16 + seededRandom(id + "-pd") * 8;
+  return 20 + seededRandom(id + "-pd") * 10;
+}
+
+function stableMargin(id: string): number {
+  return -4 + seededRandom(id + "-mg") * 8; // 轻微重叠: 负 margin
 }
 
 function loadItems(): PrivateItem[] {
   try {
     const data = legacyLoad<PrivateItem[]>(STORAGE_KEY);
-    if (Array.isArray(data)) return data;
+    if (Array.isArray(data)) {
+      // 迁移旧数据：补 heightRatio
+      return data.map((item) => ({
+        ...item,
+        heightRatio: item.heightRatio ?? (seededRandom(item.id + "-hr") > 0.5 ? 1 : 0.75),
+      }));
+    }
     return [];
   } catch {
     return [];
@@ -109,7 +132,6 @@ function LockProgressRing({
         pointerEvents: "none",
       }}
     >
-      {/* Background circle */}
       <circle
         stroke="rgba(196, 149, 58, 0.12)"
         fill="transparent"
@@ -118,7 +140,6 @@ function LockProgressRing({
         cx={radius}
         cy={radius}
       />
-      {/* Progress circle */}
       <circle
         stroke="#c4953a"
         fill="transparent"
@@ -168,6 +189,32 @@ function Toast({ visible }: { visible: boolean }) {
 }
 
 /* ============================================================
+   Drawer Handle Icon (抽屉拉手)
+   ============================================================ */
+
+function DrawerHandleIcon({ size = 18 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="12" cy="12" r="3" />
+      <path d="M12 2v4M12 18v4M2 12h4M18 12h4" />
+    </svg>
+  );
+}
+
+/* ============================================================
+   Pin Icon (图钉)
+   ============================================================ */
+
+function PinIcon({ size = 16 }: { size?: number }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M12 17v5" />
+      <path d="M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V6h1a2 2 0 0 0 0-4H8a2 2 0 0 0 0 4h1v4.76z" />
+    </svg>
+  );
+}
+
+/* ============================================================
    Component
    ============================================================ */
 
@@ -190,6 +237,7 @@ export default function PrivateDrawer({ isOpen, onClose }: PrivateDrawerProps) {
   const [wobbleSigns, setWobbleSigns] = useState<Record<string, number>>({});
   const [toastVisible, setToastVisible] = useState(false);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+  const [focusedItem, setFocusedItem] = useState<string | null>(null);
 
   /* ---- Refs ---- */
   const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -246,17 +294,36 @@ export default function PrivateDrawer({ isOpen, onClose }: PrivateDrawerProps) {
     }
   }, [contextMenu]);
 
-  /* ---- Scroll wobble effect ---- */
+  /* ---- Unfocus card when clicking background ---- */
+  useEffect(() => {
+    if (focusedItem) {
+      const handler = (e: MouseEvent) => {
+        if ((e.target as HTMLElement).closest(".pd-card") === null) {
+          setFocusedItem(null);
+        }
+      };
+      // Small delay to prevent immediate unfocus
+      const t = setTimeout(() => {
+        document.addEventListener("click", handler, true);
+      }, 100);
+      return () => {
+        clearTimeout(t);
+        document.removeEventListener("click", handler, true);
+      };
+    }
+  }, [focusedItem]);
+
+  /* ---- Scroll wobble effect (with dampened feel) ---- */
   const handleScroll = useCallback(() => {
     if (!scrollRef.current) return;
     const scrollTop = scrollRef.current.scrollTop;
     const velocity = Math.abs(scrollTop - lastScrollTop.current);
     lastScrollTop.current = scrollTop;
 
-    const wobbleAmount = Math.min(velocity * 0.15, 3);
+    // Reduced wobble for dampened feel
+    const wobbleAmount = Math.min(velocity * 0.08, 1.5);
     setWobbleDegrees(wobbleAmount);
 
-    // Generate new random signs for each card
     setWobbleSigns((prev) => {
       const next: Record<string, number> = {};
       for (const key of Object.keys(prev)) {
@@ -268,7 +335,7 @@ export default function PrivateDrawer({ isOpen, onClose }: PrivateDrawerProps) {
     if (wobbleTimeout.current) clearTimeout(wobbleTimeout.current);
     wobbleTimeout.current = setTimeout(() => {
       setWobbleDegrees(0);
-    }, 150);
+    }, 300);
   }, []);
 
   /* ---- Sync wobble signs with visible items ---- */
@@ -302,7 +369,6 @@ export default function PrivateDrawer({ isOpen, onClose }: PrivateDrawerProps) {
       setLockPressing(true);
       setLockProgress(0);
 
-      // Progress animation: fill over 2 seconds
       const startTime = Date.now();
       const duration = 2000;
 
@@ -316,7 +382,6 @@ export default function PrivateDrawer({ isOpen, onClose }: PrivateDrawerProps) {
       };
       unlockTimer.current = requestAnimationFrame(tick);
 
-      // Fire unlock after 2 seconds
       longPressTimer.current = setTimeout(() => {
         setUnlocking(true);
         setLockPressing(false);
@@ -354,6 +419,7 @@ export default function PrivateDrawer({ isOpen, onClose }: PrivateDrawerProps) {
     setContextMenu(null);
     setEditingId(null);
     setInputValue("");
+    setFocusedItem(null);
     handleLockPressEnd();
     onClose();
   }, [onClose, handleLockPressEnd]);
@@ -366,7 +432,8 @@ export default function PrivateDrawer({ isOpen, onClose }: PrivateDrawerProps) {
       content: text,
       createdAt: Date.now(),
       rotation: randomRotation(),
-      widthPercent: 55 + Math.random() * 40,
+      widthPercent: 45 + Math.random() * 50,
+      heightRatio: randomHeightRatio(),
     };
     setItems((prev) => [...prev, newItem]);
     setInputValue("");
@@ -590,7 +657,6 @@ export default function PrivateDrawer({ isOpen, onClose }: PrivateDrawerProps) {
                       transition={{ duration: 0.45, ease: "easeIn" }}
                       style={{ originX: "50%", originY: "50%" }}
                     />
-                    {/* Lock body shadow / depth */}
                     <rect
                       x="18"
                       y="42"
@@ -602,9 +668,7 @@ export default function PrivateDrawer({ isOpen, onClose }: PrivateDrawerProps) {
                       strokeWidth="1"
                       opacity="0.4"
                     />
-                    {/* Keyhole outer */}
                     <circle cx="40" cy="56" r="5" fill="#1a1a1a" />
-                    {/* Keyhole inner */}
                     <rect
                       x="38"
                       y="56"
@@ -613,7 +677,6 @@ export default function PrivateDrawer({ isOpen, onClose }: PrivateDrawerProps) {
                       rx="1"
                       fill="#1a1a1a"
                     />
-                    {/* Highlight */}
                     <rect
                       x="22"
                       y="44"
@@ -671,7 +734,8 @@ export default function PrivateDrawer({ isOpen, onClose }: PrivateDrawerProps) {
                     className="pd-close-btn"
                     style={styles.closeBtn}
                   >
-                    合上
+                    <DrawerHandleIcon size={14} />
+                    <span style={{ marginLeft: 6 }}>锁上</span>
                   </button>
                 </div>
 
@@ -679,7 +743,11 @@ export default function PrivateDrawer({ isOpen, onClose }: PrivateDrawerProps) {
                 <div
                   ref={scrollRef}
                   className="pd-scroll"
-                  style={styles.scrollArea}
+                  style={{
+                    ...styles.scrollArea,
+                    filter: focusedItem ? "blur(2px)" : "none",
+                    transition: "filter 0.4s ease",
+                  }}
                   onScroll={handleScroll}
                 >
                   {/* Toast */}
@@ -702,26 +770,46 @@ export default function PrivateDrawer({ isOpen, onClose }: PrivateDrawerProps) {
                       <AnimatePresence>
                         {visibleItems.map((item, idx) => {
                           const isEditing = editingId === item.id;
+                          const isFocused = focusedItem === item.id;
                           const showTape = idx % 3 === 1;
                           const pad = stablePadding(item.id);
                           const tapeRotation = -3 + seededRandom(item.id + "-tape") * 6;
                           const sign = wobbleSigns[item.id] ?? 1;
                           const totalRotation =
                             item.rotation + sign * wobbleDegrees;
+                          // Collage: random width & height ratio
+                          const cardWidth = item.widthPercent;
+                          const cardMinHeight = item.heightRatio === 1
+                            ? 120
+                            : 90;
 
                           return (
                             <motion.div
                               key={item.id}
                               layout
                               initial={{ opacity: 0, scale: 0.85, y: 20 }}
-                              animate={{ opacity: 1, scale: 1, y: 0 }}
+                              animate={{
+                                opacity: 1,
+                                scale: isFocused ? 1.03 : 1,
+                                y: isFocused ? -4 : 0,
+                              }}
                               exit={{ opacity: 0, scale: 0.9, y: -10 }}
                               transition={{
-                                duration: 0.35,
+                                duration: isFocused ? 0.35 : 0.35,
                                 delay: Math.min(idx * 0.04, 0.5),
-                                ease: "easeOut",
+                                ease: isFocused ? "easeOut" : "easeOut",
                               }}
-                              style={{ width: "100%" }}
+                              style={{
+                                width: `${cardWidth}%`,
+                                zIndex: isFocused ? 50 : idx,
+                                position: "relative" as const,
+                              }}
+                              onClick={(e) => {
+                                if (!isEditing) {
+                                  e.stopPropagation();
+                                  setFocusedItem(isFocused ? null : item.id);
+                                }
+                              }}
                             >
                               <div
                                 className="pd-card"
@@ -729,10 +817,15 @@ export default function PrivateDrawer({ isOpen, onClose }: PrivateDrawerProps) {
                                   ...styles.card,
                                   transform: `rotate(${totalRotation}deg)`,
                                   padding: `${pad}px`,
+                                  margin: `${stableMargin(item.id)}px 0`,
+                                  minHeight: `${cardMinHeight}px`,
                                   transition:
                                     wobbleDegrees === 0
-                                      ? "transform 1.2s cubic-bezier(0.25, 0.46, 0.45, 0.94)"
+                                      ? "transform 1.2s cubic-bezier(0.25, 0.46, 0.45, 0.94), box-shadow 0.4s ease"
                                       : "none",
+                                  boxShadow: isFocused
+                                    ? "6px 10px 28px rgba(0,0,0,0.55), -2px -2px 8px rgba(0,0,0,0.2), inset 0 0 24px rgba(90,74,58,0.25)"
+                                    : undefined,
                                 }}
                                 onTouchStart={(e) =>
                                   handleLongPressStart(e, item.id)
@@ -811,7 +904,8 @@ export default function PrivateDrawer({ isOpen, onClose }: PrivateDrawerProps) {
                         : "default",
                     }}
                   >
-                    放入
+                    <PinIcon size={14} />
+                    <span style={{ marginLeft: 4 }}>藏进去</span>
                   </button>
                 </div>
               </motion.div>
@@ -897,7 +991,7 @@ const styles: Record<string, React.CSSProperties> = {
     position: "fixed",
     inset: 0,
     zIndex: 9999,
-    background: "#1a1a1a",
+    background: "#1C1C1E",
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
@@ -958,7 +1052,7 @@ const styles: Record<string, React.CSSProperties> = {
     inset: 0,
     display: "flex",
     flexDirection: "column",
-    background: `radial-gradient(ellipse at 15% 10%, rgba(200,168,130,0.08) 0%, transparent 50%), radial-gradient(ellipse at 50% 50%, #2a2520 0%, #1a1a1a 100%)`,
+    background: "#1C1C1E",
   },
   topBar: {
     display: "flex",
@@ -983,6 +1077,8 @@ const styles: Record<string, React.CSSProperties> = {
     padding: "6px 12px",
     borderRadius: "4px",
     transition: "color 0.2s",
+    display: "flex",
+    alignItems: "center",
   },
   scrollArea: {
     flex: 1,
@@ -1026,10 +1122,10 @@ const styles: Record<string, React.CSSProperties> = {
   /* Card */
   card: {
     position: "relative",
-    backgroundColor: "#3e342a",
+    backgroundColor: "#2a2520",
     borderRadius: "2px",
     boxShadow:
-      "2px 3px 12px rgba(0,0,0,0.45), -1px -1px 4px rgba(0,0,0,0.15), inset 0 0 20px rgba(90,74,58,0.2)",
+      "4px 6px 18px rgba(0,0,0,0.5), -2px -2px 6px rgba(0,0,0,0.2), inset 0 0 24px rgba(90,74,58,0.2)",
     cursor: "default",
     boxSizing: "border-box" as const,
     willChange: "transform, opacity",
@@ -1080,8 +1176,8 @@ const styles: Record<string, React.CSSProperties> = {
   },
   textarea: {
     flex: 1,
-    background: "#1e1c18",
-    border: "1px solid #2e2a24",
+    background: "rgba(255,255,255,0.06)",
+    border: "1px solid rgba(255,255,255,0.08)",
     borderRadius: "4px",
     color: "#8a7a6a",
     fontFamily: "'Courier New', monospace",
@@ -1106,6 +1202,8 @@ const styles: Record<string, React.CSSProperties> = {
     whiteSpace: "nowrap" as const,
     transition: "opacity 0.2s, border-color 0.2s",
     flexShrink: 0,
+    display: "flex",
+    alignItems: "center",
   },
   /* Context menu */
   contextMenu: {
@@ -1143,14 +1241,80 @@ const styles: Record<string, React.CSSProperties> = {
    ============================================================ */
 
 const CSS = `
-  /* Waterfall layout using CSS columns */
-  .pd-collage {
-    columns: 3;
-    column-gap: 8px;
-    padding-top: 4px;
+  /* =============================================
+     Background: 深炭灰 + 纸张木纹纹理 + Bokeh 光斑
+     ============================================= */
+  .pd-scroll::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+
+    /* 纸张/木纹纹理叠加 */
+    background-image:
+      /* 微弱噪点纹理 */
+      url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='256' height='256' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E"),
+      /* 细微水平木纹线条 */
+      repeating-linear-gradient(
+        0deg,
+        transparent,
+        transparent 3px,
+        rgba(139,107,79,0.015) 3px,
+        rgba(139,107,79,0.015) 4px
+      ),
+      repeating-linear-gradient(
+        90deg,
+        transparent,
+        transparent 5px,
+        rgba(100,80,60,0.01) 5px,
+        rgba(100,80,60,0.01) 6px
+      );
+    opacity: 0.6;
   }
 
-  /* Focus states */
+  /* Bokeh 光斑（缝隙透进来的微光） */
+  .pd-scroll::after {
+    content: "";
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    background:
+      radial-gradient(ellipse 180px 180px at 12% 8%, rgba(196,149,58,0.06) 0%, transparent 70%),
+      radial-gradient(ellipse 120px 120px at 75% 15%, rgba(196,149,58,0.04) 0%, transparent 70%),
+      radial-gradient(ellipse 200px 200px at 85% 75%, rgba(196,149,58,0.05) 0%, transparent 70%),
+      radial-gradient(ellipse 90px 90px at 25% 85%, rgba(200,180,140,0.04) 0%, transparent 70%),
+      radial-gradient(ellipse 150px 150px at 50% 45%, rgba(180,160,120,0.03) 0%, transparent 70%);
+  }
+
+  /* =============================================
+     Collage layout: CSS columns with random widths
+     ============================================= */
+  .pd-collage {
+    columns: 3;
+    column-gap: 6px;
+    padding-top: 4px;
+    position: relative;
+    z-index: 1;
+  }
+
+  @media (max-width: 640px) {
+    .pd-collage {
+      columns: 2;
+    }
+  }
+
+  /* =============================================
+     Scroll dampening
+     ============================================= */
+  .pd-scroll {
+    scroll-behavior: auto;
+  }
+
+  /* =============================================
+     Focus states
+     ============================================= */
   .pd-textarea:focus {
     border-color: #c4953a !important;
   }
@@ -1170,7 +1334,9 @@ const CSS = `
     border-color: #c4953a !important;
   }
 
-  /* Scrollbar styling */
+  /* =============================================
+     Scrollbar styling
+     ============================================= */
   .pd-scroll::-webkit-scrollbar {
     width: 5px;
   }
@@ -1185,17 +1351,23 @@ const CSS = `
     background: #3e362e;
   }
 
-  /* Card styles for waterfall layout */
+  /* =============================================
+     Card styles for collage layout
+     ============================================= */
   .pd-card {
     -webkit-user-select: none;
     user-select: none;
     -webkit-touch-callout: none;
     break-inside: avoid;
-    margin-bottom: 8px;
   }
   .pd-card p {
     -webkit-user-select: text;
     user-select: text;
     pointer-events: auto;
+  }
+
+  /* Card hover: subtle lift */
+  .pd-card:hover {
+    filter: brightness(1.04);
   }
 `;

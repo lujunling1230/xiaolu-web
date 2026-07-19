@@ -2,11 +2,13 @@ import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
 import { VitePWA } from "vite-plugin-pwa";
+import vercelApiDevPlugin from "./vite-plugin-vercel-api.mjs";
 
 export default defineConfig({
   plugins: [
     react(),
     tailwindcss(),
+    vercelApiDevPlugin(),
     VitePWA({
       // 开发环境不启用 Service Worker，仅 build 生效
       disable: process.env.NODE_ENV === "development",

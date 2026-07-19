@@ -1574,12 +1574,6 @@ const MuseumPage: React.FC = () => {
           .museum-honor-card { flex-direction: column; }
           .museum-honor-img { width: 100%; height: 160px; }
           .museum-honor-img .museum-film-img { min-height: 160px; }
-          .museum-ih-section { padding: 20px 16px 16px; }
-          .museum-ih-title { font-size: 20px; }
-          .museum-ih-card { width: 100%; max-width: 320px; height: 340px; }
-          .museum-ih-card-hero { height: 180px; }
-          .museum-ih-card-body { height: 160px; padding: 12px; }
-          .museum-ih-card-status { opacity: 1; }
         }
       `}</style>
     </div>

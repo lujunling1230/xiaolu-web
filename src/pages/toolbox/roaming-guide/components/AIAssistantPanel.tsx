@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import {
   City,
   AIReverseRecommendRequest,
@@ -41,19 +41,36 @@ const SEASONS = [
 ] as const;
 
 const BUDGETS = [
-  { label: "低预算", value: "低" },
-  { label: "中等", value: "中" },
-  { label: "不限", value: "不限" },
+  { label: "穷游也快乐", value: "穷游" },
+  { label: "性价比之选", value: "适中" },
+  { label: "随心不设限", value: "不限" },
+] as const;
+
+const PACES = [
+  { label: "慢节奏", value: "慢节奏" },
+  { label: "适中", value: "适中" },
+  { label: "紧凑", value: "紧凑" },
 ] as const;
 
 const INTERESTS = [
   "自然风光",
   "历史人文",
-  "美食",
-  "文艺",
-  "户外",
-  "海岛",
+  "美食探店",
+  "文艺手作",
+  "户外徒步",
+  "海岛度假",
 ] as const;
+
+const COMPANIONS = [
+  { label: "独行", value: "独行" },
+  { label: "情侣", value: "情侣" },
+  { label: "家庭", value: "家庭" },
+  { label: "朋友", value: "朋友" },
+] as const;
+
+const CROWD_TAGS = ["带老人", "带小孩", "无特殊需求"] as const;
+
+const COMPACTNESS_LABELS = ["轻松", "适中", "紧凑"] as const;
 
 type TabType = "reverse" | "forward";
 
@@ -78,14 +95,30 @@ export default function AIAssistantPanel({
   const [open, setOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<TabType>("reverse");
 
+  /* Toast 系统 */
+  const [toasts, setToasts] = useState<{ id: number; message: string }[]>([]);
+  const toastIdRef = useRef(0);
+
+  const showToast = useCallback((message: string) => {
+    const id = ++toastIdRef.current;
+    setToasts((prev) => [...prev, { id, message }]);
+    setTimeout(() => {
+      setToasts((prev) => prev.filter((t) => t.id !== id));
+    }, 3000);
+  }, []);
+
   /* 反向推荐表单 */
   const [selectedSeasons, setSelectedSeasons] = useState<string[]>([]);
   const [selectedBudget, setSelectedBudget] = useState<string>("");
   const [selectedInterests, setSelectedInterests] = useState<string[]>([]);
+  const [selectedPace, setSelectedPace] = useState<string>("");
+  const [selectedCompanion, setSelectedCompanion] = useState<string>("");
+  const [selectedCrowdTags, setSelectedCrowdTags] = useState<string[]>([]);
 
   /* 正向生成表单 */
   const [selectedCity, setSelectedCity] = useState("");
   const [tripDays, setTripDays] = useState(3);
+  const [compactness, setCompactness] = useState(1); // 0=轻松, 1=适中, 2=紧凑
 
   /* 已点亮的推荐城市 name 集合 */
   const [adoptedNames, setAdoptedNames] = useState<Set<string>>(new Set());
@@ -108,17 +141,30 @@ export default function AIAssistantPanel({
     );
   };
 
+  const toggleCrowdTag = (tag: string) => {
+    setSelectedCrowdTags((prev) =>
+      prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]
+    );
+  };
+
   const handleReverseRecommend = async () => {
+    const hasSeasonOrInterest =
+      selectedSeasons.length > 0 || selectedInterests.length > 0;
+    if (!hasSeasonOrInterest && !selectedBudget) {
+      showToast("请先选择您的旅行偏好哦~");
+      return;
+    }
     try {
       await onReverseRecommend({
         preferences: {
           season: selectedSeasons.length > 0 ? selectedSeasons.join(",") : undefined,
           budget: selectedBudget || undefined,
+          pace: selectedPace || undefined,
           interests: selectedInterests,
         },
       });
     } catch {
-      // 错误已通过 props 传递，此处仅静默
+      /* 错误已通过 props 传递 */
     }
   };
 
@@ -130,7 +176,7 @@ export default function AIAssistantPanel({
         days: tripDays,
       });
     } catch {
-      // 错误已通过 props 传递
+      /* 错误已通过 props 传递 */
     }
   };
 
@@ -144,7 +190,21 @@ export default function AIAssistantPanel({
     const matched = cities.find((c) => c.name === selectedCity);
     if (matched) {
       onSavePlan(matched, lastGenerateResult);
+      showToast("攻略已保存到城市记忆");
     }
+  };
+
+  /* ---- 构建摘要文案 ---- */
+  const buildSummary = () => {
+    const seasonText =
+      selectedSeasons.length > 0 ? selectedSeasons.join("") : undefined;
+    const budgetText = selectedBudget || undefined;
+    if (seasonText && budgetText) {
+      return `为你挑选了 ${seasonText} 出行、${budgetText}友好的宝藏城市`;
+    }
+    if (seasonText) return `为你挑选了适合 ${seasonText} 出行的宝藏城市`;
+    if (budgetText) return `为你挑选了 ${budgetText}友好的宝藏城市`;
+    return undefined;
   };
 
   /* ---- 渲染 ---- */
@@ -172,6 +232,15 @@ export default function AIAssistantPanel({
       <aside
         className={`rg-ai-drawer${open ? " rg-ai-drawer--open" : ""}`}
       >
+        {/* Toast 容器 */}
+        <div className="rg-ai-toast-container">
+          {toasts.map((t) => (
+            <div key={t.id} className="rg-ai-toast">
+              {t.message}
+            </div>
+          ))}
+        </div>
+
         {/* 标题栏 */}
         <div className="rg-ai-drawer__header">
           <h3 className="rg-ai-drawer__title">AI 旅 行 助 手</h3>
@@ -207,13 +276,20 @@ export default function AIAssistantPanel({
               selectedSeasons={selectedSeasons}
               selectedBudget={selectedBudget}
               selectedInterests={selectedInterests}
+              selectedPace={selectedPace}
+              selectedCompanion={selectedCompanion}
+              selectedCrowdTags={selectedCrowdTags}
               loading={recommendLoading}
               error={recommendError}
               result={lastRecommendResult}
               adoptedNames={adoptedNames}
+              customSummary={buildSummary()}
               onToggleSeason={toggleSeason}
               onSelectBudget={setSelectedBudget}
               onToggleInterest={toggleInterest}
+              onSelectPace={setSelectedPace}
+              onSelectCompanion={setSelectedCompanion}
+              onToggleCrowdTag={toggleCrowdTag}
               onSubmit={handleReverseRecommend}
               onAdopt={handleAdopt}
             />
@@ -222,11 +298,13 @@ export default function AIAssistantPanel({
               cities={cities}
               selectedCity={selectedCity}
               tripDays={tripDays}
+              compactness={compactness}
               loading={generateLoading}
               error={generateError}
               result={lastGenerateResult}
               onSelectCity={setSelectedCity}
               onDaysChange={setTripDays}
+              onCompactnessChange={setCompactness}
               onSubmit={handleForwardGenerate}
               onSave={handleSavePlan}
             />
@@ -245,13 +323,20 @@ interface ReverseTabProps {
   selectedSeasons: string[];
   selectedBudget: string;
   selectedInterests: string[];
+  selectedPace: string;
+  selectedCompanion: string;
+  selectedCrowdTags: string[];
   loading: boolean;
   error: string | null;
   result: AIReverseRecommendResponse | null;
   adoptedNames: Set<string>;
+  customSummary: string | undefined;
   onToggleSeason: (s: string) => void;
   onSelectBudget: (b: string) => void;
   onToggleInterest: (i: string) => void;
+  onSelectPace: (p: string) => void;
+  onSelectCompanion: (c: string) => void;
+  onToggleCrowdTag: (t: string) => void;
   onSubmit: () => void;
   onAdopt: (city: AIReverseRecommendResponse["cities"][0]) => void;
 }
@@ -260,19 +345,28 @@ function ReverseTab({
   selectedSeasons,
   selectedBudget,
   selectedInterests,
+  selectedPace,
+  selectedCompanion,
+  selectedCrowdTags,
   loading,
   error,
   result,
   adoptedNames,
+  customSummary,
   onToggleSeason,
   onSelectBudget,
   onToggleInterest,
+  onSelectPace,
+  onSelectCompanion,
+  onToggleCrowdTag,
   onSubmit,
   onAdopt,
 }: ReverseTabProps) {
+  const showEmptyState = result && !loading && result.cities.length === 0;
+
   return (
     <div className="rg-ai-reverse">
-      {/* 季节选择 */}
+      {/* 1. 季节选择 */}
       <section className="rg-ai-section">
         <h4 className="rg-ai-section__title">季节偏好</h4>
         <div className="rg-ai-seasons">
@@ -288,15 +382,17 @@ function ReverseTab({
         </div>
       </section>
 
-      {/* 预算选择 */}
+      {/* 2. 预算选择 */}
       <section className="rg-ai-section">
         <h4 className="rg-ai-section__title">预算范围</h4>
-        <div className="rg-ai-budgets">
+        <div className="rg-ai-tags-row">
           {BUDGETS.map((b) => (
             <button
               key={b.value}
-              className={`rg-ai-budget-btn${selectedBudget === b.value ? " rg-ai-budget-btn--active" : ""}`}
-              onClick={() => onSelectBudget(b.value)}
+              className={`rg-ai-tag${selectedBudget === b.value ? " rg-ai-tag--active" : ""}`}
+              onClick={() =>
+                onSelectBudget(selectedBudget === b.value ? "" : b.value)
+              }
             >
               {b.label}
             </button>
@@ -304,15 +400,69 @@ function ReverseTab({
         </div>
       </section>
 
-      {/* 兴趣标签 */}
+      {/* 3. 节奏选择 */}
+      <section className="rg-ai-section">
+        <h4 className="rg-ai-section__title">节奏偏好</h4>
+        <div className="rg-ai-tags-row">
+          {PACES.map((p) => (
+            <button
+              key={p.value}
+              className={`rg-ai-tag${selectedPace === p.value ? " rg-ai-tag--active" : ""}`}
+              onClick={() =>
+                onSelectPace(selectedPace === p.value ? "" : p.value)
+              }
+            >
+              {p.label}
+            </button>
+          ))}
+        </div>
+      </section>
+
+      {/* 4. 兴趣标签 */}
       <section className="rg-ai-section">
         <h4 className="rg-ai-section__title">兴趣方向</h4>
-        <div className="rg-ai-interests">
+        <div className="rg-ai-tags-row">
           {INTERESTS.map((tag) => (
             <button
               key={tag}
-              className={`rg-ai-interest-tag${selectedInterests.includes(tag) ? " rg-ai-interest-tag--active" : ""}`}
+              className={`rg-ai-tag${selectedInterests.includes(tag) ? " rg-ai-tag--active" : ""}`}
               onClick={() => onToggleInterest(tag)}
+            >
+              {tag}
+            </button>
+          ))}
+        </div>
+      </section>
+
+      {/* 5. 出行人数（圆形按钮，单选） */}
+      <section className="rg-ai-section">
+        <h4 className="rg-ai-section__title">出行人数</h4>
+        <div className="rg-ai-circle-group">
+          {COMPANIONS.map((c) => (
+            <button
+              key={c.value}
+              className={`rg-ai-circle-btn${selectedCompanion === c.value ? " rg-ai-circle-btn--active" : ""}`}
+              onClick={() =>
+                onSelectCompanion(
+                  selectedCompanion === c.value ? "" : c.value
+                )
+              }
+            >
+              {c.label}
+            </button>
+          ))}
+        </div>
+      </section>
+
+      {/* 6. 人群标签 */}
+      <section className="rg-ai-section">
+        <h4 className="rg-ai-section__title">人群标签</h4>
+        <div className="rg-ai-tags-row">
+          {CROWD_TAGS.map((tag) => (
+            <button
+              key={tag}
+              className={`rg-ai-tag${selectedCrowdTags.includes(tag) ? " rg-ai-tag--active" : ""}`}
+              onClick={() => onToggleCrowdTag(tag)}
             >
               {tag}
             </button>
@@ -332,8 +482,8 @@ function ReverseTab({
       {/* Loading 指南针动画 */}
       {loading && (
         <div className="rg-ai-loading">
-          <span className="rg-ai-loading__compass">&#x2793;</span>
-          <span className="rg-ai-loading__text">AI 正在为你寻觅远方...</span>
+          <span className="rg-ai-loading__compass" />
+          <span className="rg-ai-loading__text">正在翻阅旅行手记...</span>
         </div>
       )}
 
@@ -346,20 +496,28 @@ function ReverseTab({
       )}
 
       {/* 推荐结果 */}
-      {result && !loading && (
-        <div className="rg-ai-results">
-          {result.summary && (
-            <p className="rg-ai-results__summary">{result.summary}</p>
+      {result && !loading && result.cities.length > 0 && (
+        <div className="rg-ai-results rg-ai-fade-in-up">
+          {(customSummary || result.summary) && (
+            <p className="rg-ai-results__summary">
+              {customSummary || result.summary}
+            </p>
           )}
           <div className="rg-ai-results__list">
             {result.cities.map((city, idx) => (
-              <div key={city.name} className="rg-ai-city-card">
+              <div
+                key={city.name}
+                className="rg-ai-city-card rg-ai-fade-in-up"
+                style={{ animationDelay: `${idx * 150}ms` }}
+              >
                 <div className="rg-ai-city-card__content">
                   <div className="rg-ai-city-card__header">
                     <span className="rg-ai-city-card__index">
                       {String(idx + 1).padStart(2, "0")}
                     </span>
-                    <span className="rg-ai-city-card__name">{city.name}</span>
+                    <span className="rg-ai-city-card__name">
+                      {city.name}
+                    </span>
                     <span className="rg-ai-city-card__province">
                       {city.province}
                     </span>
@@ -367,8 +525,7 @@ function ReverseTab({
                   <p className="rg-ai-city-card__reason">{city.reason}</p>
                   <div className="rg-ai-city-card__meta">
                     <span className="rg-ai-city-card__label">
-                      亮点：
-                      {city.highlights.join(" / ")}
+                      亮点：{city.highlights.join(" / ")}
                     </span>
                     <span className="rg-ai-city-card__label">
                       最佳季节：{city.best_season}
@@ -380,11 +537,21 @@ function ReverseTab({
                   onClick={() => onAdopt(city)}
                   disabled={adoptedNames.has(city.name)}
                 >
-                  {adoptedNames.has(city.name) ? "已点亮" : "点亮"}
+                  {adoptedNames.has(city.name) ? "\u2713 已点亮" : "点亮"}
                 </button>
               </div>
             ))}
           </div>
+        </div>
+      )}
+
+      {/* 空结果状态 */}
+      {showEmptyState && (
+        <div className="rg-ai-empty-state">
+          <span className="rg-ai-empty-state__icon">&#x1F30D;</span>
+          <p className="rg-ai-empty-state__text">
+            暂未找到匹配城市，试试放宽条件吧
+          </p>
         </div>
       )}
     </div>
@@ -399,11 +566,13 @@ interface ForwardTabProps {
   cities: City[];
   selectedCity: string;
   tripDays: number;
+  compactness: number;
   loading: boolean;
   error: string | null;
   result: AIForwardGenerateResponse | null;
   onSelectCity: (c: string) => void;
   onDaysChange: (d: number) => void;
+  onCompactnessChange: (v: number) => void;
   onSubmit: () => void;
   onSave: () => void;
 }
@@ -412,11 +581,13 @@ function ForwardTab({
   cities,
   selectedCity,
   tripDays,
+  compactness,
   loading,
   error,
   result,
   onSelectCity,
   onDaysChange,
+  onCompactnessChange,
   onSubmit,
   onSave,
 }: ForwardTabProps) {
@@ -461,6 +632,32 @@ function ForwardTab({
         </div>
       </section>
 
+      {/* 行程紧凑度滑块 */}
+      <section className="rg-ai-section">
+        <h4 className="rg-ai-section__title">行程紧凑度</h4>
+        <div className="rg-ai-compactness">
+          <div className="rg-ai-compactness__labels">
+            {COMPACTNESS_LABELS.map((label, i) => (
+              <span
+                key={label}
+                className={`rg-ai-compactness__label${compactness === i ? " rg-ai-compactness__label--active" : ""}`}
+              >
+                {label}
+              </span>
+            ))}
+          </div>
+          <input
+            type="range"
+            className="rg-ai-compactness__slider"
+            min={0}
+            max={2}
+            step={1}
+            value={compactness}
+            onChange={(e) => onCompactnessChange(Number(e.target.value))}
+          />
+        </div>
+      </section>
+
       {/* 提交按钮 */}
       <button
         className="rg-ai-submit-btn"
@@ -473,8 +670,8 @@ function ForwardTab({
       {/* Loading */}
       {loading && (
         <div className="rg-ai-loading">
-          <span className="rg-ai-loading__compass">&#x2793;</span>
-          <span className="rg-ai-loading__text">AI 正在规划行程...</span>
+          <span className="rg-ai-loading__compass" />
+          <span className="rg-ai-loading__text">正在规划行程路线...</span>
         </div>
       )}
 
@@ -488,7 +685,7 @@ function ForwardTab({
 
       {/* 生成结果 */}
       {result && !loading && (
-        <div className="rg-ai-plan">
+        <div className="rg-ai-plan rg-ai-fade-in-up">
           {/* 摘要卡片 */}
           <div className="rg-ai-plan__summary">
             <h4 className="rg-ai-plan__summary-title">
@@ -525,7 +722,9 @@ function ForwardTab({
                 </div>
                 <div className="rg-ai-day-card__body">
                   <div className="rg-ai-day-card__activities">
-                    <span className="rg-ai-day-card__sub-title">行程安排</span>
+                    <span className="rg-ai-day-card__sub-title">
+                      行程安排
+                    </span>
                     <ul>
                       {day.activities.map((a, i) => (
                         <li key={i}>{a}</li>
@@ -533,7 +732,9 @@ function ForwardTab({
                     </ul>
                   </div>
                   <div className="rg-ai-day-card__food">
-                    <span className="rg-ai-day-card__sub-title">美食推荐</span>
+                    <span className="rg-ai-day-card__sub-title">
+                      美食推荐
+                    </span>
                     <ul>
                       {day.food_recommendations.map((f, i) => (
                         <li key={i}>{f}</li>
@@ -557,33 +758,48 @@ function ForwardTab({
 
 /* ============================================================
    CSS（内联 <style> 标签内容）
-   ============================================================ */
+   ================================================================ */
 
 const CSS = `
 /* ================================================================
-   变量
+   动画关键帧
    ================================================================ */
-.rg-ai-drawer,
-.rg-ai-fab,
-.rg-ai-overlay,
-.rg-ai-tabs,
-.rg-ai-reverse,
-.rg-ai-forward,
-.rg-ai-loading,
-.rg-ai-error,
-.rg-ai-results,
-.rg-ai-plan {
-  --ai-paper: #F5F0E6;
-  --ai-ink: #5c3a21;
-  --ai-ink-light: #8B7D6B;
-  --ai-ink-faint: #C8B898;
-  --ai-amber: #C49452;
-  --ai-amber-light: #D9B574;
-  --ai-amber-dark: #A07838;
-  --ai-amber-bg: rgba(196, 148, 82, 0.10);
-  --ai-amber-border: rgba(196, 148, 82, 0.45);
-  --ai-font: "KaiTi", "STKaiti", "Noto Serif SC", serif;
-  --ai-shadow-drawer: -6px 0 28px rgba(60, 40, 20, 0.18), -2px 0 8px rgba(60, 40, 20, 0.08);
+@keyframes rg-ai-spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes rg-ai-fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes rg-ai-toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(-100%);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes rg-ai-toast-out {
+  from {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(-100%);
+  }
 }
 
 /* ================================================================
@@ -599,18 +815,20 @@ const CSS = `
   border-radius: 50%;
   border: none;
   cursor: pointer;
-  background: linear-gradient(135deg, #D9B574 0%, #A07838 100%);
-  box-shadow: 0 4px 16px rgba(160, 120, 56, 0.45);
+  background: linear-gradient(135deg, var(--rg-primary) 0%, #3a7a5e 100%);
+  box-shadow: 0 4px 16px var(--rg-primary-glow, rgba(74, 139, 111, 0.45)),
+              0 0 0 0 var(--rg-primary-glow, rgba(74, 139, 111, 0.3));
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.3s ease;
+  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1),
+              box-shadow 0.3s ease;
   animation: rg-ai-pulse 2.4s ease-in-out infinite;
 }
 
 .rg-ai-fab:hover {
   transform: scale(1.15);
-  box-shadow: 0 6px 24px rgba(160, 120, 56, 0.6);
+  box-shadow: 0 6px 24px var(--rg-primary-glow, rgba(74, 139, 111, 0.6));
 }
 
 .rg-ai-fab:active {
@@ -626,8 +844,14 @@ const CSS = `
 }
 
 @keyframes rg-ai-pulse {
-  0%, 100% { box-shadow: 0 4px 16px rgba(160, 120, 56, 0.45), 0 0 0 0 rgba(196, 148, 82, 0.3); }
-  50% { box-shadow: 0 4px 16px rgba(160, 120, 56, 0.45), 0 0 0 12px rgba(196, 148, 82, 0); }
+  0%, 100% {
+    box-shadow: 0 4px 16px var(--rg-primary-glow, rgba(74, 139, 111, 0.45)),
+                0 0 0 0 var(--rg-primary-glow, rgba(74, 139, 111, 0.3));
+  }
+  50% {
+    box-shadow: 0 4px 16px var(--rg-primary-glow, rgba(74, 139, 111, 0.45)),
+                0 0 0 12px var(--rg-primary-glow, rgba(74, 139, 111, 0));
+  }
 }
 
 /* ================================================================
@@ -660,15 +884,16 @@ const CSS = `
   z-index: 9002;
   width: 380px;
   height: 100vh;
-  background: var(--ai-paper);
-  box-shadow: var(--ai-shadow-drawer);
-  font-family: var(--ai-font);
+  background: var(--rg-paper, #F5F0E6);
+  box-shadow: -6px 0 28px rgba(60, 40, 20, 0.18), -2px 0 8px rgba(60, 40, 20, 0.08);
+  font-family: "KaiTi", "STKaiti", "Noto Serif SC", serif;
   display: flex;
   flex-direction: column;
   transform: translateX(100%);
   opacity: 0;
   transition: transform 0.4s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.35s ease;
   overflow: hidden;
+  color: var(--rg-ink, #5c3a21);
 }
 
 .rg-ai-drawer--open {
@@ -683,20 +908,58 @@ const CSS = `
   }
 }
 
-/* ---- 标题栏 ---- */
+/* ================================================================
+   Toast 提示系统
+   ================================================================ */
+.rg-ai-toast-container {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 12px 16px 0;
+  pointer-events: none;
+  gap: 8px;
+}
+
+.rg-ai-toast {
+  pointer-events: auto;
+  padding: 10px 20px;
+  border-radius: 8px;
+  background: var(--rg-accent, #D4884A);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 400;
+  letter-spacing: 0.06em;
+  line-height: 1.5;
+  white-space: nowrap;
+  animation: rg-ai-toast-in 0.3s ease forwards;
+  box-shadow: 0 4px 12px rgba(212, 136, 74, 0.35);
+}
+
+.rg-ai-toast:last-child {
+  animation: rg-ai-toast-in 0.3s ease forwards;
+}
+
+/* ================================================================
+   标题栏
+   ================================================================ */
 .rg-ai-drawer__header {
   display: flex;
   align-items: center;
   justify-content: space-between;
   padding: 20px 20px 16px;
-  border-bottom: 1px solid var(--ai-ink-faint);
+  border-bottom: 1px solid var(--rg-ink-border, #C8B898);
   flex-shrink: 0;
 }
 
 .rg-ai-drawer__title {
-  font-size: 18px;
-  font-weight: 700;
-  color: var(--ai-ink);
+  font-size: var(--rg-text-h3, 18px);
+  font-weight: var(--rg-weight-title, 600);
+  color: var(--rg-ink, #5c3a21);
   letter-spacing: 6px;
   margin: 0;
 }
@@ -708,7 +971,7 @@ const CSS = `
   background: none;
   cursor: pointer;
   font-size: 18px;
-  color: var(--ai-ink-light);
+  color: var(--rg-ink-light, #8B7D6B);
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -718,15 +981,17 @@ const CSS = `
 
 .rg-ai-drawer__close:hover {
   background: rgba(92, 58, 33, 0.08);
-  color: var(--ai-ink);
+  color: var(--rg-ink, #5c3a21);
 }
 
-/* ---- Tabs ---- */
+/* ================================================================
+   Tabs
+   ================================================================ */
 .rg-ai-tabs {
   display: flex;
   padding: 12px 20px 0;
   gap: 0;
-  border-bottom: 1px solid var(--ai-ink-faint);
+  border-bottom: 1px solid var(--rg-ink-border, #C8B898);
   flex-shrink: 0;
 }
 
@@ -736,41 +1001,36 @@ const CSS = `
   border: none;
   background: none;
   cursor: pointer;
-  font-family: var(--ai-font);
-  font-size: 15px;
-  color: var(--ai-ink-light);
+  font-family: "KaiTi", "STKaiti", "Noto Serif SC", serif;
+  font-size: var(--rg-text-body, 15px);
+  color: var(--rg-ink-light, #8B7D6B);
   letter-spacing: 2px;
   position: relative;
   transition: color 0.25s ease;
-}
-
-.rg-ai-tabs__btn::after {
-  content: "";
-  position: absolute;
-  bottom: -1px;
-  left: 20%;
-  width: 60%;
-  height: 2.5px;
-  background: var(--ai-amber);
-  border-radius: 2px;
-  transform: scaleX(0);
-  transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+  border-bottom: 2.5px solid transparent;
 }
 
 .rg-ai-tabs__btn--active {
-  color: var(--ai-ink);
-  font-weight: 700;
+  color: var(--rg-primary, #4A8B6F);
+  font-weight: var(--rg-weight-title, 600);
+  border-bottom-color: var(--rg-primary, #4A8B6F);
 }
 
-.rg-ai-tabs__btn--active::after {
-  transform: scaleX(1);
+.rg-ai-tabs__btn:hover:not(.rg-ai-tabs__btn--active) {
+  color: var(--rg-ink, #5c3a21);
 }
 
-/* ---- Body 滚动区 ---- */
+/* ================================================================
+   Body 滚动区
+   ================================================================ */
 .rg-ai-body {
   flex: 1;
   overflow-y: auto;
-  padding: 16px 20px 32px;
+  padding: var(--rg-space-md, 16px) 20px 32px;
+  font-size: var(--rg-text-body, 15px);
+  font-weight: var(--rg-weight-body, 400);
+  line-height: var(--rg-leading-body, 1.85);
+  letter-spacing: var(--rg-tracking-body, 0.06em);
 }
 
 .rg-ai-body::-webkit-scrollbar {
@@ -782,7 +1042,7 @@ const CSS = `
 }
 
 .rg-ai-body::-webkit-scrollbar-thumb {
-  background: var(--ai-ink-faint);
+  background: var(--rg-ink-border, #C8B898);
   border-radius: 2px;
 }
 
@@ -794,15 +1054,49 @@ const CSS = `
 }
 
 .rg-ai-section__title {
-  font-size: 14px;
-  font-weight: 700;
-  color: var(--ai-ink);
+  font-size: var(--rg-text-h3, 18px);
+  font-weight: var(--rg-weight-title, 600);
+  color: var(--rg-ink, #5c3a21);
   letter-spacing: 3px;
   margin: 0 0 10px;
 }
 
 /* ================================================================
-   反向推荐 — 季节按钮
+   标签行（通用）
+   ================================================================ */
+.rg-ai-tags-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.rg-ai-tag {
+  padding: 5px 14px;
+  border-radius: 20px;
+  border: 1.5px solid var(--rg-ink-border, #C8B898);
+  background: transparent;
+  cursor: pointer;
+  font-family: "KaiTi", "STKaiti", "Noto Serif SC", serif;
+  font-size: 13px;
+  color: var(--rg-ink-light, #8B7D6B);
+  transition: all 0.25s ease;
+  white-space: nowrap;
+}
+
+.rg-ai-tag:hover {
+  border-color: var(--rg-primary, #4A8B6F);
+  color: var(--rg-ink, #5c3a21);
+  background: rgba(74, 139, 111, 0.06);
+}
+
+.rg-ai-tag--active {
+  background: var(--rg-primary, #4A8B6F);
+  border-color: var(--rg-primary, #4A8B6F);
+  color: #fff;
+}
+
+/* ================================================================
+   反向推荐 -- 季节按钮（圆形）
    ================================================================ */
 .rg-ai-seasons {
   display: flex;
@@ -813,93 +1107,62 @@ const CSS = `
   width: 48px;
   height: 48px;
   border-radius: 50%;
-  border: 1.5px solid var(--ai-amber-border);
+  border: 1.5px solid var(--rg-ink-border, #C8B898);
   background: transparent;
   cursor: pointer;
-  font-family: var(--ai-font);
+  font-family: "KaiTi", "STKaiti", "Noto Serif SC", serif;
   font-size: 16px;
-  color: var(--ai-ink);
+  color: var(--rg-ink, #5c3a21);
   transition: all 0.25s ease;
 }
 
 .rg-ai-season-btn:hover {
-  border-color: var(--ai-amber);
-  background: var(--ai-amber-bg);
+  border-color: var(--rg-primary, #4A8B6F);
+  background: rgba(74, 139, 111, 0.06);
 }
 
 .rg-ai-season-btn--active {
-  background: linear-gradient(135deg, #D9B574 0%, #A07838 100%);
-  border-color: var(--ai-amber-dark);
+  background: var(--rg-primary, #4A8B6F);
+  border-color: var(--rg-primary, #4A8B6F);
   color: #fff;
   font-weight: 700;
 }
 
 /* ================================================================
-   反向推荐 — 预算按钮
+   出行人数 -- 圆形单选按钮
    ================================================================ */
-.rg-ai-budgets {
+.rg-ai-circle-group {
   display: flex;
   gap: 10px;
 }
 
-.rg-ai-budget-btn {
-  flex: 1;
-  padding: 8px 0;
-  border-radius: 8px;
-  border: 1.5px solid var(--ai-amber-border);
+.rg-ai-circle-btn {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  border: 1.5px solid var(--rg-ink-border, #C8B898);
   background: transparent;
   cursor: pointer;
-  font-family: var(--ai-font);
+  font-family: "KaiTi", "STKaiti", "Noto Serif SC", serif;
   font-size: 14px;
-  color: var(--ai-ink);
-  letter-spacing: 1px;
-  transition: all 0.25s ease;
-}
-
-.rg-ai-budget-btn:hover {
-  border-color: var(--ai-amber);
-  background: var(--ai-amber-bg);
-}
-
-.rg-ai-budget-btn--active {
-  background: linear-gradient(135deg, #D9B574 0%, #A07838 100%);
-  border-color: var(--ai-amber-dark);
-  color: #fff;
-  font-weight: 700;
-}
-
-/* ================================================================
-   反向推荐 — 兴趣标签
-   ================================================================ */
-.rg-ai-interests {
+  color: var(--rg-ink, #5c3a21);
   display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-
-.rg-ai-interest-tag {
-  padding: 5px 14px;
-  border-radius: 20px;
-  border: 1.5px solid var(--ai-amber-border);
-  background: transparent;
-  cursor: pointer;
-  font-family: var(--ai-font);
-  font-size: 13px;
-  color: var(--ai-ink-light);
+  align-items: center;
+  justify-content: center;
   transition: all 0.25s ease;
   white-space: nowrap;
 }
 
-.rg-ai-interest-tag:hover {
-  border-color: var(--ai-amber);
-  color: var(--ai-ink);
-  background: var(--ai-amber-bg);
+.rg-ai-circle-btn:hover {
+  border-color: var(--rg-primary, #4A8B6F);
+  background: rgba(74, 139, 111, 0.06);
 }
 
-.rg-ai-interest-tag--active {
-  background: linear-gradient(135deg, #D9B574 0%, #A07838 100%);
-  border-color: var(--ai-amber-dark);
+.rg-ai-circle-btn--active {
+  background: var(--rg-primary, #4A8B6F);
+  border-color: var(--rg-primary, #4A8B6F);
   color: #fff;
+  font-weight: var(--rg-weight-title, 600);
 }
 
 /* ================================================================
@@ -908,22 +1171,27 @@ const CSS = `
 .rg-ai-submit-btn {
   width: 100%;
   padding: 12px 0;
-  border: 1.5px solid var(--ai-amber);
+  border: none;
   border-radius: 10px;
-  background: transparent;
+  background: linear-gradient(135deg, var(--rg-primary, #4A8B6F) 0%, #3a7a5e 100%);
   cursor: pointer;
-  font-family: var(--ai-font);
-  font-size: 16px;
-  color: var(--ai-amber-dark);
+  font-family: "KaiTi", "STKaiti", "Noto Serif SC", serif;
+  font-size: var(--rg-text-h3, 18px);
+  color: #fff;
   letter-spacing: 4px;
+  font-weight: var(--rg-weight-title, 600);
   transition: all 0.3s ease;
   margin-top: 4px;
+  box-shadow: 0 2px 8px rgba(74, 139, 111, 0.3);
 }
 
 .rg-ai-submit-btn:hover:not(:disabled) {
-  background: linear-gradient(135deg, #D9B574 0%, #A07838 100%);
-  color: #fff;
-  border-color: var(--ai-amber-dark);
+  box-shadow: 0 4px 16px rgba(74, 139, 111, 0.45);
+  transform: translateY(-1px);
+}
+
+.rg-ai-submit-btn:active:not(:disabled) {
+  transform: translateY(0);
 }
 
 .rg-ai-submit-btn:disabled {
@@ -944,19 +1212,17 @@ const CSS = `
 
 .rg-ai-loading__compass {
   display: inline-block;
-  font-size: 32px;
-  color: var(--ai-amber);
-  animation: rg-ai-spin 1.6s linear infinite;
-}
-
-@keyframes rg-ai-spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
+  width: 36px;
+  height: 36px;
+  border: 3px solid var(--rg-ink-border, #C8B898);
+  border-top-color: var(--rg-primary, #4A8B6F);
+  border-radius: 50%;
+  animation: rg-ai-spin 1.2s linear infinite;
 }
 
 .rg-ai-loading__text {
   font-size: 13px;
-  color: var(--ai-ink-light);
+  color: var(--rg-ink-light, #8B7D6B);
   letter-spacing: 2px;
 }
 
@@ -982,7 +1248,14 @@ const CSS = `
 }
 
 /* ================================================================
-   反向推荐 — 结果区
+   淡入上浮动画
+   ================================================================ */
+.rg-ai-fade-in-up {
+  animation: rg-ai-fadeInUp 0.5s ease forwards;
+}
+
+/* ================================================================
+   反向推荐 -- 结果区
    ================================================================ */
 .rg-ai-results {
   margin-top: 20px;
@@ -990,13 +1263,14 @@ const CSS = `
 
 .rg-ai-results__summary {
   font-size: 13px;
-  color: var(--ai-ink-light);
-  line-height: 1.7;
+  color: var(--rg-ink-light, #8B7D6B);
+  line-height: var(--rg-leading-body, 1.85);
   margin: 0 0 16px;
   padding: 12px 14px;
-  background: var(--ai-amber-bg);
+  background: rgba(74, 139, 111, 0.08);
   border-radius: 8px;
-  border-left: 3px solid var(--ai-amber);
+  border-left: 3px solid var(--rg-primary, #4A8B6F);
+  letter-spacing: var(--rg-tracking-body, 0.06em);
 }
 
 .rg-ai-results__list {
@@ -1011,8 +1285,8 @@ const CSS = `
   gap: 12px;
   padding: 14px;
   border-radius: 10px;
-  background: var(--ai-paper);
-  border: 1px solid var(--ai-ink-faint);
+  background: var(--rg-paper, #F5F0E6);
+  border: 1px solid var(--rg-ink-border, #C8B898);
   transition: box-shadow 0.3s ease, transform 0.2s ease;
 }
 
@@ -1035,7 +1309,7 @@ const CSS = `
 
 .rg-ai-city-card__index {
   font-size: 12px;
-  color: var(--ai-amber);
+  color: var(--rg-primary, #4A8B6F);
   font-weight: 700;
   letter-spacing: 1px;
 }
@@ -1043,24 +1317,25 @@ const CSS = `
 .rg-ai-city-card__name {
   font-size: 17px;
   font-weight: 700;
-  color: var(--ai-ink);
+  color: var(--rg-ink, #5c3a21);
   letter-spacing: 2px;
 }
 
 .rg-ai-city-card__province {
   font-size: 12px;
-  color: var(--ai-ink-light);
+  color: var(--rg-ink-light, #8B7D6B);
 }
 
 .rg-ai-city-card__reason {
   font-size: 13px;
-  color: var(--ai-ink-light);
-  line-height: 1.65;
+  color: var(--rg-ink-light, #8B7D6B);
+  line-height: var(--rg-leading-body, 1.85);
   margin: 0 0 8px;
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
+  letter-spacing: var(--rg-tracking-body, 0.06em);
 }
 
 .rg-ai-city-card__meta {
@@ -1071,7 +1346,7 @@ const CSS = `
 
 .rg-ai-city-card__label {
   font-size: 12px;
-  color: var(--ai-ink-faint);
+  color: var(--rg-ink-border, #C8B898);
   line-height: 1.5;
   display: -webkit-box;
   -webkit-line-clamp: 1;
@@ -1085,27 +1360,26 @@ const CSS = `
   flex-shrink: 0;
   padding: 6px 14px;
   border-radius: 8px;
-  border: 1.5px solid var(--ai-amber-border);
+  border: 1.5px solid var(--rg-primary, #4A8B6F);
   background: transparent;
   cursor: pointer;
-  font-family: var(--ai-font);
+  font-family: "KaiTi", "STKaiti", "Noto Serif SC", serif;
   font-size: 13px;
-  color: var(--ai-amber-dark);
+  color: var(--rg-primary, #4A8B6F);
   letter-spacing: 2px;
   transition: all 0.25s ease;
   white-space: nowrap;
 }
 
 .rg-ai-city-card__adopt:hover:not(:disabled) {
-  background: linear-gradient(135deg, #D9B574 0%, #A07838 100%);
-  border-color: var(--ai-amber-dark);
+  background: var(--rg-primary, #4A8B6F);
   color: #fff;
 }
 
 .rg-ai-city-card__adopt--done {
-  background: var(--ai-amber-bg);
-  border-color: var(--ai-amber-border);
-  color: var(--ai-ink-light);
+  background: rgba(74, 139, 111, 0.1);
+  border-color: var(--rg-ink-border, #C8B898);
+  color: var(--rg-ink-light, #8B7D6B);
   cursor: default;
 }
 
@@ -1114,20 +1388,43 @@ const CSS = `
 }
 
 /* ================================================================
-   正向生成 — 下拉选择
+   空结果状态
+   ================================================================ */
+.rg-ai-empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 32px 16px;
+  gap: 12px;
+}
+
+.rg-ai-empty-state__icon {
+  font-size: 40px;
+  line-height: 1;
+}
+
+.rg-ai-empty-state__text {
+  font-size: var(--rg-text-body, 15px);
+  color: var(--rg-ink-light, #8B7D6B);
+  margin: 0;
+  letter-spacing: var(--rg-tracking-body, 0.06em);
+}
+
+/* ================================================================
+   正向生成 -- 下拉选择
    ================================================================ */
 .rg-ai-select {
   width: 100%;
   padding: 10px 14px;
   border-radius: 8px;
-  border: 1.5px solid var(--ai-ink-faint);
+  border: 1.5px solid var(--rg-ink-border, #C8B898);
   background: #fff;
-  font-family: var(--ai-font);
+  font-family: "KaiTi", "STKaiti", "Noto Serif SC", serif;
   font-size: 14px;
-  color: var(--ai-ink);
+  color: var(--rg-ink, #5c3a21);
   appearance: none;
   -webkit-appearance: none;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%235c3a21' stroke-width='1.5' fill='none'/%3E%3C/svg%3E");
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%234A8B6F' stroke-width='1.5' fill='none'/%3E%3C/svg%3E");
   background-repeat: no-repeat;
   background-position: right 14px center;
   cursor: pointer;
@@ -1136,11 +1433,11 @@ const CSS = `
 
 .rg-ai-select:focus {
   outline: none;
-  border-color: var(--ai-amber);
+  border-color: var(--rg-primary, #4A8B6F);
 }
 
 /* ================================================================
-   正向生成 — 天数输入
+   正向生成 -- 天数输入
    ================================================================ */
 .rg-ai-days-input {
   display: flex;
@@ -1153,12 +1450,12 @@ const CSS = `
   width: 36px;
   height: 36px;
   border-radius: 50%;
-  border: 1.5px solid var(--ai-amber-border);
+  border: 1.5px solid var(--rg-ink-border, #C8B898);
   background: transparent;
   cursor: pointer;
   font-size: 18px;
-  font-family: var(--ai-font);
-  color: var(--ai-ink);
+  font-family: "KaiTi", "STKaiti", "Noto Serif SC", serif;
+  color: var(--rg-ink, #5c3a21);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1166,8 +1463,8 @@ const CSS = `
 }
 
 .rg-ai-days-input__btn:hover:not(:disabled) {
-  background: var(--ai-amber-bg);
-  border-color: var(--ai-amber);
+  background: rgba(74, 139, 111, 0.06);
+  border-color: var(--rg-primary, #4A8B6F);
 }
 
 .rg-ai-days-input__btn:disabled {
@@ -1177,15 +1474,79 @@ const CSS = `
 
 .rg-ai-days-input__value {
   font-size: 20px;
-  font-weight: 700;
-  color: var(--ai-ink);
+  font-weight: var(--rg-weight-title, 600);
+  color: var(--rg-ink, #5c3a21);
   letter-spacing: 2px;
   min-width: 50px;
   text-align: center;
 }
 
 /* ================================================================
-   正向生成 — 行程结果
+   正向生成 -- 行程紧凑度滑块
+   ================================================================ */
+.rg-ai-compactness {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.rg-ai-compactness__labels {
+  display: flex;
+  justify-content: space-between;
+  padding: 0 4px;
+}
+
+.rg-ai-compactness__label {
+  font-size: 13px;
+  color: var(--rg-ink-light, #8B7D6B);
+  transition: color 0.2s ease, font-weight 0.2s ease;
+}
+
+.rg-ai-compactness__label--active {
+  color: var(--rg-primary, #4A8B6F);
+  font-weight: var(--rg-weight-title, 600);
+}
+
+.rg-ai-compactness__slider {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 6px;
+  border-radius: 3px;
+  background: var(--rg-ink-border, #C8B898);
+  outline: none;
+  cursor: pointer;
+}
+
+.rg-ai-compactness__slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--rg-primary, #4A8B6F);
+  border: 2px solid #fff;
+  box-shadow: 0 2px 6px rgba(74, 139, 111, 0.35);
+  cursor: pointer;
+  transition: box-shadow 0.2s ease;
+}
+
+.rg-ai-compactness__slider::-webkit-slider-thumb:hover {
+  box-shadow: 0 3px 10px rgba(74, 139, 111, 0.5);
+}
+
+.rg-ai-compactness__slider::-moz-range-thumb {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--rg-primary, #4A8B6F);
+  border: 2px solid #fff;
+  box-shadow: 0 2px 6px rgba(74, 139, 111, 0.35);
+  cursor: pointer;
+}
+
+/* ================================================================
+   正向生成 -- 行程结果
    ================================================================ */
 .rg-ai-plan {
   margin-top: 20px;
@@ -1195,29 +1556,34 @@ const CSS = `
 .rg-ai-plan__summary {
   padding: 16px;
   border-radius: 10px;
-  background: linear-gradient(135deg, rgba(196, 148, 82, 0.08) 0%, rgba(196, 148, 82, 0.03) 100%);
-  border: 1px solid var(--ai-amber-border);
+  background: linear-gradient(
+    135deg,
+    rgba(74, 139, 111, 0.08) 0%,
+    rgba(74, 139, 111, 0.03) 100%
+  );
+  border: 1px solid rgba(74, 139, 111, 0.25);
   margin-bottom: 16px;
 }
 
 .rg-ai-plan__summary-title {
-  font-size: 16px;
-  font-weight: 700;
-  color: var(--ai-ink);
+  font-size: var(--rg-text-h3, 18px);
+  font-weight: var(--rg-weight-title, 600);
+  color: var(--rg-ink, #5c3a21);
   letter-spacing: 3px;
   margin: 0 0 8px;
 }
 
 .rg-ai-plan__summary-text {
   font-size: 13px;
-  color: var(--ai-ink-light);
-  line-height: 1.7;
+  color: var(--rg-ink-light, #8B7D6B);
+  line-height: var(--rg-leading-body, 1.85);
   margin: 0 0 10px;
+  letter-spacing: var(--rg-tracking-body, 0.06em);
 }
 
 .rg-ai-plan__budget {
   font-size: 13px;
-  color: var(--ai-amber-dark);
+  color: var(--rg-accent, #D4884A);
   margin: 0 0 10px;
   letter-spacing: 1px;
 }
@@ -1231,10 +1597,10 @@ const CSS = `
 .rg-ai-plan__highlight-tag {
   padding: 3px 10px;
   border-radius: 12px;
-  background: var(--ai-amber-bg);
-  border: 1px solid var(--ai-amber-border);
+  background: rgba(74, 139, 111, 0.08);
+  border: 1px solid rgba(74, 139, 111, 0.25);
   font-size: 12px;
-  color: var(--ai-amber-dark);
+  color: var(--rg-primary, #4A8B6F);
   letter-spacing: 1px;
 }
 
@@ -1247,7 +1613,7 @@ const CSS = `
 
 .rg-ai-day-card {
   border-radius: 10px;
-  border: 1px solid var(--ai-ink-faint);
+  border: 1px solid var(--rg-ink-border, #C8B898);
   background: #fff;
   overflow: hidden;
   transition: box-shadow 0.3s ease;
@@ -1262,23 +1628,23 @@ const CSS = `
   align-items: center;
   gap: 12px;
   padding: 12px 14px;
-  background: var(--ai-amber-bg);
-  border-bottom: 1px solid var(--ai-ink-faint);
+  background: rgba(74, 139, 111, 0.06);
+  border-bottom: 1px solid var(--rg-ink-border, #C8B898);
 }
 
 .rg-ai-day-card__num {
   font-size: 12px;
   font-weight: 700;
-  color: var(--ai-amber-dark);
+  color: var(--rg-primary, #4A8B6F);
   letter-spacing: 2px;
   flex-shrink: 0;
 }
 
 .rg-ai-day-card__theme {
   font-size: 14px;
-  color: var(--ai-ink);
+  color: var(--rg-ink, #5c3a21);
   letter-spacing: 2px;
-  font-weight: 700;
+  font-weight: var(--rg-weight-title, 600);
 }
 
 .rg-ai-day-card__body {
@@ -1289,7 +1655,7 @@ const CSS = `
   display: block;
   font-size: 12px;
   font-weight: 700;
-  color: var(--ai-ink-light);
+  color: var(--rg-ink-light, #8B7D6B);
   letter-spacing: 2px;
   margin-bottom: 6px;
 }
@@ -1303,12 +1669,13 @@ const CSS = `
   margin: 0;
   padding-left: 18px;
   font-size: 13px;
-  color: var(--ai-ink-light);
-  line-height: 1.75;
+  color: var(--rg-ink-light, #8B7D6B);
+  line-height: var(--rg-leading-body, 1.85);
+  letter-spacing: var(--rg-tracking-body, 0.06em);
 }
 
 .rg-ai-day-card__food {
-  border-top: 1px dashed var(--ai-ink-faint);
+  border-top: 1px dashed var(--rg-ink-border, #C8B898);
   padding-top: 12px;
 }
 
@@ -1316,21 +1683,22 @@ const CSS = `
 .rg-ai-save-btn {
   width: 100%;
   padding: 12px 0;
-  border: 1.5px solid var(--ai-amber);
+  border: none;
   border-radius: 10px;
-  background: linear-gradient(135deg, #D9B574 0%, #A07838 100%);
+  background: linear-gradient(135deg, var(--rg-primary, #4A8B6F) 0%, #3a7a5e 100%);
   cursor: pointer;
-  font-family: var(--ai-font);
-  font-size: 16px;
+  font-family: "KaiTi", "STKaiti", "Noto Serif SC", serif;
+  font-size: var(--rg-text-h3, 18px);
   color: #fff;
   letter-spacing: 4px;
+  font-weight: var(--rg-weight-title, 600);
   margin-top: 18px;
   transition: all 0.3s ease;
-  box-shadow: 0 2px 8px rgba(160, 120, 56, 0.25);
+  box-shadow: 0 2px 8px rgba(74, 139, 111, 0.3);
 }
 
 .rg-ai-save-btn:hover {
-  box-shadow: 0 4px 16px rgba(160, 120, 56, 0.4);
+  box-shadow: 0 4px 16px rgba(74, 139, 111, 0.45);
   transform: translateY(-1px);
 }
 

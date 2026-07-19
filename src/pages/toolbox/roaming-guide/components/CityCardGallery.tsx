@@ -184,11 +184,11 @@ export default function CityCardGallery({
         }
         .rg-card-section-title {
           font-family: "Ma Shan Zheng", "ZCOOL XiaoWei", "STKaiti", cursive;
-          font-size: 30px;
-          font-weight: 400;
-          color: #2C3E50;
+          font-size: var(--rg-text-h2, 30px);
+          font-weight: var(--rg-weight-title, 600);
+          color: var(--rg-ink, #3D2B1F);
           margin: 0;
-          letter-spacing: 0.1em;
+          letter-spacing: var(--rg-tracking-heading, 0.15em);
         }
 
         /* 横向滚动容器 */
@@ -205,7 +205,7 @@ export default function CityCardGallery({
         }
         .rg-cards-track {
           display: flex;
-          gap: 24px;
+          gap: var(--rg-space-md, 16px);
           padding: 12px 4px 28px;
           scroll-snap-type: x mandatory;
         }
@@ -308,8 +308,8 @@ export default function CityCardGallery({
           right: 10px;
           padding: 3px 10px;
           font-size: 11px;
-          color: #fff;
-          background: #2E8B57;
+          color: var(--rg-primary, #4A8B6F);
+          background: var(--rg-primary-faint, rgba(74,139,111,0.1));
           font-family: "Ma Shan Zheng", "ZCOOL XiaoWei", "STKaiti", cursive;
           letter-spacing: 0.06em;
           box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
@@ -321,18 +321,19 @@ export default function CityCardGallery({
         }
         .rg-card-name {
           font-family: "Ma Shan Zheng", "ZCOOL XiaoWei", "STKaiti", cursive;
-          font-size: 22px;
-          font-weight: 400;
-          color: #2C3E50;
+          font-size: var(--rg-text-h3, 18px);
+          font-weight: var(--rg-weight-title, 600);
+          color: var(--rg-ink, #3D2B1F);
           margin: 0 0 4px;
           letter-spacing: 0.06em;
         }
         .rg-card-slogan {
           font-family: "Noto Serif SC", Georgia, "STSong", serif;
-          font-size: 12px;
-          color: #8B7D6B;
+          font-size: var(--rg-text-caption, 13px);
+          color: var(--rg-ink-light, #8B7D6B);
           margin: 0 0 10px;
           font-style: italic;
+          line-height: var(--rg-leading-body, 1.85);
         }
         .rg-card-meta {
           display: flex;
@@ -378,20 +379,20 @@ export default function CityCardGallery({
           width: 6px;
           height: 6px;
           border-radius: 50%;
-          background: #C8924A;
+          background: var(--rg-primary, #4A8B6F);
           display: inline-block;
         }
         .rg-card-tag.ai {
-          color: #2E8B57;
+          color: var(--rg-accent-dark, #B06A30);
           font-family: "Ma Shan Zheng", "ZCOOL XiaoWei", "STKaiti", cursive;
           padding: 2px 8px;
-          border: 1px solid rgba(46, 139, 87, 0.4);
+          border: 1px solid rgba(212, 136, 74, 0.4);
           border-radius: 4px;
-          background: rgba(46, 139, 87, 0.06);
+          background: var(--rg-accent-faint, rgba(212,136,74,0.1));
         }
         .rg-card-explore {
-          font-size: 10px;
-          color: #B0A090;
+          font-size: var(--rg-text-small, 11px);
+          color: var(--rg-ink-light, #8B7D6B);
           font-family: "Noto Serif SC", Georgia, serif;
           margin-left: auto;
         }
@@ -420,8 +421,8 @@ export default function CityCardGallery({
           min-height: 260px;
         }
         .rg-add-card:hover {
-          border-color: #2E8B57;
-          background: rgba(46, 139, 87, 0.04);
+          border-color: var(--rg-primary, #4A8B6F);
+          background: rgba(74, 139, 111, 0.04);
           transform: rotate(0deg) translateY(-4px) scale(1.02);
         }
         .rg-add-card-inner {
@@ -432,7 +433,7 @@ export default function CityCardGallery({
         }
         .rg-add-card-icon {
           font-size: 32px;
-          color: #C8924A;
+          color: var(--rg-primary, #4A8B6F);
           line-height: 1;
           font-weight: 300;
         }

@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Link } from "react-router-dom";
+import RechargeRecommend from "./RechargeRecommend";
+import { saveCompletion } from "./rechargeTags";
 
 /**
  * 回血清单 · 微型能量站
@@ -434,6 +436,8 @@ const RechargePage: React.FC = () => {
           return nc;
         });
         setCountBump((n) => n + 1);
+        // 保存完成记录（用于推荐偏好学习）
+        saveCompletion(id);
       }
       try {
         localStorage.setItem(DONE_KEY, JSON.stringify([...next]));
@@ -491,6 +495,12 @@ const RechargePage: React.FC = () => {
           每天拔掉一根消耗能量的线，接入一件滋养自己的小事。
         </motion.p>
       </section>
+
+      {/* 智能推荐面板 */}
+      <RechargeRecommend
+        doneIds={doneIds}
+        onToggle={handleToggle}
+      />
 
       {/* 能量节点流 */}
       <section className="energy-flow">

@@ -21,6 +21,24 @@ export interface WeatherTag {
   description: string;
 }
 
+export interface DailyBudget {
+  accommodation: number;
+  food: number;
+  tickets: number;
+  transport: number;
+}
+
+export interface BudgetBreakdown {
+  total_min: number;
+  total_max: number;
+  details: {
+    accommodation: string;
+    food: string;
+    transport: string;
+    tickets: string;
+  };
+}
+
 export interface AIPlan {
   generated_at: string;
   prompt: string;
@@ -28,6 +46,7 @@ export interface AIPlan {
   days: number;
   highlights: string[];
   budget_hint: string;
+  budget_breakdown?: BudgetBreakdown;
 }
 
 export type LightSource = "manual" | "ai_recommend";
@@ -95,6 +114,8 @@ export interface AIForwardGenerateResponse {
     theme: string;
     activities: string[];
     food_recommendations: string[];
+    transport_tip?: string;
+    daily_budget?: DailyBudget;
   }[];
 }
 

@@ -35,7 +35,12 @@ export function useAIAssistant(
     try {
       // Mock: 模拟 1.5s AI 延迟
       await new Promise(resolve => setTimeout(resolve, 1500));
-      const result = { ...MOCK_REVERSE_RESPONSE, summary: `根据你选择的"${req.preferences.season || "不限"}"季节、"${req.preferences.budget || "不限"}"预算，为你推荐以下城市。` };
+      const hasSeason = !!req.preferences.season;
+      const hasBudget = req.preferences.budget && req.preferences.budget !== "不限";
+      const summary = (hasSeason || hasBudget)
+        ? `为你找到了${req.preferences.season ? '适合' + req.preferences.season + '出行的' : ''}${hasBudget ? req.preferences.budget + '友好的' : ''}宝藏城市，每一座都值得特意出发。`
+        : "为你精选了几座值得一去的城市，不管什么季节出发都能遇到好风景。";
+      const result = { ...MOCK_REVERSE_RESPONSE, summary };
       setLastRecommendResult(result);
       return result;
     } catch (e: unknown) {

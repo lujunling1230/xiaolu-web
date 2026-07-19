@@ -112,6 +112,121 @@ const MOOD_COLORS = [
 
 type JournalView = "cover" | "directory" | "diary";
 
+/* ===== AI 共情小评语模板 ===== */
+
+const EMPATHY_TEMPLATES: {
+  mood: string[];
+  weather: string[];
+  keywords: string[];
+  responses: string[];
+}[] = [
+  {
+    mood: ["joy"],
+    weather: ["sun"],
+    keywords: ["开心", "快乐", "幸福", "笑", "美好", "惊喜", "温暖", "甜"],
+    responses: [
+      "你写下的这些快乐，像阳光洒在纸页上，暖暖的。",
+      "看到你的文字，嘴角不自觉上扬了呢。这份开心，值得被好好珍藏。",
+      "今天的你一定在闪闪发光吧。把这份快乐存下来，以后翻看时会心一笑。",
+    ],
+  },
+  {
+    mood: ["calm"],
+    weather: [],
+    keywords: ["平静", "安静", "宁静", "冥想", "呼吸", "放松", "发呆", "独处"],
+    responses: [
+      "你写下的'平静'，本身就是一种力量。安静的时光最珍贵。",
+      "能在忙碌中为自己创造一段宁静，这很了不起。",
+      "你的文字让我也慢了下来。这份从容，是你给自己的礼物。",
+    ],
+  },
+  {
+    mood: [],
+    weather: ["rain"],
+    keywords: ["雨", "哭", "累", "疲惫", "难过", "低落", "烦", "压力", "撑"],
+    responses: [
+      "下雨天适合安放心情。你已经很努力了，允许自己慢慢来。",
+      "写下这些，本身就是一种勇敢。我听到了你，也看到了你。",
+      "有些日子就是这样。但请记得，雨后的空气最清新，而你也会好起来。",
+    ],
+  },
+  {
+    mood: ["tender", "soulful"],
+    weather: [],
+    keywords: ["爱", "感谢", "感恩", "谢谢", "珍惜", "陪伴", "想念", "思念"],
+    responses: [
+      "你心里装着很多人，这说明你本身就是一个温暖的人。",
+      "能把感恩写下来，这份心意已经比任何礼物都珍贵了。",
+      "能被你记在心里的人，一定很幸福。而你，也值得被这样温柔以待。",
+    ],
+  },
+  {
+    mood: ["cool", "mellow"],
+    weather: ["cloud"],
+    keywords: [],
+    responses: [
+      "平淡的日子里，也有微光在闪烁。你注意到了吗？",
+      "普通的一天，因为你的记录而变得特别。这本身就是一种力量。",
+      "每天坚持记录的你，正在用文字为自己搭建一座小小的庇护所。",
+    ],
+  },
+  {
+    mood: [],
+    weather: [],
+    keywords: [],
+    responses: [
+      "你今天写下了这些文字，这份认真很美。它像一颗种子，正在你心里发芽。",
+      "每一笔记录都是你与自己对话的方式。谢谢你愿意这样善待自己。",
+      "文字是有温度的，你写下的这些，未来某天翻看时，一定会感到温暖。",
+    ],
+  },
+];
+
+/** 根据日记内容生成 AI 共情小评语 */
+function generateEmpathy(entryContent: string, moodKey: string, weatherKey: string): string {
+  const text = entryContent.toLowerCase();
+
+  // 优先匹配有 mood/weather/keyword 条件的模板
+  for (const tpl of EMPATHY_TEMPLATES) {
+    const moodMatch = tpl.mood.length === 0 || tpl.mood.includes(moodKey);
+    const weatherMatch = tpl.weather.length === 0 || tpl.weather.includes(weatherKey);
+    const keywordMatch = tpl.keywords.length === 0 || tpl.keywords.some((kw) => text.includes(kw));
+
+    if (moodMatch && weatherMatch && keywordMatch) {
+      return tpl.responses[Math.floor(Math.random() * tpl.responses.length)];
+    }
+  }
+
+  // fallback：返回最后一个通用模板的随机回应
+  const fallback = EMPATHY_TEMPLATES[EMPATHY_TEMPLATES.length - 1];
+  return fallback.responses[Math.floor(Math.random() * fallback.responses.length)];
+}
+
+/* ===== AI 引导式提问 ===== */
+
+const GUIDING_QUESTIONS = [
+  "今天有什么小事让你嘴角上扬？",
+  "如果给今天的自己一个拥抱，你会说什么？",
+  "此刻，你最想感谢的一个人或一件事是什么？",
+  "今天有什么让你感到安心的瞬间？",
+  "闭上眼回想今天，最温柔的画面是什么？",
+  "今天有没有什么声音让你觉得舒服？",
+  "如果用一种颜色形容今天，你会选什么？",
+  "今天有没有对谁说了'谢谢'？",
+  "你今天吃了什么好吃的吗？味觉也是记忆的一部分。",
+  "今天有没有什么'刚刚好'的瞬间？",
+  "此刻你的身体哪个部位最放松？",
+  "今天有没有什么意想不到的小惊喜？",
+  "如果今天是一首歌，你觉得是什么旋律？",
+  "你今天对自己说了什么温柔的话吗？",
+  "现在，深呼吸一次——感觉怎么样？",
+  "今天有没有看到什么美丽的光影？",
+];
+
+function getRandomQuestion(): string {
+  return GUIDING_QUESTIONS[Math.floor(Math.random() * GUIDING_QUESTIONS.length)];
+}
+
 /* ===== 天气图标（细线 SVG，替代 emoji） ===== */
 
 const WeatherGlyph: React.FC<{ name: string; size?: number }> = ({ name, size = 16 }) => {
@@ -352,6 +467,154 @@ const DirectoryPage: React.FC<DirectoryPageProps> = ({
    日记页
    ============================================================ */
 
+/* ===== 月度回顾与洞察 ===== */
+
+/** 高频关键词提取（简易分词：按标点和空格拆分，过滤停用词） */
+const STOP_WORDS = new Set([
+  "的", "了", "是", "在", "我", "有", "和", "就", "不", "人", "都", "一",
+  "个", "上", "也", "很", "到", "说", "要", "去", "你", "会", "着", "没有",
+  "看", "好", "自己", "这", "他", "她", "它", "们", "那", "被", "从", "把",
+  "对", "让", "用", "能", "还", "但", "又", "吗", "吧", "啊", "呢", "哦",
+  "嗯", "呀", "什么", "怎么", "这个", "那个", "一个", "可以", "因为", "所以",
+  "如果", "虽然", "但是", "不过", "然后", "或者", "以及", "就是", "还是",
+  "已经", "现在", "今天", "明天", "昨天", "时候", "觉得", "感觉", "应该",
+  "知道", "可能", "一些", "一点", "一下", "起来", "出来", "下来", "过来",
+]);
+
+function extractKeywords(entries: GratitudeEntry[]): { text: string; count: number }[] {
+  const freq: Record<string, number> = {};
+  for (const e of entries) {
+    // 按标点和空格拆分
+    const words = e.content.split(/[,，。.!！?？、；;：:""''「」\s\n\r]+/);
+    for (const w of words) {
+      const cleaned = w.trim().replace(/[^\u4e00-\u9fa5a-zA-Z0-9]/g, "");
+      if (cleaned.length >= 2 && !STOP_WORDS.has(cleaned)) {
+        freq[cleaned] = (freq[cleaned] || 0) + 1;
+      }
+    }
+  }
+  return Object.entries(freq)
+    .map(([text, count]) => ({ text, count }))
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 12);
+}
+
+/** 心情趋势统计 */
+function analyzeMoodTrend(entries: GratitudeEntry[]): { label: string; dot: string; count: number; pct: number }[] {
+  const freq: Record<string, number> = {};
+  for (const e of entries) {
+    const key = e.color || "none";
+    freq[key] = (freq[key] || 0) + 1;
+  }
+  const total = entries.length;
+  return Object.entries(freq)
+    .map(([key, count]) => {
+      const info = MOOD_COLORS.find((c) => c.key === key);
+      return {
+        label: info?.label || "未标记",
+        dot: info?.dot || "#ccc",
+        count,
+        pct: Math.round((count / total) * 100),
+      };
+    })
+    .sort((a, b) => b.count - a.count);
+}
+
+/** AI 洞察语生成 */
+function generateInsight(keywords: { text: string; count: number }[], moodTrend: { label: string; pct: number }[]): string {
+  const topMood = moodTrend[0];
+  const topWords = keywords.slice(0, 3).map((k) => k.text);
+
+  if (topMood && topWords.length > 0) {
+    const templates = [
+      `本月你最常提到"${topWords[0]}"和"${topWords[1] || topWords[0]}"，心境以${topMood.label}为主。${topMood.pct > 60 ? "看来你在这个月找到了属于自己的节奏。" : "不同的情绪交织在一起，这才是真实的你。"}`,
+      `翻看这个月的记录，"${topWords[0]}"反复出现。${topMood.label}是你的主色调，占到了${topMood.pct}%。${topMood.label === "平静" ? "你正在主动寻找内心的安宁，这很勇敢。" : "每一种情绪都值得被看见。"}`,
+      `这个月你写下了${keywords.length}个关键词。最常出现的是"${topWords.join('"、"')}"，而${topMood.label}是出现最多的心情。这些文字拼凑起来，就是${new Date().getMonth() + 1}月的你。`,
+    ];
+    return templates[Math.floor(Math.random() * templates.length)];
+  }
+
+  if (topMood) {
+    return `这个月你的心情以${topMood.label}为主，占到了${topMood.pct}%。继续用文字陪伴自己吧。`;
+  }
+
+  return "每一个被记录的日子，都是你用心生活的证明。";
+}
+
+const MonthlyInsight: React.FC<{ entries: GratitudeEntry[] }> = ({ entries }) => {
+  const keywords = useMemo(() => extractKeywords(entries), [entries]);
+  const moodTrend = useMemo(() => analyzeMoodTrend(entries), [entries]);
+  const insightText = useMemo(() => generateInsight(keywords, moodTrend), [keywords, moodTrend]);
+
+  if (keywords.length === 0 && moodTrend.length === 0) return null;
+
+  const maxCount = Math.max(...keywords.map((k) => k.count), 1);
+
+  return (
+    <motion.div
+      className="gj-insight"
+      initial={{ opacity: 0, y: 12 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5, delay: 0.2 }}
+    >
+      <div className="gj-insight-header">
+        <h4 className="gj-insight-title">本月回望</h4>
+        <span className="gj-insight-leaf"><LeafMini size={13} /></span>
+      </div>
+
+      {/* AI 洞察语 */}
+      <p className="gj-insight-ai-text">{insightText}</p>
+
+      {/* 心情趋势条 */}
+      {moodTrend.length > 0 && (
+        <div className="gj-insight-mood">
+          <div className="gj-insight-mood-label">心情分布</div>
+          <div className="gj-insight-mood-bars">
+            {moodTrend.map((m) => (
+              <div key={m.label} className="gj-insight-mood-row">
+                <span className="gj-insight-mood-name" style={{ color: m.dot }}>{m.label}</span>
+                <div className="gj-insight-mood-track">
+                  <motion.div
+                    className="gj-insight-mood-fill"
+                    style={{ background: m.dot }}
+                    initial={{ width: 0 }}
+                    animate={{ width: `${m.pct}%` }}
+                    transition={{ duration: 0.6, delay: 0.3 }}
+                  />
+                </div>
+                <span className="gj-insight-mood-pct">{m.pct}%</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* 关键词云 */}
+      {keywords.length > 0 && (
+        <div className="gj-insight-keywords">
+          <div className="gj-insight-kw-label">高频词汇</div>
+          <div className="gj-insight-kw-cloud">
+            {keywords.map((kw) => {
+              const ratio = kw.count / maxCount;
+              const fontSize = 11 + ratio * 5;
+              const opacity = 0.5 + ratio * 0.5;
+              return (
+                <span
+                  key={kw.text}
+                  className="gj-insight-kw-tag"
+                  style={{ fontSize: `${fontSize}px`, opacity }}
+                >
+                  {kw.text}
+                </span>
+              );
+            })}
+          </div>
+        </div>
+      )}
+    </motion.div>
+  );
+};
+
 interface DiaryPageProps {
   selectedMonth: number;
   today: string;
@@ -359,6 +622,7 @@ interface DiaryPageProps {
   weather: string;
   color: string;
   savedFlash: boolean;
+  empathyText: string;
   entries: GratitudeEntry[];
   onContent: (v: string) => void;
   onWeather: (v: string) => void;
@@ -376,6 +640,7 @@ const DiaryPage: React.FC<DiaryPageProps> = ({
   weather,
   color,
   savedFlash,
+  empathyText,
   entries,
   onContent,
   onWeather,
@@ -385,6 +650,9 @@ const DiaryPage: React.FC<DiaryPageProps> = ({
   onBack,
   onClose,
 }) => {
+  // 引导式提问
+  const [guideQuestion] = useState(() => getRandomQuestion());
+
   const monthEntries = useMemo(
     () =>
       entries
@@ -463,6 +731,20 @@ const DiaryPage: React.FC<DiaryPageProps> = ({
 
         {/* 右栏 — 书写区 */}
         <div className="gj-writing">
+          {/* AI 引导式提问 */}
+          {!content.trim() && (
+            <motion.div
+              className="gj-guide-question"
+              initial={{ opacity: 0, y: -6 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.3 }}
+            >
+              <span className="gj-guide-question-mark">
+                <LeafMini size={12} />
+              </span>
+              <span className="gj-guide-question-text">{guideQuestion}</span>
+            </motion.div>
+          )}
           <textarea
             className="gj-textarea"
             value={content}
@@ -473,19 +755,22 @@ const DiaryPage: React.FC<DiaryPageProps> = ({
         </div>
       </div>
 
-      {/* 保存区 + 反馈微文案 */}
+      {/* 保存区 + AI 共情回应 */}
       <div className="gj-save-area">
         <AnimatePresence>
-          {savedFlash && (
-            <motion.span
-              className="gj-save-feedback"
-              initial={{ opacity: 0, y: 6 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: 6 }}
-              transition={{ duration: 0.4 }}
+          {savedFlash && empathyText && (
+            <motion.div
+              className="gj-empathy-bubble"
+              initial={{ opacity: 0, y: 8, scale: 0.96 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 4, scale: 0.98 }}
+              transition={{ duration: 0.45 }}
             >
-              已记录 ✨ 今天的温柔已存入心底。
-            </motion.span>
+              <span className="gj-empathy-leaf">
+                <LeafMini size={11} />
+              </span>
+              <p className="gj-empathy-text">{empathyText}</p>
+            </motion.div>
           )}
         </AnimatePresence>
         <button
@@ -494,7 +779,7 @@ const DiaryPage: React.FC<DiaryPageProps> = ({
           onClick={onSave}
           disabled={!content.trim()}
         >
-          {savedFlash ? "已保存 ✓" : "保存"}
+          {savedFlash ? "已保存" : "保存"}
         </button>
       </div>
 
@@ -563,6 +848,13 @@ const DiaryPage: React.FC<DiaryPageProps> = ({
         </div>
       )}
 
+      {/* 本月回顾与洞察 */}
+      {monthEntries.length >= 3 && <MonthlyInsight entries={monthEntries} />}
+
+      <p className="gj-privacy-hint">
+        所有日记仅存于本地，AI 仅用于温和陪伴，不保存也不上传你的内容。
+      </p>
+
       <button className="gj-close-book" onClick={onClose} aria-label="合上书">
         <BookCloseIcon />
         <span>合上书</span>
@@ -585,6 +877,7 @@ const GratitudeJournal: React.FC = () => {
   const [weather, setWeather] = useState<string>("sun");
   const [color, setColor] = useState<string>("");
   const [savedFlash, setSavedFlash] = useState(false);
+  const [empathyText, setEmpathyText] = useState("");
 
   const today = useMemo(() => getToday(), []);
   const currentMonth = useMemo(() => new Date().getMonth() + 1, []);
@@ -695,8 +988,15 @@ const GratitudeJournal: React.FC = () => {
     setWeather("sun");
     setColor("");
 
+    // 生成 AI 共情小评语
+    const empathy = generateEmpathy(content.trim(), color, weather);
+    setEmpathyText(empathy);
+
     setSavedFlash(true);
-    window.setTimeout(() => setSavedFlash(false), 2000);
+    window.setTimeout(() => {
+      setSavedFlash(false);
+      setEmpathyText("");
+    }, 4000);
   }, [content, selectedMonth, weather, color, entries]);
 
   /** 删除记录 */
@@ -804,6 +1104,7 @@ const GratitudeJournal: React.FC = () => {
                   weather={weather}
                   color={color}
                   savedFlash={savedFlash}
+                  empathyText={empathyText}
                   entries={entries}
                   onContent={handleContent}
                   onWeather={handleWeather}
@@ -1307,14 +1608,33 @@ const GratitudeJournal: React.FC = () => {
           margin-top: 20px;
           min-height: 44px;
         }
-        .gj-save-feedback {
-          font-family: Georgia, "Noto Serif SC", serif;
-          font-size: 12px;
-          font-style: italic;
-          color: var(--accent);
-          letter-spacing: 0.02em;
-          white-space: nowrap;
+        /* AI 共情气泡（替代原 gj-save-feedback） */
+        .gj-empathy-bubble {
+          display: flex;
+          align-items: flex-start;
+          gap: 8px;
+          padding: 12px 16px;
+          margin-bottom: 12px;
+          background: rgba(122, 154, 130, 0.08);
+          border-left: 2.5px solid rgba(122, 154, 130, 0.35);
+          border-radius: 0 10px 10px 0;
+          max-width: 100%;
         }
+        .gj-empathy-leaf {
+          flex-shrink: 0;
+          margin-top: 2px;
+          color: var(--accent);
+          opacity: 0.7;
+        }
+        .gj-empathy-text {
+          font-family: "Noto Serif SC", Georgia, serif;
+          font-size: 13px;
+          line-height: 1.8;
+          color: var(--text);
+          margin: 0;
+          letter-spacing: 0.02em;
+        }
+
         .gj-save-btn {
           padding: 10px 30px;
           font-size: 14px;
@@ -1393,6 +1713,139 @@ const GratitudeJournal: React.FC = () => {
           font-size: 13px; line-height: 1.75;
           color: var(--text-soft); margin: 0;
           white-space: pre-wrap; word-break: break-word;
+        }
+
+        /* ===== AI 引导式提问 ===== */
+        .gj-guide-question {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          padding: 10px 14px;
+          margin-bottom: 10px;
+          background: rgba(122, 154, 130, 0.05);
+          border: 1px dashed rgba(122, 154, 130, 0.25);
+          border-radius: 8px;
+        }
+        .gj-guide-question-mark {
+          flex-shrink: 0;
+          color: var(--accent);
+          opacity: 0.6;
+        }
+        .gj-guide-question-text {
+          font-family: "Noto Serif SC", Georgia, serif;
+          font-size: 12.5px;
+          color: var(--text-soft);
+          line-height: 1.6;
+          letter-spacing: 0.02em;
+        }
+
+        /* ===== 隐私提示 ===== */
+        .gj-privacy-hint {
+          text-align: center;
+          font-size: 10px;
+          color: var(--text-soft);
+          opacity: 0.45;
+          margin: 20px 0 50px;
+          letter-spacing: 0.02em;
+        }
+
+        /* ===== 月度回顾与洞察 ===== */
+        .gj-insight {
+          margin-top: 24px;
+          padding: 20px;
+          background: rgba(122, 154, 130, 0.04);
+          border: 1px solid rgba(122, 154, 130, 0.12);
+          border-radius: 12px;
+        }
+        .gj-insight-header {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          margin-bottom: 14px;
+        }
+        .gj-insight-title {
+          font-family: "Noto Serif SC", Georgia, serif;
+          font-size: 14px;
+          font-weight: 600;
+          color: var(--text);
+          margin: 0;
+        }
+        .gj-insight-leaf {
+          color: var(--accent);
+          opacity: 0.6;
+        }
+        .gj-insight-ai-text {
+          font-family: "Noto Serif SC", Georgia, serif;
+          font-size: 12.5px;
+          line-height: 1.85;
+          color: var(--text-soft);
+          margin: 0 0 16px;
+          padding: 10px 14px;
+          background: rgba(122, 154, 130, 0.06);
+          border-left: 2px solid rgba(122, 154, 130, 0.3);
+          border-radius: 0 8px 8px 0;
+        }
+        .gj-insight-mood-label,
+        .gj-insight-kw-label {
+          font-size: 11px;
+          color: var(--text-soft);
+          opacity: 0.7;
+          margin: 0 0 8px;
+          letter-spacing: 0.06em;
+        }
+        .gj-insight-mood-bars {
+          display: flex;
+          flex-direction: column;
+          gap: 6px;
+          margin-bottom: 16px;
+        }
+        .gj-insight-mood-row {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+        }
+        .gj-insight-mood-name {
+          width: 36px;
+          font-size: 11px;
+          text-align: right;
+          flex-shrink: 0;
+        }
+        .gj-insight-mood-track {
+          flex: 1;
+          height: 6px;
+          background: rgba(0,0,0,0.04);
+          border-radius: 999px;
+          overflow: hidden;
+        }
+        [data-theme="night"] .gj-insight-mood-track {
+          background: rgba(255,255,255,0.06);
+        }
+        .gj-insight-mood-fill {
+          height: 100%;
+          border-radius: 999px;
+          opacity: 0.7;
+        }
+        .gj-insight-mood-pct {
+          width: 30px;
+          font-size: 10px;
+          color: var(--text-soft);
+          opacity: 0.6;
+        }
+        .gj-insight-kw-cloud {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 6px 10px;
+        }
+        .gj-insight-kw-tag {
+          font-family: "Noto Serif SC", Georgia, serif;
+          color: var(--accent);
+          line-height: 1.4;
+          padding: 2px 0;
+          cursor: default;
+          transition: opacity 0.2s;
+        }
+        .gj-insight-kw-tag:hover {
+          opacity: 1 !important;
         }
 
         /* ===== 合上书按钮（内页右下角固定） ===== */

@@ -34,6 +34,19 @@ interface City {
   exploreCount?: number;
   /** AI 计划备注 */
   aiPlanNote?: string;
+  /** AI 计划详情 */
+  ai_plan?: {
+    budget_breakdown?: {
+      total_min?: number;
+      total_max?: number;
+      details?: {
+        accommodation?: string;
+        food?: string;
+        transport?: string;
+        tickets?: string;
+      };
+    };
+  };
 }
 
 export interface CityDetailModalProps {
@@ -150,6 +163,45 @@ export default function CityDetailModal({
                   {city.aiPlanNote && (
                     <p className="rg-detail-ai-plan-note">{city.aiPlanNote}</p>
                   )}
+                  {city.ai_plan?.budget_breakdown && (
+                    <div className="rg-detail-budget">
+                      {city.ai_plan.budget_breakdown.total_min != null && city.ai_plan.budget_breakdown.total_max != null && (
+                        <div className="rg-detail-budget-total">
+                          预算参考：{city.ai_plan.budget_breakdown.total_min} - {city.ai_plan.budget_breakdown.total_max} 元/人
+                        </div>
+                      )}
+                      {city.ai_plan.budget_breakdown.details && (
+                        <table className="rg-detail-budget-table">
+                          <tbody>
+                            {city.ai_plan.budget_breakdown.details.accommodation && (
+                              <tr>
+                                <td className="rg-detail-budget-label">住宿</td>
+                                <td>{city.ai_plan.budget_breakdown.details.accommodation}</td>
+                              </tr>
+                            )}
+                            {city.ai_plan.budget_breakdown.details.food && (
+                              <tr>
+                                <td className="rg-detail-budget-label">餐饮</td>
+                                <td>{city.ai_plan.budget_breakdown.details.food}</td>
+                              </tr>
+                            )}
+                            {city.ai_plan.budget_breakdown.details.transport && (
+                              <tr>
+                                <td className="rg-detail-budget-label">交通</td>
+                                <td>{city.ai_plan.budget_breakdown.details.transport}</td>
+                              </tr>
+                            )}
+                            {city.ai_plan.budget_breakdown.details.tickets && (
+                              <tr>
+                                <td className="rg-detail-budget-label">门票</td>
+                                <td>{city.ai_plan.budget_breakdown.details.tickets}</td>
+                              </tr>
+                            )}
+                          </tbody>
+                        </table>
+                      )}
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -255,7 +307,7 @@ export default function CityDetailModal({
         transition: background 0.2s ease, transform 0.2s ease;
       }
       .rg-detail-close:hover {
-        background: #fff;
+        background: var(--rg-primary-faint, rgba(74,139,111,0.1));
         transform: scale(1.08);
       }
 
@@ -282,8 +334,8 @@ export default function CityDetailModal({
         padding: 6px 12px;
         border: none;
         border-radius: 999px;
-        background: rgba(255, 255, 255, 0.9);
-        color: #5d8a6a;
+        background: var(--rg-primary-faint, rgba(74,139,111,0.1));
+        color: var(--rg-primary, #4A8B6F);
         font-size: 12px;
         font-family: "Noto Serif SC", Georgia, serif;
         cursor: pointer;
@@ -291,7 +343,7 @@ export default function CityDetailModal({
         transition: background 0.2s ease, color 0.2s ease;
       }
       .rg-detail-action-btn:hover {
-        background: #5d8a6a;
+        background: var(--rg-primary, #4A8B6F);
         color: #fff;
       }
       .rg-detail-action-btn.delete:hover {
@@ -323,23 +375,24 @@ export default function CityDetailModal({
       }
       .rg-detail-name {
         font-family: "Noto Serif SC", Georgia, serif;
-        font-size: 28px;
-        font-weight: 700;
+        font-size: var(--rg-text-h1, 24px);
+        font-weight: var(--rg-weight-title, 600);
         color: #fff;
         margin: 0 0 4px;
         text-shadow: 0 2px 10px rgba(0, 0, 0, 0.4);
       }
       .rg-detail-slogan {
-        font-size: 14px;
+        font-size: var(--rg-text-body, 15px);
         color: rgba(255, 255, 255, 0.9);
         margin: 0;
         font-style: italic;
         font-family: "Noto Serif SC", Georgia, serif;
+        letter-spacing: var(--rg-tracking-body, 0.06em);
       }
 
       /* 正文 */
       .rg-detail-body {
-        padding: 24px;
+        padding: var(--rg-space-lg, 24px);
       }
 
       /* 信息栏：天气 + 坐标 + 探索次数 */
@@ -363,9 +416,9 @@ export default function CityDetailModal({
         padding: 2px 10px;
         border-radius: 999px;
         font-size: 11px;
-        color: #8B7D6B;
-        border: 1px solid #e0d8cc;
-        background: rgba(245, 240, 230, 0.6);
+        color: var(--rg-primary, #4A8B6F);
+        border: 1px solid rgba(74, 139, 111, 0.3);
+        background: var(--rg-primary-faint, rgba(74,139,111,0.08));
         font-family: "Noto Serif SC", Georgia, serif;
         letter-spacing: 0.03em;
       }
@@ -373,8 +426,8 @@ export default function CityDetailModal({
         display: inline-flex;
         align-items: center;
         gap: 4px;
-        font-size: 11px;
-        color: #B0A090;
+        font-size: var(--rg-text-caption, 13px);
+        color: var(--rg-ink-light, #8B7D6B);
         font-family: "Noto Serif SC", Georgia, serif;
       }
       .rg-detail-coord svg {
@@ -390,11 +443,11 @@ export default function CityDetailModal({
 
       /* AI 计划区域 */
       .rg-detail-ai-plan {
-        margin-bottom: 20px;
-        padding: 16px;
-        border-radius: 10px;
-        border: 1.5px solid rgba(46, 139, 87, 0.35);
-        background: linear-gradient(145deg, rgba(46, 139, 87, 0.04) 0%, rgba(46, 139, 87, 0.08) 100%);
+        margin-bottom: var(--rg-space-md, 16px);
+        padding: var(--rg-space-md, 16px);
+        border-radius: var(--rg-radius-md, 8px);
+        border: 1.5px solid var(--rg-primary, #4A8B6F);
+        background: var(--rg-primary-faint, rgba(74,139,111,0.06));
       }
       .rg-detail-ai-plan-header {
         display: flex;
@@ -403,9 +456,9 @@ export default function CityDetailModal({
         margin-bottom: 8px;
       }
       .rg-detail-ai-plan-label {
-        font-size: 15px;
+        font-size: var(--rg-text-body, 15px);
         font-weight: 700;
-        color: #2E8B57;
+        color: var(--rg-primary, #4A8B6F);
         font-family: "Ma Shan Zheng", "ZCOOL XiaoWei", "STKaiti", cursive;
         letter-spacing: 0.06em;
       }
@@ -415,28 +468,61 @@ export default function CityDetailModal({
         padding: 1px 8px;
         border-radius: 999px;
         font-size: 10px;
-        color: #2E8B57;
-        background: rgba(46, 139, 87, 0.1);
-        border: 1px solid rgba(46, 139, 87, 0.25);
+        color: var(--rg-primary, #4A8B6F);
+        background: var(--rg-primary-faint, rgba(74,139,111,0.1));
+        border: 1px solid rgba(74, 139, 111, 0.25);
         font-family: "Noto Sans SC", system-ui, sans-serif;
       }
       .rg-detail-ai-plan-note {
         font-size: 13px;
-        line-height: 1.7;
-        color: #6b5e50;
+        line-height: var(--rg-leading-body, 1.85);
+        color: var(--rg-ink-body, #6B5D4F);
         margin: 0;
         font-family: "Noto Serif SC", Georgia, serif;
       }
 
+      /* 预算明细 */
+      .rg-detail-budget {
+        margin-top: 12px;
+        border-top: 1px dashed rgba(74, 139, 111, 0.25);
+        padding-top: 10px;
+      }
+      .rg-detail-budget-total {
+        font-size: var(--rg-text-caption, 13px);
+        font-weight: var(--rg-weight-title, 600);
+        color: var(--rg-primary, #4A8B6F);
+        margin-bottom: 8px;
+        font-family: "Noto Serif SC", Georgia, serif;
+      }
+      .rg-detail-budget-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: var(--rg-text-caption, 13px);
+        font-family: "Noto Serif SC", Georgia, serif;
+        color: var(--rg-ink-body, #6B5D4F);
+      }
+      .rg-detail-budget-table td {
+        padding: 4px 0;
+        border-bottom: 1px dashed rgba(0, 0, 0, 0.06);
+        line-height: var(--rg-leading-body, 1.85);
+      }
+      .rg-detail-budget-label {
+        font-weight: var(--rg-weight-title, 600);
+        color: var(--rg-ink, #3D2B1F);
+        white-space: nowrap;
+        padding-right: 12px;
+        width: 48px;
+      }
+
       /* 各个 section */
       .rg-detail-section {
-        margin-bottom: 24px;
+        margin-bottom: var(--rg-space-lg, 24px);
       }
       .rg-detail-h4 {
-        font-size: 16px;
-        font-weight: 700;
-        color: #5d8a6a;
-        margin: 0 0 12px;
+        font-size: var(--rg-text-body, 15px);
+        font-weight: var(--rg-weight-subtitle, 500);
+        color: var(--rg-ink-secondary, #5D4E37);
+        margin: 0 0 var(--rg-space-md, 16px);
         font-family: "Noto Serif SC", Georgia, serif;
       }
       .rg-detail-list {
@@ -450,8 +536,8 @@ export default function CityDetailModal({
         justify-content: space-between;
         padding: 8px 0;
         border-bottom: 1px dashed #ece4d4;
-        font-size: 14px;
-        color: #4a4036;
+        font-size: var(--rg-text-body, 15px);
+        color: var(--rg-ink-body, #6B5D4F);
       }
       .rg-detail-rating {
         color: #f5a623;
@@ -471,17 +557,18 @@ export default function CityDetailModal({
         font-size: 13px;
       }
       .rg-detail-text {
-        font-size: 14px;
-        line-height: 1.8;
-        color: #6b5e50;
+        font-size: var(--rg-text-body, 15px);
+        font-weight: var(--rg-weight-body, 400);
+        line-height: var(--rg-leading-body, 1.85);
+        color: var(--rg-ink-body, #6B5D4F);
         margin: 0;
         font-family: "Noto Serif SC", Georgia, serif;
       }
 
       /* Tips 特殊样式 */
       .rg-detail-tips {
-        padding: 16px;
-        border-radius: 8px;
+        padding: var(--rg-space-md, 16px);
+        border-radius: var(--rg-radius-md, 8px);
         background: rgba(176, 120, 50, 0.06);
         border-left: 3px solid #c8924a;
       }

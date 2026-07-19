@@ -82,8 +82,8 @@ export default function StatsBar({ provinces, cities, days }: StatsBarProps) {
           align-items: center;
           gap: 3px;
           font-family: var(--rg-font-serif);
-          font-size: 13px;
-          color: var(--rg-ink, #5D4E37);
+          font-size: var(--rg-text-caption, 13px);
+          color: var(--rg-ink-light, #8B7D6B);
           background: #F5F0E6;
           padding: 2px 10px;
           border-radius: 3px;
@@ -95,10 +95,10 @@ export default function StatsBar({ provinces, cities, days }: StatsBarProps) {
           margin-left: 2px;
         }
         .rg-stats-paper-tag .rg-stats-num {
-          font-weight: 700;
-          color: #8B6914;
+          font-weight: var(--rg-weight-title, 600);
+          color: var(--rg-primary, #4A8B6F);
           font-family: var(--rg-font-hand, var(--font-hand));
-          font-size: 16px;
+          font-size: var(--rg-text-h2, 18px);
         }
 
         /* 分隔线 */

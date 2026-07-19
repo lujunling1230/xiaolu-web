@@ -1,8 +1,11 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Link } from "react-router-dom";
 import { siteLoad, legacyLoad, legacySave, publishDrafts, pushSiteData } from "../../utils/siteData";
 import { useAdminGuard } from "../../hooks/useAdminGuard";
+import { callAI } from "../../utils/aiClient";
+import CuratorChatPanel from "./museum/CuratorChatPanel";
+import PrivateDrawer from "./museum/PrivateDrawer";
 
 /**
  * 时光博物馆 · Museum of Memories
@@ -635,7 +638,11 @@ const VintageCard: React.FC<{
   onImageUpload?: (id: string, imageUrl: string) => void;
   onImageDelete?: (id: string) => void;
   verifyAdmin?: (cb: () => void) => void;
-}> = ({ card, emoji, onEdit, onDelete, onImageUpload, onImageDelete, verifyAdmin }) => {
+  onCuratorNote?: (id: string, title: string, year: string) => void;
+  onLendExhibit?: (card: VintageCard) => void;
+  spotlightActive?: boolean;
+  onSpotlightToggle?: () => void;
+}> = ({ card, emoji, onEdit, onDelete, onImageUpload, onImageDelete, verifyAdmin, onCuratorNote, onLendExhibit, spotlightActive, onSpotlightToggle }) => {
   const [showActions, setShowActions] = useState(false);
   const [showPlayer, setShowPlayer] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState(false);
@@ -676,7 +683,7 @@ const VintageCard: React.FC<{
 
   return (
     <motion.div
-      className="vintage-card"
+      className={`vintage-card${spotlightActive ? " spotlight-active" : ""}`}
       style={{
         position: "relative",
         border: isDragging ? `2px dashed #D4AF37` : undefined,
@@ -684,6 +691,7 @@ const VintageCard: React.FC<{
         transition: "border 0.2s, box-shadow 0.2s",
         overflow: "hidden",
       }}
+      onClick={onSpotlightToggle}
       whileHover={{ y: -4, rotate: 0.3 }}
       onHoverStart={() => setShowActions(true)}
       onHoverEnd={() => { if (!deleteConfirm) setShowActions(false); }}
@@ -750,6 +758,34 @@ const VintageCard: React.FC<{
             🔍
           </div>
         )}
+
+                {/* AI 馆长帽 */}
+                <div
+                  className="museum-card-hero-badge"
+                  title="馆长侧写"
+                  onClick={(e) => { e.stopPropagation(); if (onCuratorNote) onCuratorNote(card.id, card.title, card.year); }}
+                  style={{ opacity: 0, left: "auto", right: "auto", top: 8, right: 8, zIndex: 5 }}
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+                    <path d="M12 2L2 7L12 12L22 7L12 2Z" fill="#b08d57" />
+                    <path d="M6 9V15C6 15 8.5 19 12 19C15.5 19 18 15 18 15V9" stroke="#b08d57" strokeWidth="1.5" fill="none" />
+                    <path d="M2 7V17" stroke="#b08d57" strokeWidth="1.5" strokeLinecap="round" />
+                    <circle cx="2" cy="18" r="1.5" fill="#b08d57" />
+                  </svg>
+                </div>
+                {/* 借展按钮 */}
+                <div
+                  className="museum-card-hero-badge"
+                  title="借展分享"
+                  onClick={(e) => { e.stopPropagation(); if (onLendExhibit) onLendExhibit(card); }}
+                  style={{ opacity: 0, left: "auto", right: 36, top: 8, zIndex: 5 }}
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#b08d57" strokeWidth="1.5">
+                    <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8" />
+                    <polyline points="16 6 12 2 8 6" />
+                    <line x1="12" y1="2" x2="12" y2="15" />
+                  </svg>
+                </div>
 
         {/* 无图片时显示上传提示 */}
         {!hasImage && !isUploading && (
@@ -827,7 +863,11 @@ const VintageGallery: React.FC<{
   onImageUpload?: (id: string, imageUrl: string) => void;
   onImageDelete?: (id: string) => void;
   verifyAdmin?: (cb: () => void) => void;
-}> = ({ title, emoji, cards, onAdd, onEdit, onDelete, onImageUpload, onImageDelete, verifyAdmin }) => (
+  onCuratorNote?: (id: string, title: string, year: string) => void;
+  onLendExhibit?: (card: VintageCard) => void;
+  spotlightActiveId?: string | null;
+  onSpotlightToggle?: (id: string) => void;
+}> = ({ title, emoji, cards, onAdd, onEdit, onDelete, onImageUpload, onImageDelete, verifyAdmin, onCuratorNote, onLendExhibit, spotlightActiveId, onSpotlightToggle }) => (
   <div className="vintage-section">
     <div className="vintage-section-header">
       <span className="vintage-section-emoji">{emoji}</span>
@@ -842,7 +882,7 @@ const VintageGallery: React.FC<{
         <AnimatePresence mode="popLayout">
           {cards.map(card => (
             <motion.div key={card.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, scale: 0.8 }} transition={{ duration: 0.3 }}>
-              <VintageCard card={card} emoji={emoji} onEdit={onEdit} onDelete={onDelete} onImageUpload={onImageUpload} onImageDelete={onImageDelete} verifyAdmin={verifyAdmin} />
+              <VintageCard card={card} emoji={emoji} onEdit={onEdit} onDelete={onDelete} onImageUpload={onImageUpload} onImageDelete={onImageDelete} verifyAdmin={verifyAdmin} onCuratorNote={onCuratorNote} onLendExhibit={onLendExhibit} spotlightActive={spotlightActiveId === card.id} onSpotlightToggle={() => onSpotlightToggle?.(card.id)} />
             </motion.div>
           ))}
         </AnimatePresence>
@@ -1041,6 +1081,15 @@ const MuseumPage: React.FC = () => {
 
   const { isAdmin: adminMode, verifyAdmin, AdminGuardUI } = useAdminGuard();
 
+  // 私藏匣状态
+  const [drawerOpen, setDrawerOpen] = useState(false);
+
+  // AI 馆长侧写状态
+  const [curatorNote, setCuratorNote] = useState<{ cardId: string; text: string; loading: boolean } | null>(null);
+
+  // 聚光灯状态
+  const [spotlightCardId, setSpotlightCardId] = useState<string | null>(null);
+
   // 迁移：如果旧 key 不存在，尝试从 life_film_site_seed 读取
   useEffect(() => {
     Object.values(SEED_KEYS).forEach(key => {
@@ -1161,6 +1210,89 @@ const MuseumPage: React.FC = () => {
     });
   };
 
+  // 聊天寻忆归档回调
+  const handleChatArchive = useCallback((data: { section: "bgm" | "tv" | "net" | "honor"; year: string; title: string; description: string }) => {
+    const newCard: VintageCard = { id: genId(), year: data.year || String(new Date().getFullYear()), title: data.title, description: data.description };
+    if (data.section === "bgm") setBgms(prev => [newCard, ...prev]);
+    else if (data.section === "tv") setTvs(prev => [newCard, ...prev]);
+    else if (data.section === "net") setNets(prev => [newCard, ...prev]);
+    else {
+      const newHonor: HonorItem = { id: genId(), year: data.year || String(new Date().getFullYear()), title: data.title, description: data.description, imageUrl: "", reflection: "" };
+      setHonors(prev => [newHonor, ...prev]);
+    }
+  }, []);
+
+  // AI 馆长侧写
+  const handleCuratorNote = useCallback(async (cardId: string, title: string, year: string) => {
+    if (curatorNote?.cardId === cardId) return;
+    setCuratorNote({ cardId, text: "", loading: true });
+    const note = await callAI(
+      `你是时光博物馆的馆长，请用文学性的语言为一件展品写一段简短的侧写（2-3句话）。
+侧写风格：温暖、怀旧、略带诗意，像博物馆展牌上的文字。
+不要使用 emoji。不要超过80个字。`,
+      [{ role: "user", content: `展品名称：${title}，年份：${year}` }],
+      { maxTokens: 150, temperature: 0.9 }
+    );
+    setCuratorNote({ cardId, text: note, loading: false });
+  }, [curatorNote]);
+
+  // 借展分享（生成海报）
+  const handleLendExhibit = useCallback((card: { title: string; year: string; description: string; imageUrl?: string }) => {
+    const canvas = document.createElement("canvas");
+    canvas.width = 600;
+    canvas.height = 800;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
+    // 背景
+    ctx.fillStyle = "#3d2c2e";
+    ctx.fillRect(0, 0, 600, 800);
+
+    // 装饰线
+    ctx.strokeStyle = "rgba(176,141,87,0.3)";
+    ctx.lineWidth = 1;
+    ctx.strokeRect(40, 40, 520, 720);
+
+    // 展品标题
+    ctx.fillStyle = "#b08d57";
+    ctx.font = "bold 28px serif";
+    ctx.textAlign = "center";
+    ctx.fillText(card.title, 300, 320);
+
+    // 年份
+    ctx.fillStyle = "rgba(184,168,144,0.6)";
+    ctx.font = "16px monospace";
+    ctx.fillText(card.year, 300, 360);
+
+    // 描述（自动换行）
+    ctx.fillStyle = "rgba(232,220,200,0.7)";
+    ctx.font = "15px serif";
+    const lines = [];
+    let line = "";
+    for (const char of card.description) {
+      const testLine = line + char;
+      if (ctx.measureText(testLine).width > 440) {
+        lines.push(line);
+        line = char;
+      } else {
+        line = testLine;
+      }
+    }
+    if (line) lines.push(line);
+    lines.slice(0, 6).forEach((l, i) => ctx.fillText(l, 300, 400 + i * 24));
+
+    // 底部署名
+    ctx.fillStyle = "rgba(176,141,87,0.5)";
+    ctx.font = "14px serif";
+    ctx.fillText("来自小鹿的时光博物馆", 300, 720);
+
+    // 下载
+    const link = document.createElement("a");
+    link.download = `时光博物馆_${card.title}.png`;
+    link.href = canvas.toDataURL("image/png");
+    link.click();
+  }, []);
+
   // 获取 section 标题和 emoji
   const getSectionTitle = (section: "bgm" | "tv" | "net") => {
     if (section === "bgm") return "🎵 耳机里的青春 BGM";
@@ -1189,8 +1321,40 @@ const MuseumPage: React.FC = () => {
         <motion.p className="museum-hero-sub" initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.7, delay: 0.15 }}>每一步都算数。</motion.p>
       </section>
 
+      {/* 私藏匣入口 */}
+      <div style={{ position: "relative", zIndex: 2, maxWidth: 960, margin: "0 auto 32px", display: "flex", justifyContent: "center" }}>
+        <motion.button
+          whileHover={{ scale: 1.03 }}
+          whileTap={{ scale: 0.97 }}
+          onClick={() => setDrawerOpen(true)}
+          style={{
+            background: "none",
+            border: "1px solid rgba(176,141,87,0.25)",
+            borderRadius: 20,
+            padding: "8px 20px",
+            color: "#8a7a64",
+            fontSize: 13,
+            fontFamily: "'Noto Serif SC', serif",
+            letterSpacing: "2px",
+            cursor: "pointer",
+            display: "flex",
+            alignItems: "center",
+            gap: 8,
+            transition: "all 0.2s",
+          }}
+          onMouseEnter={(e) => { const el = e.currentTarget; el.style.borderColor = "rgba(176,141,87,0.5)"; el.style.color = "#b08d57"; }}
+          onMouseLeave={(e) => { const el = e.currentTarget; el.style.borderColor = "rgba(176,141,87,0.25)"; el.style.color = "#8a7a64"; }}
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+            <rect x="3" y="11" width="18" height="10" rx="2" />
+            <path d="M7 11V7a5 5 0 0 1 10 0v4" strokeLinecap="round" />
+          </svg>
+          馆长私藏匣
+        </motion.button>
+      </div>
+
       {/* ===== 展厅一：时代回响 ===== */}
-      <section className="museum-hall museum-era-section">
+      <section className={`museum-hall museum-era-section${spotlightCardId ? " spotlight-dimmed" : ""}`}>
         <div className="museum-hall-head">
           <span className="museum-hall-roman">I</span>
           <div>
@@ -1205,7 +1369,11 @@ const MuseumPage: React.FC = () => {
           onDelete={(id) => handleCardDelete(id, "bgm")}
           onImageUpload={(id, url) => handleImageUpload(id, url, "bgm")}
           onImageDelete={(id) => handleImageDelete(id, "bgm")}
-          verifyAdmin={verifyAdmin} />
+          verifyAdmin={verifyAdmin}
+          onCuratorNote={handleCuratorNote}
+          onLendExhibit={handleLendExhibit}
+          spotlightActiveId={spotlightCardId}
+          onSpotlightToggle={(id) => setSpotlightCardId(prev => prev === id ? null : id)} />
 
         <VintageGallery title="电视里的乌托邦" emoji="📺" cards={sortedTvs}
           onAdd={(data) => setCardModal({ mode: "add", section: "tv", data: { ...data, id: "", year: data.year || String(new Date().getFullYear()) } })}
@@ -1213,7 +1381,11 @@ const MuseumPage: React.FC = () => {
           onDelete={(id) => handleCardDelete(id, "tv")}
           onImageUpload={(id, url) => handleImageUpload(id, url, "tv")}
           onImageDelete={(id) => handleImageDelete(id, "tv")}
-          verifyAdmin={verifyAdmin} />
+          verifyAdmin={verifyAdmin}
+          onCuratorNote={handleCuratorNote}
+          onLendExhibit={handleLendExhibit}
+          spotlightActiveId={spotlightCardId}
+          onSpotlightToggle={(id) => setSpotlightCardId(prev => prev === id ? null : id)} />
 
         <VintageGallery title="网络初现时的印记" emoji="📱" cards={sortedNets}
           onAdd={(data) => setCardModal({ mode: "add", section: "net", data: { ...data, id: "", year: data.year || String(new Date().getFullYear()) } })}
@@ -1221,7 +1393,11 @@ const MuseumPage: React.FC = () => {
           onDelete={(id) => handleCardDelete(id, "net")}
           onImageUpload={(id, url) => handleImageUpload(id, url, "net")}
           onImageDelete={(id) => handleImageDelete(id, "net")}
-          verifyAdmin={verifyAdmin} />
+          verifyAdmin={verifyAdmin}
+          onCuratorNote={handleCuratorNote}
+          onLendExhibit={handleLendExhibit}
+          spotlightActiveId={spotlightCardId}
+          onSpotlightToggle={(id) => setSpotlightCardId(prev => prev === id ? null : id)} />
       </section>
 
       {/* ===== 展厅二：荣耀之路 ===== */}
@@ -1299,6 +1475,38 @@ const MuseumPage: React.FC = () => {
         )}
       </AnimatePresence>
 
+      {/* AI 馆长侧写浮窗 */}
+      <AnimatePresence>
+        {curatorNote && (
+          <motion.div
+            key={curatorNote.cardId}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 20 }}
+            style={{
+              position: "fixed", bottom: 100, right: 28, zIndex: 2000,
+              maxWidth: 260, padding: "16px 18px",
+              background: "rgba(250,248,243,0.95)", border: "1px solid rgba(176,141,87,0.4)",
+              borderRadius: 12, boxShadow: "0 8px 32px rgba(74,58,46,0.2)",
+            }}
+            onClick={() => setCuratorNote(null)}
+          >
+            <div style={{ fontSize: 11, color: "#8a7d72", fontFamily: "'PingFang SC', sans-serif", marginBottom: 6, letterSpacing: "1px" }}>馆长侧写</div>
+            {curatorNote.loading ? (
+              <div style={{ fontSize: 13, color: "#b08d57", fontFamily: "'Noto Serif SC', serif" }}>正在撰写...</div>
+            ) : (
+              <div style={{ fontSize: 14, color: "#4a3b31", fontFamily: "'Noto Serif SC', serif", lineHeight: 1.8, fontStyle: "italic" }}>{curatorNote.text}</div>
+            )}
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* 聊天寻忆 · 策展助理 */}
+      <CuratorChatPanel onArchive={handleChatArchive} />
+
+      {/* 私藏匣 */}
+      <PrivateDrawer isOpen={drawerOpen} onClose={() => setDrawerOpen(false)} />
+
       {/* 管理员密码框 */}
       <AdminGuardUI />
 
@@ -1310,7 +1518,6 @@ const MuseumPage: React.FC = () => {
           position: "fixed", bottom: 28, right: 28, zIndex: 20,
           width: 44, height: 44, border: "none", borderRadius: "50%",
           background: adminMode ? "rgba(141,154,139,0.3)" : "rgba(255,255,255,0.5)",
-          backdropFilter: "blur(10px)",
           boxShadow: "0 2px 12px rgba(0,0,0,0.08)",
           cursor: "pointer", fontSize: 18,
           display: "flex", alignItems: "center", justifyContent: "center",
@@ -1336,7 +1543,7 @@ const MuseumPage: React.FC = () => {
             position: "fixed", bottom: 80, right: 28, zIndex: 20,
             padding: "8px 16px", border: "none", borderRadius: 20,
             background: "rgba(141,154,139,0.6)", color: "#e8dcc8",
-            backdropFilter: "blur(10px)", fontSize: 13, cursor: "pointer",
+            fontSize: 13, cursor: "pointer",
             boxShadow: "0 2px 12px rgba(0,0,0,0.08)",
           }}
         >
@@ -1575,6 +1782,15 @@ const MuseumPage: React.FC = () => {
           .museum-honor-img { width: 100%; height: 160px; }
           .museum-honor-img .museum-film-img { min-height: 160px; }
         }
+
+        /* ===== 聚光灯效应 ===== */
+        .museum-hall { position: relative; z-index: 2; max-width: 960px; margin: 0 auto 72px; transition: filter 0.6s ease; }
+        .museum-hall.spotlight-dimmed > *:not(.spotlight-active) { opacity: 0.25; transition: opacity 0.6s ease; pointer-events: none; }
+        .vintage-card.spotlight-active { transform: scale(1.04); box-shadow: 0 12px 40px rgba(176,141,87,0.5), 0 0 0 2px rgba(176,141,87,0.3); transition: all 0.4s ease; z-index: 10; position: relative; }
+
+        /* 管理员按钮（移除 backdrop-filter） */
+        .museum-admin-btn-no-blur { background: rgba(255,255,255,0.9) !important; backdrop-filter: none !important; }
+        .museum-publish-btn-no-blur { background: rgba(141,154,139,0.85) !important; backdrop-filter: none !important; }
       `}</style>
     </div>
   );

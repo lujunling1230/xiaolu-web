@@ -1,35 +1,106 @@
-/* 漫游指南主题变量 —— 小叶书局文艺风格 */
+/* 漫游指南主题变量 v2 —— 统一色彩体系 + 排版规范 */
 :root {
-  /* 纸张色调 */
+  /* === 纸张基调 === */
   --rg-paper: #F5F0E6;
   --rg-paper-deep: #EDE5D5;
   --rg-paper-light: #FAF9F6;
+  --rg-paper-overlay: rgba(245, 240, 230, 0.08);
 
-  /* 墨色 */
-  --rg-ink: #5c3a21;
+  /* === 主色调：青绿（旅行·自然） === */
+  --rg-primary: #4A8B6F;
+  --rg-primary-light: #6BAF8C;
+  --rg-primary-dark: #3A6E58;
+  --rg-primary-faint: rgba(74, 139, 111, 0.12);
+  --rg-primary-glow: rgba(74, 139, 111, 0.35);
+
+  /* === 辅助色：暖橙（活力·阳光） === */
+  --rg-accent: #D4884A;
+  --rg-accent-light: #E8A46C;
+  --rg-accent-dark: #B86E34;
+  --rg-accent-faint: rgba(212, 136, 74, 0.12);
+  --rg-accent-glow: rgba(212, 136, 74, 0.3);
+
+  /* === 功能色 === */
+  --rg-amber-solid: #C49452;
+  --rg-amber: rgba(196, 148, 82, 0.85);
+  --rg-pine-solid: #5D8A6A;
+  --rg-pine: rgba(93, 138, 106, 0.7);
+  --rg-seal-red: #C53D43;
+  --rg-gold: rgba(212, 180, 100, 0.9);
+
+  /* === 墨色层级 === */
+  --rg-ink: #3D2B1F;
+  --rg-ink-secondary: #5C4A3A;
+  --rg-ink-body: #6B5D4F;
   --rg-ink-light: #8B7D6B;
-  --rg-ink-faint: #C8B898;
+  --rg-ink-faint: #B0A090;
+  --rg-ink-border: #D4C8B8;
 
-  /* 木色 */
+  /* === 木色（卷轴/告示牌） === */
   --rg-wood-dark: #5C4538;
   --rg-wood: #7A6655;
   --rg-wood-light: #A08060;
   --rg-wood-highlight: #B89A78;
 
-  /* 功能色 */
-  --rg-amber: rgba(196, 148, 82, 0.85);
-  --rg-amber-solid: #C49452;
-  --rg-pine: rgba(93, 138, 106, 0.7);
-  --rg-pine-solid: #5D8A6A;
-  --rg-seal-red: #C53D43;
-  --rg-gold: rgba(212, 180, 100, 0.9);
-
-  /* 字体 */
+  /* === 排版规范 === */
   --rg-font-serif: "KaiTi", "STKaiti", "Noto Serif SC", serif;
   --rg-font-hand: "KaiTi", "STKaiti", serif;
+  --rg-font-sans: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif;
 
-  /* 阴影 */
-  --rg-shadow-soft: 0 2px 8px rgba(60, 40, 20, 0.08);
-  --rg-shadow-medium: 0 4px 14px rgba(200, 146, 74, 0.25);
-  --rg-shadow-card: 0 8px 24px rgba(0, 0, 0, 0.12);
+  /* 字号层级 */
+  --rg-text-hero: clamp(36px, 6vw, 56px);
+  --rg-text-h1: clamp(24px, 4vw, 32px);
+  --rg-text-h2: clamp(20px, 3vw, 24px);
+  --rg-text-h3: 18px;
+  --rg-text-body: 15px;
+  --rg-text-caption: 13px;
+  --rg-text-small: 11px;
+
+  /* 字重 */
+  --rg-weight-title: 600;
+  --rg-weight-subtitle: 500;
+  --rg-weight-body: 400;
+  --rg-weight-caption: 300;
+
+  /* 行高 */
+  --rg-leading-hero: 1.4;
+  --rg-leading-heading: 1.5;
+  --rg-leading-body: 1.85;
+  --rg-leading-relaxed: 2.0;
+
+  /* 字间距 */
+  --rg-tracking-hero: 0.22em;
+  --rg-tracking-heading: 0.15em;
+  --rg-tracking-body: 0.06em;
+  --rg-tracking-wide: 0.3em;
+
+  /* === 间距规范 === */
+  --rg-space-xs: 4px;
+  --rg-space-sm: 8px;
+  --rg-space-md: 16px;
+  --rg-space-lg: 24px;
+  --rg-space-xl: 32px;
+  --rg-space-2xl: 48px;
+
+  /* === 圆角 === */
+  --rg-radius-sm: 4px;
+  --rg-radius-md: 8px;
+  --rg-radius-lg: 12px;
+  --rg-radius-xl: 16px;
+  --rg-radius-full: 9999px;
+
+  /* === 阴影层级 === */
+  --rg-shadow-xs: 0 1px 3px rgba(60, 40, 20, 0.06);
+  --rg-shadow-sm: 0 2px 8px rgba(60, 40, 20, 0.08);
+  --rg-shadow-md: 0 4px 14px rgba(60, 40, 20, 0.12);
+  --rg-shadow-lg: 0 8px 24px rgba(60, 40, 20, 0.15);
+  --rg-shadow-glow-primary: 0 0 16px var(--rg-primary-glow);
+  --rg-shadow-glow-accent: 0 0 16px var(--rg-accent-glow);
+
+  /* === 动画 === */
+  --rg-ease-out: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --rg-ease-smooth: cubic-bezier(0.4, 0, 0.2, 1);
+  --rg-duration-fast: 0.2s;
+  --rg-duration-normal: 0.35s;
+  --rg-duration-slow: 0.6s;
 }

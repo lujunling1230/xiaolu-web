@@ -668,10 +668,18 @@ const TravelPage: React.FC = () => {
     <div className="travel-page">
       {/* ===== Hero 羊皮纸卷轴 ===== */}
       <header className={`travel-hero ${scrollUnrolled ? "unrolled" : ""}`}>
-        <div className="travel-hero-scroll-bar left" />
-        <div className="travel-hero-scroll-bar right" />
-        <div className="travel-hero-scroll-knob left" />
-        <div className="travel-hero-scroll-knob right" />
+        {/* ---- 左侧仿真卷轴 ---- */}
+        <div className="travel-scroll-rod left">
+          <div className="travel-scroll-knob-top" />
+          <div className="travel-scroll-shaft" />
+          <div className="travel-scroll-knob-bottom" />
+        </div>
+        {/* ---- 右侧仿真卷轴 ---- */}
+        <div className="travel-scroll-rod right">
+          <div className="travel-scroll-knob-top" />
+          <div className="travel-scroll-shaft" />
+          <div className="travel-scroll-knob-bottom" />
+        </div>
         {/* 金色尘埃粒子 */}
         <div className="travel-dust" />
         <div className="travel-dust" />
@@ -684,7 +692,7 @@ const TravelPage: React.FC = () => {
         <div className="travel-hero-content">
           <h1 className="travel-hero-title">漫游指南</h1>
           <div className="travel-hero-ornament" />
-          <div className="travel-hero-year">元年 · 启程</div>
+          <div className="travel-hero-year">丙午年 · 启程</div>
 
           <div className="travel-hero-text">
             <p>世界是一张未折叠的地图，亦是无数条待踏足的路径。</p>
@@ -1201,36 +1209,78 @@ const TravelPage: React.FC = () => {
           padding: 0;
         }
 
-        /* ---- 卷轴杆：深色木边，flex 子项，宽度过渡 ---- */
-        .travel-hero-scroll-bar {
-          width: 0; height: 100%; flex-shrink: 0;
-          z-index: 5; position: relative;
-          overflow: visible;
-          background: linear-gradient(90deg, #6B5344 0%, #7A6655 15%, #9A8570 40%, #8A7560 60%, #9A8570 80%, #7A6655 90%, #6B5344 100%);
-          box-shadow: inset 2px 0 6px rgba(0,0,0,0.25), inset -1px 0 3px rgba(255,255,255,0.08), 4px 0 12px rgba(0,0,0,0.18);
+        /* ---- 仿真卷轴整体容器 ---- */
+        .travel-scroll-rod {
+          position: relative; z-index: 5;
+          width: 0; flex-shrink: 0;
           transition: width 2.5s cubic-bezier(0.65, 0, 0.35, 1);
+          overflow: visible;
         }
-        .travel-hero.unrolled .travel-hero-scroll-bar.left {
-          width: 32px; border-radius: 0 6px 6px 0;
-        }
-        .travel-hero.unrolled .travel-hero-scroll-bar.right {
-          width: 32px; border-radius: 6px 0 0 6px;
-          box-shadow: inset -2px 0 6px rgba(0,0,0,0.25), inset 1px 0 3px rgba(255,255,255,0.08), -4px 0 12px rgba(0,0,0,0.18);
+        .travel-hero.unrolled .travel-scroll-rod {
+          width: 28px;
         }
 
-        /* ---- 旋钮 ---- */
-        .travel-hero-scroll-knob {
-          position: absolute; top: 50%;
-          width: 42px; height: 90px; z-index: 6;
-          background: linear-gradient(180deg, #5C4538 0%, #7A6655 25%, #A08060 50%, #7A6655 75%, #5C4538 100%);
-          border-radius: 8px;
-          box-shadow: 0 2px 14px rgba(0,0,0,0.35), inset 0 1px 2px rgba(255,255,255,0.12);
+        /* ---- 轴杆（木纹杆身） ---- */
+        .travel-scroll-shaft {
+          position: absolute; top: 0; bottom: 0; left: 50%;
+          width: 18px; transform: translateX(-50%);
+          background: linear-gradient(90deg, #5C4538 0%, #7A6655 18%, #A08060 42%, #B89A78 50%, #A08060 58%, #7A6655 82%, #5C4538 100%);
+          border-radius: 9px;
+          box-shadow: 2px 0 8px rgba(0,0,0,0.2), -2px 0 8px rgba(0,0,0,0.2);
+        }
+        /* 木纹纹理叠加 */
+        .travel-scroll-shaft::before {
+          content: ""; position: absolute; inset: 0;
+          border-radius: 9px;
+          background: repeating-linear-gradient(
+            0deg,
+            transparent 0px, transparent 6px,
+            rgba(0,0,0,0.04) 6px, rgba(0,0,0,0.04) 7px
+          );
+        }
+        /* 高光条 */
+        .travel-scroll-shaft::after {
+          content: ""; position: absolute;
+          top: 4px; bottom: 4px; left: 4px; width: 4px;
+          background: linear-gradient(180deg, rgba(255,255,255,0.15) 0%, rgba(255,255,255,0.05) 50%, rgba(255,255,255,0.12) 100%);
+          border-radius: 2px;
+        }
+
+        /* ---- 轴头（上下装饰端帽） ---- */
+        .travel-scroll-knob-top,
+        .travel-scroll-knob-bottom {
+          position: absolute; left: 50%;
+          width: 38px; height: 16px;
+          transform: translateX(-50%);
+          z-index: 6;
+          background: linear-gradient(180deg, #4A3828 0%, #6B5344 30%, #8B7355 50%, #6B5344 70%, #4A3828 100%);
+          border-radius: 4px;
+          box-shadow: 0 2px 6px rgba(0,0,0,0.3), inset 0 1px 1px rgba(255,255,255,0.12);
           opacity: 0;
           transition: opacity 0.5s ease 2.2s;
         }
-        .travel-hero.unrolled .travel-hero-scroll-knob { opacity: 1; }
-        .travel-hero-scroll-knob.left { left: -5px; transform: translateY(-50%); }
-        .travel-hero-scroll-knob.right { right: -5px; transform: translateY(-50%); }
+        .travel-hero.unrolled .travel-scroll-knob-top,
+        .travel-hero.unrolled .travel-scroll-knob-bottom {
+          opacity: 1;
+        }
+        .travel-scroll-knob-top {
+          top: -4px;
+          border-radius: 6px 6px 3px 3px;
+        }
+        .travel-scroll-knob-bottom {
+          bottom: -4px;
+          border-radius: 3px 3px 6px 6px;
+        }
+        /* 轴头装饰线 */
+        .travel-scroll-knob-top::after,
+        .travel-scroll-knob-bottom::after {
+          content: ""; position: absolute;
+          left: 4px; right: 4px; height: 1px;
+          background: rgba(255,255,255,0.15);
+          border-radius: 1px;
+        }
+        .travel-scroll-knob-top::after { bottom: 3px; }
+        .travel-scroll-knob-bottom::after { top: 3px; }
 
         /* ---- 内容区：flex 子项，clip-path 展开 ---- */
         .travel-hero-content {
@@ -1244,6 +1294,18 @@ const TravelPage: React.FC = () => {
         }
         .travel-hero.unrolled .travel-hero-content {
           clip-path: inset(0 0% 0 0%);
+          opacity: 1;
+        }
+        /* 卷轴纸面卷曲阴影（展开后可见） */
+        .travel-hero-content::before {
+          content: ""; position: absolute; inset: 0;
+          pointer-events: none; z-index: 1;
+          box-shadow: inset 12px 0 18px -8px rgba(90,75,60,0.12),
+                      inset -12px 0 18px -8px rgba(90,75,60,0.12);
+          opacity: 0;
+          transition: opacity 1s ease 2s;
+        }
+        .travel-hero.unrolled .travel-hero-content::before {
           opacity: 1;
         }
 
@@ -1383,23 +1445,28 @@ const TravelPage: React.FC = () => {
           transform-style: preserve-3d;
         }
 
-        /* ---- 展开完成后：木杆呼吸 + 旋钮转动 ---- */
+        /* ---- 展开完成后：轴杆微呼吸 ---- */
         @keyframes barBreathe {
-          0%, 100% { transform: scaleX(1); }
-          50% { transform: scaleX(1.03); }
+          0%, 100% { transform: translateX(-50%) scaleX(1); }
+          50% { transform: translateX(-50%) scaleX(1.04); }
         }
-        .travel-hero-scroll-bar { transform-origin: center; }
-        .travel-hero-scroll-bar.left { transform-origin: left center; }
-        .travel-hero-scroll-bar.right { transform-origin: right center; }
-        .travel-hero.unrolled .travel-hero-scroll-bar {
-          animation: barBreathe 4s ease-in-out 2.2s infinite;
+        .travel-hero.unrolled .travel-scroll-shaft {
+          animation: barBreathe 5s ease-in-out 2.5s infinite;
         }
-        @keyframes knobTurn {
-          0%, 100% { transform: translateY(-50%) rotate(-2deg); }
-          50% { transform: translateY(-50%) rotate(2deg); }
+        /* 轴头微转 */
+        @keyframes knobTurnTop {
+          0%, 100% { transform: translateX(-50%) rotate(0deg); }
+          50% { transform: translateX(-50%) rotate(1.5deg); }
         }
-        .travel-hero.unrolled .travel-hero-scroll-knob {
-          animation: knobTurn 6s ease-in-out 2.2s infinite;
+        @keyframes knobTurnBottom {
+          0%, 100% { transform: translateX(-50%) rotate(0deg); }
+          50% { transform: translateX(-50%) rotate(-1.5deg); }
+        }
+        .travel-hero.unrolled .travel-scroll-knob-top {
+          animation: knobTurnTop 6s ease-in-out 2.5s infinite;
+        }
+        .travel-hero.unrolled .travel-scroll-knob-bottom {
+          animation: knobTurnBottom 6s ease-in-out 2.8s infinite;
         }
 
         /* 金色尘埃 */
@@ -1424,7 +1491,7 @@ const TravelPage: React.FC = () => {
 
         /* ===== 减少动画偏好 ===== */
         @media (prefers-reduced-motion: reduce) {
-          .travel-hero-scroll-bar, .travel-hero-scroll-knob,
+          .travel-scroll-rod, .travel-scroll-shaft, .travel-scroll-knob-top, .travel-scroll-knob-bottom,
           .travel-hero-content, .travel-back,
           .travel-hero-title, .travel-hero-ornament, .travel-hero-year,
           .travel-hero-text p, .travel-hero-signature, .travel-hero-seal,
@@ -1432,11 +1499,11 @@ const TravelPage: React.FC = () => {
             transition: none !important;
             animation: none !important;
           }
-          .travel-hero:not(.unrolled) .travel-hero-scroll-bar.left,
-          .travel-hero:not(.unrolled) .travel-hero-scroll-bar.right {
-            width: 32px;
+          .travel-hero:not(.unrolled) .travel-scroll-rod {
+            width: 28px;
           }
-          .travel-hero:not(.unrolled) .travel-hero-scroll-knob {
+          .travel-hero:not(.unrolled) .travel-scroll-knob-top,
+          .travel-hero:not(.unrolled) .travel-scroll-knob-bottom {
             opacity: 1;
           }
           .travel-hero:not(.unrolled) .travel-hero-content {

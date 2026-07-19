@@ -584,6 +584,7 @@ const AdvicePage: React.FC = () => {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.3, ease: "easeOut" }}>
+          <button type="button" className="advice-letterbox-close" onClick={() => setShowLetterBox(false)} aria-label="合上信件箱">×</button>
           <h2 className="advice-letterbox-title">
             <span className="advice-letterbox-title-icon" aria-hidden="true">📮</span>
             我的信件箱
@@ -1280,8 +1281,15 @@ const AdvicePage: React.FC = () => {
         }
         .advice-waiting-text {
           font-family: "Noto Serif SC", serif;
-          font-size: 13px; color: rgba(188,170,164,0.7);
+          font-size: 15px; color: #FFCCBC;
+          margin: 0 0 6px; letter-spacing: 0.04em;
+          text-shadow: 0 1px 6px rgba(0,0,0,0.5);
+        }
+        .advice-waiting-hint {
+          font-family: "Noto Serif SC", serif;
+          font-size: 13px; color: rgba(188,170,164,0.9);
           margin: 0; letter-spacing: 0.04em;
+          text-shadow: 0 1px 4px rgba(0,0,0,0.4);
         }
 
         /* ---------- 回复信封 ---------- */
@@ -1291,9 +1299,15 @@ const AdvicePage: React.FC = () => {
         }
         .advice-arrived-text {
           font-family: "Ma Shan Zheng", serif;
-          font-size: 16px; color: #FFCCBC; margin: 0 0 8px;
-          text-shadow: 0 1px 6px rgba(0,0,0,0.3);
+          font-size: 18px; color: #FFCCBC; margin: 0 0 8px;
+          text-shadow: 0 1px 6px rgba(0,0,0,0.5);
           letter-spacing: 0.04em;
+        }
+        .advice-arrived-hint {
+          font-family: "Noto Serif SC", serif;
+          font-size: 14px; color: rgba(188,170,164,0.95);
+          margin: 0; letter-spacing: 0.04em;
+          text-shadow: 0 1px 4px rgba(0,0,0,0.4);
         }
         .advice-reply {
           position: relative;

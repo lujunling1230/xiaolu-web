@@ -490,6 +490,16 @@ export default function CityDetailModal({
       }
 
       @media (max-width: 640px) {
+        .rg-detail-overlay {
+          padding: 0;
+          align-items: stretch;
+        }
+        .rg-detail-modal {
+          max-width: 100%;
+          max-height: 100vh;
+          height: 100vh;
+          border-radius: 0;
+        }
         .rg-detail-cover { height: 160px; }
         .rg-detail-body { padding: 20px; }
       }

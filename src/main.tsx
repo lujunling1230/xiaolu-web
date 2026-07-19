@@ -75,7 +75,7 @@ createRoot(document.getElementById("root")!).render(
         {/* 回血清单：i人低能耗回血工具 */}
         <Route path="/toolbox/recharge" element={<RechargePage />} />
         {/* 漫游指南：旅行足迹与攻略 */}
-        <Route path="/toolbox/travel" element={<TravelPage />} />
+        <Route path="/toolbox/travel" element={<RoamingGuidePage />} />
         <Route path="/toolbox/roaming-guide" element={<RoamingGuidePage />} />
         {/* 系统调频：5% 微改变认知工具 */}
         <Route path="/toolbox/answer" element={<SystemTuningPage />} />

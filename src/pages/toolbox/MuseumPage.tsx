@@ -855,6 +855,7 @@ const VintageCard: React.FC<{
    ============================================================ */
 const VintageGallery: React.FC<{
   title: string;
+  subtitle?: string;
   emoji: string;
   cards: VintageCard[];
   onAdd: (data: CardFormData) => void;
@@ -867,11 +868,14 @@ const VintageGallery: React.FC<{
   onLendExhibit?: (card: VintageCard) => void;
   spotlightActiveId?: string | null;
   onSpotlightToggle?: (id: string) => void;
-}> = ({ title, emoji, cards, onAdd, onEdit, onDelete, onImageUpload, onImageDelete, verifyAdmin, onCuratorNote, onLendExhibit, spotlightActiveId, onSpotlightToggle }) => (
+}> = ({ title, subtitle, emoji, cards, onAdd, onEdit, onDelete, onImageUpload, onImageDelete, verifyAdmin, onCuratorNote, onLendExhibit, spotlightActiveId, onSpotlightToggle }) => (
   <div className="vintage-section">
     <div className="vintage-section-header">
       <span className="vintage-section-emoji">{emoji}</span>
-      <h3 className="vintage-section-title">{title}</h3>
+      <div>
+        <h3 className="vintage-section-title">{title}</h3>
+        {subtitle && <p className="vintage-section-subtitle">{subtitle}</p>}
+      </div>
       <button
         onClick={() => verifyAdmin?.(() => onAdd({ year: "", title: "", description: "" }))}
         className="museum-add-btn"
@@ -1089,6 +1093,9 @@ const MuseumPage: React.FC = () => {
 
   // 聚光灯状态
   const [spotlightCardId, setSpotlightCardId] = useState<string | null>(null);
+
+  // 环境光鼠标追踪
+  const [mousePos, setMousePos] = useState({ x: 50, y: 30 });
 
   // 迁移：如果旧 key 不存在，尝试从 life_film_site_seed 读取
   useEffect(() => {

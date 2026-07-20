@@ -735,6 +735,12 @@ const InventoryPage: React.FC = () => {
     location: "冰箱",
   });
 
+  /* AI管家问答 */
+  const [chatInput, setChatInput] = useState("");
+  const [chatHistory, setChatHistory] = useState<
+    { role: "user" | "ai"; text: string }[]
+  >([]);
+
   const [photoGuideOpen, setPhotoGuideOpen] = useState(false);
   const [photoConfirmOpen, setPhotoConfirmOpen] = useState(false);
   const [recognizedItems, setRecognizedItems] = useState<RecognizedCandidate[]>([]);
@@ -1020,6 +1026,125 @@ const InventoryPage: React.FC = () => {
     setRecognizedItems((prev) =>
       prev.map((c) => (c.id === id ? { ...c, ...patch } : c))
     );
+  };
+
+  /* —— AI管家库存问答 —— */
+  const handleChat = () => {
+    const q = chatInput.trim();
+    if (!q) return;
+
+    setChatHistory((prev) => [...prev, { role: "user", text: q }]);
+    setChatInput("");
+
+    const lower = q.toLowerCase();
+    let answer = "";
+
+    // 1. 有什么库存 / 有哪些物品
+    if (
+      /有什[么吗]|哪些|[有存]货|库存/.test(q) &&
+      !/在哪|位置|过期|到期/.test(q)
+    ) {
+      if (items.length === 0) {
+        answer = "🌸 当前还没有任何物品哦~ 快去「入库登记」添加吧！";
+      } else {
+        const list = items
+          .map((it) => `• ${it.name}（${it.count}${it.unit}）`)
+          .join("\n");
+        answer = `📦 您当前共有 ${items.length} 件物品：\n${list}`;
+      }
+    }
+    // 2. xxx在哪 / xxx位置
+    else if (/在哪|位置|放[在到哪]|存放/.test(q)) {
+      const keyword = q.replace(/[在哪位置放到哪存放\?？]/g, "").trim();
+      const found = items.filter((it) =>
+        it.name.toLowerCase().includes(keyword.toLowerCase())
+      );
+      if (found.length === 0) {
+        answer = `🔍 没有找到「${keyword}」呢，确认一下名称是否正确？`;
+      } else if (found.length === 1) {
+        const it = found[0];
+        const d = daysUntil(it.expiryDate, today);
+        answer = `📍 ${it.name} 放在「${it.location}」，还有 ${it.count}${it.unit}，${d > 0 ? `剩余 ${d} 天到期` : d === 0 ? "今天到期" : `已过期 ${Math.abs(d)} 天`}。`;
+      } else {
+        const locs = found.map((it) => `• ${it.name} → ${it.location}`).join("\n");
+        answer = `📍 找到 ${found.length} 个相关物品：\n${locs}`;
+      }
+    }
+    // 3. xxx过期 / xxx到期 / 还有多久
+    else if (/过期|到期|多久|剩[余下几]/.test(q)) {
+      const keyword = q
+        .replace(/[过期到多久剩余下几\?？天]/g, "")
+        .trim();
+      const found = items.filter((it) =>
+        it.name.toLowerCase().includes(keyword.toLowerCase())
+      );
+      if (found.length === 0) {
+        answer = `🔍 没有找到「${keyword}」的到期信息呢。`;
+      } else {
+        const details = found
+          .map((it) => {
+            const d = daysUntil(it.expiryDate, today);
+            const hint =
+              d < 0
+                ? `⚠️ 已过期 ${Math.abs(d)} 天`
+                : d === 0
+                  ? "⏰ 今天到期"
+                  : d <= 7
+                    ? `🔥 仅剩 ${d} 天`
+                    : `💡 还有 ${d} 天`;
+            return `• ${it.name}：${it.expiryDate}，${hint}`;
+          })
+          .join("\n");
+        answer = details;
+      }
+    }
+    // 4. 快过期 / 临期
+    else if (/快过期|临期|要到期|即将/.test(q)) {
+      const near = items.filter((it) => {
+        const d = daysUntil(it.expiryDate, today);
+        return d >= 0 && d <= 7;
+      });
+      if (near.length === 0) {
+        answer = "✅ 太棒了！最近7天内没有临期物品~";
+      } else {
+        const list = near
+          .sort((a, b) =>
+            a.expiryDate.localeCompare(b.expiryDate)
+          )
+          .map((it) => {
+            const d = daysUntil(it.expiryDate, today);
+            return `• ${it.name}（${it.location}）：${d === 0 ? "今天到期" : `还剩 ${d} 天`}`;
+          })
+          .join("\n");
+        answer = `⏰ 最近7天内即将过期的物品：\n${list}`;
+      }
+    }
+    // 5. 已过期
+    else if (/已过期|过期.*[了没]|坏.*[了掉]/.test(q)) {
+      const expired = items.filter(
+        (it) => daysUntil(it.expiryDate, today) < 0
+      );
+      if (expired.length === 0) {
+        answer = "✅ 目前没有已过期物品，继续保持！";
+      } else {
+        const list = expired
+          .map((it) => {
+            const d = Math.abs(daysUntil(it.expiryDate, today));
+            return `• ${it.name}（${it.location}）：已过期 ${d} 天`;
+          })
+          .join("\n");
+        answer = `🚨 已过期物品（请尽快处理）：\n${list}`;
+      }
+    }
+    // 默认
+    else {
+      answer =
+        '💬 我可以帮您查库存哦！试试问：\n• "有什么库存？"\n• "牛奶在哪里？"\n• "洗衣液还有多久过期？"\n• "有什么快过期了？"';
+    }
+
+    setTimeout(() => {
+      setChatHistory((prev) => [...prev, { role: "ai", text: answer }]);
+    }, 400);
   };
 
   const tabTheme = TAB_CONFIG[activeTab];
@@ -1475,6 +1600,76 @@ const InventoryPage: React.FC = () => {
             ))}
           </section>
 
+          {/* AI管家问答 */}
+          <section
+            className="mb-4 rounded-3xl border border-[#F8C8DC]/50 bg-white/70 p-5 backdrop-blur-md"
+            style={{
+              boxShadow:
+                "inset 0 1px 0 rgba(255,255,255,0.8), 0 10px 30px rgba(224,112,160,0.08)",
+            }}
+          >
+            <h2
+              className="mb-3 flex items-center gap-2 text-base font-semibold text-gray-800"
+              style={{ fontFamily: '"Noto Serif SC", Georgia, serif' }}
+            >
+              <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[#E070A0]/15 text-sm">
+                💬
+              </span>
+              问问AI管家
+            </h2>
+
+            {/* 聊天记录 */}
+            <div className="mb-3 max-h-60 space-y-2.5 overflow-y-auto">
+              {chatHistory.length === 0 && (
+                <p className="py-2 text-center text-xs text-gray-400">
+                  试试问 "牛奶在哪里？" 或 "有什么快过期了？"
+                </p>
+              )}
+              {chatHistory.map((msg, idx) => (
+                <div
+                  key={idx}
+                  className={cn(
+                    "flex",
+                    msg.role === "user" ? "justify-end" : "justify-start"
+                  )}
+                >
+                  <div
+                    className={cn(
+                      "max-w-[85%] whitespace-pre-line rounded-2xl px-3.5 py-2 text-sm leading-relaxed",
+                      msg.role === "user"
+                        ? "bg-[#E070A0]/15 text-gray-700"
+                        : "bg-[#F8F0FF]/60 text-gray-700"
+                    )}
+                  >
+                    {msg.text}
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* 输入框 */}
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={chatInput}
+                placeholder="问点什么..."
+                onChange={(e) => setChatInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") handleChat();
+                }}
+                className="flex-1 rounded-xl border border-[#e4e0d8] bg-white/60 px-3 py-2 text-sm outline-none transition-all focus:border-[#E070A0]/40 focus:bg-white focus:ring-1 focus:ring-[#E070A0]/15"
+              />
+              <button
+                type="button"
+                onClick={handleChat}
+                disabled={!chatInput.trim()}
+                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#E070A0] text-sm text-white shadow-sm transition-all hover:bg-[#C85A8A] hover:shadow-md active:scale-95 disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                ➤
+              </button>
+            </div>
+          </section>
+
           {/* AI小贴士列表 */}
           <section
             className="rounded-3xl border border-[#F8C8DC]/50 bg-white/70 p-5 backdrop-blur-md"
@@ -1550,7 +1745,7 @@ const InventoryPage: React.FC = () => {
 
       {/* —— 底部固定导航栏 —— */}
       <nav className="fixed bottom-0 left-0 right-0 z-40 border-t border-white/40 bg-white/60 backdrop-blur-xl">
-        <div className="mx-auto flex max-w-3xl items-center justify-around px-4 py-2">
+        <div className="mx-auto flex max-w-3xl items-center justify-around px-4">
           {(Object.keys(TAB_CONFIG) as TabKey[]).map((tab) => {
             const config = TAB_CONFIG[tab];
             const isActive = activeTab === tab;
@@ -1559,39 +1754,45 @@ const InventoryPage: React.FC = () => {
                 key={tab}
                 type="button"
                 onClick={() => setActiveTab(tab)}
-                className="relative flex flex-1 flex-col items-center gap-0.5 py-2 transition-all active:scale-95"
+                className="flex flex-1 flex-col items-center gap-1 py-2 transition-all active:scale-95"
               >
-                {isActive && (
-                  <span
-                    className="absolute -top-2 flex h-8 w-8 items-center justify-center rounded-full text-sm text-white shadow-md transition-all"
-                    style={{
-                      backgroundColor: config.color,
-                      boxShadow: `0 4px 12px ${config.color}40`,
-                    }}
-                  >
-                    {config.emoji}
-                  </span>
-                )}
-                {!isActive && (
-                  <span className="text-lg text-gray-400 transition-colors">
-                    {config.emoji}
-                  </span>
-                )}
+                {/* 图标区 */}
+                <span
+                  className={cn(
+                    "flex h-8 w-8 items-center justify-center rounded-full text-sm transition-all",
+                    isActive
+                      ? "text-white shadow-md"
+                      : "text-gray-400"
+                  )}
+                  style={
+                    isActive
+                      ? {
+                          backgroundColor: config.color,
+                          boxShadow: `0 4px 12px ${config.color}40`,
+                        }
+                      : undefined
+                  }
+                >
+                  {config.emoji}
+                </span>
+                {/* 文字 */}
                 <span
                   className={cn(
                     "text-[11px] font-medium transition-colors",
-                    isActive ? "text-gray-800" : "text-gray-400"
+                    isActive ? "" : "text-gray-400"
                   )}
                   style={isActive ? { color: config.color } : undefined}
                 >
                   {config.label}
                 </span>
-                {isActive && (
-                  <span
-                    className="mt-0.5 h-1 w-1 rounded-full"
-                    style={{ backgroundColor: config.color }}
-                  />
-                )}
+                {/* 指示点 */}
+                <span
+                  className={cn(
+                    "h-1 w-1 rounded-full transition-all",
+                    isActive ? "opacity-100" : "opacity-0"
+                  )}
+                  style={isActive ? { backgroundColor: config.color } : undefined}
+                />
               </button>
             );
           })}

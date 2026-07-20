@@ -250,17 +250,31 @@ export default function AIAssistantPanel({
     <>
       <style>{CSS}</style>
 
-      {/* ===== 企鹅玩偶悬浮按钮 ===== */}
+      {/* ===== 小地球悬浮按钮 ===== */}
       <button
-        className="rg-ai-penguin"
+        className="rg-ai-globe"
         onClick={() => setOpen(true)}
-        aria-label="打开 AI 助手"
+        aria-label="打开 AI 旅行向导"
+        title="AI 旅行向导"
       >
-        <img
-          src="/penguin-mascot.png"
-          alt="企鹅助手"
-          draggable={false}
-        />
+        <svg className="rg-ai-globe__svg" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+          {/* 地球外轮廓 */}
+          <circle cx="32" cy="32" r="28" stroke="#5B9A8B" strokeWidth="2.5" fill="rgba(91,154,139,0.12)" />
+          {/* 赤道 */}
+          <ellipse cx="32" cy="32" rx="28" ry="8" stroke="#5B9A8B" strokeWidth="1.2" fill="none" opacity="0.6" />
+          {/* 经线 */}
+          <ellipse cx="32" cy="32" rx="12" ry="28" stroke="#5B9A8B" strokeWidth="1.2" fill="none" opacity="0.5" />
+          <ellipse cx="32" cy="32" rx="22" ry="28" stroke="#5B9A8B" strokeWidth="1" fill="none" opacity="0.35" />
+          {/* 大陆轮廓（简化） */}
+          <path d="M20 24 Q26 20 30 26 T38 22 Q42 24 40 30 T44 36 Q40 42 34 40 T28 44 Q22 42 24 36 T20 30 Q18 26 20 24Z" fill="rgba(91,154,139,0.25)" stroke="#5B9A8B" strokeWidth="1" />
+          {/* 定位标记 */}
+          <circle cx="44" cy="20" r="3" fill="#C4953A" />
+          <circle cx="44" cy="20" r="6" stroke="#C4953A" strokeWidth="1" fill="none" opacity="0.4">
+            <animate attributeName="r" values="6;9;6" dur="2s" repeatCount="indefinite" />
+            <animate attributeName="opacity" values="0.4;0;0.4" dur="2s" repeatCount="indefinite" />
+          </circle>
+        </svg>
+        <span className="rg-ai-globe__pulse" />
       </button>
 
       {/* ===== 遮罩层 ===== */}
@@ -284,7 +298,17 @@ export default function AIAssistantPanel({
 
         {/* 标题栏 */}
         <div className="rg-ai-drawer__header">
-          <h3 className="rg-ai-drawer__title">AI 旅 行 助 手</h3>
+          <div className="rg-ai-drawer__brand">
+            <svg className="rg-ai-drawer__globe-icon" viewBox="0 0 24 24" fill="none" stroke="#5B9A8B" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="12" cy="12" r="10" />
+              <line x1="2" y1="12" x2="22" y2="12" />
+              <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
+            </svg>
+            <div>
+              <h3 className="rg-ai-drawer__title">漫游向导</h3>
+              <span className="rg-ai-drawer__subtitle">为你指路，也为你留一盏灯</span>
+            </div>
+          </div>
           <button
             className="rg-ai-drawer__close"
             onClick={() => setOpen(false)}
@@ -300,13 +324,13 @@ export default function AIAssistantPanel({
             className={`rg-ai-tabs__btn${activeTab === "reverse" ? " rg-ai-tabs__btn--active" : ""}`}
             onClick={() => setActiveTab("reverse")}
           >
-            帮我选城市
+            下一站去哪
           </button>
           <button
             className={`rg-ai-tabs__btn${activeTab === "forward" ? " rg-ai-tabs__btn--active" : ""}`}
             onClick={() => setActiveTab("forward")}
           >
-            生成攻略
+            替我规划
           </button>
         </div>
 
@@ -859,53 +883,76 @@ const CSS = `
 }
 
 /* ================================================================
-   企鹅玩偶悬浮按钮
+   小地球悬浮按钮
    ================================================================ */
-.rg-ai-penguin {
+.rg-ai-globe {
   position: fixed;
   right: 20px;
   bottom: 20px;
   z-index: 9000;
-  width: auto;
-  height: 70px;
+  width: 56px;
+  height: 56px;
   border: none;
-  background: none;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #f8f6f2 0%, #ede8e0 100%);
   cursor: pointer;
   padding: 0;
   display: flex;
-  align-items: flex-end;
+  align-items: center;
   justify-content: center;
-  filter: drop-shadow(0 4px 10px rgba(0,0,0,0.15));
+  box-shadow:
+    0 4px 16px rgba(0,0,0,0.12),
+    0 0 0 1px rgba(176,141,87,0.15),
+    inset 0 1px 0 rgba(255,255,255,0.8);
   transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1),
-              filter 0.3s ease;
-  /* 确保不被其他元素遮挡 */
+              box-shadow 0.3s ease;
   pointer-events: auto;
 }
 
-.rg-ai-penguin img {
-  height: 70px;
-  width: auto;
-  display: block;
-  border-radius: 8px;
-  object-fit: contain;
+.rg-ai-globe__svg {
+  width: 34px;
+  height: 34px;
+  animation: rg-globe-spin 12s linear infinite;
 }
 
-/* Hover: 上浮 + 漂浮动画 */
-.rg-ai-penguin:hover {
-  transform: translateY(-5px);
-  animation: rg-penguin-float 2s ease-in-out infinite;
+.rg-ai-globe__pulse {
+  position: absolute;
+  inset: -4px;
+  border-radius: 50%;
+  border: 2px solid rgba(196,149,58,0.3);
+  opacity: 0;
+  animation: rg-globe-pulse 2s ease-in-out infinite;
 }
 
-/* Click: 被"戳"的物理反馈 */
-.rg-ai-penguin:active {
-  transform: scale(0.95);
-  animation: none;
-  filter: drop-shadow(0 2px 6px rgba(0,0,0,0.2));
+/* Hover: 上浮 + 脉冲加速 */
+.rg-ai-globe:hover {
+  transform: translateY(-4px) scale(1.05);
+  box-shadow:
+    0 8px 24px rgba(0,0,0,0.15),
+    0 0 0 1px rgba(176,141,87,0.3),
+    inset 0 1px 0 rgba(255,255,255,0.8);
 }
 
-@keyframes rg-penguin-float {
-  0%, 100% { transform: translateY(-5px); }
-  50% { transform: translateY(-10px); }
+.rg-ai-globe:hover .rg-ai-globe__pulse {
+  animation-duration: 1.2s;
+}
+
+/* Click: 物理反馈 */
+.rg-ai-globe:active {
+  transform: scale(0.92);
+  box-shadow:
+    0 2px 8px rgba(0,0,0,0.1),
+    0 0 0 1px rgba(176,141,87,0.2);
+}
+
+@keyframes rg-globe-spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+@keyframes rg-globe-pulse {
+  0%, 100% { transform: scale(1); opacity: 0; }
+  50%      { transform: scale(1.15); opacity: 0.5; }
 }
 
 /* ================================================================
@@ -1010,12 +1057,34 @@ const CSS = `
   flex-shrink: 0;
 }
 
+.rg-ai-drawer__brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.rg-ai-drawer__globe-icon {
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+  opacity: 0.8;
+}
+
 .rg-ai-drawer__title {
-  font-size: var(--rg-text-h3, 18px);
+  font-size: var(--rg-text-h3, 17px);
   font-weight: var(--rg-weight-title, 600);
   color: var(--rg-ink, #5c3a21);
-  letter-spacing: 6px;
+  letter-spacing: 3px;
   margin: 0;
+  line-height: 1.3;
+}
+
+.rg-ai-drawer__subtitle {
+  font-size: 11px;
+  color: var(--rg-ink-light, #8B7D6B);
+  letter-spacing: 1px;
+  display: block;
+  margin-top: 2px;
 }
 
 .rg-ai-drawer__close {

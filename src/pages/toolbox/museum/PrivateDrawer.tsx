@@ -238,6 +238,7 @@ export default function PrivateDrawer({ isOpen, onClose }: PrivateDrawerProps) {
   const [toastVisible, setToastVisible] = useState(false);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [focusedItem, setFocusedItem] = useState<string | null>(null);
+  const [pendingImage, setPendingImage] = useState<string | null>(null);
 
   /* ---- Refs ---- */
   const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -248,6 +249,7 @@ export default function PrivateDrawer({ isOpen, onClose }: PrivateDrawerProps) {
   const lastScrollTop = useRef(0);
   const wobbleTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   /* ---- Load items on mount / when opened ---- */
   useEffect(() => {
@@ -419,6 +421,7 @@ export default function PrivateDrawer({ isOpen, onClose }: PrivateDrawerProps) {
     setContextMenu(null);
     setEditingId(null);
     setInputValue("");
+    setPendingImage(null);
     setFocusedItem(null);
     handleLockPressEnd();
     onClose();
@@ -426,19 +429,24 @@ export default function PrivateDrawer({ isOpen, onClose }: PrivateDrawerProps) {
 
   const handleAddItem = useCallback(() => {
     const text = inputValue.trim();
-    if (!text) return;
+    if (!text && !pendingImage) return;
     const newItem: PrivateItem = {
       id: genId(),
       content: text,
+      imageUrl: pendingImage || undefined,
       createdAt: Date.now(),
       rotation: randomRotation(),
       widthPercent: 45 + Math.random() * 50,
-      heightRatio: randomHeightRatio(),
+      heightRatio: pendingImage ? 1 : randomHeightRatio(),
     };
     setItems((prev) => [...prev, newItem]);
     setInputValue("");
+    setPendingImage(null);
     if (textareaRef.current) {
       textareaRef.current.value = "";
+    }
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
     }
     showToast();
     setTimeout(() => {
@@ -446,7 +454,25 @@ export default function PrivateDrawer({ isOpen, onClose }: PrivateDrawerProps) {
         scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
       }
     }, 100);
-  }, [inputValue, showToast]);
+  }, [inputValue, pendingImage, showToast]);
+
+  /* ---- 图片选择处理 ---- */
+  const handleImageSelect = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 4 * 1024 * 1024) {
+      alert("图片不能超过 4MB");
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => {
+      const result = reader.result;
+      if (typeof result === "string") {
+        setPendingImage(result);
+      }
+    };
+    reader.readAsDataURL(file);
+  }, []);
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -862,14 +888,30 @@ export default function PrivateDrawer({ isOpen, onClose }: PrivateDrawerProps) {
                                     style={styles.editTextarea}
                                   />
                                 ) : (
-                                  <p
-                                    style={{
-                                      ...styles.cardText,
-                                      fontSize: `${14 + (idx % 5)}px`,
-                                    }}
-                                  >
-                                    {item.content}
-                                  </p>
+                                  <>
+                                    {item.imageUrl && (
+                                      <img
+                                        src={item.imageUrl}
+                                        alt=""
+                                        style={{
+                                          width: "100%",
+                                          borderRadius: "2px",
+                                          marginBottom: item.content ? "8px" : 0,
+                                          display: "block",
+                                        }}
+                                      />
+                                    )}
+                                    {item.content && (
+                                      <p
+                                        style={{
+                                          ...styles.cardText,
+                                          fontSize: `${14 + (idx % 5)}px`,
+                                        }}
+                                      >
+                                        {item.content}
+                                      </p>
+                                    )}
+                                  </>
                                 )}
                               </div>
                             </motion.div>
@@ -882,6 +924,46 @@ export default function PrivateDrawer({ isOpen, onClose }: PrivateDrawerProps) {
 
                 {/* Input area */}
                 <div style={styles.inputArea}>
+                  {pendingImage && (
+                    <div style={{ position: "relative", flexShrink: 0 }}>
+                      <img
+                        src={pendingImage}
+                        alt="待藏"
+                        style={{
+                          width: 52,
+                          height: 52,
+                          objectFit: "cover",
+                          borderRadius: 4,
+                          border: "1px solid rgba(196,149,58,0.3)",
+                        }}
+                      />
+                      <button
+                        onClick={() => {
+                          setPendingImage(null);
+                          if (fileInputRef.current) fileInputRef.current.value = "";
+                        }}
+                        style={{
+                          position: "absolute",
+                          top: -6,
+                          right: -6,
+                          width: 18,
+                          height: 18,
+                          borderRadius: "50%",
+                          border: "none",
+                          background: "#a05040",
+                          color: "#fff",
+                          fontSize: 11,
+                          cursor: "pointer",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          lineHeight: 1,
+                        }}
+                      >
+                        ×
+                      </button>
+                    </div>
+                  )}
                   <textarea
                     ref={textareaRef}
                     value={inputValue}
@@ -892,16 +974,37 @@ export default function PrivateDrawer({ isOpen, onClose }: PrivateDrawerProps) {
                     style={styles.textarea}
                     rows={2}
                   />
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    onChange={handleImageSelect}
+                    style={{ display: "none" }}
+                  />
+                  <button
+                    onClick={() => fileInputRef.current?.click()}
+                    className="pd-add-btn"
+                    style={{
+                      ...styles.addBtn,
+                      opacity: 1,
+                      cursor: "pointer",
+                    }}
+                  >
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                      <rect x="3" y="3" width="18" height="18" rx="2" />
+                      <circle cx="8.5" cy="8.5" r="1.5" />
+                      <path d="M21 15l-5-5L5 21" />
+                    </svg>
+                    <span style={{ marginLeft: 4 }}>图片</span>
+                  </button>
                   <button
                     onClick={handleAddItem}
                     className="pd-add-btn"
-                    disabled={!inputValue.trim()}
+                    disabled={!inputValue.trim() && !pendingImage}
                     style={{
                       ...styles.addBtn,
-                      opacity: inputValue.trim() ? 1 : 0.35,
-                      cursor: inputValue.trim()
-                        ? "pointer"
-                        : "default",
+                      opacity: inputValue.trim() || pendingImage ? 1 : 0.35,
+                      cursor: inputValue.trim() || pendingImage ? "pointer" : "default",
                     }}
                   >
                     <PinIcon size={14} />

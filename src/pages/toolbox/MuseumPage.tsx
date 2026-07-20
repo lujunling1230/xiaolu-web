@@ -1392,7 +1392,7 @@ const MuseumPage: React.FC = () => {
       if (el) {
         el.scrollIntoView({ behavior: "smooth", block: "start" });
       }
-    }, 1600); // after 1.5s transition + 100ms buffer
+    }, 3400); // after 3s transition + 400ms buffer
   }, [transitioning]);
 
   const handleTransitionComplete = useCallback(() => {
@@ -1522,13 +1522,35 @@ const MuseumPage: React.FC = () => {
         ))}
       </div>
 
-      {/* ===== 展厅一：时代回响 ===== */}
-      <section className={`museum-hall museum-era-section${spotlightCardId ? " spotlight-dimmed" : ""}`}>
+      {/* ===== 展厅一：时光放映厅 ===== */}
+      <section className="museum-hall museum-era-section">
         <div className="museum-hall-head">
           <span className="museum-hall-roman">I</span>
           <div>
-            <h2 className="museum-hall-title">时代回响</h2>
-            <p className="museum-hall-sub">那些年，我们一起追过的流行。</p>
+            <h2 className="museum-hall-title">时光放映厅</h2>
+            <p className="museum-hall-sub">电视里的乌托邦，那些年的追剧时光。</p>
+          </div>
+        </div>
+
+        <div ref={(el) => { hallRefs.current["film"] = el; }}>
+        <TimeTheater
+          tvCards={sortedTvs}
+          bgmCards={sortedBgms}
+          onEdit={(card, type) => {
+            if (type === "tv") setCardModal({ mode: "edit", section: "tv", data: card });
+            else setCardModal({ mode: "edit", section: "bgm", data: card });
+          }}
+        />
+        </div>
+      </section>
+
+      {/* ===== 展厅二：声纹回廊 ===== */}
+      <section className="museum-hall museum-era-section">
+        <div className="museum-hall-head">
+          <span className="museum-hall-roman">II</span>
+          <div>
+            <h2 className="museum-hall-title">声纹回廊</h2>
+            <p className="museum-hall-sub">耳机插上的那一刻，世界就只剩下旋律。</p>
           </div>
         </div>
 
@@ -1545,16 +1567,16 @@ const MuseumPage: React.FC = () => {
           spotlightActiveId={spotlightCardId}
           onSpotlightToggle={(id) => setSpotlightCardId(prev => prev === id ? null : id)} />
         </div>
+      </section>
 
-        <div ref={(el) => { hallRefs.current["film"] = el; }}>
-        <TimeTheater
-          tvCards={sortedTvs}
-          bgmCards={sortedBgms}
-          onEdit={(card, type) => {
-            if (type === "tv") setCardModal({ mode: "edit", section: "tv", data: card });
-            else setCardModal({ mode: "edit", section: "bgm", data: card });
-          }}
-        />
+      {/* ===== 展厅三：数字足迹馆 ===== */}
+      <section className="museum-hall museum-era-section">
+        <div className="museum-hall-head">
+          <span className="museum-hall-roman">III</span>
+          <div>
+            <h2 className="museum-hall-title">数字足迹馆</h2>
+            <p className="museum-hall-sub">每一个网址，都是通往旧时光的门。</p>
+          </div>
         </div>
 
         <div className="zone-net" ref={(el) => { hallRefs.current["net"] = el; }}>
@@ -1572,10 +1594,10 @@ const MuseumPage: React.FC = () => {
         </div>
       </section>
 
-      {/* ===== 荣耀殿堂 ===== */}
+      {/* ===== 展厅四：荣耀殿堂 ===== */}
       <section className="museum-hall">
         <div className="museum-hall-head">
-          <span className="museum-hall-roman">II</span>
+          <span className="museum-hall-roman">IV</span>
           <div>
             <h2 className="museum-hall-title">荣耀殿堂</h2>
             <p className="museum-hall-sub">被认真走过的路，终将成为勋章。</p>

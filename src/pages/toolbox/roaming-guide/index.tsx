@@ -115,6 +115,34 @@ export default function RoamingGuidePage() {
         .rg-stats-bar {
           margin-top: 48px !important;
         }
+        /* 地图区域标题 */
+        .rg-map-section {
+          max-width: 1200px;
+          margin: 0 auto;
+          padding: 0 20px;
+        }
+        .rg-map-section__title {
+          font-size: 20px;
+          color: var(--rg-ink, #5c3a21);
+          font-family: var(--rg-font-serif), serif;
+          letter-spacing: 4px;
+          margin: 0 0 8px;
+          text-align: center;
+        }
+        .rg-map-section__subtitle {
+          font-size: 13px;
+          color: var(--rg-ink-light, #8B7D6B);
+          text-align: center;
+          margin: 0 0 20px;
+          letter-spacing: 1px;
+        }
+        .rg-section-divider {
+          max-width: 120px;
+          height: 1px;
+          background: linear-gradient(90deg, transparent, var(--rg-ink-border, #C8B898), transparent);
+          margin: 48px auto 32px;
+          border: none;
+        }
       `}</style>
 
       {/* 卷轴 Hero */}
@@ -127,12 +155,20 @@ export default function RoamingGuidePage() {
         days={stats.days}
       />
 
+      <hr className="rg-section-divider" />
+
       {/* 地图区域 */}
-      <MapContainer
-        cities={cities}
-        selectedCity={selectedCity}
-        onSelectCity={handleSelectCity}
-      />
+      <section className="rg-map-section">
+        <h2 className="rg-map-section__title">足迹地图</h2>
+        <p className="rg-map-section__subtitle">每座城市都是一个未完成的故事</p>
+        <MapContainer
+          cities={cities}
+          selectedCity={selectedCity}
+          onSelectCity={handleSelectCity}
+        />
+      </section>
+
+      <hr className="rg-section-divider" />
 
       {/* 城市卡片画廊 */}
       <CityCardGallery

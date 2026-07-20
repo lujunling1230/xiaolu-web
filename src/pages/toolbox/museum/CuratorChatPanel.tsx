@@ -673,9 +673,9 @@ export default function CuratorChatPanel({ onArchive }: CuratorChatPanelProps) {
               <AnimatePresence>
                 {showForm && (
                   <motion.div
-                    initial={{ opacity: 0, y: 12, height: 0 }}
-                    animate={{ opacity: 1, y: 0, height: "auto" }}
-                    exit={{ opacity: 0, y: -8, height: 0 }}
+                    initial={{ opacity: 0, y: 12 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -8 }}
                     style={{
                       background: "rgba(255,255,255,0.95)",
                       border: "2px solid rgba(76,175,80,0.5)",
@@ -684,7 +684,6 @@ export default function CuratorChatPanel({ onArchive }: CuratorChatPanelProps) {
                       display: "flex",
                       flexDirection: "column",
                       gap: 10,
-                      overflow: "hidden",
                     }}
                   >
                     <div

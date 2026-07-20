@@ -178,17 +178,7 @@ const ECG_PATTERN = `data:image/svg+xml,${encodeURIComponent(`
 /* ============================================================
    工具
    ============================================================ */
-const STORAGE_KEY = "recharge_count";
 const DONE_KEY = "recharge_done_ids";
-
-function loadCount(): number {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    return raw ? Math.max(0, Number(raw) || 0) : 0;
-  } catch {
-    return 0;
-  }
-}
 
 function loadDoneIds(): Set<number> {
   try {
@@ -197,26 +187,6 @@ function loadDoneIds(): Set<number> {
   } catch {
     return new Set();
   }
-}
-
-function isThisWeek(): boolean {
-  try {
-    const ts = Number(localStorage.getItem("recharge_count_ts") || 0);
-    if (!ts) return false;
-    const now = new Date();
-    const then = new Date(ts);
-    const day = now.getDay() || 7;
-    const monday = new Date(now);
-    monday.setHours(0, 0, 0, 0);
-    monday.setDate(now.getDate() - (day - 1));
-    return then >= monday;
-  } catch {
-    return false;
-  }
-}
-
-function getWeekStartCount(): number {
-  return isThisWeek() ? loadCount() : 0;
 }
 
 /* ============================================================
@@ -474,9 +444,19 @@ const HomePage: React.FC<{
   onToggle: (id: number) => void;
   onShowBadge: (badge: Badge) => void;
 }> = ({ doneIds, onToggle, onShowBadge }) => {
+  const healingMessages = [
+    "今天也在好好照顾自己呢",
+    "哪怕一点点，也是在发光",
+    "你已经做得很好了",
+    "温柔地对待自己，就是最好的回血",
+    "不必完美，只要真实",
+    "慢慢来，不着急",
+    "你值得被温柔以待",
+    "今天也辛苦了，好好休息吧",
+  ];
   const savedState = useMemo(() => loadUserState(), []);
   const [selectedMood, setSelectedMood] = useState<string>(savedState?.mood || "happy");
-  const [energyValue, setEnergyValue] = useState<number>(savedState?.energy === "high" ? 9 : savedState?.energy === "medium" ? 5 : 2);
+  const [energyLevel, setEnergyLevel] = useState<EnergyLevel>(savedState?.energy || "medium");
   const [selectedWeather, setSelectedWeather] = useState<WeatherType>(savedState?.weather || "sunny");
   const [recommendations, setRecommendations] = useState<Recommendation[]>([]);
   const [hasGenerated, setHasGenerated] = useState(false);
@@ -484,6 +464,8 @@ const HomePage: React.FC<{
   const [badges, setBadges] = useState<Badge[]>([]);
   const [todayCount, setTodayCount] = useState(0);
   const [streak, setStreak] = useState(0);
+  const [detailRec, setDetailRec] = useState<Recommendation | null>(null);
+  const [timer, setTimer] = useState<{ active: boolean; seconds: number; recId: number } | null>(null);
 
   const historyKeywords = useMemo(() => {
     const history = loadHistory();
@@ -499,11 +481,13 @@ const HomePage: React.FC<{
     setBadges(getBadges(history, sd, tc));
   }, []);
 
-  const energyLevel = useMemo((): EnergyLevel => {
-    if (energyValue >= 7) return "high";
-    if (energyValue >= 4) return "medium";
-    return "low";
-  }, [energyValue]);
+  useEffect(() => {
+    if (!timer || !timer.active) return;
+    const interval = setInterval(() => {
+      setTimer(prev => prev ? { ...prev, seconds: prev.seconds + 1 } : null);
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [timer?.active]);
 
   const moodType = useMemo((): MoodType => {
     const found = MOOD_EXTENDED.find(m => m.key === selectedMood);
@@ -538,6 +522,11 @@ const HomePage: React.FC<{
     }
     setBadges(newBadges);
 
+    // 计时器
+    if (timer && timer.recId === rec.node.id) {
+      setTimer(prev => prev ? { ...prev, active: false } : null);
+    }
+
     // Toast
     const msg = feedbackMessages[Math.floor(Math.random() * feedbackMessages.length)];
     const toast = { id: Date.now(), text: msg, icon: rec.node.icon };
@@ -547,20 +536,10 @@ const HomePage: React.FC<{
 
   return (
     <div className="tab-home">
-      {/* 今日充能进度 */}
-      <div className="home-progress-card">
-        <div className="home-progress-header">
-          <span className="home-progress-title">今日充能</span>
-          <span className="home-progress-count">{todayCount} / 5</span>
-        </div>
-        <div className="home-progress-bar">
-          <motion.div
-            className="home-progress-fill"
-            initial={{ width: 0 }}
-            animate={{ width: `${Math.min((todayCount / 5) * 100, 100)}%` }}
-            transition={{ duration: 0.5, ease: "easeOut" }}
-          />
-        </div>
+      {/* 治愈文案 */}
+      <div className="home-healing-card">
+        <span className="home-healing-emoji">🌸</span>
+        <span className="home-healing-text">{healingMessages[Math.floor(Math.random() * healingMessages.length)]}</span>
         {streak > 0 && <span className="home-streak">连续 {streak} 天</span>}
       </div>
 
@@ -588,16 +567,22 @@ const HomePage: React.FC<{
         {/* 精力值 */}
         <div className="home-state-row">
           <span className="home-state-key">精力</span>
-          <div className="home-energy-slider-wrap">
-            <input
-              type="range"
-              min={1}
-              max={10}
-              value={energyValue}
-              onChange={e => setEnergyValue(Number(e.target.value))}
-              className="home-energy-slider"
-            />
-            <span className="home-energy-value">{energyValue}</span>
+          <div className="home-state-options">
+            <button
+              className={`home-energy-dot ${energyLevel === "high" ? "active" : ""}`}
+              onClick={() => setEnergyLevel("high")}
+              title="精力充沛"
+            >●</button>
+            <button
+              className={`home-energy-dot ${energyLevel === "medium" ? "active" : ""}`}
+              onClick={() => setEnergyLevel("medium")}
+              title="精力一般"
+            >●</button>
+            <button
+              className={`home-energy-dot ${energyLevel === "low" ? "active" : ""}`}
+              onClick={() => setEnergyLevel("low")}
+              title="精力不足"
+            >●</button>
           </div>
         </div>
 
@@ -610,9 +595,9 @@ const HomePage: React.FC<{
                 key={w.key}
                 className={`home-weather-btn ${selectedWeather === w.key ? "active" : ""}`}
                 onClick={() => setSelectedWeather(w.key)}
+                title={w.label}
               >
                 <span className="home-weather-icon">{w.icon}</span>
-                <span className="home-weather-label">{w.label}</span>
               </button>
             ))}
           </div>
@@ -647,7 +632,7 @@ const HomePage: React.FC<{
                     <span className="home-rec-card-icon">{rec.node.icon}</span>
                     <div className="home-rec-card-content">
                       <p className="home-rec-card-name">
-                        {rec.node.text.length > 20 ? rec.node.text.slice(0, 20) + "…" : rec.node.text}
+                        {rec.node.text}
                       </p>
                       <p className="home-rec-card-reason">{rec.reason}</p>
                       <div className="home-rec-card-tags">
@@ -663,9 +648,26 @@ const HomePage: React.FC<{
                       </div>
                     </div>
                   </div>
-                  <button className="home-rec-card-action" onClick={() => handleDoIt(rec)}>
-                    执行
-                  </button>
+                  <div className="home-rec-card-actions">
+                    <button className="home-rec-card-action" onClick={() => handleDoIt(rec)}>
+                      执行
+                    </button>
+                    <button className="home-rec-card-detail" onClick={() => setDetailRec(rec)}>
+                      查看详情
+                    </button>
+                    <button
+                      className="home-rec-card-timer"
+                      onClick={() => setTimer(prev =>
+                        prev && prev.recId === rec.node.id && prev.active
+                          ? { ...prev, active: false }
+                          : { active: true, seconds: 0, recId: rec.node.id }
+                      )}
+                    >
+                      {timer && timer.recId === rec.node.id && timer.active
+                        ? `⏱ ${Math.floor(timer.seconds / 60)}:${String(timer.seconds % 60).padStart(2, "0")}`
+                        : "⏱ 计时"}
+                    </button>
+                  </div>
                 </motion.div>
               ))}
             </div>
@@ -691,6 +693,47 @@ const HomePage: React.FC<{
           ))}
         </AnimatePresence>
       </div>
+
+      {/* 详情弹窗 */}
+      <AnimatePresence>
+        {detailRec && (
+          <motion.div
+            className="detail-overlay"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setDetailRec(null)}
+          >
+            <motion.div
+              className="detail-popup"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 20 }}
+              transition={{ duration: 0.35 }}
+              onClick={e => e.stopPropagation()}
+            >
+              <button className="detail-close" onClick={() => setDetailRec(null)}>✕</button>
+              <span className="detail-icon">{detailRec.node.icon}</span>
+              <h3 className="detail-name">{detailRec.node.text}</h3>
+              <p className="detail-reason">{detailRec.reason}</p>
+              <div className="detail-tags">
+                {detailRec.node.tags.map(tag => (
+                  <span
+                    key={tag}
+                    className="home-rec-tag"
+                    style={{ borderColor: TAG_MAP[tag].color, color: TAG_MAP[tag].color }}
+                  >
+                    {TAG_MAP[tag].label}
+                  </span>
+                ))}
+              </div>
+              <button className="detail-action" onClick={() => { handleDoIt(detailRec); setDetailRec(null); }}>
+                执行这件事
+              </button>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };
@@ -1190,9 +1233,9 @@ const BottomNav: React.FC<{ active: TabKey; onChange: (tab: TabKey) => void }> =
         key={item.key}
         className={`bottom-nav-item ${active === item.key ? "active" : ""}`}
         onClick={() => onChange(item.key)}
+        title={item.label}
       >
         <span className="bottom-nav-icon">{item.icon}</span>
-        <span className="bottom-nav-label">{item.label}</span>
       </button>
     ))}
   </nav>
@@ -1232,8 +1275,6 @@ const BadgePopup: React.FC<{ badge: Badge; onClose: () => void }> = ({ badge, on
 const RechargePage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<TabKey>("home");
   const [doneIds, setDoneIds] = useState<Set<number>>(loadDoneIds);
-  const [weekCount, setWeekCount] = useState<number>(getWeekStartCount);
-  const [countBump, setCountBump] = useState(0);
   const [hiddenFound, setHiddenFound] = useState(false);
   const [catState, setCatState] = useState<"sleep" | "stare" | "yawn">("sleep");
   const [newBadge, setNewBadge] = useState<Badge | null>(null);
@@ -1246,15 +1287,6 @@ const RechargePage: React.FC = () => {
         next.delete(id);
       } else {
         next.add(id);
-        setWeekCount((c) => {
-          const nc = c + 1;
-          try {
-            localStorage.setItem(STORAGE_KEY, String(nc));
-            localStorage.setItem("recharge_count_ts", String(Date.now()));
-          } catch { /* ignore */ }
-          return nc;
-        });
-        setCountBump((n) => n + 1);
         saveCompletion(id);
       }
       try {
@@ -1366,20 +1398,6 @@ const RechargePage: React.FC = () => {
         </AnimatePresence>
       </div>
 
-      {/* 能量计数（固定右下角） */}
-      <motion.div
-        className="recharge-counter"
-        key={countBump}
-        initial={{ scale: 0.9, opacity: 0.7 }}
-        animate={{ scale: 1, opacity: 1 }}
-        transition={{ type: "spring", stiffness: 200, damping: 14 }}
-      >
-        <span className="recharge-counter-emoji">⚡️</span>
-        <span className="recharge-counter-text">
-          本周已回血 <b>{weekCount}</b> 次
-        </span>
-      </motion.div>
-
       {/* 底部导航 */}
       <BottomNav active={activeTab} onChange={setActiveTab} />
 
@@ -1442,7 +1460,7 @@ const RechargePage: React.FC = () => {
         .recharge-content {
           max-width: 720px;
           margin: 0 auto;
-          padding-bottom: 80px;
+          padding-bottom: 72px;
           position: relative;
           z-index: 2;
         }
@@ -1450,41 +1468,26 @@ const RechargePage: React.FC = () => {
           min-height: 50vh;
         }
 
-        /* ===== 能量计数 ===== */
-        .recharge-counter {
-          position: fixed; bottom: 72px; right: 20px; z-index: 40;
-          display: flex; align-items: center; gap: 8px;
-          padding: 8px 14px; border-radius: 999px;
-          background: #FFFFFF;
-          border: 1px solid rgba(180,170,160,0.2);
-          box-shadow: 0 4px 16px -6px rgba(120,100,80,0.15);
-        }
-        .recharge-counter-emoji { font-size: 13px; }
-        .recharge-counter-text { font-size: 12px; color: #6b5e50; letter-spacing: 0.03em; }
-        .recharge-counter-text b { color: #4cba4c; font-size: 14px; }
-
         /* ===== 底部导航 ===== */
         .bottom-nav {
-          position: fixed; bottom: 0; left: 0; right: 0; z-index: 50;
-          display: flex; align-items: center; justify-content: space-around;
-          height: 56px;
+          position: fixed; bottom: 16px; left: 50%; transform: translateX(-50%); z-index: 50;
+          display: flex; align-items: center; gap: 4px;
+          padding: 6px 8px; border-radius: 20px;
           background: #FFFFFF;
-          border-top: 1px solid rgba(180,170,160,0.15);
-          box-shadow: 0 -2px 12px rgba(160,150,140,0.06);
+          box-shadow: 0 2px 16px rgba(160,150,140,0.08);
         }
         .bottom-nav-item {
-          display: flex; flex-direction: column; align-items: center; gap: 2px;
-          padding: 6px 12px;
+          display: flex; align-items: center; justify-content: center;
+          width: 36px; height: 36px; border-radius: 18px;
           background: none; border: none;
-          font-family: "Noto Sans SC", system-ui, sans-serif;
-          transition: color 0.25s ease;
+          font-size: 16px; line-height: 1;
+          transition: background 0.25s ease;
           color: #b8aa9a;
         }
         .bottom-nav-item.active {
+          background: #F5F0FF;
           color: #7C6A9A;
         }
-        .bottom-nav-icon { font-size: 18px; line-height: 1; }
-        .bottom-nav-label { font-size: 10px; letter-spacing: 0.04em; }
 
         /* ===== 能量节点流 ===== */
         .energy-flow {
@@ -1704,27 +1707,19 @@ const RechargePage: React.FC = () => {
 
         /* ===== Tab 1 — 首页 ===== */
         .tab-home { padding: 0 4px; }
-        .home-progress-card {
+        .home-healing-card {
           padding: 16px; border-radius: 16px; margin-bottom: 20px;
+          display: flex; align-items: center; gap: 10px;
           background: #FFFFFF; border: 1px solid rgba(180,170,160,0.1);
           box-shadow: 0 2px 12px rgba(160,150,140,0.04);
+          flex-wrap: wrap;
         }
-        .home-progress-header {
-          display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px;
-        }
-        .home-progress-title {
+        .home-healing-emoji { font-size: 20px; flex-shrink: 0; }
+        .home-healing-text {
+          flex: 1; min-width: 0;
           font-family: "Noto Serif SC", Georgia, serif;
-          font-size: 15px; color: #5a5048; font-weight: 600; letter-spacing: 0.04em;
-        }
-        .home-progress-count { font-size: 13px; color: #4cba4c; font-weight: 500; }
-        .home-progress-bar {
-          width: 100%; height: 6px; border-radius: 3px;
-          background: rgba(180,170,160,0.12); overflow: hidden;
-        }
-        .home-progress-fill {
-          height: 100%; border-radius: 3px;
-          background: linear-gradient(90deg, #6adc6a, #4cba4c);
-          box-shadow: 0 0 6px rgba(100, 220, 120, 0.4);
+          font-size: 14px; color: #5a5048; letter-spacing: 0.04em;
+          line-height: 1.6;
         }
         .home-streak {
           display: inline-block; margin-top: 6px;

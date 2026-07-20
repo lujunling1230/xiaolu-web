@@ -391,38 +391,38 @@ const HallTransition: React.FC<HallTransitionProps> = ({
       typewriterRef.current = null;
     }
 
-    /* ---- Phase sequence ---- */
+    /* ---- Phase sequence (加长版) ---- */
 
-    // dimming: 0-270ms
+    // dimming: 0-500ms
     setPhase("dimming");
     schedule(() => playTransitionSound("dim"), 0);
 
-    // door: 270-480ms
-    schedule(() => setPhase("door"), 270);
+    // door: 500-900ms
+    schedule(() => setPhase("door"), 500);
 
-    // lighting: 480-750ms
+    // lighting: 900-1300ms
     schedule(() => {
       setPhase("lighting");
       playTransitionSound("light");
-    }, 480);
+    }, 900);
 
-    // personality: 750-1500ms
-    schedule(() => setPhase("personality"), 750);
+    // personality: 1300-3000ms
+    schedule(() => setPhase("personality"), 1300);
 
     /* ---- Hall-specific sounds ---- */
     if (hallType === "film") {
-      schedule(() => playTransitionSound("click"), 750 + 600);
+      schedule(() => playTransitionSound("click"), 1300 + 600);
     } else if (hallType === "music") {
-      schedule(() => playTransitionSound("cassette"), 750 + 300);
+      schedule(() => playTransitionSound("cassette"), 1300 + 300);
     } else if (hallType === "net") {
-      schedule(() => playTransitionSound("modem"), 750 + 150);
-      schedule(() => playTransitionSound("tick"), 750 + 570);
+      schedule(() => playTransitionSound("modem"), 1300 + 150);
+      schedule(() => playTransitionSound("tick"), 1300 + 570);
     } else if (hallType === "honor") {
-      schedule(() => playTransitionSound("curtain"), 750 + 150);
-      schedule(() => playTransitionSound("pluck"), 750 + 540);
+      schedule(() => playTransitionSound("curtain"), 1300 + 150);
+      schedule(() => playTransitionSound("pluck"), 1300 + 540);
     } else if (hallType === "drawer") {
-      schedule(() => playTransitionSound("lock"), 750 + 150);
-      schedule(() => playTransitionSound("rumble"), 750 + 300);
+      schedule(() => playTransitionSound("lock"), 1300 + 150);
+      schedule(() => playTransitionSound("rumble"), 1300 + 300);
     }
 
     /* ---- Music typewriter lyrics ---- */
@@ -438,10 +438,10 @@ const HallTransition: React.FC<HallTransitionProps> = ({
             typewriterRef.current = null;
           }
         }, 60);
-      }, 750 + 420);
+      }, 1300 + 420);
     }
 
-    // done: 1500ms
+    // done: 3000ms
     schedule(() => {
       setPhase("done");
       setFadingOut(true);
@@ -450,9 +450,9 @@ const HallTransition: React.FC<HallTransitionProps> = ({
         setFadingOut(false);
         setPhase("idle");
         onComplete?.();
-      }, 300);
+      }, 400);
       timersRef.current.push(id);
-    }, 1500);
+    }, 3000);
 
     return () => {
       clearAllTimers();

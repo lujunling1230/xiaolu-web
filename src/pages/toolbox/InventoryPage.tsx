@@ -5,10 +5,8 @@ import { useAdminGuard } from "../../hooks/useAdminGuard";
 /**
  * 物资管家 · Inventory Prophet
  *
- * 专业库存管理应用 —— SaaS 紧凑布局。
- * 左侧：入库登记表单 + 今日消耗建议（智慧规划）。
- * 右侧：状态胶囊仪表盘 + 库存列表表格。
- * 数据持久化于 localStorage（key: inventory_items）。
+ * 三Tab导航：入库登记 / 库存列表 / AI管家
+ * 萌宠手帐 + 蓝色玻璃 + 彩色便签融合风格
  */
 
 /* ============================================================
@@ -31,6 +29,7 @@ interface InventoryItem {
 
 type Status = "expired" | "expiring" | "sufficient";
 type FilterKey = "all" | Status;
+type TabKey = "inbound" | "inventory" | "ai";
 
 interface FormState {
   name: string;
@@ -119,6 +118,50 @@ const STATUS_COLORS = {
 } as const;
 
 /* ============================================================
+   Tab 主题配置
+   ============================================================ */
+const TAB_CONFIG: Record<
+  TabKey,
+  {
+    label: string;
+    emoji: string;
+    color: string;
+    gradient: string;
+    border: string;
+    ring: string;
+    lightBg: string;
+  }
+> = {
+  inbound: {
+    label: "入库登记",
+    emoji: "📦",
+    color: "#6B9BD1",
+    gradient: "from-[#6B9BD1] to-[#8BB5E0]",
+    border: "border-[#B4D4EE]/50",
+    ring: "focus:ring-[#B4D4EE]/30",
+    lightBg: "bg-[#F0F7FF]/60",
+  },
+  inventory: {
+    label: "库存列表",
+    emoji: "📋",
+    color: "#7AB87A",
+    gradient: "from-[#7AB87A] to-[#9BCF9B]",
+    border: "border-[#A8D5A2]/50",
+    ring: "focus:ring-[#A8D5A2]/30",
+    lightBg: "bg-[#F0FFF0]/60",
+  },
+  ai: {
+    label: "AI管家",
+    emoji: "🤖",
+    color: "#E070A0",
+    gradient: "from-[#E070A0] to-[#E899B8]",
+    border: "border-[#F8C8DC]/50",
+    ring: "focus:ring-[#F8C8DC]/30",
+    lightBg: "bg-[#FFF0F5]/60",
+  },
+};
+
+/* ============================================================
    胶囊配置
    ============================================================ */
 const PILLS: {
@@ -135,7 +178,7 @@ const PILLS: {
     emoji: "🔴",
     dot: "bg-red-400",
     active: "bg-red-50 border-red-300 text-red-600",
-    idle: "bg-white border-gray-200 text-gray-600 hover:border-red-200",
+    idle: "bg-white/60 border-white/60 text-gray-600 hover:border-red-200",
   },
   {
     key: "expiring",
@@ -143,7 +186,7 @@ const PILLS: {
     emoji: "🟠",
     dot: "bg-amber-400",
     active: "bg-amber-50 border-amber-300 text-amber-700",
-    idle: "bg-white border-gray-200 text-gray-600 hover:border-amber-200",
+    idle: "bg-white/60 border-white/60 text-gray-600 hover:border-amber-200",
   },
   {
     key: "sufficient",
@@ -151,7 +194,7 @@ const PILLS: {
     emoji: "🟢",
     dot: "bg-emerald-400",
     active: "bg-emerald-50 border-emerald-300 text-emerald-700",
-    idle: "bg-white border-gray-200 text-gray-600 hover:border-emerald-200",
+    idle: "bg-white/60 border-white/60 text-gray-600 hover:border-emerald-200",
   },
 ];
 
@@ -185,6 +228,68 @@ async function recognizeWithVL(base64Image: string): Promise<VLItem[] | null> {
     return null;
   }
 }
+
+/* ============================================================
+   装饰 SVG 组件
+   ============================================================ */
+const StarDecoration: React.FC<{ className?: string; color?: string }> = ({
+  className,
+  color = "#6B9BD1",
+}) => (
+  <svg
+    className={className}
+    width="24"
+    height="24"
+    viewBox="0 0 24 24"
+    fill="none"
+  >
+    <path
+      d="M12 2L14.09 8.26L20.18 9.27L15.54 13.14L16.82 19.02L12 16.18L7.18 19.02L8.46 13.14L3.82 9.27L9.91 8.26L12 2Z"
+      fill={color}
+      fillOpacity="0.25"
+      stroke={color}
+      strokeWidth="1.2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    />
+  </svg>
+);
+
+const FlowerDecoration: React.FC<{ className?: string; color?: string }> = ({
+  className,
+  color = "#E070A0",
+}) => (
+  <svg
+    className={className}
+    width="20"
+    height="20"
+    viewBox="0 0 20 20"
+    fill="none"
+  >
+    <circle cx="10" cy="6" r="3" fill={color} fillOpacity="0.2" />
+    <circle cx="6" cy="12" r="3" fill={color} fillOpacity="0.2" />
+    <circle cx="14" cy="12" r="3" fill={color} fillOpacity="0.2" />
+    <circle cx="10" cy="10" r="2.5" fill={color} fillOpacity="0.35" />
+  </svg>
+);
+
+const DotDecoration: React.FC<{ className?: string; color?: string }> = ({
+  className,
+  color = "#7AB87A",
+}) => (
+  <svg
+    className={className}
+    width="32"
+    height="32"
+    viewBox="0 0 32 32"
+    fill="none"
+  >
+    <circle cx="8" cy="8" r="2.5" fill={color} fillOpacity="0.3" />
+    <circle cx="22" cy="12" r="1.5" fill={color} fillOpacity="0.2" />
+    <circle cx="14" cy="24" r="2" fill={color} fillOpacity="0.25" />
+    <circle cx="26" cy="26" r="1.5" fill={color} fillOpacity="0.2" />
+  </svg>
+);
 
 /* ============================================================
    编辑弹窗组件
@@ -221,29 +326,39 @@ const EditModal: React.FC<{
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 px-4 backdrop-blur-sm"
       onClick={onClose}
     >
       <div
-        className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl border border-[#ece8e0]"
+        className="w-full max-w-md rounded-3xl border border-[#A8D5A2]/40 bg-white/80 p-6 shadow-2xl shadow-pink-100/20 backdrop-blur-xl"
         onClick={(e) => e.stopPropagation()}
+        style={{ boxShadow: "inset 0 1px 0 rgba(255,255,255,0.8), 0 20px 40px rgba(0,0,0,0.1)" }}
       >
-        <h3 className="mb-4 text-lg font-semibold text-gray-800">编辑物品</h3>
+        <h3
+          className="mb-5 text-lg font-semibold text-gray-800"
+          style={{ fontFamily: '"Noto Serif SC", Georgia, serif' }}
+        >
+          ✏️ 编辑物品
+        </h3>
         <div className="space-y-4">
           <div>
-            <label className="mb-1 block text-xs text-gray-500">物品名称</label>
+            <label className="mb-1.5 block text-xs font-medium text-gray-500">
+              物品名称
+            </label>
             <input
               type="text"
               value={form.name}
               onChange={(e) =>
                 setForm((f) => ({ ...f, name: e.target.value }))
               }
-              className="w-full rounded-xl border border-[#e4e0d8] bg-white/60 px-3 py-2 text-sm outline-none transition-all focus:border-[#5d8a6a] focus:bg-white"
+              className="w-full rounded-xl border border-[#E8E0F0]/60 bg-white/50 px-3.5 py-2.5 text-sm outline-none transition-all focus:border-[#7AB87A]/50 focus:bg-white focus:ring-2 focus:ring-[#A8D5A2]/30"
             />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="mb-1 block text-xs text-gray-500">数量</label>
+              <label className="mb-1.5 block text-xs font-medium text-gray-500">
+                数量
+              </label>
               <input
                 type="number"
                 min={1}
@@ -254,17 +369,19 @@ const EditModal: React.FC<{
                     count: Math.max(1, Number(e.target.value) || 1),
                   }))
                 }
-                className="w-full rounded-xl border border-[#e4e0d8] bg-white/60 px-3 py-2 text-sm outline-none transition-all focus:border-[#5d8a6a] focus:bg-white"
+                className="w-full rounded-xl border border-[#E8E0F0]/60 bg-white/50 px-3.5 py-2.5 text-sm outline-none transition-all focus:border-[#7AB87A]/50 focus:bg-white focus:ring-2 focus:ring-[#A8D5A2]/30"
               />
             </div>
             <div>
-              <label className="mb-1 block text-xs text-gray-500">单位</label>
+              <label className="mb-1.5 block text-xs font-medium text-gray-500">
+                单位
+              </label>
               <select
                 value={form.unit}
                 onChange={(e) =>
                   setForm((f) => ({ ...f, unit: e.target.value as Unit }))
                 }
-                className="w-full rounded-xl border border-[#e4e0d8] bg-white/60 px-3 py-2 text-sm outline-none transition-all focus:border-[#5d8a6a] focus:bg-white"
+                className="w-full rounded-xl border border-[#E8E0F0]/60 bg-white/50 px-3.5 py-2.5 text-sm outline-none transition-all focus:border-[#7AB87A]/50 focus:bg-white focus:ring-2 focus:ring-[#A8D5A2]/30"
               >
                 {UNITS.map((u) => (
                   <option key={u} value={u}>
@@ -275,24 +392,28 @@ const EditModal: React.FC<{
             </div>
           </div>
           <div>
-            <label className="mb-1 block text-xs text-gray-500">到期日</label>
+            <label className="mb-1.5 block text-xs font-medium text-gray-500">
+              到期日
+            </label>
             <input
               type="date"
               value={form.expiryDate}
               onChange={(e) =>
                 setForm((f) => ({ ...f, expiryDate: e.target.value }))
               }
-              className="w-full rounded-xl border border-[#e4e0d8] bg-white/60 px-3 py-2 text-sm outline-none transition-all focus:border-[#5d8a6a] focus:bg-white"
+              className="w-full rounded-xl border border-[#E8E0F0]/60 bg-white/50 px-3.5 py-2.5 text-sm outline-none transition-all focus:border-[#7AB87A]/50 focus:bg-white focus:ring-2 focus:ring-[#A8D5A2]/30"
             />
           </div>
           <div>
-            <label className="mb-1 block text-xs text-gray-500">存放位置</label>
+            <label className="mb-1.5 block text-xs font-medium text-gray-500">
+              存放位置
+            </label>
             <select
               value={form.location}
               onChange={(e) =>
                 setForm((f) => ({ ...f, location: e.target.value as Location }))
               }
-              className="w-full rounded-xl border border-[#e4e0d8] bg-white/60 px-3 py-2 text-sm outline-none transition-all focus:border-[#5d8a6a] focus:bg-white"
+              className="w-full rounded-xl border border-[#E8E0F0]/60 bg-white/50 px-3.5 py-2.5 text-sm outline-none transition-all focus:border-[#7AB87A]/50 focus:bg-white focus:ring-2 focus:ring-[#A8D5A2]/30"
             >
               {LOCATIONS.map((l) => (
                 <option key={l} value={l}>
@@ -305,14 +426,14 @@ const EditModal: React.FC<{
         <div className="mt-6 flex gap-3">
           <button
             onClick={onClose}
-            className="flex-1 rounded-xl border border-[#e4e0d8] py-2.5 text-sm text-gray-600 transition-all hover:bg-gray-50 active:scale-[0.98]"
+            className="flex-1 rounded-xl border border-[#E8E0F0]/80 py-2.5 text-sm text-gray-600 transition-all hover:bg-gray-50/80 active:scale-95"
           >
             取消
           </button>
           <button
             onClick={handleSubmit}
             disabled={!canSave}
-            className="flex-1 rounded-xl bg-[#5d8a6a] py-2.5 text-sm font-medium text-white shadow-sm transition-all hover:bg-[#4d7a5a] hover:shadow-md active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
+            className="flex-1 rounded-full bg-gradient-to-r from-[#7AB87A] to-[#9BCF9B] py-2.5 text-sm font-medium text-white shadow-md shadow-green-100/50 transition-all hover:-translate-y-0.5 hover:shadow-lg active:scale-95 disabled:cursor-not-allowed disabled:opacity-50"
           >
             保存修改
           </button>
@@ -331,44 +452,56 @@ const PhotoGuideModal: React.FC<{
 }> = ({ onClose, onStart }) => {
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 px-4 backdrop-blur-sm"
       onClick={onClose}
     >
       <div
-        className="w-full max-w-sm rounded-2xl bg-white p-6 shadow-2xl border border-[#ece8e0]"
+        className="w-full max-w-sm rounded-3xl border border-[#B4D4EE]/40 bg-white/80 p-6 shadow-2xl shadow-pink-100/20 backdrop-blur-xl"
         onClick={(e) => e.stopPropagation()}
+        style={{ boxShadow: "inset 0 1px 0 rgba(255,255,255,0.8), 0 20px 40px rgba(0,0,0,0.1)" }}
       >
-        <h3 className="mb-3 text-lg font-semibold text-gray-800">
+        <h3
+          className="mb-4 text-lg font-semibold text-gray-800"
+          style={{ fontFamily: '"Noto Serif SC", Georgia, serif' }}
+        >
           📷 拍照识别物品
         </h3>
-        <div className="space-y-2 text-sm text-gray-600">
-          <p className="flex items-center gap-2">
-            <span className="text-green-500">✓</span>
+        <div className="space-y-3 text-sm text-gray-600">
+          <p className="flex items-center gap-3 rounded-xl bg-[#F0F7FF]/60 px-3 py-2">
+            <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[#6B9BD1]/15 text-xs text-[#6B9BD1]">
+              ✓
+            </span>
             拍得清 —— 保持画面清晰，避免模糊
           </p>
-          <p className="flex items-center gap-2">
-            <span className="text-green-500">✓</span>
+          <p className="flex items-center gap-3 rounded-xl bg-[#F0F7FF]/60 px-3 py-2">
+            <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[#6B9BD1]/15 text-xs text-[#6B9BD1]">
+              ✓
+            </span>
             平铺摆放 —— 物品尽量平铺，减少重叠
           </p>
-          <p className="flex items-center gap-2">
-            <span className="text-green-500">✓</span>
+          <p className="flex items-center gap-3 rounded-xl bg-[#F0F7FF]/60 px-3 py-2">
+            <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[#6B9BD1]/15 text-xs text-[#6B9BD1]">
+              ✓
+            </span>
             光线充足 —— 在明亮环境下拍摄
           </p>
-          <p className="flex items-center gap-2">
-            <span className="text-green-500">✓</span>
+          <p className="flex items-center gap-3 rounded-xl bg-[#F0F7FF]/60 px-3 py-2">
+            <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[#6B9BD1]/15 text-xs text-[#6B9BD1]">
+              ✓
+            </span>
             靠近拍摄 —— 让物品占据画面主要部分
           </p>
         </div>
         <div className="mt-6 flex gap-3">
           <button
             onClick={onClose}
-            className="flex-1 rounded-xl border border-[#e4e0d8] py-2.5 text-sm text-gray-600 transition-all hover:bg-gray-50 active:scale-[0.98]"
+            className="flex-1 rounded-xl border border-[#E8E0F0]/80 py-2.5 text-sm text-gray-600 transition-all hover:bg-gray-50/80 active:scale-95"
           >
             取消
           </button>
           <button
             onClick={onStart}
-            className="flex-1 rounded-lg bg-[#5d8a6a] py-2.5 text-sm font-medium text-white transition-colors hover:bg-[#4d7a5a]"
+            className="flex-1 rounded-full bg-gradient-to-r from-[#6B9BD1] to-[#8BB5E0] py-2.5 text-sm font-medium text-white shadow-md shadow-blue-100/50 transition-all hover:-translate-y-0.5 hover:shadow-lg active:scale-95"
           >
             开始拍照
           </button>
@@ -394,20 +527,20 @@ const PhotoConfirmModal: React.FC<{
   const confidenceBadge = (confidence: number) => {
     if (confidence >= 80) {
       return (
-        <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-xs font-medium text-emerald-600">
+        <span className="rounded-full bg-emerald-50 px-2.5 py-0.5 text-xs font-medium text-emerald-600">
           可信
         </span>
       );
     }
     if (confidence >= 50) {
       return (
-        <span className="rounded-full bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-600">
+        <span className="rounded-full bg-amber-50 px-2.5 py-0.5 text-xs font-medium text-amber-600">
           待确认
         </span>
       );
     }
     return (
-      <span className="rounded-full bg-red-50 px-2 py-0.5 text-xs font-medium text-red-600">
+      <span className="rounded-full bg-red-50 px-2.5 py-0.5 text-xs font-medium text-red-600">
         不确定
       </span>
     );
@@ -415,14 +548,18 @@ const PhotoConfirmModal: React.FC<{
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 px-4 backdrop-blur-sm"
       onClick={onClose}
     >
       <div
-        className="w-full max-w-md max-h-[90vh] overflow-y-auto rounded-2xl bg-white p-6 shadow-xl"
+        className="w-full max-w-md max-h-[90vh] overflow-y-auto rounded-3xl border border-[#B4D4EE]/40 bg-white/80 p-6 shadow-2xl shadow-pink-100/20 backdrop-blur-xl"
         onClick={(e) => e.stopPropagation()}
+        style={{ boxShadow: "inset 0 1px 0 rgba(255,255,255,0.8), 0 20px 40px rgba(0,0,0,0.1)" }}
       >
-        <h3 className="mb-4 text-lg font-semibold text-gray-800">
+        <h3
+          className="mb-4 text-lg font-semibold text-gray-800"
+          style={{ fontFamily: '"Noto Serif SC", Georgia, serif' }}
+        >
           📷 识别结果
         </h3>
 
@@ -430,7 +567,7 @@ const PhotoConfirmModal: React.FC<{
           <img
             src={photoUrl}
             alt="识别照片"
-            className="max-h-[200px] rounded-lg object-contain"
+            className="max-h-[200px] rounded-2xl object-contain border border-[#E8E0F0]/40"
           />
         </div>
 
@@ -439,21 +576,26 @@ const PhotoConfirmModal: React.FC<{
             <div
               key={c.id}
               className={cn(
-                "rounded-xl border p-4 transition-colors",
+                "rounded-2xl border p-4 transition-all",
                 c.selected
-                  ? "border-[#5d8a6a] bg-green-50/50"
-                  : "border-gray-200 bg-white"
+                  ? "border-[#6B9BD1]/40 bg-[#F0F7FF]/50"
+                  : "border-[#E8E0F0]/40 bg-white/40"
               )}
+              style={
+                c.selected
+                  ? { boxShadow: "inset 0 1px 0 rgba(255,255,255,0.8)" }
+                  : undefined
+              }
             >
               <div className="mb-3 flex items-center justify-between">
-                <label className="flex items-center gap-2">
+                <label className="flex items-center gap-2.5">
                   <input
                     type="checkbox"
                     checked={c.selected}
                     onChange={(e) =>
                       onUpdateCandidate(c.id, { selected: e.target.checked })
                     }
-                    className="h-4 w-4 accent-[#5d8a6a]"
+                    className="h-4 w-4 accent-[#6B9BD1]"
                   />
                   <span className="text-sm font-medium text-gray-700">
                     选中入库
@@ -473,7 +615,7 @@ const PhotoConfirmModal: React.FC<{
                     onChange={(e) =>
                       onUpdateCandidate(c.id, { name: e.target.value })
                     }
-                    className="w-full rounded-xl border border-[#e4e0d8] bg-white/60 px-3 py-2 text-sm outline-none transition-all focus:border-[#5d8a6a] focus:bg-white"
+                    className="w-full rounded-xl border border-[#E8E0F0]/60 bg-white/50 px-3 py-2 text-sm outline-none transition-all focus:border-[#6B9BD1]/50 focus:bg-white focus:ring-2 focus:ring-[#B4D4EE]/30"
                   />
                 </div>
 
@@ -491,7 +633,7 @@ const PhotoConfirmModal: React.FC<{
                           count: Math.max(1, Number(e.target.value) || 1),
                         })
                       }
-                      className="w-full rounded-xl border border-[#e4e0d8] bg-white/60 px-3 py-2 text-sm outline-none transition-all focus:border-[#5d8a6a] focus:bg-white"
+                      className="w-full rounded-xl border border-[#E8E0F0]/60 bg-white/50 px-3 py-2 text-sm outline-none transition-all focus:border-[#6B9BD1]/50 focus:bg-white focus:ring-2 focus:ring-[#B4D4EE]/30"
                     />
                   </div>
                   <div>
@@ -503,7 +645,7 @@ const PhotoConfirmModal: React.FC<{
                       onChange={(e) =>
                         onUpdateCandidate(c.id, { unit: e.target.value })
                       }
-                      className="w-full rounded-xl border border-[#e4e0d8] bg-white/60 px-3 py-2 text-sm outline-none transition-all focus:border-[#5d8a6a] focus:bg-white"
+                      className="w-full rounded-xl border border-[#E8E0F0]/60 bg-white/50 px-3 py-2 text-sm outline-none transition-all focus:border-[#6B9BD1]/50 focus:bg-white focus:ring-2 focus:ring-[#B4D4EE]/30"
                     >
                       {UNITS.map((u) => (
                         <option key={u} value={u}>
@@ -525,7 +667,7 @@ const PhotoConfirmModal: React.FC<{
                       onChange={(e) =>
                         onUpdateCandidate(c.id, { expiryDate: e.target.value })
                       }
-                      className="w-full rounded-xl border border-[#e4e0d8] bg-white/60 px-3 py-2 text-sm outline-none transition-all focus:border-[#5d8a6a] focus:bg-white"
+                      className="w-full rounded-xl border border-[#E8E0F0]/60 bg-white/50 px-3 py-2 text-sm outline-none transition-all focus:border-[#6B9BD1]/50 focus:bg-white focus:ring-2 focus:ring-[#B4D4EE]/30"
                     />
                   </div>
                   <div>
@@ -537,7 +679,7 @@ const PhotoConfirmModal: React.FC<{
                       onChange={(e) =>
                         onUpdateCandidate(c.id, { location: e.target.value })
                       }
-                      className="w-full rounded-xl border border-[#e4e0d8] bg-white/60 px-3 py-2 text-sm outline-none transition-all focus:border-[#5d8a6a] focus:bg-white"
+                      className="w-full rounded-xl border border-[#E8E0F0]/60 bg-white/50 px-3 py-2 text-sm outline-none transition-all focus:border-[#6B9BD1]/50 focus:bg-white focus:ring-2 focus:ring-[#B4D4EE]/30"
                     >
                       {LOCATIONS.map((l) => (
                         <option key={l} value={l}>
@@ -555,14 +697,14 @@ const PhotoConfirmModal: React.FC<{
         <div className="mt-6 flex gap-3">
           <button
             onClick={onRetake}
-            className="flex-1 rounded-xl border border-[#e4e0d8] py-2.5 text-sm text-gray-600 transition-all hover:bg-gray-50 active:scale-[0.98]"
+            className="flex-1 rounded-xl border border-[#E8E0F0]/80 py-2.5 text-sm text-gray-600 transition-all hover:bg-gray-50/80 active:scale-95"
           >
             重新拍照
           </button>
           <button
             onClick={() => onConfirm(selected)}
             disabled={selected.length === 0}
-            className="flex-1 rounded-xl bg-[#5d8a6a] py-2.5 text-sm font-medium text-white shadow-sm transition-all hover:bg-[#4d7a5a] hover:shadow-md active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
+            className="flex-1 rounded-full bg-gradient-to-r from-[#6B9BD1] to-[#8BB5E0] py-2.5 text-sm font-medium text-white shadow-md shadow-blue-100/50 transition-all hover:-translate-y-0.5 hover:shadow-lg active:scale-95 disabled:cursor-not-allowed disabled:opacity-50"
           >
             确认入库 ({selected.length})
           </button>
@@ -581,9 +723,10 @@ const InventoryPage: React.FC = () => {
   const [filter, setFilter] = useState<FilterKey>("all");
   const [deletingIds, setDeletingIds] = useState<Set<string>>(new Set());
   const [editingItem, setEditingItem] = useState<InventoryItem | null>(null);
-  // 透传来源标记：完整版入口进来时，回工具箱仍带 from=full
+  const [activeTab, setActiveTab] = useState<TabKey>("inbound");
   const [searchParams] = useSearchParams();
   const fromQuery = searchParams.get("from") === "full" ? "?from=full" : "";
+
   const [form, setForm] = useState<FormState>({
     name: "",
     count: 1,
@@ -879,8 +1022,14 @@ const InventoryPage: React.FC = () => {
     );
   };
 
+  const tabTheme = TAB_CONFIG[activeTab];
+
   return (
-    <div className="inventory-page min-h-screen bg-gray-50 text-gray-800">
+    <div className="inventory-page relative min-h-screen overflow-x-hidden text-gray-800"
+      style={{
+        background: "linear-gradient(135deg, #F0F7FF 0%, #F8F0FF 50%, #FFF0F5 100%)",
+      }}
+    >
       {/* 编辑弹窗 */}
       {editingItem && (
         <EditModal
@@ -914,17 +1063,29 @@ const InventoryPage: React.FC = () => {
         />
       )}
 
+      {/* SVG 手绘装饰 */}
+      <StarDecoration className="pointer-events-none absolute left-4 top-20" color="#6B9BD1" />
+      <FlowerDecoration className="pointer-events-none absolute right-6 top-28" color="#E070A0" />
+      <DotDecoration className="pointer-events-none absolute left-6 bottom-32" color="#7AB87A" />
+      <StarDecoration className="pointer-events-none absolute right-4 bottom-40" color="#E070A0" />
+      <DotDecoration className="pointer-events-none absolute right-16 top-16" color="#6B9BD1" />
+      <FlowerDecoration className="pointer-events-none absolute left-16 top-48" color="#7AB87A" />
+
       {/* —— 顶栏 —— */}
-      <header className="border-b border-[#ece8e0] bg-white/70 backdrop-blur-sm">
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
+      <header className="relative z-10 border-b border-white/40 bg-white/40 backdrop-blur-xl">
+        <div className="mx-auto flex max-w-3xl items-center justify-between px-5 py-4">
           <Link
             to={`/mickey${fromQuery}`}
-            className="text-sm text-gray-500 transition-all hover:text-[#5d8a6a] hover:translate-x-[-2px] inline-block"
+            className="inline-flex items-center gap-1 text-sm text-gray-500 transition-all hover:text-[#6B9BD1] hover:translate-x-[-2px]"
           >
-            ← 作品集
+            <span>←</span>
+            <span>作品集</span>
           </Link>
           <div className="flex items-center gap-2">
-            <span className="h-2 w-2 rounded-full bg-[#5d8a6a] shadow-[0_0_0_3px_rgba(93,138,106,0.15)]" />
+            <span
+              className="h-2 w-2 rounded-full shadow-[0_0_0_3px_rgba(107,155,209,0.2)]"
+              style={{ backgroundColor: "#6B9BD1" }}
+            />
             <span className="text-xs uppercase tracking-[0.2em] text-gray-400">
               Inventory Prophet
             </span>
@@ -933,21 +1094,44 @@ const InventoryPage: React.FC = () => {
       </header>
 
       {/* —— 标题区 —— */}
-      <div className="mx-auto max-w-6xl px-6 pb-6 pt-8">
-        <h1 className="text-2xl font-semibold text-gray-900">物资管家</h1>
+      <div className="relative z-10 mx-auto max-w-3xl px-5 pb-4 pt-6">
+        <h1
+          className="text-2xl font-semibold text-gray-900"
+          style={{ fontFamily: '"Noto Serif SC", Georgia, serif' }}
+        >
+          物资管家
+        </h1>
         <p className="mt-1.5 text-sm text-gray-500 leading-relaxed">
           资源管理与反浪费 · 把每一件物品用在它最好的时候
         </p>
       </div>
 
-      {/* —— 主网格：左侧操作 + 右侧数据 —— */}
-      <div className="mx-auto grid max-w-6xl grid-cols-1 gap-6 px-6 pb-16 lg:grid-cols-[340px_1fr] lg:items-start">
-        {/* ============ 左侧 ============ */}
-        <aside className="space-y-6 lg:sticky lg:top-6">
-          {/* 入库登记 */}
-          <section className="rounded-2xl border border-[#ece8e0] bg-white/80 p-5">
-            <h2 className="mb-4 flex items-center gap-2 text-sm font-semibold text-gray-700">
-              <span className="h-1 w-4 rounded-full bg-[#5d8a6a]" />
+      {/* —— Tab 内容区 —— */}
+      <main className="relative z-10 mx-auto max-w-3xl px-5 pb-28">
+        {/* ====== 入库登记 Tab ====== */}
+        <div
+          className={cn(
+            "transition-all duration-500",
+            activeTab === "inbound"
+              ? "opacity-100 translate-y-0"
+              : "pointer-events-none absolute inset-x-5 opacity-0 -translate-y-4"
+          )}
+        >
+          {/* 入库登记卡片 */}
+          <section
+            className="rounded-3xl border border-[#B4D4EE]/50 bg-white/70 p-5 backdrop-blur-md"
+            style={{
+              boxShadow:
+                "inset 0 1px 0 rgba(255,255,255,0.8), 0 10px 30px rgba(107,155,209,0.08)",
+            }}
+          >
+            <h2
+              className="mb-4 flex items-center gap-2 text-base font-semibold text-gray-800"
+              style={{ fontFamily: '"Noto Serif SC", Georgia, serif' }}
+            >
+              <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[#6B9BD1]/15 text-sm">
+                📦
+              </span>
               入库登记
             </h2>
 
@@ -964,14 +1148,15 @@ const InventoryPage: React.FC = () => {
               type="button"
               onClick={handlePhotoClick}
               disabled={isRecognizing}
-              className="mb-3 flex w-full items-center justify-center gap-2 rounded-xl border-2 border-dashed border-gray-300 py-2.5 text-sm text-gray-600 transition-all hover:border-[#5d8a6a] hover:bg-[#5d8a6a]/5 hover:text-[#5d8a6a] hover:shadow-sm disabled:cursor-not-allowed disabled:opacity-50"
+              className="mb-4 flex w-full items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-[#B4D4EE]/60 bg-[#F0F7FF]/40 py-3.5 text-sm text-[#6B9BD1] transition-all hover:border-[#6B9BD1]/60 hover:bg-[#6B9BD1]/5 hover:shadow-sm disabled:cursor-not-allowed disabled:opacity-50"
             >
-              {isRecognizing ? "识别中..." : "📷 拍照识别物品"}
+              <span className="text-base">📷</span>
+              {isRecognizing ? "识别中..." : "拍照识别物品"}
             </button>
 
-            <div className="space-y-3">
+            <div className="space-y-3.5">
               <div>
-                <label className="mb-1 block text-xs text-gray-500">
+                <label className="mb-1.5 block text-xs font-medium text-gray-500">
                   物品名称
                 </label>
                 <input
@@ -981,13 +1166,13 @@ const InventoryPage: React.FC = () => {
                   onChange={(e) =>
                     setForm((f) => ({ ...f, name: e.target.value }))
                   }
-                  className="w-full rounded-xl border border-[#e4e0d8] bg-white/60 px-3 py-2 text-sm outline-none transition-all focus:border-[#5d8a6a] focus:bg-white focus:ring-1 focus:ring-[#5d8a6a]/20"
+                  className="w-full rounded-xl border border-[#E8E0F0]/60 bg-white/50 px-3.5 py-2.5 text-sm outline-none transition-all focus:border-[#6B9BD1]/50 focus:bg-white focus:ring-2 focus:ring-[#B4D4EE]/30"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="mb-1 block text-xs text-gray-500">
+                  <label className="mb-1.5 block text-xs font-medium text-gray-500">
                     数量
                   </label>
                   <input
@@ -1000,11 +1185,11 @@ const InventoryPage: React.FC = () => {
                         count: Math.max(1, Number(e.target.value) || 1),
                       }))
                     }
-                    className="w-full rounded-xl border border-[#e4e0d8] bg-white/60 px-3 py-2 text-sm outline-none transition-all focus:border-[#5d8a6a] focus:bg-white focus:ring-1 focus:ring-[#5d8a6a]/20"
+                    className="w-full rounded-xl border border-[#E8E0F0]/60 bg-white/50 px-3.5 py-2.5 text-sm outline-none transition-all focus:border-[#6B9BD1]/50 focus:bg-white focus:ring-2 focus:ring-[#B4D4EE]/30"
                   />
                 </div>
                 <div>
-                  <label className="mb-1 block text-xs text-gray-500">
+                  <label className="mb-1.5 block text-xs font-medium text-gray-500">
                     单位
                   </label>
                   <select
@@ -1012,7 +1197,7 @@ const InventoryPage: React.FC = () => {
                     onChange={(e) =>
                       setForm((f) => ({ ...f, unit: e.target.value as Unit }))
                     }
-                    className="w-full rounded-xl border border-[#e4e0d8] bg-white/60 px-3 py-2 text-sm outline-none transition-all focus:border-[#5d8a6a] focus:bg-white focus:ring-1 focus:ring-[#5d8a6a]/30"
+                    className="w-full rounded-xl border border-[#E8E0F0]/60 bg-white/50 px-3.5 py-2.5 text-sm outline-none transition-all focus:border-[#6B9BD1]/50 focus:bg-white focus:ring-2 focus:ring-[#B4D4EE]/30"
                   >
                     {UNITS.map((u) => (
                       <option key={u} value={u}>
@@ -1024,7 +1209,7 @@ const InventoryPage: React.FC = () => {
               </div>
 
               <div>
-                <label className="mb-1 block text-xs text-gray-500">
+                <label className="mb-1.5 block text-xs font-medium text-gray-500">
                   到期日
                 </label>
                 <input
@@ -1033,12 +1218,12 @@ const InventoryPage: React.FC = () => {
                   onChange={(e) =>
                     setForm((f) => ({ ...f, expiryDate: e.target.value }))
                   }
-                  className="w-full rounded-xl border border-[#e4e0d8] bg-white/60 px-3 py-2 text-sm outline-none transition-all focus:border-[#5d8a6a] focus:bg-white focus:ring-1 focus:ring-[#5d8a6a]/20"
+                  className="w-full rounded-xl border border-[#E8E0F0]/60 bg-white/50 px-3.5 py-2.5 text-sm outline-none transition-all focus:border-[#6B9BD1]/50 focus:bg-white focus:ring-2 focus:ring-[#B4D4EE]/30"
                 />
               </div>
 
               <div>
-                <label className="mb-1 block text-xs text-gray-500">
+                <label className="mb-1.5 block text-xs font-medium text-gray-500">
                   存放位置
                 </label>
                 <select
@@ -1049,7 +1234,7 @@ const InventoryPage: React.FC = () => {
                       location: e.target.value as Location,
                     }))
                   }
-                  className="w-full rounded-xl border border-[#e4e0d8] bg-white/60 px-3 py-2 text-sm outline-none transition-all focus:border-[#5d8a6a] focus:bg-white focus:ring-1 focus:ring-[#5d8a6a]/30"
+                  className="w-full rounded-xl border border-[#E8E0F0]/60 bg-white/50 px-3.5 py-2.5 text-sm outline-none transition-all focus:border-[#6B9BD1]/50 focus:bg-white focus:ring-2 focus:ring-[#B4D4EE]/30"
                 >
                   {LOCATIONS.map((l) => (
                     <option key={l} value={l}>
@@ -1063,84 +1248,43 @@ const InventoryPage: React.FC = () => {
                 type="button"
                 onClick={handleAdd}
                 disabled={!canAdd}
-                className="w-full rounded-xl bg-[#5d8a6a] py-2.5 text-sm font-medium text-white shadow-sm transition-all hover:bg-[#4d7a5a] hover:shadow-md active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
+                className="w-full rounded-full bg-gradient-to-r from-[#6B9BD1] to-[#8BB5E0] py-3 text-sm font-medium text-white shadow-md shadow-blue-100/50 transition-all hover:-translate-y-0.5 hover:shadow-lg active:scale-95 disabled:cursor-not-allowed disabled:opacity-50"
               >
-                确认入库
+                ✨ 确认入库
               </button>
             </div>
           </section>
+        </div>
 
-          {/* AI 管家小贴士 */}
-          <section className="rounded-2xl border border-[#ece8e0] bg-white/80 p-5">
-            <h2 className="mb-3 flex items-center gap-2 text-sm font-semibold text-gray-700">
-              <span className="h-1 w-4 rounded-full bg-[#5d8a6a]" />
-              AI 管家小贴士
-            </h2>
-
-            {aiTips.length === 0 ? (
-              <p className="text-sm text-gray-400">
-                暂无物品。先在上方入库，我来帮您规划。
-              </p>
-            ) : (
-              <div className="space-y-2.5">
-                {aiTips.map((tip) => (
-                  <div
-                    key={tip.id}
-                    className={`flex items-start gap-2.5 rounded-xl px-3 py-2.5 text-sm transition-colors ${
-                      tip.urgent
-                        ? "bg-amber-50/70"
-                        : "bg-gray-50/70"
-                    }`}
-                  >
-                    <span className="mt-0.5 shrink-0 text-base leading-none">
-                      {tip.emoji}
-                    </span>
-                    <p
-                      className={`flex-1 leading-relaxed ${
-                        tip.urgent ? "text-amber-800" : "text-gray-600"
-                      }`}
-                    >
-                      {tip.text}
-                    </p>
-                    {tip.itemId && (
-                      <button
-                        type="button"
-                        onClick={() => handleDelete(tip.itemId)}
-                        className="shrink-0 self-center rounded-full border border-current px-2.5 py-0.5 text-xs opacity-70 transition-opacity hover:opacity-100"
-                        style={{
-                          color: tip.urgent ? "#D46B4D" : "#5d8a6a",
-                        }}
-                      >
-                        {tip.urgent ? "消耗" : "移除"}
-                      </button>
-                    )}
-                  </div>
-                ))}
-              </div>
-            )}
-          </section>
-        </aside>
-
-        {/* ============ 右侧 ============ */}
-        <main className="min-w-0 space-y-6">
-          {/* 仪表盘胶囊 */}
-          <section className="flex flex-wrap items-center gap-3">
+        {/* ====== 库存列表 Tab ====== */}
+        <div
+          className={cn(
+            "transition-all duration-500",
+            activeTab === "inventory"
+              ? "opacity-100 translate-y-0"
+              : "pointer-events-none absolute inset-x-5 opacity-0 -translate-y-4"
+          )}
+        >
+          {/* 状态胶囊筛选器 */}
+          <section className="mb-4 flex flex-wrap items-center gap-2.5">
             {PILLS.map((p) => {
               const count = stats[p.key];
-              const active = filter === p.key;
+              const isActive = filter === p.key;
               return (
                 <button
                   key={p.key}
                   type="button"
-                  onClick={() => setFilter((prev) => (prev === p.key ? "all" : p.key))}
+                  onClick={() =>
+                    setFilter((prev) => (prev === p.key ? "all" : p.key))
+                  }
                   className={cn(
-                    "flex items-center gap-2 rounded-full border px-4 py-2 text-sm transition-all hover:shadow-sm active:scale-[0.97]",
-                    active ? p.active : p.idle
+                    "flex items-center gap-1.5 rounded-full border px-3.5 py-2 text-sm transition-all hover:shadow-sm active:scale-95",
+                    isActive ? p.active : p.idle
                   )}
                 >
                   <span className={cn("h-2 w-2 rounded-full", p.dot)} />
                   <span>{p.emoji}</span>
-                  {p.label}
+                  <span>{p.label}</span>
                   <span className="font-semibold">{count}</span>
                 </button>
               );
@@ -1156,11 +1300,20 @@ const InventoryPage: React.FC = () => {
             )}
           </section>
 
-          {/* 库存列表 */}
-          <section className="overflow-hidden rounded-2xl border border-[#ece8e0] bg-white/80">
-            <div className="flex items-center justify-between border-b border-gray-100 px-5 py-3">
-              <h2 className="text-sm font-semibold text-gray-700">
-                库存列表
+          {/* 库存卡片列表 */}
+          <section
+            className="rounded-3xl border border-[#A8D5A2]/50 bg-white/70 p-5 backdrop-blur-md"
+            style={{
+              boxShadow:
+                "inset 0 1px 0 rgba(255,255,255,0.8), 0 10px 30px rgba(122,184,122,0.08)",
+            }}
+          >
+            <div className="mb-4 flex items-center justify-between">
+              <h2
+                className="text-base font-semibold text-gray-800"
+                style={{ fontFamily: '"Noto Serif SC", Georgia, serif' }}
+              >
+                📋 库存列表
               </h2>
               <span className="text-xs text-gray-400">
                 共 {filtered.length} 件
@@ -1168,118 +1321,299 @@ const InventoryPage: React.FC = () => {
             </div>
 
             {filtered.length === 0 ? (
-              <div className="py-16 text-center">
+              <div className="py-12 text-center">
+                <div className="mb-3 text-4xl">🌱</div>
                 <p className="text-sm text-gray-400">
                   {items.length === 0
-                    ? "还没有任何物品，去左侧入库吧。"
+                    ? "还没有任何物品，先去入库吧~"
                     : "当前筛选下没有物品。"}
                 </p>
               </div>
             ) : (
-              <div className="overflow-x-auto">
-                <table className="w-full border-collapse text-sm">
-                  <thead>
-                    <tr className="border-b border-gray-100 text-left text-xs text-gray-400">
-                      <th className="px-5 py-3 font-medium">物品</th>
-                      <th className="px-5 py-3 font-medium">数量</th>
-                      <th className="px-5 py-3 font-medium">到期日</th>
-                      <th className="px-5 py-3 font-medium">存放位置</th>
-                      <th className="px-5 py-3 text-right font-medium">
-                        操作
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {filtered.map((it) => {
-                      const d = daysUntil(it.expiryDate, today);
-                      const status = getStockStatus(d);
-                      const statusColor = STATUS_COLORS[status];
-                      return (
-                        <tr
-                          key={it.id}
-                          className={cn(
-                            "border-b border-gray-50 transition-opacity duration-300 stock-item",
-                            deletingIds.has(it.id) && "opacity-0"
+              <div className="space-y-3">
+                {filtered.map((it) => {
+                  const d = daysUntil(it.expiryDate, today);
+                  const status = getStockStatus(d);
+                  const statusColor = STATUS_COLORS[status];
+                  return (
+                    <div
+                      key={it.id}
+                      className={cn(
+                        "relative flex items-center gap-3 rounded-2xl border border-[#E8E0F0]/40 bg-white/60 p-4 transition-all duration-300",
+                        deletingIds.has(it.id) && "opacity-0 scale-95"
+                      )}
+                      style={{
+                        boxShadow: "inset 0 1px 0 rgba(255,255,255,0.8)",
+                        borderLeftWidth: 4,
+                        borderLeftColor: statusColor,
+                      }}
+                    >
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-2">
+                          <span
+                            className={cn(
+                              "truncate text-sm font-semibold",
+                              status === "expired"
+                                ? "text-red-600"
+                                : "text-gray-800"
+                            )}
+                          >
+                            {it.name}
+                          </span>
+                          {status === "expired" && (
+                            <span className="shrink-0 rounded-full bg-red-50 px-2 py-0.5 text-[10px] font-medium text-red-500">
+                              已过期
+                            </span>
                           )}
-                          style={{ borderLeft: `4px solid ${statusColor}` }}
+                          {status === "warning" && (
+                            <span className="shrink-0 rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-medium text-amber-600">
+                              临期
+                            </span>
+                          )}
+                        </div>
+                        <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-gray-500">
+                          <span>
+                            数量: {it.count} {it.unit}
+                          </span>
+                          <span
+                            className="font-medium"
+                            style={{ color: statusColor }}
+                          >
+                            到期: {it.expiryDate}
+                          </span>
+                          <span className="text-gray-400">
+                            ({relativeHint(d)})
+                          </span>
+                        </div>
+                        <div className="mt-1">
+                          <span className="inline-flex items-center rounded-full bg-[#F0F7FF]/80 px-2 py-0.5 text-[11px] text-[#6B9BD1]">
+                            📍 {it.location}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="flex shrink-0 flex-col gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setEditingItem(it)}
+                          className="rounded-lg bg-[#F0F7FF]/80 px-3 py-1 text-xs text-[#6B9BD1] transition-all hover:bg-[#6B9BD1]/15 active:scale-95"
                         >
-                          <td className="px-5 py-3">
-                            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                              <span
-                                className={cn(
-                                  "font-medium",
-                                  status === "expired" ? "text-red-600" : "text-gray-800"
-                                )}
-                              >
-                                {it.name}
-                              </span>
-                              {status === "expired" && (
-                                <span style={{
-                                  fontSize: 10, padding: "2px 6px",
-                                  borderRadius: 999, background: "rgba(229,57,53,0.1)",
-                                  color: "#E53935", fontWeight: 500
-                                }}>
-                                  已过期
-                                </span>
-                              )}
-                            </div>
-                          </td>
-                          <td className="px-5 py-3 text-gray-600">
-                            {it.count} {it.unit}
-                          </td>
-                          <td className="px-5 py-3">
-                            <span
-                              style={{ color: statusColor, fontWeight: 500 }}
-                            >
-                              {it.expiryDate}
-                            </span>
-                            <span className="ml-2 text-xs text-gray-400">
-                              ({relativeHint(d)})
-                            </span>
-                          </td>
-                          <td className="px-5 py-3 text-gray-600">
-                            {it.location}
-                          </td>
-                          <td className="px-5 py-3 text-right">
-                            <button
-                              type="button"
-                              onClick={() => setEditingItem(it)}
-                              className="mr-3 text-xs text-gray-400 transition-colors hover:text-[#5d8a6a]"
-                            >
-                              编辑
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => handleDelete(it.id)}
-                              className="text-xs text-gray-400 transition-colors hover:text-red-500"
-                            >
-                              删除
-                            </button>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
+                          编辑
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleDelete(it.id)}
+                          className="rounded-lg bg-red-50 px-3 py-1 text-xs text-red-400 transition-all hover:bg-red-100 active:scale-95"
+                        >
+                          删除
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             )}
           </section>
-        </main>
-      </div>
+        </div>
 
-      {/* 浮动管理员入口 🔒 */}
+        {/* ====== AI管家 Tab ====== */}
+        <div
+          className={cn(
+            "transition-all duration-500",
+            activeTab === "ai"
+              ? "opacity-100 translate-y-0"
+              : "pointer-events-none absolute inset-x-5 opacity-0 -translate-y-4"
+          )}
+        >
+          {/* 统计数字 */}
+          <section className="mb-4 grid grid-cols-4 gap-2.5">
+            {[
+              {
+                label: "总物品",
+                value: items.length,
+                color: "#6B9BD1",
+                bg: "bg-[#F0F7FF]/60",
+              },
+              {
+                label: "充足",
+                value: stats.sufficient,
+                color: "#7AB87A",
+                bg: "bg-[#F0FFF0]/60",
+              },
+              {
+                label: "临期",
+                value: stats.expiring,
+                color: "#FF9800",
+                bg: "bg-amber-50/60",
+              },
+              {
+                label: "过期",
+                value: stats.expired,
+                color: "#E53935",
+                bg: "bg-red-50/60",
+              },
+            ].map((s) => (
+              <div
+                key={s.label}
+                className={cn(
+                  "flex flex-col items-center rounded-2xl border border-white/50 p-3 backdrop-blur-sm",
+                  s.bg
+                )}
+                style={{
+                  boxShadow: "inset 0 1px 0 rgba(255,255,255,0.8)",
+                }}
+              >
+                <span
+                  className="text-xl font-bold"
+                  style={{ color: s.color, fontFamily: '"Noto Serif SC", Georgia, serif' }}
+                >
+                  {s.value}
+                </span>
+                <span className="mt-0.5 text-[10px] text-gray-500">
+                  {s.label}
+                </span>
+              </div>
+            ))}
+          </section>
+
+          {/* AI小贴士列表 */}
+          <section
+            className="rounded-3xl border border-[#F8C8DC]/50 bg-white/70 p-5 backdrop-blur-md"
+            style={{
+              boxShadow:
+                "inset 0 1px 0 rgba(255,255,255,0.8), 0 10px 30px rgba(224,112,160,0.08)",
+            }}
+          >
+            <h2
+              className="mb-4 flex items-center gap-2 text-base font-semibold text-gray-800"
+              style={{ fontFamily: '"Noto Serif SC", Georgia, serif' }}
+            >
+              <span className="flex h-6 w-6 items-center justify-center rounded-full bg-[#E070A0]/15 text-sm">
+                🤖
+              </span>
+              AI 管家小贴士
+            </h2>
+
+            {aiTips.length === 0 ? (
+              <div className="py-10 text-center">
+                <div className="mb-3 text-4xl">🌸</div>
+                <p className="text-sm text-gray-400">
+                  暂无物品。先入库，我来帮您规划~
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {aiTips.map((tip) => (
+                  <div
+                    key={tip.id}
+                    className={cn(
+                      "flex items-start gap-3 rounded-2xl border border-white/50 p-3.5 backdrop-blur-sm transition-all",
+                      tip.urgent
+                        ? "bg-amber-50/60"
+                        : "bg-[#F8F0FF]/40"
+                    )}
+                    style={{
+                      boxShadow: "inset 0 1px 0 rgba(255,255,255,0.8)",
+                    }}
+                  >
+                    <span className="mt-0.5 shrink-0 text-lg leading-none">
+                      {tip.emoji}
+                    </span>
+                    <p
+                      className={cn(
+                        "flex-1 text-sm leading-relaxed",
+                        tip.urgent ? "text-amber-800" : "text-gray-600"
+                      )}
+                    >
+                      {tip.text}
+                    </p>
+                    {tip.itemId && (
+                      <button
+                        type="button"
+                        onClick={() => handleDelete(tip.itemId)}
+                        className={cn(
+                          "shrink-0 self-center rounded-full border px-3 py-1 text-xs transition-all active:scale-95",
+                          tip.urgent
+                            ? "border-amber-300/60 text-amber-600 hover:bg-amber-100"
+                            : "border-[#A8D5A2]/60 text-[#7AB87A] hover:bg-[#F0FFF0]"
+                        )}
+                      >
+                        {tip.urgent ? "消耗" : "移除"}
+                      </button>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </section>
+        </div>
+      </main>
+
+      {/* —— 底部固定导航栏 —— */}
+      <nav className="fixed bottom-0 left-0 right-0 z-40 border-t border-white/40 bg-white/60 backdrop-blur-xl">
+        <div className="mx-auto flex max-w-3xl items-center justify-around px-4 py-2">
+          {(Object.keys(TAB_CONFIG) as TabKey[]).map((tab) => {
+            const config = TAB_CONFIG[tab];
+            const isActive = activeTab === tab;
+            return (
+              <button
+                key={tab}
+                type="button"
+                onClick={() => setActiveTab(tab)}
+                className="relative flex flex-1 flex-col items-center gap-0.5 py-2 transition-all active:scale-95"
+              >
+                {isActive && (
+                  <span
+                    className="absolute -top-2 flex h-8 w-8 items-center justify-center rounded-full text-sm text-white shadow-md transition-all"
+                    style={{
+                      backgroundColor: config.color,
+                      boxShadow: `0 4px 12px ${config.color}40`,
+                    }}
+                  >
+                    {config.emoji}
+                  </span>
+                )}
+                {!isActive && (
+                  <span className="text-lg text-gray-400 transition-colors">
+                    {config.emoji}
+                  </span>
+                )}
+                <span
+                  className={cn(
+                    "text-[11px] font-medium transition-colors",
+                    isActive ? "text-gray-800" : "text-gray-400"
+                  )}
+                  style={isActive ? { color: config.color } : undefined}
+                >
+                  {config.label}
+                </span>
+                {isActive && (
+                  <span
+                    className="mt-0.5 h-1 w-1 rounded-full"
+                    style={{ backgroundColor: config.color }}
+                  />
+                )}
+              </button>
+            );
+          })}
+        </div>
+      </nav>
+
+      {/* 浮动管理员入口 */}
       <button
         onClick={() => verifyAdmin(() => {})}
         title={adminMode ? "管理面板" : "管理员登录"}
+        className="fixed z-30 flex items-center justify-center rounded-full border border-white/40 transition-all hover:scale-105 active:scale-95"
         style={{
-          position: "fixed", bottom: 28, right: 28, zIndex: 20,
-          width: 44, height: 44, border: "none", borderRadius: "50%",
-          background: adminMode ? "rgba(141,154,139,0.3)" : "rgba(255,255,255,0.5)",
+          bottom: 80,
+          right: 20,
+          width: 44,
+          height: 44,
+          background: adminMode
+            ? "rgba(224,112,160,0.25)"
+            : "rgba(255,255,255,0.5)",
           backdropFilter: "blur(10px)",
           boxShadow: "0 2px 12px rgba(0,0,0,0.08)",
-          cursor: "pointer", fontSize: 18,
-          display: "flex", alignItems: "center", justifyContent: "center",
-          transition: "all 0.25s ease",
+          fontSize: 18,
         }}
       >
         {adminMode ? "⚙" : "🔒"}

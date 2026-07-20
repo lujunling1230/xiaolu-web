@@ -741,6 +741,35 @@ const InventoryPage: React.FC = () => {
     { role: "user" | "ai"; text: string }[]
   >([]);
 
+  /* 入库成功提示 */
+  const [toast, setToast] = useState("");
+  const toastTimer = useRef<ReturnType<typeof setTimeout>>();
+
+  const showToast = (msg: string) => {
+    setToast(msg);
+    clearTimeout(toastTimer.current);
+    toastTimer.current = setTimeout(() => setToast(""), 2000);
+  };
+
+  /* 叮~声效 */
+  const playDing = () => {
+    try {
+      const ctx = new AudioContext();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.frequency.value = 880;
+      osc.type = "sine";
+      gain.gain.setValueAtTime(0.3, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.5);
+      osc.start(ctx.currentTime);
+      osc.stop(ctx.currentTime + 0.5);
+    } catch {
+      /* 静默 */
+    }
+  };
+
   const [photoGuideOpen, setPhotoGuideOpen] = useState(false);
   const [photoConfirmOpen, setPhotoConfirmOpen] = useState(false);
   const [recognizedItems, setRecognizedItems] = useState<RecognizedCandidate[]>([]);
@@ -898,6 +927,8 @@ const InventoryPage: React.FC = () => {
     setItems((prev) => [newItem, ...prev]);
     // 仅清空名称，保留数量/单位/位置便于连续入库
     setForm((f) => ({ ...f, name: "" }));
+    playDing();
+    showToast(`✅ ${newItem.name} 入库成功！`);
   };
 
   /* —— 编辑保存 —— */
@@ -1029,49 +1060,39 @@ const InventoryPage: React.FC = () => {
   };
 
   /* —— AI管家库存问答 —— */
-  const handleChat = () => {
-    const q = chatInput.trim();
-    if (!q) return;
-
-    setChatHistory((prev) => [...prev, { role: "user", text: q }]);
-    setChatInput("");
-
-    const lower = q.toLowerCase();
-    let answer = "";
-
+  const getAnswer = (q: string): string => {
     // 1. 有什么库存 / 有哪些物品
     if (
       /有什[么吗]|哪些|[有存]货|库存/.test(q) &&
       !/在哪|位置|过期|到期/.test(q)
     ) {
       if (items.length === 0) {
-        answer = "🌸 当前还没有任何物品哦~ 快去「入库登记」添加吧！";
-      } else {
-        const list = items
-          .map((it) => `• ${it.name}（${it.count}${it.unit}）`)
-          .join("\n");
-        answer = `📦 您当前共有 ${items.length} 件物品：\n${list}`;
+        return "🌸 当前还没有任何物品哦~ 快去「入库登记」添加吧！";
       }
+      const list = items
+        .map((it) => `• ${it.name}（${it.count}${it.unit}）`)
+        .join("\n");
+      return `📦 您当前共有 ${items.length} 件物品：\n${list}`;
     }
     // 2. xxx在哪 / xxx位置
-    else if (/在哪|位置|放[在到哪]|存放/.test(q)) {
+    if (/在哪|位置|放[在到哪]|存放/.test(q)) {
       const keyword = q.replace(/[在哪位置放到哪存放\?？]/g, "").trim();
       const found = items.filter((it) =>
         it.name.toLowerCase().includes(keyword.toLowerCase())
       );
       if (found.length === 0) {
-        answer = `🔍 没有找到「${keyword}」呢，确认一下名称是否正确？`;
-      } else if (found.length === 1) {
+        return `🔍 没有找到「${keyword}」呢，确认一下名称是否正确？`;
+      }
+      if (found.length === 1) {
         const it = found[0];
         const d = daysUntil(it.expiryDate, today);
-        answer = `📍 ${it.name} 放在「${it.location}」，还有 ${it.count}${it.unit}，${d > 0 ? `剩余 ${d} 天到期` : d === 0 ? "今天到期" : `已过期 ${Math.abs(d)} 天`}。`;
-      } else {
-        const locs = found.map((it) => `• ${it.name} → ${it.location}`).join("\n");
-        answer = `📍 找到 ${found.length} 个相关物品：\n${locs}`;
+        return `📍 ${it.name} 放在「${it.location}」，还有 ${it.count}${it.unit}，${d > 0 ? `剩余 ${d} 天到期` : d === 0 ? "今天到期" : `已过期 ${Math.abs(d)} 天`}。`;
       }
+      const locs = found.map((it) => `• ${it.name} → ${it.location}`).join("\n");
+      return `📍 找到 ${found.length} 个相关物品：\n${locs}`;
     }
     // 3. xxx过期 / xxx到期 / 还有多久
-    else if (/过期|到期|多久|剩[余下几]/.test(q)) {
+    if (/过期|到期|多久|剩[余下几]/.test(q)) {
       const keyword = q
         .replace(/[过期到多久剩余下几\?？天]/g, "")
         .trim();
@@ -1079,72 +1100,74 @@ const InventoryPage: React.FC = () => {
         it.name.toLowerCase().includes(keyword.toLowerCase())
       );
       if (found.length === 0) {
-        answer = `🔍 没有找到「${keyword}」的到期信息呢。`;
-      } else {
-        const details = found
-          .map((it) => {
-            const d = daysUntil(it.expiryDate, today);
-            const hint =
-              d < 0
-                ? `⚠️ 已过期 ${Math.abs(d)} 天`
-                : d === 0
-                  ? "⏰ 今天到期"
-                  : d <= 7
-                    ? `🔥 仅剩 ${d} 天`
-                    : `💡 还有 ${d} 天`;
-            return `• ${it.name}：${it.expiryDate}，${hint}`;
-          })
-          .join("\n");
-        answer = details;
+        return `🔍 没有找到「${keyword}」的到期信息呢。`;
       }
+      const details = found
+        .map((it) => {
+          const d = daysUntil(it.expiryDate, today);
+          const hint =
+            d < 0
+              ? `⚠️ 已过期 ${Math.abs(d)} 天`
+              : d === 0
+                ? "⏰ 今天到期"
+                : d <= 7
+                  ? `🔥 仅剩 ${d} 天`
+                  : `💡 还有 ${d} 天`;
+          return `• ${it.name}：${it.expiryDate}，${hint}`;
+        })
+        .join("\n");
+      return details;
     }
     // 4. 快过期 / 临期
-    else if (/快过期|临期|要到期|即将/.test(q)) {
+    if (/快过期|临期|要到期|即将/.test(q)) {
       const near = items.filter((it) => {
         const d = daysUntil(it.expiryDate, today);
         return d >= 0 && d <= 7;
       });
       if (near.length === 0) {
-        answer = "✅ 太棒了！最近7天内没有临期物品~";
-      } else {
-        const list = near
-          .sort((a, b) =>
-            a.expiryDate.localeCompare(b.expiryDate)
-          )
-          .map((it) => {
-            const d = daysUntil(it.expiryDate, today);
-            return `• ${it.name}（${it.location}）：${d === 0 ? "今天到期" : `还剩 ${d} 天`}`;
-          })
-          .join("\n");
-        answer = `⏰ 最近7天内即将过期的物品：\n${list}`;
+        return "✅ 太棒了！最近7天内没有临期物品~";
       }
+      const list = near
+        .sort((a, b) => a.expiryDate.localeCompare(b.expiryDate))
+        .map((it) => {
+          const d = daysUntil(it.expiryDate, today);
+          return `• ${it.name}（${it.location}）：${d === 0 ? "今天到期" : `还剩 ${d} 天`}`;
+        })
+        .join("\n");
+      return `⏰ 最近7天内即将过期的物品：\n${list}`;
     }
     // 5. 已过期
-    else if (/已过期|过期.*[了没]|坏.*[了掉]/.test(q)) {
+    if (/已过期|过期.*[了没]|坏.*[了掉]/.test(q)) {
       const expired = items.filter(
         (it) => daysUntil(it.expiryDate, today) < 0
       );
       if (expired.length === 0) {
-        answer = "✅ 目前没有已过期物品，继续保持！";
-      } else {
-        const list = expired
-          .map((it) => {
-            const d = Math.abs(daysUntil(it.expiryDate, today));
-            return `• ${it.name}（${it.location}）：已过期 ${d} 天`;
-          })
-          .join("\n");
-        answer = `🚨 已过期物品（请尽快处理）：\n${list}`;
+        return "✅ 目前没有已过期物品，继续保持！";
       }
+      const list = expired
+        .map((it) => {
+          const d = Math.abs(daysUntil(it.expiryDate, today));
+          return `• ${it.name}（${it.location}）：已过期 ${d} 天`;
+        })
+        .join("\n");
+      return `🚨 已过期物品（请尽快处理）：\n${list}`;
     }
     // 默认
-    else {
-      answer =
-        '💬 我可以帮您查库存哦！试试问：\n• "有什么库存？"\n• "牛奶在哪里？"\n• "洗衣液还有多久过期？"\n• "有什么快过期了？"';
-    }
+    return '💬 我可以帮您查库存哦！试试问：\n• "有什么库存？"\n• "牛奶在哪里？"\n• "洗衣液还有多久过期？"\n• "有什么快过期了？"';
+  };
 
+  const askAI = (q: string) => {
+    if (!q.trim()) return;
+    setChatHistory((prev) => [...prev, { role: "user", text: q }]);
+    setChatInput("");
+    const answer = getAnswer(q);
     setTimeout(() => {
       setChatHistory((prev) => [...prev, { role: "ai", text: answer }]);
     }, 400);
+  };
+
+  const handleChat = () => {
+    askAI(chatInput);
   };
 
   const tabTheme = TAB_CONFIG[activeTab];
@@ -1621,9 +1644,34 @@ const InventoryPage: React.FC = () => {
             {/* 聊天记录 */}
             <div className="mb-3 max-h-60 space-y-2.5 overflow-y-auto">
               {chatHistory.length === 0 && (
-                <p className="py-2 text-center text-xs text-gray-400">
-                  试试问 "牛奶在哪里？" 或 "有什么快过期了？"
-                </p>
+                <div className="space-y-3">
+                  <div className="flex justify-start">
+                    <div className="max-w-[85%] whitespace-pre-line rounded-2xl bg-[#F8F0FF]/60 px-3.5 py-2 text-sm leading-relaxed text-gray-700">
+                      你好呀~ 我是AI管家小助手 🌸 请问有什么可以帮助你的？
+                    </div>
+                  </div>
+                  <p className="text-center text-xs text-gray-400">
+                    试试点击下面的问题：
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    {[
+                      "有什么库存？",
+                      "有什么快过期了？",
+                      "已过期的有哪些？",
+                      "牛奶在哪里？",
+                      "洗衣液还有多久过期？",
+                    ].map((q) => (
+                      <button
+                        key={q}
+                        type="button"
+                        onClick={() => askAI(q)}
+                        className="rounded-full border border-[#F8C8DC]/60 bg-[#FFF0F5]/50 px-3 py-1.5 text-xs text-[#C85A8A] transition-all hover:bg-[#F8C8DC]/40 hover:shadow-sm active:scale-95"
+                      >
+                        {q}
+                      </button>
+                    ))}
+                  </div>
+                </div>
               )}
               {chatHistory.map((msg, idx) => (
                 <div
@@ -1821,6 +1869,16 @@ const InventoryPage: React.FC = () => {
       </button>
 
       <AdminGuardUI />
+
+      {/* 入库成功提示 */}
+      {toast && (
+        <div
+          className="fixed left-1/2 top-16 z-50 -translate-x-1/2 animate-bounce rounded-2xl border border-white/50 bg-white/80 px-5 py-2.5 text-sm font-medium text-gray-700 shadow-lg backdrop-blur-md"
+          style={{ animationDuration: "0.5s", animationIterationCount: "1" }}
+        >
+          {toast}
+        </div>
+      )}
     </div>
   );
 };

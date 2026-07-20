@@ -109,6 +109,14 @@ export default function RoamingGuidePage() {
       background: "linear-gradient(180deg, var(--rg-paper-deep) 0%, var(--rg-paper) 30%, var(--rg-paper-light) 100%)",
       fontFamily: "var(--rg-font-serif), serif",
     }}>
+      {/* 全局布局样式 */}
+      <style>{`
+        /* 统计栏上方留出与卷轴的呼吸空间 */
+        .rg-stats-bar {
+          margin-top: 48px !important;
+        }
+      `}</style>
+
       {/* 卷轴 Hero */}
       <ScrollHeader onScrollToMap={scrollToMap} />
 

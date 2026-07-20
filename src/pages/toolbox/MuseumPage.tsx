@@ -6,6 +6,8 @@ import { useAdminGuard } from "../../hooks/useAdminGuard";
 import { callAI } from "../../utils/aiClient";
 import CuratorChatPanel from "./museum/CuratorChatPanel";
 import PrivateDrawer from "./museum/PrivateDrawer";
+import TimeTheater from "./museum/TimeTheater";
+import HallTransition from "./museum/HallTransition";
 
 /**
  * 时光博物馆 · Museum of Memories
@@ -870,9 +872,9 @@ const VintageGallery: React.FC<{
   onSpotlightToggle?: (id: string) => void;
 }> = ({ title, subtitle, emoji, cards, onAdd, onEdit, onDelete, onImageUpload, onImageDelete, verifyAdmin, onCuratorNote, onLendExhibit, spotlightActiveId, onSpotlightToggle }) => {
   const emptyTexts: Record<string, string[]> = {
-    "耳机里的青春 BGM": ["耳机里还没有响起任何旋律。", "但你一定记得，那副有线耳机在口袋里缠成一团的日子。"],
+    "声纹回廊": ["耳机里还没有响起任何旋律。", "但你一定记得，那副有线耳机在口袋里缠成一团的日子。"],
     "电视里的乌托邦": ["这面墙上还没有挂上任何影像。", "也许你的第一部电视剧记忆，正在来的路上。"],
-    "网络初现时的印记": ["信号还连接着，但屏幕上暂时一片空白。", "你还记得第一次拨号上网时的那个声音吗？"],
+    "数字足迹馆": ["信号还连接着，但屏幕上暂时一片空白。", "你还记得第一次拨号上网时的那个声音吗？"],
   };
   return (
   <div className="vintage-section">
@@ -1105,6 +1107,11 @@ const MuseumPage: React.FC = () => {
 
   // 聚光灯状态
   const [spotlightCardId, setSpotlightCardId] = useState<string | null>(null);
+
+  // 展厅导航
+  const [activeHall, setActiveHall] = useState<"film" | "music" | "net" | "honor" | "drawer" | null>(null);
+  const [transitioning, setTransitioning] = useState(false);
+  const hallRefs = useRef<Record<string, HTMLDivElement | null>>({});
 
   // 环境光鼠标追踪
   const [mousePos, setMousePos] = useState({ x: 50, y: 30 });
@@ -1375,6 +1382,23 @@ const MuseumPage: React.FC = () => {
     }
   }, []);
 
+  const handleHallNavigate = useCallback((hall: "film" | "music" | "net" | "honor" | "drawer") => {
+    if (transitioning) return;
+    setTransitioning(true);
+    setActiveHall(hall);
+    // Scroll to the corresponding hall section after transition completes
+    setTimeout(() => {
+      const el = hallRefs.current[hall];
+      if (el) {
+        el.scrollIntoView({ behavior: "smooth", block: "start" });
+      }
+    }, 1600); // after 1.5s transition + 100ms buffer
+  }, [transitioning]);
+
+  const handleTransitionComplete = useCallback(() => {
+    setTransitioning(false);
+  }, []);
+
   // 获取 section 标题和 emoji
   const getSectionTitle = (section: "bgm" | "tv" | "net") => {
     if (section === "bgm") return "🎵 耳机里的青春 BGM";
@@ -1446,6 +1470,58 @@ const MuseumPage: React.FC = () => {
         </motion.button>
       </div>
 
+      {/* 展厅导航栏 */}
+      <div style={{
+        position: "sticky",
+        top: 0,
+        zIndex: 100,
+        background: "rgba(61,44,46,0.92)",
+        backdropFilter: "none",
+        borderBottom: "1px solid rgba(176,141,87,0.2)",
+        padding: "10px 16px",
+        display: "flex",
+        justifyContent: "center",
+        gap: 4,
+        maxWidth: 960,
+        margin: "0 auto 24px",
+        flexWrap: "wrap",
+      }}>
+        {[
+          { key: "film" as const, label: "时光放映厅" },
+          { key: "music" as const, label: "声纹回廊" },
+          { key: "net" as const, label: "数字足迹馆" },
+          { key: "honor" as const, label: "荣耀殿堂" },
+          { key: "drawer" as const, label: "私藏匣" },
+        ].map(item => (
+          <button
+            key={item.key}
+            onClick={() => {
+              if (item.key === "drawer") {
+                setDrawerOpen(true);
+              } else {
+                handleHallNavigate(item.key);
+              }
+            }}
+            style={{
+              background: activeHall === item.key ? "rgba(176,141,87,0.2)" : "none",
+              border: "1px solid",
+              borderColor: activeHall === item.key ? "rgba(176,141,87,0.5)" : "rgba(176,141,87,0.15)",
+              borderRadius: 20,
+              padding: "5px 14px",
+              color: activeHall === item.key ? "#d4a84a" : "#8a7a64",
+              fontSize: 12,
+              fontFamily: "'Noto Serif SC', serif",
+              letterSpacing: "1px",
+              cursor: "pointer",
+              transition: "all 0.25s",
+              whiteSpace: "nowrap",
+            }}
+          >
+            {item.label}
+          </button>
+        ))}
+      </div>
+
       {/* ===== 展厅一：时代回响 ===== */}
       <section className={`museum-hall museum-era-section${spotlightCardId ? " spotlight-dimmed" : ""}`}>
         <div className="museum-hall-head">
@@ -1456,8 +1532,8 @@ const MuseumPage: React.FC = () => {
           </div>
         </div>
 
-        <div className="zone-music">
-        <VintageGallery title="耳机里的青春 BGM" subtitle="耳机插上的那一刻，世界就只剩下旋律。" emoji="🎵" cards={sortedBgms}
+        <div className="zone-music" ref={(el) => { hallRefs.current["music"] = el; }}>
+        <VintageGallery title="声纹回廊" subtitle="耳机插上的那一刻，世界就只剩下旋律。" emoji="🎵" cards={sortedBgms}
           onAdd={(data) => setCardModal({ mode: "add", section: "bgm", data: { ...data, id: "", year: data.year || String(new Date().getFullYear()) } })}
           onEdit={(card) => setCardModal({ mode: "edit", section: "bgm", data: card })}
           onDelete={(id) => handleCardDelete(id, "bgm")}
@@ -1470,22 +1546,19 @@ const MuseumPage: React.FC = () => {
           onSpotlightToggle={(id) => setSpotlightCardId(prev => prev === id ? null : id)} />
         </div>
 
-        <div className="zone-film">
-        <VintageGallery title="电视里的乌托邦" subtitle="那些年，屏幕里住着另一个世界。" emoji="📺" cards={sortedTvs}
-          onAdd={(data) => setCardModal({ mode: "add", section: "tv", data: { ...data, id: "", year: data.year || String(new Date().getFullYear()) } })}
-          onEdit={(card) => setCardModal({ mode: "edit", section: "tv", data: card })}
-          onDelete={(id) => handleCardDelete(id, "tv")}
-          onImageUpload={(id, url) => handleImageUpload(id, url, "tv")}
-          onImageDelete={(id) => handleImageDelete(id, "tv")}
-          verifyAdmin={verifyAdmin}
-          onCuratorNote={handleCuratorNote}
-          onLendExhibit={handleLendExhibit}
-          spotlightActiveId={spotlightCardId}
-          onSpotlightToggle={(id) => setSpotlightCardId(prev => prev === id ? null : id)} />
+        <div ref={(el) => { hallRefs.current["film"] = el; }}>
+        <TimeTheater
+          tvCards={sortedTvs}
+          bgmCards={sortedBgms}
+          onEdit={(card, type) => {
+            if (type === "tv") setCardModal({ mode: "edit", section: "tv", data: card });
+            else setCardModal({ mode: "edit", section: "bgm", data: card });
+          }}
+        />
         </div>
 
-        <div className="zone-net">
-        <VintageGallery title="网络初现时的印记" subtitle="每一个网址，都是通往旧时光的门。" emoji="📱" cards={sortedNets}
+        <div className="zone-net" ref={(el) => { hallRefs.current["net"] = el; }}>
+        <VintageGallery title="数字足迹馆" subtitle="每一个网址，都是通往旧时光的门。" emoji="📱" cards={sortedNets}
           onAdd={(data) => setCardModal({ mode: "add", section: "net", data: { ...data, id: "", year: data.year || String(new Date().getFullYear()) } })}
           onEdit={(card) => setCardModal({ mode: "edit", section: "net", data: card })}
           onDelete={(id) => handleCardDelete(id, "net")}
@@ -1499,17 +1572,17 @@ const MuseumPage: React.FC = () => {
         </div>
       </section>
 
-      {/* ===== 展厅二：荣耀之路 ===== */}
+      {/* ===== 荣耀殿堂 ===== */}
       <section className="museum-hall">
         <div className="museum-hall-head">
           <span className="museum-hall-roman">II</span>
           <div>
-            <h2 className="museum-hall-title">荣耀之路</h2>
+            <h2 className="museum-hall-title">荣耀殿堂</h2>
             <p className="museum-hall-sub">被认真走过的路，终将成为勋章。</p>
           </div>
         </div>
 
-        <div className="zone-honor-wall">
+        <div className="zone-honor-wall" ref={(el) => { hallRefs.current["honor"] = el; }}>
         {/* 垂直时间轴 */}
         <div className="museum-timeline-v">
           {sortedHonors.length === 0 ? (
@@ -1613,6 +1686,13 @@ const MuseumPage: React.FC = () => {
 
       {/* 私藏匣 */}
       <PrivateDrawer isOpen={drawerOpen} onClose={() => setDrawerOpen(false)} />
+
+      {/* 展厅转场 */}
+      <HallTransition
+        isActive={transitioning}
+        hallType={activeHall}
+        onComplete={handleTransitionComplete}
+      />
 
       {/* 管理员密码框 */}
       <AdminGuardUI />

@@ -479,6 +479,7 @@ const SystemTuningPage: React.FC = () => {
     visibility: "public" | "private" | "roommate";
     likes: number;
     likedByMe: boolean;
+    likedBy: { name: string; avatar: string }[];
     comments: MomentComment[];
     timestamp: number;
     isMine: boolean;
@@ -642,6 +643,7 @@ const SystemTuningPage: React.FC = () => {
       visibility: publishVisibility,
       likes: 0,
       likedByMe: false,
+      likedBy: [],
       comments: [],
       timestamp: Date.now(),
       isMine: true,
@@ -659,6 +661,71 @@ const SystemTuningPage: React.FC = () => {
     const id = `leaf-pub-${Date.now()}`;
     setLeafAnimations((prev) => [...prev, id]);
     setTimeout(() => setLeafAnimations((prev) => prev.filter((x) => x !== id)), 1200);
+
+    // AI 角色自动点赞 + 评论（延迟模拟真实朋友圈）
+    triggerAIMomentReactions(newMoment.id, newMoment.content);
+  };
+
+  /** AI 角色自动对用户朋友圈进行点赞 + 评论 */
+  const triggerAIMomentReactions = (momentId: string, content: string) => {
+    // 随机选 2~4 个角色参与互动
+    const shuffled = [...CHARACTERS].sort(() => Math.random() - 0.5);
+    const reactors = shuffled.slice(0, 2 + Math.floor(Math.random() * 3));
+
+    // 分配：部分点赞，部分评论，部分两者都做
+    reactors.forEach((char, idx) => {
+      const willLike = Math.random() > 0.15; // 85% 概率点赞
+      const willComment = Math.random() > 0.4; // 60% 概率评论
+
+      // 点赞（延迟 1~4 秒，错开时间）
+      if (willLike) {
+        const likeDelay = 1000 + Math.random() * 3000 + idx * 500;
+        setTimeout(() => {
+          setMoments(prev => {
+            const updated = prev.map(m => {
+              if (m.id !== momentId) return m;
+              if (m.likedBy.some(l => l.name === char.name)) return m;
+              return { ...m, likes: m.likes + 1, likedBy: [...m.likedBy, { name: char.name, avatar: char.emoji }] };
+            });
+            localStorage.setItem("wx_moments", JSON.stringify(updated));
+            return updated;
+          });
+        }, likeDelay);
+      }
+
+      // 评论（延迟 3~8 秒，让点赞先到）
+      if (willComment) {
+        const commentDelay = 3000 + Math.random() * 5000 + idx * 800;
+        setTimeout(async () => {
+          try {
+            const replyContent = await callAI(
+              `${char.systemPrompt}\n\n你是爱情公寓的室友，看到室友发了条朋友圈，请用你的角色语气评论一句。评论要简短（20字以内），自然、有趣，符合你的性格。可以调侃、安慰、吐槽、附和。\n\n${getRealTimeContext()}`,
+              [{ role: "user", content: `室友发了一条朋友圈：「${content.slice(0, 80)}」，你怎么评论？只输出评论内容，不要加引号或前缀。` }],
+              { maxTokens: 60, temperature: 0.9 }
+            );
+            const trimmedReply = (replyContent || "").replace(/^["'「]|["'」]$/g, "").trim().slice(0, 40);
+            if (!trimmedReply) return;
+            setMoments(prev => {
+              const updated = prev.map(m => {
+                if (m.id !== momentId) return m;
+                return {
+                  ...m,
+                  comments: [...m.comments, {
+                    id: `cmt-ai-${Date.now()}-${idx}`,
+                    author: char.name,
+                    authorAvatar: char.emoji,
+                    content: trimmedReply,
+                    timestamp: Date.now(),
+                  }],
+                };
+              });
+              localStorage.setItem("wx_moments", JSON.stringify(updated));
+              return updated;
+            });
+          } catch { /* AI 调用失败静默处理 */ }
+        }, commentDelay);
+      }
+    });
   };
   const handleLikeMoment = (momentId: string) => {
     const list = moments.map((m) => {
@@ -1414,6 +1481,14 @@ const SystemTuningPage: React.FC = () => {
                           <span className="wx-discover-feed-leaf">🍃</span>
                         </div>
 
+                        {/* AI 点赞展示 */}
+                        {m.likedBy.length > 0 && (
+                          <div className="wx-moment-liked-by">
+                            ❤️ {m.likedBy.map((l) => l.avatar).join(" ")} {m.likedBy.map((l) => l.name).join("、")}
+                            {m.likedByMe ? "、你" : ""}觉得很赞
+                          </div>
+                        )}
+
                         {/* 评论区（默认折叠） */}
                         {m.comments.length > 0 && (
                           <div
@@ -1871,6 +1946,13 @@ const SystemTuningPage: React.FC = () => {
                               </span>
                               <span className="wx-moment-leaf">🍃</span>
                             </div>
+                            {/* AI 点赞展示 */}
+                            {m.likedBy.length > 0 && (
+                              <div className="wx-moment-liked-by">
+                                ❤️ {m.likedBy.map((l) => l.avatar).join(" ")} {m.likedBy.map((l) => l.name).join("、")}
+                                {m.likedByMe ? "、你" : ""}觉得很赞
+                              </div>
+                            )}
                             {/* 评论区（默认折叠，点击展开） */}
                             {m.comments.length > 0 && (
                               <div
@@ -3172,6 +3254,15 @@ const SystemTuningPage: React.FC = () => {
           align-items: center;
           gap: 16px;
           margin-bottom: 6px;
+        }
+        .wx-moment-liked-by {
+          font-size: 11px;
+          color: #888;
+          background: #f8f8f8;
+          border-radius: 8px;
+          padding: 6px 10px;
+          margin-bottom: 6px;
+          line-height: 1.5;
         }
         .wx-moment-action {
           font-size: 12px;

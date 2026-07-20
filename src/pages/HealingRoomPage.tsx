@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import GratitudeJournal from "../components/GratitudeJournal";
 import BreathingGuide from "../components/BreathingGuide";
 import MeditationTimer from "../components/MeditationTimer";
+import HealingCompanion from "../components/HealingCompanion";
 
 /* ===== 图标 ===== */
 const JournalIcon = () => (
@@ -161,6 +162,9 @@ const HealingRoomPage: React.FC = () => {
           </AnimatePresence>
         </div>
       </main>
+
+      {/* 疗愈师小愈 */}
+      <HealingCompanion />
 
       <style>{`
         /* ===== 根容器 ===== */

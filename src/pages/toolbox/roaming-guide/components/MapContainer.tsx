@@ -136,6 +136,15 @@ export default function MapContainer({ cities, selectedCity, onSelectCity }: Map
           border: 3px solid #C8B898;
           box-shadow: 0 4px 24px rgba(139, 115, 85, 0.12), 0 1px 4px rgba(0,0,0,0.06);
         }
+        /* 地图浅灰蒙版，让地图退后不抢前景 */
+        .rg-map-wrapper::after {
+          content: "";
+          position: absolute;
+          inset: 0;
+          background: rgba(245, 240, 230, 0.08);
+          pointer-events: none;
+          z-index: 1;
+        }
         .rg-map-container {
           width: 100%;
           height: 100%;

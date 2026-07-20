@@ -158,7 +158,7 @@ export default function CityCardGallery({
         .rg-card-section {
           max-width: 960px;
           margin: 0 auto;
-          padding: 56px 24px;
+          padding: 48px 24px;
         }
         .rg-card-section-head {
           display: flex;
@@ -205,7 +205,7 @@ export default function CityCardGallery({
         }
         .rg-cards-track {
           display: flex;
-          gap: var(--rg-space-md, 16px);
+          gap: 15px;
           padding: 12px 4px 28px;
           scroll-snap-type: x mandatory;
         }

@@ -250,13 +250,17 @@ export default function AIAssistantPanel({
     <>
       <style>{CSS}</style>
 
-      {/* ===== 浮动按钮 ===== */}
+      {/* ===== 企鹅玩偶悬浮按钮 ===== */}
       <button
-        className="rg-ai-fab"
+        className="rg-ai-penguin"
         onClick={() => setOpen(true)}
         aria-label="打开 AI 助手"
       >
-        <span className="rg-ai-fab__icon">&#x2793;</span>
+        <img
+          src="/penguin-mascot.png"
+          alt="企鹅助手"
+          draggable={false}
+        />
       </button>
 
       {/* ===== 遮罩层 ===== */}
@@ -855,55 +859,53 @@ const CSS = `
 }
 
 /* ================================================================
-   浮动按钮 (FAB)
+   企鹅玩偶悬浮按钮
    ================================================================ */
-.rg-ai-fab {
+.rg-ai-penguin {
   position: fixed;
-  right: 28px;
-  bottom: 28px;
+  right: 20px;
+  bottom: 20px;
   z-index: 9000;
-  width: 56px;
-  height: 56px;
-  border-radius: 50%;
+  width: auto;
+  height: 70px;
   border: none;
+  background: none;
   cursor: pointer;
-  background: linear-gradient(135deg, var(--rg-primary) 0%, #3a7a5e 100%);
-  box-shadow: 0 4px 16px var(--rg-primary-glow, rgba(74, 139, 111, 0.45)),
-              0 0 0 0 var(--rg-primary-glow, rgba(74, 139, 111, 0.3));
+  padding: 0;
   display: flex;
-  align-items: center;
+  align-items: flex-end;
   justify-content: center;
+  filter: drop-shadow(0 4px 10px rgba(0,0,0,0.15));
   transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1),
-              box-shadow 0.3s ease;
-  animation: rg-ai-pulse 2.4s ease-in-out infinite;
+              filter 0.3s ease;
+  /* 确保不被其他元素遮挡 */
+  pointer-events: auto;
 }
 
-.rg-ai-fab:hover {
-  transform: scale(1.15);
-  box-shadow: 0 6px 24px var(--rg-primary-glow, rgba(74, 139, 111, 0.6));
+.rg-ai-penguin img {
+  height: 70px;
+  width: auto;
+  display: block;
+  border-radius: 8px;
+  object-fit: contain;
 }
 
-.rg-ai-fab:active {
-  transform: scale(1.05);
+/* Hover: 上浮 + 漂浮动画 */
+.rg-ai-penguin:hover {
+  transform: translateY(-5px);
+  animation: rg-penguin-float 2s ease-in-out infinite;
 }
 
-.rg-ai-fab__icon {
-  font-size: 26px;
-  color: #fff;
-  line-height: 1;
-  user-select: none;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);
+/* Click: 被"戳"的物理反馈 */
+.rg-ai-penguin:active {
+  transform: scale(0.95);
+  animation: none;
+  filter: drop-shadow(0 2px 6px rgba(0,0,0,0.2));
 }
 
-@keyframes rg-ai-pulse {
-  0%, 100% {
-    box-shadow: 0 4px 16px var(--rg-primary-glow, rgba(74, 139, 111, 0.45)),
-                0 0 0 0 var(--rg-primary-glow, rgba(74, 139, 111, 0.3));
-  }
-  50% {
-    box-shadow: 0 4px 16px var(--rg-primary-glow, rgba(74, 139, 111, 0.45)),
-                0 0 0 12px var(--rg-primary-glow, rgba(74, 139, 111, 0));
-  }
+@keyframes rg-penguin-float {
+  0%, 100% { transform: translateY(-5px); }
+  50% { transform: translateY(-10px); }
 }
 
 /* ================================================================

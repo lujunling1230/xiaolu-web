@@ -64,7 +64,7 @@ const LifeSlicesPage: React.FC = () => {
 
       {/* 顶部返回条 */}
       <header className="ls-topbar">
-        <Link to={homePath} className="ls-back">← 回到妙妙工具箱</Link>
+        <Link to={homePath} className="ls-back">← 回到作品集</Link>
         <span className="ls-topbar-meta">Life Slices · 35mm</span>
       </header>
 

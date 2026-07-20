@@ -75,7 +75,7 @@ const ProjectModal: React.FC<ProjectModalProps> = ({ open, onClose }) => {
 
             {/* 标题 */}
             <h2 className="text-2xl mb-2" style={{ fontFamily: '"Noto Serif SC", serif' }}>
-              项目集
+              作品说明书
             </h2>
             <p className="text-sm mb-8" style={{ color: "var(--text-soft)" }}>
               以下是部分实践项目，点击了解更多。

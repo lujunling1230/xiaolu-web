@@ -444,7 +444,7 @@ const AdvicePage: React.FC = () => {
       {/* ===== 顶栏 ===== */}
       <header className="advice-topbar">
         <Link to="/mickey" className="advice-back">
-          <span style={{ marginRight: 4 }}>←</span> 回到妙妙工具箱
+          <span style={{ marginRight: 4 }}>←</span> 回到作品集
         </Link>
         <span className="advice-topbar-meta">The Advice Shop</span>
       </header>

@@ -114,7 +114,7 @@ const ProjectsPage: React.FC = () => {
           margin: "0 0 12px",
           letterSpacing: "0.05em",
         }}>
-          项目集
+          作品说明书
         </h2>
         <p style={{
           fontSize: "14px",

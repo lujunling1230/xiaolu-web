@@ -2,7 +2,7 @@ import { motion } from "framer-motion";
 import { useParams, useSearchParams, Link, useNavigate } from "react-router-dom";
 
 /**
- * 妙妙工具箱 · 详情占位页
+ * 作品集 · 详情占位页
  *
  * 路由 /toolbox/:title —— react-router 会自动解码 :title 参数。
  * 后续在此填充各维度的真实内容，当前为“正在建造中”占位。
@@ -21,7 +21,7 @@ const ToolboxDetail: React.FC = () => {
       {/* 顶部返回条 */}
       <header className="toolbox-topbar">
         <button className="toolbox-back" onClick={() => navigate(-1)}>
-          ← 回到妙妙工具箱
+          ← 回到作品集
         </button>
         <span className="toolbox-topbar-meta">造物详情</span>
       </header>

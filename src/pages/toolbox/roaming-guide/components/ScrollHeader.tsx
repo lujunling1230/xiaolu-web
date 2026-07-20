@@ -96,7 +96,7 @@ export default function ScrollHeader({ onScrollToMap }: ScrollHeaderProps) {
         {/* 返回链接 */}
         {expanded && (
           <Link to="/mickey" className="scroll-back">
-            ← 返回妙妙工具箱
+            ← 返回作品集
           </Link>
         )}
       </header>

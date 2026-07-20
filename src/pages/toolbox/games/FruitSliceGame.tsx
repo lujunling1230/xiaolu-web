@@ -2,11 +2,10 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 
 /* ============================================================
-   切水果 · Fruit Slice
-   一刀两断，万念皆空
-   ============================================================ */
+   鍒囨按鏋?. Fruit Slice
+   涓€鍒€涓ゆ柇锛屼竾蹇电殕绌?   ============================================================ */
 
-/* ---------- 接口 ---------- */
+/* ---------- 鎺ュ彛 ---------- */
 interface Fruit {
   id: number;
   x: number;
@@ -57,21 +56,50 @@ interface TrailPoint {
   life: number;
 }
 
-/* ---------- 常量 ---------- */
-const GRAVITY = 0.22;
-const BOMB_CHANCE = 0.15;
-const CANVAS_H = window.innerWidth < 600 ? 300 : 360;
-const STORAGE_KEY = "game_best_fruitslice";
-const ACHIEVEMENTS = [
-  { score: 10, title: "初入刀道" },
-  { score: 30, title: "刀锋渐利" },
-  { score: 50, title: "刀光剑影" },
-  { score: 100, title: "你已超脱凡尘" },
+interface LevelConfig {
+  targetScore: number;
+  fruitSpeed: number;
+  bombChance: number;
+  fruitSizeMulti: number;
+  rotSpeedMulti: number;
+  bombSizeMulti: number;
+  spawnIntervalMin: number;
+  spawnIntervalMax: number;
+  extraFruits: number;
+  chainSlice: boolean;
+  badge: string;
+}
+
+interface FruitSaveData {
+  highestLevel: number;
+  badges: number[];
+  bestScore: number;
+}
+
+type Phase = "menu" | "playing" | "levelComplete" | "gameOver";
+
+/* ---------- 鍏冲崱閰嶇疆 ---------- */
+const LEVELS: LevelConfig[] = [
+  { targetScore: 15,  fruitSpeed: 1.0,  bombChance: 0.10, fruitSizeMulti: 1.0, rotSpeedMulti: 1.0, bombSizeMulti: 1.0, spawnIntervalMin: 45, spawnIntervalMax: 65, extraFruits: 0, chainSlice: false, badge: "鍒濆叆鍒€閬? },
+  { targetScore: 25,  fruitSpeed: 1.0,  bombChance: 0.12, fruitSizeMulti: 1.0, rotSpeedMulti: 1.0, bombSizeMulti: 1.0, spawnIntervalMin: 40, spawnIntervalMax: 60, extraFruits: 1, chainSlice: false, badge: "鍒€閿嬫笎鍒? },
+  { targetScore: 40,  fruitSpeed: 1.25, bombChance: 0.13, fruitSizeMulti: 1.15, rotSpeedMulti: 1.0, bombSizeMulti: 1.0, spawnIntervalMin: 40, spawnIntervalMax: 58, extraFruits: 0, chainSlice: false, badge: "鏋滈洦鍒濋檷" },
+  { targetScore: 55,  fruitSpeed: 1.25, bombChance: 0.14, fruitSizeMulti: 1.0, rotSpeedMulti: 1.0, bombSizeMulti: 1.0, spawnIntervalMin: 38, spawnIntervalMax: 55, extraFruits: 0, chainSlice: false, badge: "涓€鍒€涓ゆ柇" },
+  { targetScore: 70,  fruitSpeed: 1.25, bombChance: 0.15, fruitSizeMulti: 1.0, rotSpeedMulti: 1.0, bombSizeMulti: 1.0, spawnIntervalMin: 36, spawnIntervalMax: 52, extraFruits: 0, chainSlice: true,  badge: "杩為攣鍙嶅簲" },
+  { targetScore: 90,  fruitSpeed: 1.5,  bombChance: 0.15, fruitSizeMulti: 1.0, rotSpeedMulti: 1.0, bombSizeMulti: 1.0, spawnIntervalMin: 34, spawnIntervalMax: 50, extraFruits: 0, chainSlice: false, badge: "蹇垁鎵? },
+  { targetScore: 110, fruitSpeed: 1.5,  bombChance: 0.16, fruitSizeMulti: 1.0, rotSpeedMulti: 1.8, bombSizeMulti: 1.0, spawnIntervalMin: 32, spawnIntervalMax: 48, extraFruits: 0, chainSlice: false, badge: "鏃嬮鍒€" },
+  { targetScore: 130, fruitSpeed: 1.75, bombChance: 0.17, fruitSizeMulti: 1.0, rotSpeedMulti: 1.0, bombSizeMulti: 1.0, spawnIntervalMin: 30, spawnIntervalMax: 46, extraFruits: 0, chainSlice: false, badge: "涓囧墤褰掑畻" },
+  { targetScore: 160, fruitSpeed: 1.75, bombChance: 0.18, fruitSizeMulti: 1.0, rotSpeedMulti: 1.2, bombSizeMulti: 0.7, spawnIntervalMin: 28, spawnIntervalMax: 44, extraFruits: 0, chainSlice: true,  badge: "鐐稿脊涓撳" },
+  { targetScore: 200, fruitSpeed: 2.0,  bombChance: 0.20, fruitSizeMulti: 1.15, rotSpeedMulti: 2.0, bombSizeMulti: 0.7, spawnIntervalMin: 26, spawnIntervalMax: 42, extraFruits: 1, chainSlice: true,  badge: "浣犲凡瓒呰劚鍑″皹" },
 ];
+
+/* ---------- 甯搁噺 ---------- */
+const GRAVITY = 0.22;
+const CANVAS_H = window.innerWidth < 600 ? 300 : 360;
+const STORAGE_KEY = "fruit_slice_save";
 
 const SHAPES: Array<Exclude<Fruit["shape"], "bomb">> = ["watermelon", "orange", "apple", "grape", "lemon"];
 
-/* ---------- 水果配置 ---------- */
+/* ---------- 姘存灉閰嶇疆 ---------- */
 function fruitConfig(shape: Exclude<Fruit["shape"], "bomb">): Pick<Fruit, "color" | "innerColor" | "leafColor" | "r"> {
   switch (shape) {
     case "watermelon":
@@ -87,7 +115,22 @@ function fruitConfig(shape: Exclude<Fruit["shape"], "bomb">): Pick<Fruit, "color
   }
 }
 
-/* ---------- 音效 ---------- */
+/* ---------- 瀛樻。璇诲啓 ---------- */
+function loadSaveData(): FruitSaveData {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) return JSON.parse(raw) as FruitSaveData;
+  } catch { /* ignore */ }
+  return { highestLevel: 0, badges: [], bestScore: 0 };
+}
+
+function writeSaveData(data: FruitSaveData) {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+  } catch { /* ignore */ }
+}
+
+/* ---------- 闊虫晥 ---------- */
 const playSliceSound = () => {
   try {
     const ctx = new AudioContext();
@@ -103,7 +146,7 @@ const playSliceSound = () => {
     osc.start(ctx.currentTime);
     osc.stop(ctx.currentTime + 0.15);
   } catch {
-    /* 静音处理 */
+    /* 闈欓煶澶勭悊 */
   }
 };
 
@@ -122,11 +165,11 @@ const playBombSound = () => {
     osc.start(ctx.currentTime);
     osc.stop(ctx.currentTime + 0.25);
   } catch {
-    /* 静音处理 */
+    /* 闈欓煶澶勭悊 */
   }
 };
 
-/* ---------- 绘制水果（完整） ---------- */
+/* ---------- 缁樺埗姘存灉锛堝畬鏁达級 ---------- */
 function drawFruit(ctx: CanvasRenderingContext2D, f: Fruit) {
   ctx.save();
   ctx.globalAlpha = f.opacity;
@@ -159,12 +202,10 @@ function drawFruit(ctx: CanvasRenderingContext2D, f: Fruit) {
 }
 
 function drawWatermelon(ctx: CanvasRenderingContext2D, r: number) {
-  // 椭圆深绿皮
   ctx.beginPath();
   ctx.ellipse(0, 0, r * 1.15, r * 0.9, 0, 0, Math.PI * 2);
   ctx.fillStyle = "#2d6a2d";
   ctx.fill();
-  // 深色条纹
   ctx.save();
   ctx.clip();
   ctx.strokeStyle = "#1a4d1a";
@@ -176,7 +217,6 @@ function drawWatermelon(ctx: CanvasRenderingContext2D, r: number) {
     ctx.stroke();
   }
   ctx.restore();
-  // 高光弧面
   ctx.beginPath();
   ctx.ellipse(-r * 0.3, -r * 0.3, r * 0.45, r * 0.25, -0.4, 0, Math.PI * 2);
   ctx.fillStyle = "rgba(255,255,255,0.18)";
@@ -184,12 +224,10 @@ function drawWatermelon(ctx: CanvasRenderingContext2D, r: number) {
 }
 
 function drawOrange(ctx: CanvasRenderingContext2D, r: number) {
-  // 正圆
   ctx.beginPath();
   ctx.arc(0, 0, r, 0, Math.PI * 2);
   ctx.fillStyle = "#e67e22";
   ctx.fill();
-  // 表面小点纹理
   ctx.fillStyle = "rgba(200,120,30,0.5)";
   for (let i = 0; i < 20; i++) {
     const a = (i / 20) * Math.PI * 2 + 0.3;
@@ -198,15 +236,12 @@ function drawOrange(ctx: CanvasRenderingContext2D, r: number) {
     ctx.arc(Math.cos(a) * d, Math.sin(a) * d, 1, 0, Math.PI * 2);
     ctx.fill();
   }
-  // 脐部凹陷
   ctx.beginPath();
   ctx.arc(0, r * 0.82, r * 0.15, 0, Math.PI * 2);
   ctx.fillStyle = "#c0692b";
   ctx.fill();
-  // 蒂
   ctx.fillStyle = "#5d4037";
   ctx.fillRect(-1.5, -r - 4, 3, 6);
-  // 小叶
   ctx.beginPath();
   ctx.ellipse(4, -r - 2, 6, 3, 0.5, 0, Math.PI * 2);
   ctx.fillStyle = "#27ae60";
@@ -214,7 +249,6 @@ function drawOrange(ctx: CanvasRenderingContext2D, r: number) {
 }
 
 function drawApple(ctx: CanvasRenderingContext2D, r: number) {
-  // 上部凹陷贝塞尔曲线轮廓
   ctx.beginPath();
   ctx.moveTo(0, -r * 1.05);
   ctx.bezierCurveTo(-r * 0.25, -r * 0.8, -r * 1.1, -r * 0.5, -r, r * 0.2);
@@ -223,14 +257,12 @@ function drawApple(ctx: CanvasRenderingContext2D, r: number) {
   ctx.bezierCurveTo(r * 1.1, -r * 0.5, r * 0.25, -r * 0.8, 0, -r * 1.05);
   ctx.fillStyle = "#c0392b";
   ctx.fill();
-  // 茎
   ctx.beginPath();
   ctx.moveTo(0, -r * 1.05);
   ctx.quadraticCurveTo(2, -r * 1.35, 1, -r * 1.55);
   ctx.strokeStyle = "#5d4037";
   ctx.lineWidth = 2;
   ctx.stroke();
-  // 叶
   ctx.beginPath();
   ctx.ellipse(6, -r * 1.3, 8, 3.5, 0.4, 0, Math.PI * 2);
   ctx.fillStyle = "#27ae60";
@@ -238,7 +270,6 @@ function drawApple(ctx: CanvasRenderingContext2D, r: number) {
 }
 
 function drawGrape(ctx: CanvasRenderingContext2D, r: number) {
-  // 8颗小圆组成的一串
   const positions = [
     [0, -r * 0.55],
     [-r * 0.42, -r * 0.18],
@@ -255,13 +286,11 @@ function drawGrape(ctx: CanvasRenderingContext2D, r: number) {
     ctx.arc(px, py, sr, 0, Math.PI * 2);
     ctx.fillStyle = "#8e44ad";
     ctx.fill();
-    // 高光
     ctx.beginPath();
     ctx.arc(px - sr * 0.3, py - sr * 0.3, sr * 0.3, 0, Math.PI * 2);
     ctx.fillStyle = "rgba(255,255,255,0.3)";
     ctx.fill();
   }
-  // 茎
   ctx.beginPath();
   ctx.moveTo(0, -r * 0.55 - sr);
   ctx.lineTo(0, -r * 0.55 - sr - 10);
@@ -271,14 +300,12 @@ function drawGrape(ctx: CanvasRenderingContext2D, r: number) {
 }
 
 function drawLemon(ctx: CanvasRenderingContext2D, r: number) {
-  // 两端尖锐曲线椭圆
   ctx.beginPath();
   ctx.moveTo(-r * 1.3, 0);
   ctx.bezierCurveTo(-r * 0.8, -r * 0.7, r * 0.8, -r * 0.7, r * 1.3, 0);
   ctx.bezierCurveTo(r * 0.8, r * 0.7, -r * 0.8, r * 0.7, -r * 1.3, 0);
   ctx.fillStyle = "#f1c40f";
   ctx.fill();
-  // 轻微高光
   ctx.beginPath();
   ctx.ellipse(-r * 0.2, -r * 0.25, r * 0.55, r * 0.2, -0.2, 0, Math.PI * 2);
   ctx.fillStyle = "rgba(255,255,255,0.2)";
@@ -286,23 +313,19 @@ function drawLemon(ctx: CanvasRenderingContext2D, r: number) {
 }
 
 function drawBomb(ctx: CanvasRenderingContext2D, r: number) {
-  // 方形炸弹
   const s = r * 0.85;
   ctx.fillStyle = "#2c3e50";
   ctx.beginPath();
   ctx.roundRect(-s, -s, s * 2, s * 2, 4);
   ctx.fill();
-  // 高光
   ctx.fillStyle = "rgba(255,255,255,0.1)";
   ctx.fillRect(-s, -s, s * 2, s);
-  // 引信
   ctx.beginPath();
   ctx.moveTo(s * 0.5, -s);
   ctx.quadraticCurveTo(s * 0.7, -s - 10, s * 0.3, -s - 16);
   ctx.strokeStyle = "#7f8c8d";
   ctx.lineWidth = 2.5;
   ctx.stroke();
-  // 火花
   const sparkTime = Date.now() * 0.01;
   for (let i = 0; i < 5; i++) {
     const a = sparkTime + i * 1.256;
@@ -312,7 +335,6 @@ function drawBomb(ctx: CanvasRenderingContext2D, r: number) {
     ctx.fillStyle = i % 2 === 0 ? "#e74c3c" : "#f39c12";
     ctx.fill();
   }
-  // X 标记
   ctx.strokeStyle = "#e74c3c";
   ctx.lineWidth = 2.5;
   ctx.beginPath();
@@ -323,14 +345,13 @@ function drawBomb(ctx: CanvasRenderingContext2D, r: number) {
   ctx.stroke();
 }
 
-/* ---------- 绘制切面半片 ---------- */
+/* ---------- 缁樺埗鍒囬潰鍗婄墖 ---------- */
 function drawSliceHalf(ctx: CanvasRenderingContext2D, h: SliceHalf) {
   ctx.save();
   ctx.globalAlpha = Math.max(0, h.life / 60);
   ctx.translate(h.x, h.y);
   ctx.rotate(h.rot);
 
-  // 裁剪为半圆/半椭圆
   ctx.beginPath();
   if (h.shape === "lemon") {
     ctx.ellipse(0, 0, h.r * 1.3, h.r * 0.7, 0, -Math.PI / 2, Math.PI / 2);
@@ -342,16 +363,13 @@ function drawSliceHalf(ctx: CanvasRenderingContext2D, h: SliceHalf) {
   ctx.closePath();
   ctx.clip();
 
-  // 果肉切面
   ctx.beginPath();
   ctx.arc(0, 0, h.r, 0, Math.PI * 2);
   ctx.fillStyle = h.innerColor;
   ctx.fill();
 
-  // 切面细节
   switch (h.shape) {
     case "watermelon":
-      // 黑籽
       ctx.fillStyle = "#1a1a1a";
       for (let i = 0; i < 6; i++) {
         const a = (i / 6) * Math.PI + 0.2;
@@ -362,7 +380,6 @@ function drawSliceHalf(ctx: CanvasRenderingContext2D, h: SliceHalf) {
       }
       break;
     case "orange":
-      // 橘瓣线
       ctx.strokeStyle = "rgba(255,255,255,0.6)";
       ctx.lineWidth = 1;
       for (let i = 0; i < 8; i++) {
@@ -374,7 +391,6 @@ function drawSliceHalf(ctx: CanvasRenderingContext2D, h: SliceHalf) {
       }
       break;
     case "apple":
-      // 果核种子
       ctx.fillStyle = "#5d4037";
       ctx.beginPath();
       ctx.ellipse(3, 0, 2, 3.5, 0.3, 0, Math.PI * 2);
@@ -390,7 +406,6 @@ function drawSliceHalf(ctx: CanvasRenderingContext2D, h: SliceHalf) {
       ctx.fill();
       break;
     case "lemon":
-      // 柠檬瓣线
       ctx.strokeStyle = "rgba(200,180,100,0.5)";
       ctx.lineWidth = 1;
       for (let i = 0; i < 6; i++) {
@@ -405,7 +420,6 @@ function drawSliceHalf(ctx: CanvasRenderingContext2D, h: SliceHalf) {
       break;
   }
 
-  // 外皮边缘
   ctx.beginPath();
   ctx.arc(0, 0, h.r, 0, Math.PI * 2);
   ctx.strokeStyle = h.color;
@@ -415,21 +429,25 @@ function drawSliceHalf(ctx: CanvasRenderingContext2D, h: SliceHalf) {
   ctx.restore();
 }
 
-/* ---------- 生成水果 ---------- */
+/* ---------- 鐢熸垚姘存灉 ---------- */
 let nextId = 0;
 
-function spawnFruit(canvasW: number, canvasH: number): Fruit {
-  const isBomb = Math.random() < BOMB_CHANCE;
+function spawnFruit(canvasW: number, canvasH: number, levelCfg: LevelConfig): Fruit {
+  const isBomb = Math.random() < levelCfg.bombChance;
   const shape: Fruit["shape"] = isBomb ? "bomb" : SHAPES[Math.floor(Math.random() * SHAPES.length)];
-  const cfg = isBomb ? { color: "#2c3e50", innerColor: "#2c3e50", leafColor: "#7f8c8d", r: 22 } : fruitConfig(shape as Exclude<Fruit["shape"], "bomb">);
+  const cfg = isBomb
+    ? { color: "#2c3e50", innerColor: "#2c3e50", leafColor: "#7f8c8d", r: Math.round(22 * levelCfg.bombSizeMulti) }
+    : fruitConfig(shape as Exclude<Fruit["shape"], "bomb">);
   const x = canvasW * 0.15 + Math.random() * canvasW * 0.7;
-  const vx = (x - canvasW / 2) * 0.008 + (Math.random() - 0.5) * 2;
-  const vy = -(canvasH * 0.018 + Math.random() * canvasH * 0.008);
+  const speedMulti = levelCfg.fruitSpeed;
+  const vx = ((x - canvasW / 2) * 0.008 + (Math.random() - 0.5) * 2) * speedMulti;
+  const vy = -(canvasH * 0.018 + Math.random() * canvasH * 0.008) * speedMulti;
+  const r = isBomb ? cfg.r : Math.round(cfg.r * levelCfg.fruitSizeMulti);
   return {
     id: nextId++,
     x,
     y: canvasH + 10,
-    r: cfg.r,
+    r,
     vx,
     vy,
     color: cfg.color,
@@ -440,13 +458,12 @@ function spawnFruit(canvasW: number, canvasH: number): Fruit {
     sliced: false,
     opacity: 1,
     rot: 0,
-    rotV: (Math.random() - 0.5) * 0.08,
+    rotV: (Math.random() - 0.5) * 0.08 * levelCfg.rotSpeedMulti,
   };
 }
 
-/* ---------- 碰撞检测 ---------- */
+/* ---------- 纰版挒妫€娴?---------- */
 function hitTest(f: Fruit, x1: number, y1: number, x2: number, y2: number): boolean {
-  // 点到线段距离
   const dx = x2 - x1;
   const dy = y2 - y1;
   const len2 = dx * dx + dy * dy;
@@ -462,24 +479,47 @@ function hitTest(f: Fruit, x1: number, y1: number, x2: number, y2: number): bool
   return dist < f.r + 5;
 }
 
+/* ---------- 鍒涘缓鍒囧崐杈呭姪鍑芥暟 ---------- */
+function createHalves(f: Fruit, prevX: number, prevY: number, curX: number, curY: number) {
+  const angle = Math.atan2(curY - prevY, curX - prevX) + Math.PI / 2;
+  const spd = 1.5;
+  for (const dir of [-1, 1]) {
+    halvesRefGlobal.push({
+      x: f.x,
+      y: f.y,
+      r: f.r,
+      vx: Math.cos(angle) * spd * dir + f.vx * 0.5,
+      vy: -2 + f.vy * 0.3,
+      color: f.color,
+      innerColor: f.innerColor,
+      leafColor: f.leafColor,
+      shape: f.shape,
+      rot: f.rot,
+      rotV: dir * 0.05 + Math.random() * 0.02,
+      life: 60,
+    });
+  }
+}
+
+/* 鍏ㄥ眬 halves ref 渚涜緟鍔╁嚱鏁颁娇鐢紝鍦ㄧ粍浠跺垵濮嬪寲鏃惰祴鍊?*/
+let halvesRefGlobal: React.MutableRefObject<SliceHalf[]> = { current: [] };
+
 /* ============================================================
-   主组件
-   ============================================================ */
+   涓荤粍浠?   ============================================================ */
 export default function FruitSliceGame() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [, setCanvasW] = useState(400);
-  const [gameState, setGameState] = useState<"idle" | "playing" | "over">("idle");
-  const [score, setScore] = useState(0);
-  const [bestScore, setBestScore] = useState(() => {
-    try {
-      return parseInt(localStorage.getItem(STORAGE_KEY) || "0", 10);
-    } catch {
-      return 0;
-    }
-  });
-  const [achievement, setAchievement] = useState<string | null>(null);
 
+  /* ---------- 娓告垙闃舵涓庡叧鍗?---------- */
+  const [phase, setPhase] = useState<Phase>("menu");
+  const [level, setLevel] = useState(1);
+  const [score, setScore] = useState(0);
+  const [lives, setLives] = useState(3);
+  const [notification, setNotification] = useState<string | null>(null);
+  const [saveData, setSaveData] = useState<FruitSaveData>(() => loadSaveData());
+
+  /* ---------- Refs ---------- */
   const fruitsRef = useRef<Fruit[]>([]);
   const halvesRef = useRef<SliceHalf[]>([]);
   const particlesRef = useRef<Particle[]>([]);
@@ -487,17 +527,19 @@ export default function FruitSliceGame() {
   const prevPointerRef = useRef<{ x: number; y: number } | null>(null);
   const pointerDownRef = useRef(false);
   const scoreRef = useRef(0);
-  const bestRef = useRef(bestScore);
-  const achievedRef = useRef<Set<number>>(new Set());
+  const livesRef = useRef(3);
+  const levelRef = useRef(1);
+  const phaseRef = useRef<Phase>("menu");
   const rafRef = useRef(0);
   const spawnTimerRef = useRef(0);
-  const gameStateRef = useRef<"idle" | "playing" | "over">("idle");
-  const missedRef = useRef(0);
-  // 同步 ref
-  bestRef.current = bestScore;
-  gameStateRef.current = gameState;
+  const scoreInLevelRef = useRef(0); // 鏈叧宸茶幏鍒嗘暟
 
-  /* ---------- 核心循环 ---------- */
+  halvesRefGlobal = halvesRef;
+
+  /* ---------- 鑾峰彇褰撳墠鍏冲崱閰嶇疆 ---------- */
+  const getLevelCfg = useCallback(() => LEVELS[Math.min(levelRef.current - 1, LEVELS.length - 1)], []);
+
+  /* ---------- 鏍稿績寰幆 ---------- */
   const gameLoop = useCallback(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -507,26 +549,33 @@ export default function FruitSliceGame() {
     const w = canvas.width;
     const h = canvas.height;
 
-    // 背景渐变
+    // 鑳屾櫙娓愬彉
     const grad = ctx.createLinearGradient(0, 0, 0, h);
     grad.addColorStop(0, "#faf8f5");
     grad.addColorStop(1, "#f3f0ed");
     ctx.fillStyle = grad;
     ctx.fillRect(0, 0, w, h);
 
-    if (gameStateRef.current !== "playing") {
+    if (phaseRef.current !== "playing") {
       rafRef.current = requestAnimationFrame(gameLoop);
       return;
     }
 
-    // 生成水果
+    const levelCfg = getLevelCfg();
+
+    // 鐢熸垚姘存灉
     spawnTimerRef.current++;
-    if (spawnTimerRef.current > 45 + Math.random() * 20) {
+    const spawnThreshold = levelCfg.spawnIntervalMin + Math.random() * (levelCfg.spawnIntervalMax - levelCfg.spawnIntervalMin);
+    if (spawnTimerRef.current > spawnThreshold) {
       spawnTimerRef.current = 0;
-      fruitsRef.current.push(spawnFruit(w, h));
+      fruitsRef.current.push(spawnFruit(w, h, levelCfg));
+      // 棰濆姘存灉
+      for (let i = 0; i < levelCfg.extraFruits; i++) {
+        fruitsRef.current.push(spawnFruit(w, h, levelCfg));
+      }
     }
 
-    // 更新水果
+    // 鏇存柊姘存灉
     const fruits = fruitsRef.current;
     for (let i = fruits.length - 1; i >= 0; i--) {
       const f = fruits[i];
@@ -534,10 +583,22 @@ export default function FruitSliceGame() {
       f.x += f.vx;
       f.y += f.vy;
       f.rot += f.rotV;
-      // 出界移除
+      // 鍑虹晫绉婚櫎
       if (f.y > h + 60 && f.vy > 0) {
         if (f.type === "fruit" && !f.sliced) {
-          missedRef.current++;
+          // 婕忔帀姘存灉鎵ｅ懡
+          livesRef.current--;
+          setLives(livesRef.current);
+          if (livesRef.current <= 0) {
+            phaseRef.current = "gameOver";
+            setPhase("gameOver");
+            // 淇濆瓨瀛樻。
+            const saved = loadSaveData();
+            if (scoreRef.current > saved.bestScore) {
+              saved.bestScore = scoreRef.current;
+            }
+            writeSaveData(saved);
+          }
         }
         fruits.splice(i, 1);
         continue;
@@ -550,7 +611,58 @@ export default function FruitSliceGame() {
       }
     }
 
-    // 更新切面半片
+    // 妫€鏌ュ叧鍗￠€氳繃
+    if (phaseRef.current === "playing" && scoreInLevelRef.current >= levelCfg.targetScore) {
+      if (levelRef.current >= LEVELS.length) {
+        // 閫氬叧鍏ㄩ儴鍏冲崱
+        phaseRef.current = "gameOver";
+        setPhase("gameOver");
+        setNotification("鎭枩閫氬叧鍏ㄩ儴鍏冲崱锛?);
+        setTimeout(() => setNotification(null), 3000);
+        const saved = loadSaveData();
+        if (scoreRef.current > saved.bestScore) saved.bestScore = scoreRef.current;
+        if (levelRef.current > saved.highestLevel) saved.highestLevel = levelRef.current;
+        if (!saved.badges.includes(levelRef.current)) saved.badges.push(levelRef.current);
+        writeSaveData(saved);
+        setSaveData({ ...saved });
+      } else {
+        // 鍏冲崱閫氳繃
+        phaseRef.current = "levelComplete";
+        setPhase("levelComplete");
+        // 鍙戞斁寰界珷
+        const saved = loadSaveData();
+        let gotBadge = false;
+        if (levelRef.current > saved.highestLevel) saved.highestLevel = levelRef.current;
+        if (!saved.badges.includes(levelRef.current)) {
+          saved.badges.push(levelRef.current);
+          gotBadge = true;
+        }
+        if (scoreRef.current > saved.bestScore) saved.bestScore = scoreRef.current;
+        writeSaveData(saved);
+        setSaveData({ ...saved });
+
+        const badgeName = LEVELS[levelRef.current - 1].badge;
+        setNotification(gotBadge ? `鑾峰緱寰界珷: ${badgeName}` : `绗?{levelRef.current}鍏?閫氳繃锛乣);
+
+        // 2绉掑悗鑷姩杩涘叆涓嬩竴鍏?        setTimeout(() => {
+          if (phaseRef.current === "levelComplete") {
+            levelRef.current++;
+            setLevel(levelRef.current);
+            scoreInLevelRef.current = 0;
+            fruitsRef.current = [];
+            halvesRef.current = [];
+            particlesRef.current = [];
+            trailRef.current = [];
+            spawnTimerRef.current = 0;
+            prevPointerRef.current = null;
+            phaseRef.current = "playing";
+            setPhase("playing");
+          }
+        }, 2000);
+      }
+    }
+
+    // 鏇存柊鍒囬潰鍗婄墖
     const halves = halvesRef.current;
     for (let i = halves.length - 1; i >= 0; i--) {
       const hh = halves[i];
@@ -564,7 +676,7 @@ export default function FruitSliceGame() {
       }
     }
 
-    // 更新粒子
+    // 鏇存柊绮掑瓙
     const parts = particlesRef.current;
     for (let i = parts.length - 1; i >= 0; i--) {
       const p = parts[i];
@@ -577,7 +689,7 @@ export default function FruitSliceGame() {
       }
     }
 
-    // 更新轨迹
+    // 鏇存柊杞ㄨ抗
     const trail = trailRef.current;
     for (let i = trail.length - 1; i >= 0; i--) {
       trail[i].life--;
@@ -586,24 +698,9 @@ export default function FruitSliceGame() {
       }
     }
 
-    // 检查游戏结束（漏掉10个水果）
-    if (missedRef.current >= 10) {
-      gameStateRef.current = "over";
-      setGameState("over");
-      if (scoreRef.current > bestRef.current) {
-        const newBest = scoreRef.current;
-        setBestScore(newBest);
-        try {
-          localStorage.setItem(STORAGE_KEY, String(newBest));
-        } catch {
-          /* ignore */
-        }
-      }
-    }
+    // ---- 缁樺埗 ----
 
-    // ---- 绘制 ----
-
-    // 绘制轨迹
+    // 缁樺埗杞ㄨ抗
     for (const t of trail) {
       const alpha = t.life / 12;
       ctx.beginPath();
@@ -612,19 +709,19 @@ export default function FruitSliceGame() {
       ctx.fill();
     }
 
-    // 绘制水果
+    // 缁樺埗姘存灉
     for (const f of fruits) {
       if (!f.sliced) {
         drawFruit(ctx, f);
       }
     }
 
-    // 绘制切面半片
+    // 缁樺埗鍒囬潰鍗婄墖
     for (const hh of halves) {
       drawSliceHalf(ctx, hh);
     }
 
-    // 绘制粒子
+    // 缁樺埗绮掑瓙
     for (const p of parts) {
       const alpha = p.life / p.maxLife;
       ctx.beginPath();
@@ -634,14 +731,13 @@ export default function FruitSliceGame() {
     }
 
     rafRef.current = requestAnimationFrame(gameLoop);
-  }, []);
+  }, [getLevelCfg]);
 
-  /* ---------- 切割处理 ---------- */
+  /* ---------- 鍒囧壊澶勭悊 ---------- */
   const handleSlice = useCallback((x: number, y: number) => {
-    if (gameStateRef.current !== "playing") return;
+    if (phaseRef.current !== "playing") return;
 
-    // 添加轨迹点
-    trailRef.current.push({ x, y, life: 12 });
+    // 娣诲姞杞ㄨ抗鐐?    trailRef.current.push({ x, y, life: 12 });
 
     const prev = prevPointerRef.current;
     prevPointerRef.current = { x, y };
@@ -649,18 +745,32 @@ export default function FruitSliceGame() {
     if (!prev) return;
 
     const fruits = fruitsRef.current;
+    const levelCfg = getLevelCfg();
+    const slicedIds: number[] = [];
+
     for (let i = fruits.length - 1; i >= 0; i--) {
       const f = fruits[i];
       if (f.sliced) continue;
       if (!hitTest(f, prev.x, prev.y, x, y)) continue;
 
       f.sliced = true;
+      slicedIds.push(f.id);
 
       if (f.type === "bomb") {
         playBombSound();
-        scoreRef.current = Math.max(0, scoreRef.current - 5);
-        setScore(scoreRef.current);
-        // 爆炸粒子
+        // 鎵ｅ懡
+        livesRef.current--;
+        setLives(livesRef.current);
+        if (livesRef.current <= 0) {
+          phaseRef.current = "gameOver";
+          setPhase("gameOver");
+          setNotification("鍧氭寔鍒颁簡绗? + levelRef.current + "鍏?);
+          setTimeout(() => setNotification(null), 3000);
+          const saved = loadSaveData();
+          if (scoreRef.current > saved.bestScore) saved.bestScore = scoreRef.current;
+          writeSaveData(saved);
+        }
+        // 鐖嗙偢绮掑瓙
         for (let j = 0; j < 16; j++) {
           const a = (j / 16) * Math.PI * 2;
           const spd = 2 + Math.random() * 4;
@@ -678,45 +788,18 @@ export default function FruitSliceGame() {
       } else {
         playSliceSound();
         scoreRef.current += 1;
+        scoreInLevelRef.current += 1;
         setScore(scoreRef.current);
 
-        // 检查成就
-        for (const ach of ACHIEVEMENTS) {
-          if (scoreRef.current >= ach.score && !achievedRef.current.has(ach.score)) {
-            achievedRef.current.add(ach.score);
-            setAchievement(ach.title);
-            setTimeout(() => setAchievement(null), 2000);
-          }
-        }
+        createHalves(f, prev.x, prev.y, x, y);
 
-        // 切成两半
-        const angle = Math.atan2(y - prev.y, x - prev.x) + Math.PI / 2;
-        const spd = 1.5;
-        for (const dir of [-1, 1]) {
-          halvesRef.current.push({
-            x: f.x,
-            y: f.y,
-            r: f.r,
-            vx: Math.cos(angle) * spd * dir + f.vx * 0.5,
-            vy: -2 + f.vy * 0.3,
-            color: f.color,
-            innerColor: f.innerColor,
-            leafColor: f.leafColor,
-            shape: f.shape,
-            rot: f.rot,
-            rotV: dir * 0.05 + Math.random() * 0.02,
-            life: 60,
-          });
-        }
-
-        // 果汁粒子
+        // 鏋滄眮绮掑瓙
         const juiceColor = f.innerColor;
-        // 转为 rgba
         const tempEl = document.createElement("canvas");
         const tmpCtx = tempEl.getContext("2d");
         if (tmpCtx) {
           tmpCtx.fillStyle = juiceColor;
-          const parsed = tmpCtx.fillStyle; // 浏览器标准化颜色
+          const parsed = tmpCtx.fillStyle;
           const r = parseInt(parsed.slice(1, 3), 16);
           const g = parseInt(parsed.slice(3, 5), 16);
           const b = parseInt(parsed.slice(5, 7), 16);
@@ -738,12 +821,60 @@ export default function FruitSliceGame() {
         }
       }
     }
-  }, []);
 
-  /* ---------- Pointer 事件 ---------- */
+    // 杩為攣鍒囧壊锛堢5鍏冲強浠ュ悗锛?    if (levelCfg.chainSlice && slicedIds.length > 0) {
+      for (let i = fruits.length - 1; i >= 0; i--) {
+        const f = fruits[i];
+        if (f.sliced || f.type === "bomb") continue;
+        // 妫€鏌ユ槸鍚︿笌宸插垏姘存灉鐩搁偦
+        for (const sid of slicedIds) {
+          const slicedFruit = fruits.find((ff) => ff.id === sid);
+          if (!slicedFruit) continue;
+          const dist = Math.hypot(f.x - slicedFruit.x, f.y - slicedFruit.y);
+          if (dist < (f.r + slicedFruit.r) * 1.8) {
+            f.sliced = true;
+            playSliceSound();
+            scoreRef.current += 1;
+            scoreInLevelRef.current += 1;
+            setScore(scoreRef.current);
+            createHalves(f, f.x, f.y - 10, f.x + 10, f.y);
+            // 鏋滄眮绮掑瓙
+            const juiceColor = f.innerColor;
+            const tempEl = document.createElement("canvas");
+            const tmpCtx = tempEl.getContext("2d");
+            if (tmpCtx) {
+              tmpCtx.fillStyle = juiceColor;
+              const parsed = tmpCtx.fillStyle;
+              const rr = parseInt(parsed.slice(1, 3), 16);
+              const gg = parseInt(parsed.slice(3, 5), 16);
+              const bb = parseInt(parsed.slice(5, 7), 16);
+              const rgba = `rgba(${rr},${gg},${bb},1)`;
+              for (let j = 0; j < 6; j++) {
+                const a = Math.random() * Math.PI * 2;
+                const s = 1 + Math.random() * 2;
+                particlesRef.current.push({
+                  x: f.x + (Math.random() - 0.5) * f.r,
+                  y: f.y + (Math.random() - 0.5) * f.r,
+                  vx: Math.cos(a) * s,
+                  vy: Math.sin(a) * s - 1,
+                  r: 2 + Math.random() * 2,
+                  color: rgba,
+                  life: 15 + Math.random() * 10,
+                  maxLife: 25,
+                });
+              }
+            }
+            break;
+          }
+        }
+      }
+    }
+  }, [getLevelCfg]);
+
+  /* ---------- Pointer 浜嬩欢 ---------- */
   const handlePointerDown = useCallback(
     (e: React.PointerEvent) => {
-      if (gameStateRef.current !== "playing") return;
+      if (phaseRef.current !== "playing") return;
       pointerDownRef.current = true;
       const rect = canvasRef.current?.getBoundingClientRect();
       if (!rect) return;
@@ -773,7 +904,7 @@ export default function FruitSliceGame() {
     prevPointerRef.current = null;
   }, []);
 
-  /* ---------- 开始/重新开始 ---------- */
+  /* ---------- 寮€濮嬫父鎴?---------- */
   const startGame = useCallback(() => {
     fruitsRef.current = [];
     halvesRef.current = [];
@@ -781,16 +912,19 @@ export default function FruitSliceGame() {
     trailRef.current = [];
     prevPointerRef.current = null;
     scoreRef.current = 0;
-    missedRef.current = 0;
+    scoreInLevelRef.current = 0;
+    livesRef.current = 3;
+    levelRef.current = 1;
     spawnTimerRef.current = 0;
-    achievedRef.current = new Set();
     setScore(0);
-    setAchievement(null);
-    setGameState("playing");
-    gameStateRef.current = "playing";
+    setLives(3);
+    setLevel(1);
+    setPhase("playing");
+    setNotification(null);
+    phaseRef.current = "playing";
   }, []);
 
-  /* ---------- 初始化 Canvas 尺寸 ---------- */
+  /* ---------- 鍒濆鍖?Canvas 灏哄 ---------- */
   useEffect(() => {
     const updateSize = () => {
       if (containerRef.current) {
@@ -807,11 +941,14 @@ export default function FruitSliceGame() {
     return () => window.removeEventListener("resize", updateSize);
   }, []);
 
-  /* ---------- 动画循环 ---------- */
+  /* ---------- 鍔ㄧ敾寰幆 ---------- */
   useEffect(() => {
     rafRef.current = requestAnimationFrame(gameLoop);
     return () => cancelAnimationFrame(rafRef.current);
   }, [gameLoop]);
+
+  /* ---------- 褰撳墠鍏冲崱鐩爣鍒?---------- */
+  const currentTarget = LEVELS[Math.min(level - 1, LEVELS.length - 1)]?.targetScore ?? 15;
 
   return (
     <>
@@ -834,21 +971,37 @@ export default function FruitSliceGame() {
         }
         .sr-fs-hud {
           position: absolute;
-          top: 12px;
-          left: 16px;
-          right: 16px;
+          top: 8px;
+          left: 12px;
+          right: 12px;
           display: flex;
           justify-content: space-between;
+          align-items: center;
           pointer-events: none;
-          font-size: 14px;
+          font-size: 13px;
           font-weight: 600;
           color: #333;
           font-family: system-ui, -apple-system, sans-serif;
+          gap: 6px;
+          flex-wrap: wrap;
         }
-        .sr-fs-hud span {
-          background: rgba(255,255,255,0.7);
-          padding: 4px 12px;
+        .sr-fs-hud-item {
+          background: rgba(255,255,255,0.75);
+          padding: 4px 10px;
           border-radius: 8px;
+          display: flex;
+          align-items: center;
+          gap: 4px;
+          white-space: nowrap;
+        }
+        .sr-fs-lives {
+          display: flex;
+          gap: 3px;
+        }
+        .sr-fs-heart {
+          width: 14px;
+          height: 14px;
+          display: inline-block;
         }
         .sr-fs-overlay {
           position: absolute;
@@ -895,7 +1048,7 @@ export default function FruitSliceGame() {
           margin-bottom: 20px;
           font-family: system-ui, -apple-system, sans-serif;
         }
-        .sr-fs-achievement {
+        .sr-fs-notification {
           position: absolute;
           top: 50px;
           left: 50%;
@@ -912,11 +1065,65 @@ export default function FruitSliceGame() {
           font-family: system-ui, -apple-system, sans-serif;
           box-shadow: 0 2px 10px rgba(192,57,43,0.35);
         }
+        .sr-fs-level-transition {
+          position: absolute;
+          inset: 0;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          z-index: 15;
+          background: rgba(250,248,245,0.9);
+          backdrop-filter: blur(6px);
+          -webkit-backdrop-filter: blur(6px);
+        }
+        .sr-fs-level-transition h2 {
+          font-size: 28px;
+          font-weight: 800;
+          color: #c0392b;
+          margin: 0 0 8px;
+          font-family: system-ui, -apple-system, sans-serif;
+        }
+        .sr-fs-level-transition p {
+          font-size: 15px;
+          color: #666;
+          margin: 0;
+          font-family: system-ui, -apple-system, sans-serif;
+        }
         .sr-fs-idle-hint {
           font-size: 13px;
           color: #999;
           margin-top: 16px;
           font-family: system-ui, -apple-system, sans-serif;
+        }
+        .sr-fs-badge-section {
+          margin-top: 16px;
+          text-align: center;
+        }
+        .sr-fs-badge-section h4 {
+          font-size: 13px;
+          color: #999;
+          margin: 0 0 8px;
+          font-family: system-ui, -apple-system, sans-serif;
+        }
+        .sr-fs-badge-list {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 6px;
+          justify-content: center;
+        }
+        .sr-fs-badge-item {
+          padding: 4px 10px;
+          background: rgba(192,57,43,0.1);
+          color: #c0392b;
+          border-radius: 6px;
+          font-size: 12px;
+          font-weight: 600;
+          font-family: system-ui, -apple-system, sans-serif;
+        }
+        .sr-fs-badge-item.locked {
+          background: rgba(0,0,0,0.05);
+          color: #ccc;
         }
       `}</style>
 
@@ -930,46 +1137,97 @@ export default function FruitSliceGame() {
           onPointerCancel={handlePointerUp}
         />
 
-        {gameState === "playing" && (
+        {phase === "playing" && (
           <div className="sr-fs-hud">
-            <span>得分: {score}</span>
-            <span>最佳: {bestScore}</span>
+            <span className="sr-fs-hud-item">绗?{level}/10 鍏?/span>
+            <span className="sr-fs-hud-item">{score} / {currentTarget}</span>
+            <span className="sr-fs-hud-item">
+              <span className="sr-fs-lives">
+                {[1, 2, 3].map((i) => (
+                  <svg key={i} className="sr-fs-heart" viewBox="0 0 24 24">
+                    <path
+                      d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"
+                      fill={i <= lives ? "#e74c3c" : "#ddd"}
+                    />
+                  </svg>
+                ))}
+              </span>
+            </span>
+            <span className="sr-fs-hud-item">寰界珷 {saveData.badges.length}/10</span>
           </div>
         )}
 
         <AnimatePresence>
-          {achievement && (
+          {notification && (
             <motion.div
-              className="sr-fs-achievement"
-              key={achievement}
+              className="sr-fs-notification"
+              key={notification}
               initial={{ opacity: 0, y: -20 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -10 }}
               transition={{ duration: 0.3 }}
             >
-              {achievement}
+              {notification}
             </motion.div>
           )}
         </AnimatePresence>
 
-        {gameState === "idle" && (
+        <AnimatePresence>
+          {phase === "levelComplete" && (
+            <motion.div
+              className="sr-fs-level-transition"
+              key="level-complete"
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 1.1 }}
+              transition={{ duration: 0.4 }}
+            >
+              <h2>绗?{level} 鍏?閫氳繃锛?/h2>
+              <p>鍑嗗杩涘叆绗?{level + 1} 鍏?...</p>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {phase === "menu" && (
           <div className="sr-fs-overlay">
             <button className="sr-fs-start-btn" onClick={startGame}>
-              开始
-            </button>
-            <div className="sr-fs-idle-hint">滑动鼠标或手指切割水果</div>
+              寮€濮?            </button>
+            <div className="sr-fs-idle-hint">婊戝姩榧犳爣鎴栨墜鎸囧垏鍓叉按鏋?/div>
+            {saveData.badges.length > 0 && (
+              <div className="sr-fs-badge-section">
+                <h4>宸茶幏寰界珷</h4>
+                <div className="sr-fs-badge-list">
+                  {saveData.badges.map((b) => (
+                    <span key={b} className="sr-fs-badge-item">
+                      {LEVELS[b - 1]?.badge ?? `鍏冲崱${b}`}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         )}
 
-        {gameState === "over" && (
+        {phase === "gameOver" && (
           <div className="sr-fs-overlay">
-            <div className="sr-fs-over-title">游戏结束</div>
+            <div className="sr-fs-over-title">娓告垙缁撴潫</div>
             <div className="sr-fs-over-score">
-              得分: {score} &nbsp;|&nbsp; 最佳: {Math.max(bestScore, score)}
+              鍧氭寔鍒颁簡绗?{level} 鍏?&nbsp;|&nbsp; 寰楀垎: {score} &nbsp;|&nbsp; 鏈€浣? {Math.max(saveData.bestScore, score)}
             </div>
             <button className="sr-fs-start-btn" onClick={startGame}>
-              再来一次
-            </button>
+              鍐嶆潵涓€娆?            </button>
+            {saveData.badges.length > 0 && (
+              <div className="sr-fs-badge-section">
+                <h4>宸茶幏寰界珷</h4>
+                <div className="sr-fs-badge-list">
+                  {LEVELS.map((lv, idx) => (
+                    <span key={idx} className={`sr-fs-badge-item ${saveData.badges.includes(idx + 1) ? "" : "locked"}`}>
+                      {lv.badge}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         )}
       </div>

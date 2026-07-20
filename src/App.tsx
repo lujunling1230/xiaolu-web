@@ -77,7 +77,7 @@ const AppContent: React.FC = () => {
   const handleNavigate = (section: Section, openBook = false) => {
     const el = document.getElementById(section);
     if (el) el.scrollIntoView({ behavior: "smooth" });
-    // 项目集：仅当明确要求时才翻开树叶书（如"翻阅我的作品"按钮）
+    // 作品说明书：仅当明确要求时才翻开树叶书（如"翻阅我的作品"按钮）
     if (section === "projects" && openBook) {
       setTimeout(() => { if (openBookRef.current) openBookRef.current(); }, 700);
     }
@@ -221,10 +221,10 @@ const AppContent: React.FC = () => {
             </div>
           </section>
 
-          {/* ==================== 项目集 ==================== */}
+          {/* ==================== 作品说明书 ==================== */}
           <section id="projects" className="po-section po-section-last po-section-projects">
             <div className="po-section-inner">
-              <motion.h2 {...fadeUp} className="po-section-heading">项目集</motion.h2>
+              <motion.h2 {...fadeUp} className="po-section-heading">作品说明书</motion.h2>
 
               {/* 叶子书 */}
               <motion.div {...fadeUp} className="po-leafbook-wrap">
@@ -349,7 +349,7 @@ const AppContent: React.FC = () => {
         }
         .po-section-last { border-bottom: 1px solid rgba(255,255,255,0.08); }
 
-        /* 项目集模块：紧凑上移 */
+        /* 作品说明书模块：紧凑上移 */}
         .po-section-projects { padding-top: 0; }
         .po-section-inner {
           max-width: 1100px; margin: 0 auto; padding: 0 48px;
@@ -474,13 +474,13 @@ const AppContent: React.FC = () => {
           text-shadow: 0 2px 8px rgba(255,255,255,0.7);
         }
 
-        /* ===== 项目集 ===== */
+        /* ===== 作品说明书 ===== */
         .po-leafbook-wrap {
           margin-bottom: 80px;
           margin-top: 16px;
           display: flex; flex-direction: column; align-items: center;
         }
-        /* 项目集副标题：居中引言风格 */
+        /* 作品说明书副标题：居中引言风格 */
         .po-projects-sub {
           font-size: 16px;
           color: #888;

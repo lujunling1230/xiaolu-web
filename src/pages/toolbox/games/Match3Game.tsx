@@ -25,6 +25,7 @@ const COLORS = [
 ];
 
 const STORAGE_KEY = "game_level_xiaoxiaole";
+const BADGE_STORAGE_KEY = "match3_badges";
 
 const CELL_SIZE = 48;       // px per cell
 const GAP = 4;               // gap between cells
@@ -167,15 +168,81 @@ const applyGravity = (board: Board): { board: Board; fallMap: Map<string, { from
   return { board: newBoard, fallMap };
 };
 
-/** 计算关卡数据 */
-const levelTarget = (level: number) => level * 50 + 100;
-const levelMoves = (level: number) => 20 + Math.floor(level / 5);
+/* ============================================================
+   10关系统
+   ============================================================ */
+interface LevelConfig {
+  target: number;
+  moves: number;
+  hasRock: boolean;
+  hasIce: boolean;
+}
+
+const LEVEL_CONFIGS: LevelConfig[] = [
+  { target: 500,  moves: 30, hasRock: false, hasIce: false }, // 关卡1
+  { target: 800,  moves: 30, hasRock: true,  hasIce: false }, // 关卡2
+  { target: 1200, moves: 28, hasRock: false, hasIce: false }, // 关卡3
+  { target: 1500, moves: 28, hasRock: false, hasIce: true  }, // 关卡4
+  { target: 2000, moves: 25, hasRock: false, hasIce: false }, // 关卡5
+  { target: 2500, moves: 25, hasRock: true,  hasIce: true  }, // 关卡6
+  { target: 3000, moves: 22, hasRock: false, hasIce: false }, // 关卡7
+  { target: 3500, moves: 22, hasRock: true,  hasIce: true  }, // 关卡8 更多障碍
+  { target: 4000, moves: 20, hasRock: false, hasIce: false }, // 关卡9
+  { target: 5000, moves: 18, hasRock: true,  hasIce: true  }, // 关卡10 全部条件
+];
+
+const MAX_UNLOCKED_LEVEL = 10;
+
+const getLevelConfig = (level: number): LevelConfig => {
+  if (level <= MAX_UNLOCKED_LEVEL) return LEVEL_CONFIGS[level - 1];
+  // 超过10关的动态生成
+  return {
+    target: 5000 + (level - 10) * 1000,
+    moves: Math.max(15, 18 - (level - 10)),
+    hasRock: true,
+    hasIce: true,
+  };
+};
+
+/** 计算关卡数据（兼容旧版调用） */
+const levelTarget = (level: number) => getLevelConfig(level).target;
+const levelMoves = (level: number) => getLevelConfig(level).moves;
+
+/* ============================================================
+   徽章系统
+   ============================================================ */
+const loadBadges = (): number[] => {
+  try {
+    const raw = localStorage.getItem(BADGE_STORAGE_KEY);
+    if (raw) return JSON.parse(raw);
+  } catch { /* ignore */ }
+  return [];
+};
+
+const saveBadges = (badges: number[]) => {
+  try {
+    localStorage.setItem(BADGE_STORAGE_KEY, JSON.stringify(badges));
+  } catch { /* ignore */ }
+};
+
+const BADGE_NAMES: Record<number, string> = {
+  1: "初入消散",
+  2: "障碍克星",
+  3: "千分达人",
+  4: "破冰先锋",
+  5: "双千突破",
+  6: "全面挑战",
+  7: "三千高地",
+  8: "障碍大师",
+  9: "四千精英",
+  10: "消散之王",
+};
 
 /** 从 localStorage 读取关卡 */
 const loadLevel = (): number => {
   try {
     const v = localStorage.getItem(STORAGE_KEY);
-    return v ? Math.min(100, Math.max(1, parseInt(v, 10) || 1)) : 1;
+    return v ? Math.min(MAX_UNLOCKED_LEVEL, Math.max(1, parseInt(v, 10) || 1)) : 1;
   } catch {
     return 1;
   }
@@ -208,6 +275,8 @@ const Match3Game: React.FC = () => {
   const [animating, setAnimating] = useState(false);
   const [gameState, setGameState] = useState<"playing" | "won" | "lost">("playing");
   const [stars, setStars] = useState(0);
+  const [earnedBadges, setEarnedBadges] = useState<number[]>(() => loadBadges());
+  const [badgeNotify, setBadgeNotify] = useState<{ level: number; name: string } | null>(null);
 
   const animTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const totalMovesRef = useRef(moves);
@@ -260,7 +329,17 @@ const Match3Game: React.FC = () => {
           if (ratio >= STAR3_RATIO) setStars(3);
           else if (ratio >= STAR2_RATIO) setStars(2);
           else setStars(1);
-          if (level < 100) saveLevel(level + 1);
+          // 保存下一关解锁
+          if (level < MAX_UNLOCKED_LEVEL) saveLevel(level + 1);
+          // 徽章：首次通关
+          const badges = loadBadges();
+          if (level <= MAX_UNLOCKED_LEVEL && !badges.includes(level)) {
+            badges.push(level);
+            saveBadges(badges);
+            setEarnedBadges([...badges]);
+            setBadgeNotify({ level, name: BADGE_NAMES[level] || `关卡${level}` });
+            setTimeout(() => setBadgeNotify(null), 3000);
+          }
         } else if (remainingMoves <= 0) {
           setGameState("lost");
         }
@@ -361,7 +440,7 @@ const Match3Game: React.FC = () => {
 
   /* ---------- 下一关 ---------- */
   const nextLevel = () => {
-    if (level < 100) {
+    if (level < MAX_UNLOCKED_LEVEL) {
       setLevel(level + 1);
     }
   };
@@ -397,6 +476,10 @@ const Match3Game: React.FC = () => {
         <div style={styles.topItem}>
           <span style={styles.topLabel}>剩余步数</span>
           <span style={styles.topValue}>{moves}</span>
+        </div>
+        <div style={styles.topItem}>
+          <span style={styles.topLabel}>徽章</span>
+          <span style={{ ...styles.topValue, color: "#f5c842" }}>&#9733; {earnedBadges.length}/{MAX_UNLOCKED_LEVEL}</span>
         </div>
       </div>
 
@@ -498,6 +581,27 @@ const Match3Game: React.FC = () => {
         重新开始
       </button>
 
+      {/* 徽章获得通知 */}
+      {badgeNotify && (
+        <div style={{
+          position: "fixed",
+          top: 20,
+          left: "50%",
+          transform: "translateX(-50%)",
+          padding: "8px 20px",
+          borderRadius: 20,
+          background: "linear-gradient(135deg, #FFD700, #FFA500)",
+          color: "#fff",
+          fontSize: 14,
+          fontWeight: 700,
+          boxShadow: "0 4px 16px rgba(255,215,0,0.4)",
+          zIndex: 200,
+          animation: "m3-badge-pop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1)",
+        }}>
+          &#9733; 获得徽章：{badgeNotify.name}！
+        </div>
+      )}
+
       {/* 关卡完成遮罩 */}
       {gameState === "won" && (
         <div style={styles.overlay}>
@@ -520,11 +624,30 @@ const Match3Game: React.FC = () => {
             </div>
             <div style={styles.overlayScore}>得分：{score}</div>
             <div style={styles.overlayMoves}>剩余步数：{moves}</div>
+            {/* 当前关卡徽章 */}
+            {earnedBadges.includes(level) && (
+              <div style={{ marginBottom: 16, display: "flex", alignItems: "center", gap: 6 }}>
+                <span style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 4,
+                  padding: "4px 12px",
+                  borderRadius: 12,
+                  background: "linear-gradient(135deg, rgba(255,215,0,0.15), rgba(255,165,0,0.15))",
+                  border: "1px solid rgba(255,215,0,0.3)",
+                  color: "#f5c842",
+                  fontSize: 13,
+                  fontWeight: 600,
+                }}>
+                  &#9733; {BADGE_NAMES[level] || `关卡${level}`}
+                </span>
+              </div>
+            )}
             <div style={styles.overlayBtns}>
               <button style={styles.overlayBtn} onClick={restart}>
                 再玩一次
               </button>
-              {level < 100 && (
+              {level < MAX_UNLOCKED_LEVEL && (
                 <button
                   style={{ ...styles.overlayBtn, ...styles.overlayBtnPrimary }}
                   onClick={nextLevel}
@@ -557,6 +680,10 @@ const Match3Game: React.FC = () => {
         .m3-page, .m3-page * {
           box-sizing: border-box;
           -webkit-tap-highlight-color: transparent;
+        }
+        @keyframes m3-badge-pop {
+          0% { opacity: 0; transform: translateX(-50%) scale(0.6) translateY(-10px); }
+          100% { opacity: 1; transform: translateX(-50%) scale(1) translateY(0); }
         }
       `}</style>
     </div>

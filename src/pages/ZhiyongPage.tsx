@@ -7,8 +7,8 @@ import LeafBook from "../components/LeafBook";
  *
  * 单页滚动，四区块 + 左侧侧边导航：
  *   ① 玄关（Hero）— 致用薪火录
- *   ② 项目集（Projects）— LeafBook 作品陈列
- *   ③ 造物利器 — 妙妙工具箱入口
+ *   ② 作品说明书（Projects）— LeafBook 作品陈列
+ *   ③ 造物利器 — 作品集入口
  *   ④ 书房（Heritage）— 非遗实验场
  */
 
@@ -19,12 +19,12 @@ const SANS  = '"Noto Sans SC", "PingFang SC", -apple-system, sans-serif';
 /* ---------- 侧边导航 ---------- */
 const NAV_ITEMS = [
   { id: "hero",     label: "首页", sub: "致用薪火录" },
-  { id: "projects", label: "项目集", sub: "LeafBook" },
-  { id: "tools",    label: "造物利器", sub: "妙妙工具箱", isExternal: true },
+  { id: "projects", label: "作品说明书", sub: "LeafBook" },
+  { id: "tools",    label: "造物利器", sub: "作品集", isExternal: true },
   { id: "heritage", label: "薪火", sub: "非遗实验场" },
 ];
 
-/* ---------- 项目集 ---------- */
+/* ---------- 作品说明书 ---------- */
 const PROJECTS = [
   { name: "物资管家", path: "/toolbox/inventory", tag: "已交付", desc: "库存与保质期管理" },
   { name: "解忧杂货店", path: "/toolbox/advice", tag: "自研", desc: "治愈系问答空间" },
@@ -34,10 +34,10 @@ const PROJECTS = [
   { name: "回血清单", path: "/toolbox/recharge", tag: "自研", desc: "i 人低能耗回血" },
   { name: "漫游指南", path: "/toolbox/travel", tag: "自研", desc: "旅行足迹与攻略" },
   { name: "系统调频", path: "/toolbox/answer", tag: "自研", desc: "5% 微改变认知" },
-  { name: "妙妙工具箱", path: "/toolbox", tag: "总览", desc: "九维作品全景图" },
+  { name: "作品集", path: "/toolbox", tag: "总览", desc: "九维作品全景图" },
 ];
 
-/* ---------- 妙妙工具箱 ---------- */
+/* ---------- 作品集 ---------- */
 const TOOLS = [
   { name: "物资管家", icon: "📦", desc: "库存与保质期管理", path: "/toolbox/inventory" },
   { name: "解忧杂货店", icon: "🏮", desc: "治愈系问答空间", path: "/toolbox/advice" },
@@ -70,7 +70,7 @@ const ZhiyongPage: React.FC = () => {
     const params = new URLSearchParams(window.location.search);
     if (params.get("openBook") === "1") {
       setLeafAutoFlip(800);
-      // 滚动到项目集区域
+      // 滚动到作品说明书区域
       setTimeout(() => {
         const el = document.getElementById("projects");
         if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
@@ -286,7 +286,7 @@ const ZhiyongPage: React.FC = () => {
         </section>
 
         {/* =============================================
-            ② 项目集 Projects
+            ② 作品说明书 Projects
             ============================================= */}
         <section id="projects" style={{ padding: "100px 48px 100px 208px", maxWidth: 1100, margin: "0 auto" }}>
           <div style={{ textAlign: "center", marginBottom: 56 }}>
@@ -308,7 +308,7 @@ const ZhiyongPage: React.FC = () => {
               margin: 0,
               letterSpacing: "0.08em",
             }}>
-              项目集
+              作品说明书
             </h2>
             <p style={{
               fontFamily: SANS,
@@ -401,7 +401,7 @@ const ZhiyongPage: React.FC = () => {
                 margin: "0 0 12px",
                 letterSpacing: "0.06em",
               }}>
-                进入妙妙工具箱
+                进入作品集
               </h3>
               <p style={{
                 fontFamily: SANS,

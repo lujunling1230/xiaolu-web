@@ -213,7 +213,7 @@ const AddProjectModal: React.FC<AddProjectModalProps> = ({ open, onClose }) => {
                   {field("技术标签", "tags", "逗号或换行分隔，如：React, Framer Motion, Web Audio")}
 
                   <button className="apm-submit" onClick={handleSubmit}>
-                    添加到项目集
+                    添加到作品说明书
                   </button>
                 </div>
               </>

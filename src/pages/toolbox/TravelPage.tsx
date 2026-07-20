@@ -687,7 +687,7 @@ const TravelPage: React.FC = () => {
         <div className="travel-dust" />
         <div className="travel-dust" />
         <Link to="/mickey" className="travel-back">
-          ← 返回妙妙工具箱
+          ← 返回作品集
         </Link>
         <div className="travel-hero-content">
           <h1 className="travel-hero-title">漫游指南</h1>

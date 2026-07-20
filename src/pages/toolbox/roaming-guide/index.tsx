@@ -1,8 +1,7 @@
-import { useCallback, useMemo } from "react";
+import { useCallback } from "react";
 import "./styles/variables.css";
 import { useCityData } from "./hooks/useCityData";
 import { useAIAssistant } from "./hooks/useAIAssistant";
-import ScrollHeader from "./components/ScrollHeader";
 import MapContainer from "./components/MapContainer";
 import StatsBar from "./components/StatsBar";
 import CityCardGallery from "./components/CityCardGallery";
@@ -33,12 +32,6 @@ export default function RoamingGuidePage() {
     recommendError, generateError,
     reverseRecommend, forwardGenerate, adoptRecommendation,
   } = useAIAssistant(addCity);
-
-  /* 滚动到地图区域 */
-  const scrollToMap = useCallback(() => {
-    const el = document.getElementById("rg-map");
-    if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
-  }, []);
 
   /* 选中城市 → 打开详情 */
   const handleSelectCity = useCallback((city: City) => {
@@ -109,77 +102,125 @@ export default function RoamingGuidePage() {
       background: "linear-gradient(180deg, var(--rg-paper-deep) 0%, var(--rg-paper) 30%, var(--rg-paper-light) 100%)",
       fontFamily: "var(--rg-font-serif), serif",
     }}>
-      {/* 全局布局样式 */}
-      <style>{`
-        /* 统计栏上方留出与卷轴的呼吸空间 */
-        .rg-stats-bar {
-          margin-top: 48px !important;
-        }
-        /* 地图区域标题 */
-        .rg-map-section {
-          max-width: 1200px;
-          margin: 0 auto;
-          padding: 0 20px;
-        }
-        .rg-map-section__title {
-          font-size: 20px;
-          color: var(--rg-ink, #5c3a21);
-          font-family: var(--rg-font-serif), serif;
-          letter-spacing: 4px;
-          margin: 0 0 8px;
-          text-align: center;
-        }
-        .rg-map-section__subtitle {
-          font-size: 13px;
-          color: var(--rg-ink-light, #8B7D6B);
-          text-align: center;
-          margin: 0 0 20px;
-          letter-spacing: 1px;
-        }
-        .rg-section-divider {
-          max-width: 120px;
-          height: 1px;
-          background: linear-gradient(90deg, transparent, var(--rg-ink-border, #C8B898), transparent);
-          margin: 48px auto 32px;
-          border: none;
-        }
-      `}</style>
+      {/* 欢迎语 */}
+      <header style={{
+        textAlign: "center",
+        padding: "48px 20px 32px",
+        maxWidth: 600,
+        margin: "0 auto",
+      }}>
+        <h1 style={{
+          fontSize: 28,
+          fontFamily: "var(--rg-font-serif, 'Noto Serif SC', serif)",
+          color: "var(--rg-ink, #5c3a21)",
+          fontWeight: 600,
+          letterSpacing: "6px",
+          margin: "0 0 12px",
+        }}>漫游指南</h1>
+        <p style={{
+          fontSize: 13,
+          color: "var(--rg-ink-light, #8B7D6B)",
+          letterSpacing: "2px",
+          margin: "0 0 24px",
+        }}>丙午年 · 启程</p>
+        <div style={{
+          fontSize: 14,
+          lineHeight: 2,
+          color: "var(--rg-ink, #5c3a21)",
+          fontFamily: "var(--rg-font-serif, 'Noto Serif SC', serif)",
+          opacity: 0.85,
+        }}>
+          <p style={{ margin: "0 0 6px" }}>世界是一张未折叠的地图，亦是无数条待踏足的路径。</p>
+          <p style={{ margin: "0 0 6px" }}>每至一城，必察其街巷肌理，尝其市井烟火，录其食宿交通。</p>
+          <p style={{ margin: 0 }}>积岁累月，汇为此卷，愿后来者少走弯路，多遇良辰。</p>
+        </div>
+      </header>
 
-      {/* 卷轴 Hero */}
-      <ScrollHeader onScrollToMap={scrollToMap} />
+      {/* 导航栏 */}
+      <nav style={{
+        position: "sticky",
+        top: 0,
+        zIndex: 100,
+        background: "rgba(250,248,243,0.92)",
+        borderBottom: "1px solid var(--rg-ink-border, #C8B898)",
+        padding: "8px 20px",
+        display: "flex",
+        justifyContent: "center",
+        gap: 8,
+        maxWidth: 1200,
+        margin: "0 auto 24px",
+        flexWrap: "wrap",
+      }}>
+        {[
+          { key: "map", label: "足迹地图" },
+          { key: "cards", label: "城市记忆" },
+          { key: "ai", label: "漫游向导" },
+        ].map(item => (
+          <button
+            key={item.key}
+            onClick={() => {
+              if (item.key === "map") {
+                document.getElementById("rg-map")?.scrollIntoView({ behavior: "smooth" });
+              } else if (item.key === "cards") {
+                document.getElementById("rg-cards")?.scrollIntoView({ behavior: "smooth" });
+              } else if (item.key === "ai") {
+                // Trigger the AI panel open by dispatching a custom event
+                window.dispatchEvent(new CustomEvent("rg-open-ai"));
+              }
+            }}
+            style={{
+              background: "none",
+              border: "1px solid var(--rg-ink-border, #C8B898)",
+              borderRadius: 20,
+              padding: "4px 14px",
+              color: "var(--rg-ink-light, #8B7D6B)",
+              fontSize: 12,
+              fontFamily: "var(--rg-font-serif, 'Noto Serif SC', serif)",
+              letterSpacing: "1px",
+              cursor: "pointer",
+              transition: "all 0.2s",
+            }}
+            onMouseEnter={(e) => { e.currentTarget.style.borderColor = "#8B7355"; e.currentTarget.style.color = "#5c3a21"; }}
+            onMouseLeave={(e) => { e.currentTarget.style.borderColor = "var(--rg-ink-border, #C8B898)"; e.currentTarget.style.color = "var(--rg-ink-light, #8B7D6B)"; }}
+          >
+            {item.label}
+          </button>
+        ))}
+      </nav>
 
-      {/* 统计栏 */}
-      <StatsBar
-        provinces={stats.provinces}
-        cities={stats.cities}
-        days={stats.days}
-      />
-
-      <hr className="rg-section-divider" />
-
-      {/* 地图区域 */}
-      <section className="rg-map-section">
-        <h2 className="rg-map-section__title">足迹地图</h2>
-        <p className="rg-map-section__subtitle">每座城市都是一个未完成的故事</p>
-        <MapContainer
-          cities={cities}
-          selectedCity={selectedCity}
-          onSelectCity={handleSelectCity}
-        />
-      </section>
-
-      <hr className="rg-section-divider" />
-
-      {/* 城市卡片画廊 */}
-      <CityCardGallery
-        cities={cities}
-        selectedCity={selectedCity}
-        onSelect={handleSelectCity}
-        onAdd={handleAddCity}
-      />
-
-      {/* 页脚留白 */}
-      <div style={{ height: "120px" }} />
+      {/* 主内容区：左右布局 */}
+      <div style={{
+        maxWidth: 1200,
+        margin: "0 auto",
+        padding: "0 20px",
+        display: "flex",
+        gap: 24,
+        alignItems: "flex-start",
+        flexWrap: "wrap",
+      }}>
+        {/* 左栏：地图 + 统计 */}
+        <div style={{ flex: "1 1 500px", minWidth: 0 }}>
+          <MapContainer
+            cities={cities}
+            selectedCity={selectedCity}
+            onSelectCity={handleSelectCity}
+          />
+          <StatsBar
+            provinces={stats.provinces}
+            cities={stats.cities}
+            days={stats.days}
+          />
+        </div>
+        {/* 右栏：城市卡片 */}
+        <div style={{ flex: "1 1 500px", minWidth: 0 }}>
+          <CityCardGallery
+            cities={cities}
+            selectedCity={selectedCity}
+            onSelect={handleSelectCity}
+            onAdd={handleAddCity}
+          />
+        </div>
+      </div>
 
       {/* 详情 Modal */}
       <CityDetailModal

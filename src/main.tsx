@@ -58,7 +58,7 @@ createRoot(document.getElementById("root")!).render(
         {/* 第七卷胶片：独立全屏页面 */}
         <Route path="/film" element={<LifeFilmPage />} />
         <Route path="/music" element={<MusicPage />} />
-        {/* 妙妙工具箱首页：9 维度作品 3×3 网格 */}
+        {/* 作品集首页：9 维度作品 3×3 网格 */}
         <Route path="/toolbox" element={<ToolboxHome />} />
         {/* 物资管家：库存管理应用（静态路径优先于 :title） */}
         <Route path="/toolbox/inventory" element={<InventoryPage />} />

@@ -24,8 +24,8 @@ const SECONDARY_KEYS = ["mickey"] as const;
 const LABEL_MAP: Record<string, { label: string; icon?: string; href: string | null }> = {
   home:    { label: "首页",    href: null },
   about:   { label: "关于我",  href: null },
-  projects:{ label: "项目集",  icon: "🍃", href: null },
-  mickey:  { label: "妙妙工具箱", href: "/mickey" },
+  projects:{ label: "作品说明书",  icon: "🍃", href: null },
+  mickey:  { label: "作品集", href: "/mickey" },
 };
 
 const SimpleNavbar: React.FC<SimpleNavbarProps> = ({

@@ -108,6 +108,13 @@ export default function AIAssistantPanel({
   const [open, setOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<TabType>("reverse");
 
+  /* 监听导航栏打开事件 */
+  useEffect(() => {
+    const handler = () => setOpen(true);
+    window.addEventListener("rg-open-ai", handler);
+    return () => window.removeEventListener("rg-open-ai", handler);
+  }, []);
+
   /* Toast 系统 */
   const [toasts, setToasts] = useState<{ id: number; message: string }[]>([]);
   const toastIdRef = useRef(0);

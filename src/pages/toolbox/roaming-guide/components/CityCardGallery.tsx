@@ -48,7 +48,7 @@ export default function CityCardGallery({
   onAdd,
 }: CityCardGalleryProps) {
   return (
-    <section className="rg-card-section">
+    <section className="rg-card-section" id="rg-cards">
       <div
         className="rg-card-section-head"
         style={{ justifyContent: "space-between" }}

@@ -432,8 +432,8 @@ const MOOD_EXTENDED: { key: string; label: string; icon: string; moodType: MoodT
 const WEATHER_EXTENDED: { key: WeatherType; label: string; icon: string }[] = [
   { key: "sunny", label: "晴天", icon: "☀️" },
   { key: "cloudy", label: "阴天", icon: "☁️" },
-  { key: "rainy", label: "雨天", icon: "🌧️" },
-  { key: "snowy", label: "雪天", icon: "❄️" },
+  { key: "rainy", label: "雨天·室内", icon: "🏠" },
+  { key: "snowy", label: "雪天·室内", icon: "☕" },
 ];
 
 /* ============================================================
@@ -504,7 +504,6 @@ const HomePage: React.FC<{
 
   const handleDoIt = useCallback((rec: Recommendation) => {
     onToggle(rec.node.id);
-    saveCompletion(rec.node.id);
     const newTodayCount = getTodayCount();
     const newStreak = getStreakDays();
     const newHistory = loadHistory();
@@ -532,7 +531,7 @@ const HomePage: React.FC<{
     const toast = { id: Date.now(), text: msg, icon: rec.node.icon };
     setToasts(prev => [...prev, toast]);
     setTimeout(() => setToasts(prev => prev.filter(t => t.id !== toast.id)), 3000);
-  }, [onToggle, onShowBadge, badges]);
+  }, [onToggle, onShowBadge, badges, timer]);
 
   return (
     <div className="tab-home">
@@ -571,18 +570,15 @@ const HomePage: React.FC<{
             <button
               className={`home-energy-dot ${energyLevel === "high" ? "active" : ""}`}
               onClick={() => setEnergyLevel("high")}
-              title="精力充沛"
-            >●</button>
+            >充沛</button>
             <button
               className={`home-energy-dot ${energyLevel === "medium" ? "active" : ""}`}
               onClick={() => setEnergyLevel("medium")}
-              title="精力一般"
-            >●</button>
+            >一般</button>
             <button
               className={`home-energy-dot ${energyLevel === "low" ? "active" : ""}`}
               onClick={() => setEnergyLevel("low")}
-              title="精力不足"
-            >●</button>
+            >不足</button>
           </div>
         </div>
 
@@ -623,7 +619,7 @@ const HomePage: React.FC<{
               {recommendations.map((rec, i) => (
                 <motion.div
                   key={rec.node.id}
-                  className="home-rec-card"
+                  className={`home-rec-card ${doneIds.has(rec.node.id) ? "done" : ""}`}
                   initial={{ opacity: 0, y: 12 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.3, delay: i * 0.06 }}
@@ -649,24 +645,30 @@ const HomePage: React.FC<{
                     </div>
                   </div>
                   <div className="home-rec-card-actions">
-                    <button className="home-rec-card-action" onClick={() => handleDoIt(rec)}>
-                      执行
-                    </button>
-                    <button className="home-rec-card-detail" onClick={() => setDetailRec(rec)}>
-                      查看详情
-                    </button>
-                    <button
-                      className="home-rec-card-timer"
-                      onClick={() => setTimer(prev =>
-                        prev && prev.recId === rec.node.id && prev.active
-                          ? { ...prev, active: false }
-                          : { active: true, seconds: 0, recId: rec.node.id }
-                      )}
-                    >
-                      {timer && timer.recId === rec.node.id && timer.active
-                        ? `⏱ ${Math.floor(timer.seconds / 60)}:${String(timer.seconds % 60).padStart(2, "0")}`
-                        : "⏱ 计时"}
-                    </button>
+                    {doneIds.has(rec.node.id) ? (
+                      <button className={`home-rec-card-action done`}>
+                        已完成
+                      </button>
+                    ) : timer && timer.recId === rec.node.id && timer.active ? (
+                      <button
+                        className="home-rec-card-action home-rec-card-timer-active"
+                        onClick={() => handleDoIt(rec)}
+                      >
+                        完成 · {Math.floor(timer.seconds / 60)}:{String(timer.seconds % 60).padStart(2, "0")}
+                      </button>
+                    ) : (
+                      <>
+                        <button className="home-rec-card-action" onClick={() => handleDoIt(rec)}>
+                          直接执行
+                        </button>
+                        <button
+                          className="home-rec-card-timer-btn"
+                          onClick={() => setTimer({ active: true, seconds: 0, recId: rec.node.id })}
+                        >
+                          ⏱ 计时执行
+                        </button>
+                      </>
+                    )}
                   </div>
                 </motion.div>
               ))}
@@ -1093,7 +1095,6 @@ const MePage: React.FC = () => {
 
   const handleReset = useCallback(() => {
     if (window.confirm("确定要重置所有数据吗？这将清除所有打卡记录和历史数据，无法恢复。")) {
-      localStorage.removeItem(STORAGE_KEY);
       localStorage.removeItem("recharge_count_ts");
       localStorage.removeItem(DONE_KEY);
       localStorage.removeItem("recharge_history");
@@ -1107,7 +1108,6 @@ const MePage: React.FC = () => {
       version: 1,
       exportedAt: new Date().toISOString(),
       doneIds: JSON.parse(localStorage.getItem(DONE_KEY) || "[]"),
-      count: Number(localStorage.getItem(STORAGE_KEY) || "0"),
       history: JSON.parse(localStorage.getItem("recharge_history") || "[]"),
       userState: JSON.parse(localStorage.getItem("recharge_user_state") || "null"),
     };
@@ -1228,16 +1228,18 @@ const TAB_ITEMS: { key: TabKey; label: string; icon: string }[] = [
 
 const BottomNav: React.FC<{ active: TabKey; onChange: (tab: TabKey) => void }> = ({ active, onChange }) => (
   <nav className="bottom-nav">
-    {TAB_ITEMS.map(item => (
-      <button
-        key={item.key}
-        className={`bottom-nav-item ${active === item.key ? "active" : ""}`}
-        onClick={() => onChange(item.key)}
-        title={item.label}
-      >
-        <span className="bottom-nav-icon">{item.icon}</span>
-      </button>
-    ))}
+    <div className="bottom-nav-inner">
+      {TAB_ITEMS.map(item => (
+        <button
+          key={item.key}
+          className={`bottom-nav-item ${active === item.key ? "active" : ""}`}
+          onClick={() => onChange(item.key)}
+        >
+          <span className="bottom-nav-icon">{item.icon}</span>
+          <span className="bottom-nav-label">{item.label}</span>
+        </button>
+      ))}
+    </div>
   </nav>
 );
 
@@ -1313,7 +1315,7 @@ const RechargePage: React.FC = () => {
         <>
           <header className="recharge-topbar">
             <Link to="/mickey" className="recharge-back">
-              ← 回到妙妙工具箱
+              ← 回到作品集
             </Link>
             <span className="recharge-topbar-meta">Recharge Station</span>
           </header>
@@ -1460,7 +1462,7 @@ const RechargePage: React.FC = () => {
         .recharge-content {
           max-width: 720px;
           margin: 0 auto;
-          padding-bottom: 72px;
+          padding-bottom: 64px;
           position: relative;
           z-index: 2;
         }
@@ -1470,24 +1472,30 @@ const RechargePage: React.FC = () => {
 
         /* ===== 底部导航 ===== */
         .bottom-nav {
-          position: fixed; bottom: 16px; left: 50%; transform: translateX(-50%); z-index: 50;
-          display: flex; align-items: center; gap: 4px;
-          padding: 6px 8px; border-radius: 20px;
+          position: fixed; bottom: 0; left: 0; right: 0; z-index: 50;
+          display: flex; justify-content: center;
           background: #FFFFFF;
-          box-shadow: 0 2px 16px rgba(160,150,140,0.08);
+          border-top: 1px solid rgba(180,170,160,0.1);
+          padding-bottom: env(safe-area-inset-bottom, 0px);
+        }
+        .bottom-nav-inner {
+          display: flex; align-items: center; justify-content: space-around;
+          width: 100%; max-width: 720px;
+          height: 48px; padding: 0 24px;
         }
         .bottom-nav-item {
-          display: flex; align-items: center; justify-content: center;
-          width: 36px; height: 36px; border-radius: 18px;
+          display: flex; flex-direction: column; align-items: center; gap: 1px;
+          padding: 6px 12px; border-radius: 10px;
           background: none; border: none;
-          font-size: 16px; line-height: 1;
-          transition: background 0.25s ease;
+          font-size: 14px; line-height: 1;
+          transition: all 0.25s ease;
           color: #b8aa9a;
         }
         .bottom-nav-item.active {
-          background: #F5F0FF;
-          color: #7C6A9A;
+          color: #7C6A9A; background: #F5F0FF;
         }
+        .bottom-nav-icon { font-size: 18px; }
+        .bottom-nav-label { font-size: 10px; letter-spacing: 0.02em; }
 
         /* ===== 能量节点流 ===== */
         .energy-flow {
@@ -1762,34 +1770,20 @@ const RechargePage: React.FC = () => {
         .home-mood-icon { font-size: 18px; }
         .home-mood-label { font-size: 10px; letter-spacing: 0.02em; }
 
-        .home-energy-slider-wrap {
-          flex: 1; display: flex; align-items: center; gap: 10px;
+        .home-energy-dot {
+          font-size: 20px; line-height: 1; padding: 4px 8px;
+          border: none; background: none; cursor: pointer;
+          color: rgba(180,170,160,0.3); transition: all 0.25s ease;
         }
-        .home-energy-slider {
-          flex: 1; height: 6px; border-radius: 3px; appearance: none;
-          background: rgba(180,170,160,0.15); outline: none;
-          -webkit-appearance: none;
-        }
-        .home-energy-slider::-webkit-slider-thumb {
-          -webkit-appearance: none; width: 18px; height: 18px;
-          border-radius: 50%; background: #7C6A9A; border: 2px solid #FFFFFF;
-          box-shadow: 0 1px 4px rgba(124,106,154,0.3); cursor: pointer;
-        }
-        .home-energy-slider::-moz-range-thumb {
-          width: 18px; height: 18px; border-radius: 50%;
-          background: #7C6A9A; border: 2px solid #FFFFFF;
-          box-shadow: 0 1px 4px rgba(124,106,154,0.3); cursor: pointer;
-        }
-        .home-energy-value {
-          flex-shrink: 0; width: 24px; text-align: center;
-          font-size: 14px; font-weight: 600; color: #7C6A9A;
-        }
+        .home-energy-dot:hover { color: rgba(124,106,154,0.5); }
+        .home-energy-dot.active { color: #7C6A9A; }
 
         .home-weather-btn {
-          display: flex; align-items: center; gap: 4px;
-          padding: 7px 12px; border: 1px solid rgba(180,170,160,0.12);
+          display: flex; align-items: center; justify-content: center;
+          width: 40px; height: 40px; padding: 0;
+          border: 1px solid rgba(180,170,160,0.12);
           border-radius: 10px; background: rgba(253,251,247,0.6);
-          font-family: inherit; font-size: 12px; color: #9a8a7e;
+          font-family: inherit; font-size: 18px; color: #9a8a7e;
           transition: all 0.25s ease;
         }
         .home-weather-btn:hover { border-color: rgba(124,106,154,0.3); background: rgba(253,251,247,0.9); }
@@ -1797,8 +1791,7 @@ const RechargePage: React.FC = () => {
           border-color: rgba(124,106,154,0.5); background: rgba(184,169,217,0.15);
           box-shadow: 0 2px 8px rgba(124,106,154,0.1);
         }
-        .home-weather-icon { font-size: 14px; }
-        .home-weather-label { font-size: 11px; }
+        .home-weather-icon { font-size: 18px; }
 
         .home-recommend-btn {
           width: 100%; margin-top: 14px; padding: 12px;
@@ -1861,6 +1854,101 @@ const RechargePage: React.FC = () => {
         .home-rec-card-action:hover {
           border-color: rgba(100,220,120,0.5); background: rgba(240,255,242,0.85);
           box-shadow: 0 2px 8px rgba(100,220,120,0.12);
+        }
+        .home-rec-card-actions {
+          display: flex; align-items: center; gap: 6px; flex-shrink: 0;
+        }
+        .home-rec-card-detail {
+          padding: 7px 12px; border-radius: 8px; white-space: nowrap;
+          border: 1px solid rgba(124,106,154,0.2); background: rgba(184,169,217,0.08);
+          font-family: "Noto Sans SC", system-ui, sans-serif;
+          font-size: 11px; color: #7C6A9A;
+          transition: all 0.25s ease;
+        }
+        .home-rec-card-detail:hover {
+          border-color: rgba(124,106,154,0.4); background: rgba(184,169,217,0.15);
+        }
+        .home-rec-card-timer {
+          padding: 7px 10px; border-radius: 8px; white-space: nowrap;
+          border: 1px solid rgba(180,170,160,0.15); background: rgba(253,251,247,0.6);
+          font-family: "Noto Sans SC", system-ui, sans-serif;
+          font-size: 11px; color: #9a8a7e;
+          transition: all 0.25s ease;
+          min-width: 56px; text-align: center;
+        }
+        .home-rec-card-timer:hover {
+          border-color: rgba(180,170,160,0.3); background: rgba(253,251,247,0.9);
+        }
+        .home-rec-card-timer-btn {
+          padding: 7px 12px; border-radius: 8px; white-space: nowrap;
+          border: 1px solid rgba(180,170,160,0.15); background: rgba(253,251,247,0.6);
+          font-family: "Noto Sans SC", system-ui, sans-serif;
+          font-size: 12px; color: #9a8a7e;
+          transition: all 0.25s ease;
+        }
+        .home-rec-card-timer-btn:hover {
+          border-color: rgba(180,170,160,0.3); background: rgba(253,251,247,0.9);
+        }
+        .home-rec-card-timer-active {
+          padding: 7px 16px; border-radius: 8px; white-space: nowrap;
+          border: 1px solid rgba(124,106,154,0.4); background: rgba(184,169,217,0.15);
+          font-family: "Noto Sans SC", system-ui, sans-serif;
+          font-size: 12px; color: #7C6A9A;
+          transition: all 0.25s ease;
+        }
+        .home-rec-card-timer-active:hover {
+          border-color: rgba(124,106,154,0.6); background: rgba(184,169,217,0.25);
+        }
+        .home-rec-card.done { opacity: 0.45; pointer-events: none; }
+        .home-rec-card-action.done {
+          opacity: 0.6; cursor: default;
+          border-color: rgba(180,170,160,0.15); background: rgba(180,170,160,0.06);
+          color: #b8aa9a;
+        }
+
+        /* 详情弹窗 */
+        .detail-overlay {
+          position: fixed; inset: 0; z-index: 200;
+          display: flex; align-items: center; justify-content: center; padding: 24px;
+          background: rgba(200, 195, 185, 0.3);
+        }
+        .detail-popup {
+          position: relative; max-width: 400px; width: 100%;
+          padding: 36px 32px 28px; border-radius: 20px; text-align: center;
+          background: rgba(245, 250, 247, 0.95);
+          border: 1px solid rgba(180, 220, 190, 0.4);
+          box-shadow: 0 2px 8px rgba(160, 180, 150, 0.06), 0 8px 28px rgba(0,0,0,0.03), 0 0 24px rgba(180, 220, 190, 0.12);
+        }
+        .detail-close {
+          position: absolute; top: 16px; right: 20px;
+          font-size: 14px; color: #9aaa9a; background: none; border: none;
+          padding: 4px 8px; cursor: pointer; transition: color 0.3s ease;
+          font-family: "Noto Sans SC", system-ui, sans-serif;
+        }
+        .detail-close:hover { color: #5a5048; }
+        .detail-icon { font-size: 36px; display: block; margin-bottom: 12px; }
+        .detail-name {
+          font-family: "Noto Serif SC", Georgia, serif;
+          font-size: 16px; font-weight: 600; color: #3a3a3a;
+          margin: 0 0 8px; line-height: 1.6; letter-spacing: 0.04em;
+        }
+        .detail-reason {
+          font-size: 13px; color: #6b5e50; margin: 0 0 12px;
+          line-height: 1.6; letter-spacing: 0.03em;
+        }
+        .detail-tags { display: flex; justify-content: center; gap: 6px; margin-bottom: 20px; flex-wrap: wrap; }
+        .detail-action {
+          padding: 10px 32px; border: none; border-radius: 12px;
+          background: linear-gradient(135deg, #7C6A9A, #B8A9D9);
+          font-family: "Noto Serif SC", Georgia, serif;
+          font-size: 14px; font-weight: 600; color: #FFFFFF;
+          letter-spacing: 0.06em; cursor: pointer;
+          transition: all 0.3s ease;
+          box-shadow: 0 4px 16px rgba(124,106,154,0.2);
+        }
+        .detail-action:hover {
+          box-shadow: 0 6px 20px rgba(124,106,154,0.3);
+          transform: translateY(-1px);
         }
 
         /* 首页 Toast */
@@ -2120,18 +2208,18 @@ const RechargePage: React.FC = () => {
           .energy-text { font-size: 12px; }
           .energy-battery-body { width: 18px; height: 10px; }
           .station-cat-wrap { right: 5%; }
-          .recharge-counter { bottom: 64px; right: 12px; padding: 6px 10px; }
-          .recharge-counter-text { font-size: 11px; }
-          .hidden-popup { padding: 32px 28px; border-radius: 16px; }
-          .hidden-title { font-size: 22px; }
-          .hidden-text { font-size: 14px; }
-          .hidden-close { top: 12px; right: 14px; font-size: 12px; }
-          .bottom-nav { height: 52px; }
+          .bottom-nav { bottom: 12px; }
+          .bottom-nav-item { padding: 4px 8px; font-size: 12px; }
           .bottom-nav-icon { font-size: 16px; }
           .bottom-nav-label { font-size: 9px; }
+          .hidden-popup { padding: 32px 28px; border-radius: 16px; }
+          .hidden-text { font-size: 14px; }
+          .hidden-close { top: 12px; right: 14px; font-size: 12px; }
           .home-mood-btn { padding: 6px 8px; min-width: 38px; }
           .home-mood-icon { font-size: 16px; }
           .home-mood-label { font-size: 9px; }
+          .home-weather-btn { width: 36px; height: 36px; font-size: 16px; }
+          .home-rec-card-actions { flex-direction: column; gap: 4px; }
           .stats-card-value { font-size: 24px; }
           .stats-chart-wrap { height: 170px; }
           .stats-badge-item { width: 64px; padding: 12px 6px; }

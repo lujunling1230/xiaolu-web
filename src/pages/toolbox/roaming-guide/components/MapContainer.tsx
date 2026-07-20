@@ -74,9 +74,10 @@ export default function MapContainer({ cities, selectedCity, onSelectCity }: Map
 
       // Marker content HTML
       const markerHtml = `
-        <div class="rg-marker ${isAI ? "ai" : ""}">
+        <div class="rg-marker ${isAI ? "ai" : ""} ${city.explore_count > 0 ? "visited" : ""}">
           <div class="rg-marker-dot"></div>
           <div class="rg-marker-label">${city.name}${isAI ? '<span class="rg-marker-ai-badge">AI</span>' : ""}</div>
+          ${city.explore_count > 0 ? `<div class="rg-marker-glow"></div>` : ""}
         </div>`;
 
       const marker = new AMap.Marker({
@@ -123,27 +124,18 @@ export default function MapContainer({ cities, selectedCity, onSelectCity }: Map
         .rg-map-section {
           position: relative;
           width: 100%;
-          max-width: 960px;
+          max-width: 100%;
           margin: 0 auto;
-          padding: 0 24px;
+          padding: 0;
         }
         .rg-map-wrapper {
           position: relative;
           width: 100%;
-          height: 480px;
-          border-radius: 8px;
+          height: min(520px, 60vh);
+          border-radius: 12px;
           overflow: hidden;
-          border: 3px solid #C8B898;
+          border: 2px solid rgba(200,184,152,0.5);
           box-shadow: 0 4px 24px rgba(139, 115, 85, 0.12), 0 1px 4px rgba(0,0,0,0.06);
-        }
-        /* 地图浅灰蒙版，让地图退后不抢前景 */
-        .rg-map-wrapper::after {
-          content: "";
-          position: absolute;
-          inset: 0;
-          background: rgba(245, 240, 230, 0.08);
-          pointer-events: none;
-          z-index: 1;
         }
         .rg-map-container {
           width: 100%;
@@ -206,6 +198,30 @@ export default function MapContainer({ cities, selectedCity, onSelectCity }: Map
           width: 2px; height: 6px;
           background: #C49452;
           border-radius: 0 0 1px 1px;
+        }
+
+        /* 已访问城市标记 - 点亮效果 */
+        .rg-marker.visited .rg-marker-dot {
+          background: #D4A84A;
+          box-shadow: 0 0 12px rgba(212,168,74,0.6), 0 0 24px rgba(212,168,74,0.3), 0 2px 6px rgba(196,148,82,0.45);
+          width: 16px;
+          height: 16px;
+        }
+        .rg-marker-glow {
+          position: absolute;
+          top: 50%;
+          left: 50%;
+          width: 32px;
+          height: 32px;
+          transform: translate(-50%, -50%);
+          border-radius: 50%;
+          background: radial-gradient(circle, rgba(212,168,74,0.2) 0%, transparent 70%);
+          animation: rg-marker-pulse 2s ease-in-out infinite;
+          pointer-events: none;
+        }
+        @keyframes rg-marker-pulse {
+          0%, 100% { transform: translate(-50%, -50%) scale(1); opacity: 1; }
+          50% { transform: translate(-50%, -50%) scale(1.3); opacity: 0.5; }
         }
 
         /* 城市名标签 */
@@ -392,7 +408,6 @@ export default function MapContainer({ cities, selectedCity, onSelectCity }: Map
         /* ===== 移动端 ===== */
         @media (max-width: 640px) {
           .rg-map-wrapper { height: 320px; }
-          .rg-map-section { padding: 0 12px; }
         }
       `}</style>
       <section className="rg-map-section travel-section" id="rg-map">

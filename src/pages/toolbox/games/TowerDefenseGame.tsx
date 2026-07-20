@@ -152,6 +152,82 @@ const TOWER_TYPES = {
 type TowerType = keyof typeof TOWER_TYPES;
 
 /* ============================================================
+   徽章系统
+   ============================================================ */
+const BADGES = [
+  { wave: 3, name: "初出茅庐", color: "#a8d8a8" },
+  { wave: 5, name: "小有成就", color: "#d4b8a0" },
+  { wave: 8, name: "百折不挠", color: "#a0b8d4" },
+  { wave: 12, name: "萝卜守护神", color: "#FFD700" },
+] as const;
+
+interface TowerSaveData {
+  highestWave: number;
+  badges: number[];
+}
+
+const TD_SAVE_KEY = "tower_defense_save";
+
+const loadTDSave = (): TowerSaveData => {
+  try {
+    const raw = localStorage.getItem(TD_SAVE_KEY);
+    if (raw) return JSON.parse(raw);
+  } catch { /* ignore */ }
+  return { highestWave: 0, badges: [] };
+};
+
+const saveTDSave = (data: TowerSaveData) => {
+  try {
+    localStorage.setItem(TD_SAVE_KEY, JSON.stringify(data));
+  } catch { /* ignore */ }
+};
+
+/** 在Canvas上绘制徽章图标 */
+function drawBadgeIcon(
+  ctx: CanvasRenderingContext2D,
+  cx: number,
+  cy: number,
+  r: number,
+  color: string,
+  badgeIndex: number
+) {
+  // 圆形底
+  ctx.fillStyle = color;
+  ctx.beginPath();
+  ctx.arc(cx, cy, r, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.strokeStyle = "rgba(0,0,0,0.15)";
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
+
+  // 高光
+  ctx.fillStyle = "rgba(255,255,255,0.35)";
+  ctx.beginPath();
+  ctx.ellipse(cx - r * 0.2, cy - r * 0.2, r * 0.5, r * 0.35, -0.3, 0, Math.PI * 2);
+  ctx.fill();
+
+  // 根据index画不同图形
+  ctx.fillStyle = "rgba(255,255,255,0.8)";
+  ctx.strokeStyle = "rgba(255,255,255,0.8)";
+  ctx.lineWidth = 1.5;
+  if (badgeIndex < 2) {
+    // 星星
+    drawStar(ctx, cx, cy, r * 0.55);
+  } else {
+    // 盾牌
+    ctx.beginPath();
+    ctx.moveTo(cx, cy - r * 0.5);
+    ctx.lineTo(cx + r * 0.4, cy - r * 0.25);
+    ctx.lineTo(cx + r * 0.4, cy + r * 0.1);
+    ctx.lineTo(cx, cy + r * 0.5);
+    ctx.lineTo(cx - r * 0.4, cy + r * 0.1);
+    ctx.lineTo(cx - r * 0.4, cy - r * 0.25);
+    ctx.closePath();
+    ctx.stroke();
+  }
+}
+
+/* ============================================================
    怪物类型定义
    ============================================================ */
 const ENEMY_TYPE_SLIME = "#7bc67b";
@@ -1120,6 +1196,8 @@ const TowerDefenseGame: React.FC = () => {
   const [waveActive, setWaveActive] = useState(false);
   const [achievement, setAchievement] = useState<string | null>(null);
   const [upgradingTower, setUpgradingTower] = useState<Tower | null>(null);
+  const [earnedBadges, setEarnedBadges] = useState<number[]>(() => loadTDSave().badges);
+  const [badgeNotify, setBadgeNotify] = useState<{ name: string; color: string } | null>(null);
 
   /* ---------- refs ---------- */
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -1173,13 +1251,43 @@ const TowerDefenseGame: React.FC = () => {
     upgradingTowerRef.current = upgradingTower;
   }, [upgradingTower]);
 
-  /* ---------- 成就检测 ---------- */
+  /* ---------- 徽章检测 ---------- */
   useEffect(() => {
-    if (wave === 3) setAchievement("初出茅庐");
-    else if (wave === 5) setAchievement("小有成就");
-    else if (wave === 8) setAchievement("百折不挠");
-    else if (wave === 12) setAchievement("萝卜守护神");
-  }, [wave]);
+    if (wave < 1) return;
+    // 更新最高波次
+    const save = loadTDSave();
+    if (wave > save.highestWave) {
+      save.highestWave = wave;
+    }
+    // 检查新徽章
+    let newBadgeName: string | null = null;
+    let newBadgeColor = "";
+    BADGES.forEach((b, idx) => {
+      if (wave >= b.wave && !save.badges.includes(idx)) {
+        save.badges.push(idx);
+        newBadgeName = b.name;
+        newBadgeColor = b.color;
+      }
+    });
+    saveTDSave(save);
+    if (!arraysEqual(save.badges, earnedBadges)) {
+      setEarnedBadges([...save.badges]);
+    }
+    if (newBadgeName) {
+      setBadgeNotify({ name: newBadgeName, color: newBadgeColor });
+      setAchievement(newBadgeName);
+      const timer = setTimeout(() => setBadgeNotify(null), 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [wave]); // eslint-disable-line react-hooks/exhaustive-deps
+
+/** 简单比较两个数组是否相等 */
+const arraysEqual = (a: number[], b: number[]): boolean => {
+  if (a.length !== b.length) return false;
+  const sa = [...a].sort();
+  const sb = [...b].sort();
+  return sa.every((v, i) => v === sb[i]);
+};
 
   /* ---------- 开始波次 ---------- */
   const startWave = useCallback(() => {
@@ -1342,6 +1450,7 @@ const TowerDefenseGame: React.FC = () => {
     setWaveActive(false);
     waveActiveRef.current = false;
     setAchievement(null);
+    setBadgeNotify(null);
     setSelectedTower("shooter");
     selectedTowerRef.current = "shooter";
     setUpgradingTower(null);
@@ -1977,6 +2086,9 @@ const TowerDefenseGame: React.FC = () => {
           <span className="sr-td-lives" style={styles.livesBadge}>
             {"\u2764"} {lives}
           </span>
+          <span style={{ color: "#FFD700", display: "flex", alignItems: "center", gap: 4, fontSize: 14, fontWeight: 600 }}>
+            <span>&#9733;</span> {earnedBadges.length}/{BADGES.length}
+          </span>
         </div>
       </div>
 
@@ -2092,18 +2204,23 @@ const TowerDefenseGame: React.FC = () => {
           </div>
         )}
 
-        {/* 成就徽章 */}
+        {/* 徽章通知 */}
         <AnimatePresence>
-          {achievement && (
+          {badgeNotify && (
             <motion.div
               className="sr-td-achievement"
-              style={styles.achievementBadge}
+              style={{
+                ...styles.achievementBadge,
+                background: `${badgeNotify.color}30`,
+                borderColor: `${badgeNotify.color}50`,
+                color: badgeNotify.color,
+              }}
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: -20 }}
               transition={{ duration: 0.3 }}
             >
-              {achievement}
+              &#9733; {badgeNotify.name}
             </motion.div>
           )}
         </AnimatePresence>
@@ -2137,6 +2254,35 @@ const TowerDefenseGame: React.FC = () => {
               >
                 {"\u575A\u6301\u5230\u4E86\u7B2C"} {wave} {"\u6CE2"}
               </motion.div>
+              {/* 徽章展示 */}
+              {earnedBadges.length > 0 && (
+                <motion.div
+                  style={{ display: "flex", gap: 8, marginBottom: 12, flexWrap: "wrap", justifyContent: "center" }}
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 0.35 }}
+                >
+                  {earnedBadges.map((bi) => (
+                    <span
+                      key={bi}
+                      style={{
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: 3,
+                        padding: "3px 8px",
+                        borderRadius: 10,
+                        background: `${BADGES[bi].color}30`,
+                        border: `1px solid ${BADGES[bi].color}50`,
+                        color: BADGES[bi].color,
+                        fontSize: 12,
+                        fontWeight: 600,
+                      }}
+                    >
+                      &#9733; {BADGES[bi].name}
+                    </span>
+                  ))}
+                </motion.div>
+              )}
               <motion.button
                 className="sr-td-restart-btn"
                 style={styles.restartBtn}
@@ -2184,6 +2330,35 @@ const TowerDefenseGame: React.FC = () => {
                 {lives} {" | \u5269\u4F59\u91D1\u5E01: "}
                 {gold}
               </motion.div>
+              {/* 徽章展示 */}
+              {earnedBadges.length > 0 && (
+                <motion.div
+                  style={{ display: "flex", gap: 8, marginBottom: 12, flexWrap: "wrap", justifyContent: "center" }}
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: 0.35 }}
+                >
+                  {earnedBadges.map((bi) => (
+                    <span
+                      key={bi}
+                      style={{
+                        display: "inline-flex",
+                        alignItems: "center",
+                        gap: 3,
+                        padding: "3px 8px",
+                        borderRadius: 10,
+                        background: `${BADGES[bi].color}30`,
+                        border: `1px solid ${BADGES[bi].color}50`,
+                        color: BADGES[bi].color,
+                        fontSize: 12,
+                        fontWeight: 600,
+                      }}
+                    >
+                      &#9733; {BADGES[bi].name}
+                    </span>
+                  ))}
+                </motion.div>
+              )}
               <motion.button
                 className="sr-td-restart-btn"
                 style={styles.restartBtn}

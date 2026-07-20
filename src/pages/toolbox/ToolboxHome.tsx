@@ -2,7 +2,7 @@ import { motion } from "framer-motion";
 import { useNavigate, useSearchParams, Link } from "react-router-dom";
 
 /**
- * 妙妙工具箱 · 首页
+ * 作品集 · 首页
  *
  * 森林疗愈室的延伸 —— 第一个数字造物场。
  * 以“纸张 / 工作台”质感呈现 9 个生活维度的作品，3×3 网格排布。
@@ -14,7 +14,7 @@ const products = [
   { dimension: "身", title: "森林疗愈室", value: "生理调节" },
   { dimension: "心", title: "系统调频 + 回血清单", value: "情绪修复" },
   { dimension: "行", title: "通关清单", value: "执行力" },
-  { dimension: "知", title: "妙妙工具箱", value: "认知与求知欲" },
+  { dimension: "知", title: "作品集", value: "认知与求知欲" },
   { dimension: "游", title: "漫游指南", value: "探索与规划" },
   { dimension: "术", title: "万能百事通", value: "效率与工具" },
   { dimension: "管", title: "物资管家", value: "资源管理与反" },
@@ -72,7 +72,7 @@ const ToolboxHome: React.FC = () => {
       {/* 顶部返回条 */}
       <header className="toolbox-topbar">
         <Link to={homePath} className="toolbox-back">
-          ← 回到妙妙工具箱
+          ← 回到作品集
         </Link>
         <span className="toolbox-topbar-meta">数字造物场</span>
       </header>
@@ -93,7 +93,7 @@ const ToolboxHome: React.FC = () => {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.05 }}
         >
-          妙妙工具箱
+          作品集
         </motion.h1>
         <motion.p
           className="toolbox-subtitle"

@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Link } from "react-router-dom";
 
 /**
- * 妙妙工具箱 · Mickey Launchpad
+ * 作品集 · Mickey Launchpad
  *
  * 深色星空背景 + 闪烁星辰 + 金色发光圆形卡片。
  * 9 个工具，4-4-1 布局，第 9 个（时光博物馆）位于解忧杂货店正下方。
@@ -239,7 +239,7 @@ const MickeyLaunchpad: React.FC = () => {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6 }}
         >
-          妙妙工具箱
+          作品集
         </motion.h1>
         <motion.p
           className="mickey-subtitle"

@@ -921,7 +921,7 @@ const InventoryPage: React.FC = () => {
             to={`/mickey${fromQuery}`}
             className="text-sm text-gray-500 transition-all hover:text-[#5d8a6a] hover:translate-x-[-2px] inline-block"
           >
-            ← 妙妙工具箱
+            ← 作品集
           </Link>
           <div className="flex items-center gap-2">
             <span className="h-2 w-2 rounded-full bg-[#5d8a6a] shadow-[0_0_0_3px_rgba(93,138,106,0.15)]" />

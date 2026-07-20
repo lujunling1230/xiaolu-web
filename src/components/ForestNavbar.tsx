@@ -6,7 +6,7 @@ import { useView, type View } from "../context/ViewContext";
  * ForestNavbar 森林风导航栏
  *
  * 固定顶部，64px 高度，半透明磨砂 + 树皮草地质感纹理。
- * 4 个导航项：首页 | 关于我 | 项目集 | 疗愈室
+ * 4 个导航项：首页 | 关于我 | 作品说明书 | 疗愈室
  * 每项配森林图标（树叶/小鹿/书本/小屋），hover 图标上浮+发光。
  * 导航项标记 data-cursor="nav"，供蝴蝶光标识别并飞向。
  * 移动端折叠为汉堡菜单。
@@ -66,7 +66,7 @@ const HouseIcon = () => (
 const navItems: NavItem[] = [
   { key: "forest", label: "首页", icon: <LeafIcon /> },
   { key: "about", label: "关于我", icon: <DeerIcon /> },
-  { key: "projects", label: "项目集", icon: <BookIcon /> },
+  { key: "projects", label: "作品说明书", icon: <BookIcon /> },
 ];
 
 const ForestNavbar: React.FC = () => {

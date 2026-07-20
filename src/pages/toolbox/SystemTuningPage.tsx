@@ -1189,7 +1189,7 @@ const SystemTuningPage: React.FC = () => {
       {/* ===== 顶部导航 ===== */}
       <header className="apt-topbar">
         <Link to="/mickey" className="apt-back">
-          ← 回到妙妙工具箱
+          ← 回到作品集
         </Link>
         {view !== "lobby" && (
           <button className="apt-back apt-back-ghost" onClick={backToLobby}>
@@ -1766,7 +1766,7 @@ const SystemTuningPage: React.FC = () => {
                         type="text"
                         value={workLink}
                         onChange={(e) => setWorkLink(e.target.value)}
-                        placeholder="粘贴或输入项目集内页路径"
+                        placeholder="粘贴或输入作品说明书内页路径"
                         maxLength={200}
                         style={{ padding: "10px 14px", borderRadius: 12, width: "100%", boxSizing: "border-box", fontFamily: "inherit", fontSize: 13, border: "1px solid #e8e8e8", outline: "none" }}
                       />

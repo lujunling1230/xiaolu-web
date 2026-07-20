@@ -164,7 +164,7 @@ const MusicPage: React.FC = () => {
 
       {/* 顶部返回条 */}
       <header className="mp-topbar">
-        <Link to={backPath} className="mp-back">← 回到妙妙工具箱</Link>
+        <Link to={backPath} className="mp-back">← 回到作品集</Link>
         <span className="mp-topbar-meta">Withered Wood Sings</span>
       </header>
 

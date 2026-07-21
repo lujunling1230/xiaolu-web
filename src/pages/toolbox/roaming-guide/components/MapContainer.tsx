@@ -73,11 +73,12 @@ export default function MapContainer({ cities, selectedCity, onSelectCity }: Map
       const position = new AMap.LngLat(city.coord.lng, city.coord.lat);
 
       // Marker content HTML
+      const isWantToGo = city.status === "want_to_go";
       const markerHtml = `
-        <div class="rg-marker ${isAI ? "ai" : ""} ${city.explore_count > 0 ? "visited" : ""}">
+        <div class="rg-marker ${isAI ? "ai" : ""} ${city.explore_count > 0 ? "visited" : ""} ${isWantToGo ? "want-to-go" : ""}">
           <div class="rg-marker-dot"></div>
-          <div class="rg-marker-label">${city.name}${isAI ? '<span class="rg-marker-ai-badge">AI</span>' : ""}</div>
-          ${city.explore_count > 0 ? `<div class="rg-marker-glow"></div>` : ""}
+          <div class="rg-marker-label">${city.name}${isWantToGo ? '<span class="rg-marker-want-badge">想去</span>' : ""}${isAI ? '<span class="rg-marker-ai-badge">AI</span>' : ""}</div>
+          ${city.explore_count > 0 && !isWantToGo ? `<div class="rg-marker-glow"></div>` : ""}
         </div>`;
 
       const marker = new AMap.Marker({
@@ -277,6 +278,48 @@ export default function MapContainer({ cities, selectedCity, onSelectCity }: Map
           vertical-align: middle;
           font-weight: 600;
           letter-spacing: 0.02em;
+        }
+        .rg-marker-want-badge {
+          font-size: 9px;
+          background: var(--rg-accent, #D4884A);
+          color: #fff;
+          padding: 0 4px;
+          border-radius: 2px;
+          margin-left: 2px;
+          vertical-align: middle;
+          font-weight: 600;
+        }
+
+        /* ===== 想去 Marker（琥珀色） ===== */
+        .rg-marker.want-to-go .rg-marker-dot {
+          background: var(--rg-accent, #D4884A);
+          box-shadow: 0 0 8px rgba(212, 136, 74, 0.6);
+          animation: rg-want-pulse 2s ease-in-out infinite;
+        }
+        .rg-marker.want-to-go .rg-marker-dot::before {
+          content: "";
+          position: absolute;
+          inset: -5px;
+          border: 1.5px dashed var(--rg-accent, #D4884A);
+          border-radius: 50%;
+          animation: rg-want-pulse-ring 2s ease-in-out infinite;
+        }
+        .rg-marker.want-to-go .rg-marker-dot::after {
+          background: var(--rg-accent, #D4884A);
+        }
+        .rg-marker.want-to-go .rg-marker-label {
+          background: rgba(212, 136, 74, 0.1);
+          border: 1px solid rgba(212, 136, 74, 0.3);
+          color: var(--rg-accent-dark, #B06A30);
+        }
+
+        @keyframes rg-want-pulse {
+          0%, 100% { transform: scale(1); }
+          50% { transform: scale(1.15); }
+        }
+        @keyframes rg-want-pulse-ring {
+          0%, 100% { opacity: 0.8; transform: scale(1); }
+          50% { opacity: 0.4; transform: scale(1.2); }
         }
 
         /* 脉冲动画 */

@@ -18,7 +18,7 @@ const PATH_WIDTH_OUTER = 28;
 const PATH_WIDTH_INNER = 22;
 const PATH_COLOR = "#C4A265";
 const PATH_COLOR_INNER = "#D4B87A";
-const TOTAL_WAVES = 12;
+const TOTAL_WAVES = 20;
 const STARTING_GOLD = 100;
 const STARTING_LIVES = 10;
 const WAVE_REWARD = 20;
@@ -155,10 +155,26 @@ type TowerType = keyof typeof TOWER_TYPES;
    徽章系统
    ============================================================ */
 const BADGES = [
-  { wave: 3, name: "初出茅庐", color: "#a8d8a8" },
+  { wave: 1, name: "初入战阵", color: "#a8d8a8" },
+  { wave: 2, name: "小试牛刀", color: "#b8d8a8" },
+  { wave: 3, name: "渐入佳境", color: "#c8d8a8" },
+  { wave: 4, name: "稳扎稳打", color: "#d4c8a0" },
   { wave: 5, name: "小有成就", color: "#d4b8a0" },
+  { wave: 6, name: "步步为营", color: "#d0c0a0" },
+  { wave: 7, name: "智勇双全", color: "#c8b8a0" },
   { wave: 8, name: "百折不挠", color: "#a0b8d4" },
+  { wave: 9, name: "进退自如", color: "#b0c0d4" },
+  { wave: 10, name: "固若金汤", color: "#c8a8d8" },
+  { wave: 11, name: "坚不可摧", color: "#d0b0d8" },
   { wave: 12, name: "萝卜守护神", color: "#FFD700" },
+  { wave: 13, name: "千锤百炼", color: "#e8c8a0" },
+  { wave: 14, name: "铜墙铁壁", color: "#d4c8a0" },
+  { wave: 15, name: "兵来将挡", color: "#c8c8b0" },
+  { wave: 16, name: "万夫莫开", color: "#a8c8d8" },
+  { wave: 17, name: "龙城飞将", color: "#b0d0e0" },
+  { wave: 18, name: "战神附体", color: "#d8a8a0" },
+  { wave: 19, name: "一夫当关", color: "#e0b0a0" },
+  { wave: 20, name: "萝卜传说", color: "#E8B923" },
 ] as const;
 
 interface TowerSaveData {
@@ -2074,6 +2090,37 @@ const arraysEqual = (a: number[], b: number[]): boolean => {
 
   return (
     <div style={styles.root}>
+      <style>{`
+        .sr-td-badge-wall {
+          width: 100%; max-width: 720px; margin-top: 12px;
+          padding: 16px; background: rgba(255,255,255,0.7);
+          border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+          max-height: 280px; overflow-y: auto;
+        }
+        .sr-td-badge-wall-title {
+          font-size: 15px; font-weight: 700; color: #5a4a52;
+          text-align: center; margin: 0 0 12px;
+        }
+        .sr-td-badge-wall-grid {
+          display: grid; grid-template-columns: repeat(4, 1fr);
+          gap: 10px; justify-items: center;
+        }
+        .sr-td-badge-wall-item {
+          display: flex; flex-direction: column; align-items: center;
+          gap: 4px; padding: 8px;
+        }
+        .sr-td-badge-wall-icon {
+          width: 32px; height: 32px; border-radius: 50%;
+          display: flex; align-items: center; justify-content: center;
+          font-size: 14px; color: #fff; transition: all 0.3s;
+        }
+        .sr-td-badge-wall-name {
+          font-size: 11px; font-weight: 600; text-align: center;
+        }
+        .sr-td-badge-wall-wave {
+          font-size: 10px; color: #aaa;
+        }
+      `}</style>
       {/* HUD */}
       <div className="sr-td-header" style={styles.header}>
         <div className="sr-td-hud" style={styles.hud}>
@@ -2304,12 +2351,15 @@ const arraysEqual = (a: number[], b: number[]): boolean => {
           {victory && (
             <motion.div
               className="sr-td-overlay"
-              style={styles.overlay}
+              style={{ ...styles.overlay, position: "relative" }}
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.4 }}
             >
+              <button className="sr-overlay-close" onClick={() => {
+                restart();
+              }} style={{ position: "absolute", top: 12, right: 14, background: "none", border: "none", fontSize: 20, color: "#aaa", cursor: "pointer", lineHeight: 1, zIndex: 101 }}>&times;</button>
               <motion.div
                 className="sr-td-overlay-title"
                 style={styles.overlayTitle}
@@ -2374,6 +2424,32 @@ const arraysEqual = (a: number[], b: number[]): boolean => {
             </motion.div>
           )}
         </AnimatePresence>
+
+        {/* 徽章墙 - 在游戏结束或胜利时显示 */}
+        {(state === "gameover" || state === "victory") && (
+          <div className="sr-td-badge-wall">
+            <h3 className="sr-td-badge-wall-title">徽章墙</h3>
+            <div className="sr-td-badge-wall-grid">
+              {BADGES.map((b, i) => {
+                const earned = earnedBadges.includes(i);
+                return (
+                  <div key={i} className={`sr-td-badge-wall-item ${earned ? "earned" : ""}`}>
+                    <div className="sr-td-badge-wall-icon" style={{
+                      background: earned ? b.color : "#e0e0e0",
+                      opacity: earned ? 1 : 0.5,
+                    }}>
+                      {earned ? "★" : "🔒"}
+                    </div>
+                    <span className="sr-td-badge-wall-name" style={{ color: earned ? b.color : "#aaa" }}>
+                      {b.name}
+                    </span>
+                    <span className="sr-td-badge-wall-wave">第{b.wave}波</span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

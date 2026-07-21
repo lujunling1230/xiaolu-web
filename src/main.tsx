@@ -1,6 +1,6 @@
 import { StrictMode, useEffect } from "react";
 import { createRoot } from "react-dom/client";
-import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
+import { BrowserRouter, Routes, Route, useLocation, Navigate } from "react-router-dom";
 import App from "./App";
 import ToolboxHome from "./pages/toolbox/ToolboxHome";
 import ToolboxDetail from "./pages/toolbox/ToolboxDetail";
@@ -10,8 +10,13 @@ import QuestLogPage from "./pages/toolbox/QuestLogPage";
 import RechargePage from "./pages/toolbox/RechargePage";
 import MuseumPage from "./pages/toolbox/MuseumPage";
 import StressReliefPage from "./pages/toolbox/StressReliefPage";
+import BadgeWallPage from "./pages/toolbox/games/BadgeWallPage";
 import TravelPage from "./pages/toolbox/TravelPage";
-import RoamingGuidePage from "./pages/toolbox/roaming-guide";
+import RoamingGuideLayout from "./pages/toolbox/roaming-guide/RoamingGuideLayout";
+import MapPage from "./pages/toolbox/roaming-guide/MapPage";
+import CitiesPage from "./pages/toolbox/roaming-guide/CitiesPage";
+import PlanPage from "./pages/toolbox/roaming-guide/PlanPage";
+import { RoamingGuideProvider } from "./pages/toolbox/roaming-guide/RoamingGuideContext";
 import SystemTuningPage from "./pages/toolbox/SystemTuningPage";
 import LifeFilmPage from "./pages/LifeFilmPage";
 import HealingRoomPage from "./pages/HealingRoomPage";
@@ -72,11 +77,31 @@ createRoot(document.getElementById("root")!).render(
         <Route path="/toolbox/memories" element={<MuseumPage />} />
         {/* 解压馆：交互式解压游戏集合 */}
         <Route path="/toolbox/games" element={<StressReliefPage />} />
+        {/* 徽章墙：各游戏徽章收集展示 */}
+        <Route path="/toolbox/games/badges/:game" element={<BadgeWallPage />} />
         {/* 回血清单：i人低能耗回血工具 */}
         <Route path="/toolbox/recharge" element={<RechargePage />} />
-        {/* 漫游指南：旅行足迹与攻略 */}
-        <Route path="/toolbox/travel" element={<RoamingGuidePage />} />
-        <Route path="/toolbox/roaming-guide" element={<RoamingGuidePage />} />
+        {/* 漫游指南：旅行足迹与攻略（三模块嵌套路由） */}
+        <Route path="/toolbox/travel" element={
+          <RoamingGuideProvider>
+            <RoamingGuideLayout />
+          </RoamingGuideProvider>
+        }>
+          <Route index element={<Navigate to="map" replace />} />
+          <Route path="map" element={<MapPage />} />
+          <Route path="cities" element={<CitiesPage />} />
+          <Route path="plan" element={<PlanPage />} />
+        </Route>
+        <Route path="/toolbox/roaming-guide" element={
+          <RoamingGuideProvider>
+            <RoamingGuideLayout />
+          </RoamingGuideProvider>
+        }>
+          <Route index element={<Navigate to="map" replace />} />
+          <Route path="map" element={<MapPage />} />
+          <Route path="cities" element={<CitiesPage />} />
+          <Route path="plan" element={<PlanPage />} />
+        </Route>
         {/* 系统调频：5% 微改变认知工具 */}
         <Route path="/toolbox/answer" element={<SystemTuningPage />} />
         {/* 作品详情占位页 */}

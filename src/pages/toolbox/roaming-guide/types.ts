@@ -51,6 +51,9 @@ export interface AIPlan {
 
 export type LightSource = "manual" | "ai_recommend";
 
+/** 城市状态：想去 / 已去 */
+export type CityStatus = "want_to_go" | "visited";
+
 export interface City {
   id: number;
   name: string;
@@ -68,6 +71,7 @@ export interface City {
   manual_guide: string;
   ai_plan: AIPlan | null;
   weather_tags: WeatherTag[];
+  status: CityStatus;
   created_at: string;
   updated_at: string;
 }
@@ -97,6 +101,11 @@ export interface AIReverseRecommendResponse {
     reason: string;
     highlights: string[];
     best_season: string;
+    play: string[];
+    food: string[];
+    accommodation: string;
+    transport: string;
+    estimated_cost: string;
   }[];
   summary: string;
 }

@@ -27,6 +27,8 @@ interface AIAssistantPanelProps {
   ) => Promise<AIForwardGenerateResponse>;
   onAdoptCity: (city: AIReverseRecommendResponse["cities"][0]) => void;
   onSavePlan: (city: City, plan: AIForwardGenerateResponse) => void;
+  /** 居中模式：地球按钮内联居中，不固定在右下角 */
+  centered?: boolean;
 }
 
 /* ============================================================
@@ -103,6 +105,7 @@ export default function AIAssistantPanel({
   onForwardGenerate,
   onAdoptCity,
   onSavePlan,
+  centered = false,
 }: AIAssistantPanelProps) {
   /* ---- 状态 ---- */
   const [open, setOpen] = useState(false);
@@ -259,7 +262,7 @@ export default function AIAssistantPanel({
 
       {/* ===== 小地球悬浮按钮 ===== */}
       <button
-        className="rg-ai-globe"
+        className={`rg-ai-globe${centered ? " rg-ai-globe--centered" : ""}`}
         onClick={() => setOpen(true)}
         aria-label="打开 AI 旅行向导"
         title="AI 旅行向导"
@@ -434,6 +437,7 @@ function ReverseTab({
   onSubmit,
   onAdopt,
 }: ReverseTabProps) {
+  const [expandedCity, setExpandedCity] = useState<string | null>(null);
   const showEmptyState = result && !loading && result.cities.length === 0;
 
   return (
@@ -576,43 +580,96 @@ function ReverseTab({
             </p>
           )}
           <div className="rg-ai-results__list">
-            {result.cities.map((city, idx) => (
-              <div
-                key={city.name}
-                className="rg-ai-city-card rg-ai-fade-in-up"
-                style={{ animationDelay: `${idx * 150}ms` }}
-              >
-                <div className="rg-ai-city-card__content">
-                  <div className="rg-ai-city-card__header">
-                    <span className="rg-ai-city-card__index">
-                      {String(idx + 1).padStart(2, "0")}
-                    </span>
-                    <span className="rg-ai-city-card__name">
-                      {city.name}
-                    </span>
-                    <span className="rg-ai-city-card__province">
-                      {city.province}
-                    </span>
-                  </div>
-                  <p className="rg-ai-city-card__reason">{city.reason}</p>
-                  <div className="rg-ai-city-card__meta">
-                    <span className="rg-ai-city-card__label">
-                      亮点：{city.highlights.join(" / ")}
-                    </span>
-                    <span className="rg-ai-city-card__label">
-                      最佳季节：{city.best_season}
-                    </span>
-                  </div>
-                </div>
-                <button
-                  className={`rg-ai-city-card__adopt${adoptedNames.has(city.name) ? " rg-ai-city-card__adopt--done" : ""}`}
-                  onClick={() => onAdopt(city)}
-                  disabled={adoptedNames.has(city.name)}
+            {result.cities.map((city, idx) => {
+              const isExpanded = expandedCity === city.name;
+              return (
+                <div
+                  key={city.name}
+                  className="rg-ai-city-card rg-ai-fade-in-up"
+                  style={{ animationDelay: `${idx * 150}ms` }}
                 >
-                  {adoptedNames.has(city.name) ? "\u2713 已点亮" : "点亮"}
-                </button>
-              </div>
-            ))}
+                  <div className="rg-ai-city-card__content">
+                    <div className="rg-ai-city-card__header">
+                      <span className="rg-ai-city-card__index">
+                        {String(idx + 1).padStart(2, "0")}
+                      </span>
+                      <span className="rg-ai-city-card__name">
+                        {city.name}
+                      </span>
+                      <span className="rg-ai-city-card__province">
+                        {city.province}
+                      </span>
+                      <button
+                        className="rg-ai-city-card__detail-btn"
+                        onClick={() => setExpandedCity(isExpanded ? null : city.name)}
+                      >
+                        {isExpanded ? "收起" : "查看详情"}
+                      </button>
+                    </div>
+                    <p className="rg-ai-city-card__reason">{city.reason}</p>
+                    <div className="rg-ai-city-card__meta">
+                      <span className="rg-ai-city-card__label">
+                        亮点：{city.highlights.join(" / ")}
+                      </span>
+                      <span className="rg-ai-city-card__label">
+                        最佳季节：{city.best_season}
+                      </span>
+                    </div>
+
+                    {/* 展开详情：吃喝住玩 */}
+                    {isExpanded && (
+                      <div className="rg-ai-city-card__details">
+                        {city.play && city.play.length > 0 && (
+                          <div className="rg-ai-detail-row">
+                            <span className="rg-ai-detail-label">🎯 玩</span>
+                            <div className="rg-ai-detail-list">
+                              {city.play.map((p, i) => (
+                                <span key={i} className="rg-ai-detail-chip">{p}</span>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                        {city.food && city.food.length > 0 && (
+                          <div className="rg-ai-detail-row">
+                            <span className="rg-ai-detail-label">🍜 美食</span>
+                            <div className="rg-ai-detail-list">
+                              {city.food.map((f, i) => (
+                                <span key={i} className="rg-ai-detail-chip">{f}</span>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                        {city.accommodation && (
+                          <div className="rg-ai-detail-row">
+                            <span className="rg-ai-detail-label">🏨 住宿</span>
+                            <p className="rg-ai-detail-text">{city.accommodation}</p>
+                          </div>
+                        )}
+                        {city.transport && (
+                          <div className="rg-ai-detail-row">
+                            <span className="rg-ai-detail-label">🚄 交通</span>
+                            <p className="rg-ai-detail-text">{city.transport}</p>
+                          </div>
+                        )}
+                        {city.estimated_cost && (
+                          <div className="rg-ai-detail-row">
+                            <span className="rg-ai-detail-label">💰 预算</span>
+                            <p className="rg-ai-detail-text">{city.estimated_cost}</p>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                  <button
+                    className={`rg-ai-city-card__adopt${adoptedNames.has(city.name) ? " rg-ai-city-card__adopt--done" : ""}`}
+                    onClick={() => onAdopt(city)}
+                    disabled={adoptedNames.has(city.name)}
+                  >
+                    {adoptedNames.has(city.name) ? "\u2713 已加入" : "加入想去"}
+                  </button>
+                </div>
+              );
+            })}
           </div>
         </div>
       )}
@@ -914,6 +971,14 @@ const CSS = `
   transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1),
               box-shadow 0.3s ease;
   pointer-events: auto;
+}
+
+/* 居中模式：内联显示，不固定定位 */
+.rg-ai-globe--centered {
+  position: static;
+  margin: 0 auto;
+  width: 72px;
+  height: 72px;
 }
 
 .rg-ai-globe__svg {
@@ -1435,6 +1500,26 @@ const CSS = `
   align-items: baseline;
   gap: 8px;
   margin-bottom: 8px;
+  flex-wrap: wrap;
+}
+
+.rg-ai-city-card__detail-btn {
+  margin-left: auto;
+  background: none;
+  border: 1px solid var(--rg-ink-border, #C8B898);
+  border-radius: 12px;
+  padding: 2px 10px;
+  font-size: 11px;
+  color: var(--rg-ink-light, #8B7D6B);
+  cursor: pointer;
+  font-family: var(--rg-font-serif, 'Noto Serif SC', serif);
+  letter-spacing: 1px;
+  transition: all 0.2s;
+}
+
+.rg-ai-city-card__detail-btn:hover {
+  border-color: #8B7355;
+  color: #5c3a21;
 }
 
 .rg-ai-city-card__index {
@@ -1515,6 +1600,61 @@ const CSS = `
 
 .rg-ai-city-card__adopt:disabled {
   cursor: default;
+}
+
+/* ---- 详情展开区域 ---- */
+.rg-ai-city-card__details {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px dashed var(--rg-ink-border, #E0D8C8);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  animation: rg-ai-detail-fade 0.3s ease-out;
+}
+
+@keyframes rg-ai-detail-fade {
+  from { opacity: 0; transform: translateY(-4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.rg-ai-detail-row {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+}
+
+.rg-ai-detail-label {
+  flex-shrink: 0;
+  font-size: 12px;
+  color: var(--rg-primary, #4A8B6F);
+  font-weight: 600;
+  letter-spacing: 1px;
+  min-width: 48px;
+}
+
+.rg-ai-detail-text {
+  font-size: 12px;
+  color: var(--rg-ink, #5c3a21);
+  line-height: 1.7;
+  margin: 0;
+  flex: 1;
+}
+
+.rg-ai-detail-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  flex: 1;
+}
+
+.rg-ai-detail-chip {
+  font-size: 11px;
+  color: var(--rg-ink, #5c3a21);
+  background: rgba(92,58,33,0.06);
+  padding: 2px 8px;
+  border-radius: 10px;
+  line-height: 1.6;
 }
 
 /* ================================================================

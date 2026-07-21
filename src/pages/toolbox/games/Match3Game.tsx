@@ -189,9 +189,19 @@ const LEVEL_CONFIGS: LevelConfig[] = [
   { target: 3500, moves: 22, hasRock: true,  hasIce: true  }, // 关卡8 更多障碍
   { target: 4000, moves: 20, hasRock: false, hasIce: false }, // 关卡9
   { target: 5000, moves: 18, hasRock: true,  hasIce: true  }, // 关卡10 全部条件
+  { target: 6000, moves: 18, hasRock: false, hasIce: false }, // 关卡11
+  { target: 7000, moves: 17, hasRock: true,  hasIce: false }, // 关卡12
+  { target: 8000, moves: 17, hasRock: false, hasIce: true  }, // 关卡13
+  { target: 9000, moves: 16, hasRock: true,  hasIce: true  }, // 关卡14
+  { target: 10000, moves: 15, hasRock: false, hasIce: false }, // 关卡15
+  { target: 11000, moves: 15, hasRock: true,  hasIce: false }, // 关卡16
+  { target: 12000, moves: 14, hasRock: false, hasIce: true  }, // 关卡17
+  { target: 13000, moves: 14, hasRock: true,  hasIce: true  }, // 关卡18
+  { target: 14000, moves: 13, hasRock: false, hasIce: false }, // 关卡19
+  { target: 15000, moves: 12, hasRock: true,  hasIce: true  }, // 关卡20 终极挑战
 ];
 
-const MAX_UNLOCKED_LEVEL = 10;
+const MAX_UNLOCKED_LEVEL = 20;
 
 const getLevelConfig = (level: number): LevelConfig => {
   if (level <= MAX_UNLOCKED_LEVEL) return LEVEL_CONFIGS[level - 1];
@@ -237,6 +247,14 @@ const BADGE_NAMES: Record<number, string> = {
   9: "四千精英",
   10: "消散之王",
 };
+
+const MATCH3_BADGE_NAMES = [
+  "初入消界", "碎石破障", "渐入佳境", "破冰而行",
+  "中流击水", "双障齐克", "势如破竹", "无坚不摧",
+  "炉火纯青", "登峰造极", "神之一手", "石破天惊",
+  "冰雪消融", "双管齐下", "行云流水", "一石二鸟",
+  "冰消瓦解", "坚壁清野", "纵横捭阖", "万物归零"
+];
 
 /** 从 localStorage 读取关卡 */
 const loadLevel = (): number => {
@@ -604,7 +622,14 @@ const Match3Game: React.FC = () => {
 
       {/* 关卡完成遮罩 */}
       {gameState === "won" && (
-        <div style={styles.overlay}>
+        <div style={{ ...styles.overlay, position: "relative" }}>
+          <button className="sr-overlay-close" onClick={() => {
+            if (level < MAX_UNLOCKED_LEVEL) {
+              nextLevel();
+            } else {
+              restart();
+            }
+          }} style={{ position: "absolute", top: 12, right: 14, background: "none", border: "none", fontSize: 20, color: "#aaa", cursor: "pointer", lineHeight: 1, zIndex: 101 }}>&times;</button>
           <div style={styles.overlayCard}>
             <div style={styles.overlayTitle}>关卡完成</div>
             <div style={styles.starsRow}>
@@ -641,6 +666,38 @@ const Match3Game: React.FC = () => {
                 }}>
                   &#9733; {BADGE_NAMES[level] || `关卡${level}`}
                 </span>
+              </div>
+            )}
+            {/* 徽章墙 */}
+            {earnedBadges.length > 0 && (
+              <div style={{ marginTop: 12, width: '100%', maxWidth: 400, maxHeight: 280, overflowY: 'auto' }}>
+                <div style={{ fontSize: 14, fontWeight: 700, color: '#5a4a52', textAlign: 'center', marginBottom: 8 }}>
+                  徽章墙 ({earnedBadges.length}/20)
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8 }}>
+                  {MATCH3_BADGE_NAMES.map((name, i) => {
+                    const earned = earnedBadges.includes(i + 1);
+                    return (
+                      <div key={i} style={{
+                        display: 'flex', flexDirection: 'column', alignItems: 'center',
+                        gap: 2, padding: 4, opacity: earned ? 1 : 0.4,
+                      }}>
+                        <div style={{
+                          width: 28, height: 28, borderRadius: '50%',
+                          background: earned ? '#FFD700' : '#e0e0e0',
+                          display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          fontSize: 12, color: '#fff', fontWeight: 700,
+                        }}>
+                          {earned ? '★' : '🔒'}
+                        </div>
+                        <span style={{ fontSize: 10, fontWeight: 600, color: earned ? '#5a4a52' : '#aaa', textAlign: 'center' }}>
+                          {name}
+                        </span>
+                        <span style={{ fontSize: 9, color: '#aaa' }}>第{i+1}关</span>
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
             )}
             <div style={styles.overlayBtns}>

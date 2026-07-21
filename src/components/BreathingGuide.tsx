@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 
 /**
  * BreathingGuide 呼吸引导 — 森林疗愈室核心模块
@@ -272,8 +272,23 @@ const BreathingGuide: React.FC = () => {
     }
   };
 
+  /** 记录呼吸引导使用（本地存储） */
+  const recordBreathing = useCallback((cycles: number, modeId: string) => {
+    try {
+      const today = new Date().toISOString().slice(0, 10);
+      const raw = localStorage.getItem("breathing_records");
+      const records: { date: string; mode: string; cycles: number }[] = raw ? JSON.parse(raw) : [];
+      records.push({ date: today, mode: modeId, cycles });
+      localStorage.setItem("breathing_records", JSON.stringify(records));
+    } catch { /* ignore */ }
+  }, []);
+
   /** 开始 / 暂停 / 继续 */
   const handleToggleRun = () => {
+    if (running && cycleCount > 0) {
+      // 暂停时记录（只要完成过至少一轮）
+      recordBreathing(cycleCount, mode.id);
+    }
     if (!running) setHasStarted(true);
     setRunning((r) => !r);
   };

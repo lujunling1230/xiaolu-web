@@ -2,10 +2,11 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 
 /* ============================================================
-   鍒囨按鏋?. Fruit Slice
-   涓€鍒€涓ゆ柇锛屼竾蹇电殕绌?   ============================================================ */
+   切水果 · Fruit Slice
+   一刀两断，万念皆空
+   ============================================================ */
 
-/* ---------- 鎺ュ彛 ---------- */
+/* ---------- 接口 ---------- */
 interface Fruit {
   id: number;
   x: number;
@@ -78,28 +79,38 @@ interface FruitSaveData {
 
 type Phase = "menu" | "playing" | "levelComplete" | "gameOver";
 
-/* ---------- 鍏冲崱閰嶇疆 ---------- */
+/* ---------- 关卡配置 ---------- */
 const LEVELS: LevelConfig[] = [
-  { targetScore: 15,  fruitSpeed: 1.0,  bombChance: 0.10, fruitSizeMulti: 1.0, rotSpeedMulti: 1.0, bombSizeMulti: 1.0, spawnIntervalMin: 45, spawnIntervalMax: 65, extraFruits: 0, chainSlice: false, badge: "鍒濆叆鍒€閬? },
-  { targetScore: 25,  fruitSpeed: 1.0,  bombChance: 0.12, fruitSizeMulti: 1.0, rotSpeedMulti: 1.0, bombSizeMulti: 1.0, spawnIntervalMin: 40, spawnIntervalMax: 60, extraFruits: 1, chainSlice: false, badge: "鍒€閿嬫笎鍒? },
-  { targetScore: 40,  fruitSpeed: 1.25, bombChance: 0.13, fruitSizeMulti: 1.15, rotSpeedMulti: 1.0, bombSizeMulti: 1.0, spawnIntervalMin: 40, spawnIntervalMax: 58, extraFruits: 0, chainSlice: false, badge: "鏋滈洦鍒濋檷" },
-  { targetScore: 55,  fruitSpeed: 1.25, bombChance: 0.14, fruitSizeMulti: 1.0, rotSpeedMulti: 1.0, bombSizeMulti: 1.0, spawnIntervalMin: 38, spawnIntervalMax: 55, extraFruits: 0, chainSlice: false, badge: "涓€鍒€涓ゆ柇" },
-  { targetScore: 70,  fruitSpeed: 1.25, bombChance: 0.15, fruitSizeMulti: 1.0, rotSpeedMulti: 1.0, bombSizeMulti: 1.0, spawnIntervalMin: 36, spawnIntervalMax: 52, extraFruits: 0, chainSlice: true,  badge: "杩為攣鍙嶅簲" },
-  { targetScore: 90,  fruitSpeed: 1.5,  bombChance: 0.15, fruitSizeMulti: 1.0, rotSpeedMulti: 1.0, bombSizeMulti: 1.0, spawnIntervalMin: 34, spawnIntervalMax: 50, extraFruits: 0, chainSlice: false, badge: "蹇垁鎵? },
-  { targetScore: 110, fruitSpeed: 1.5,  bombChance: 0.16, fruitSizeMulti: 1.0, rotSpeedMulti: 1.8, bombSizeMulti: 1.0, spawnIntervalMin: 32, spawnIntervalMax: 48, extraFruits: 0, chainSlice: false, badge: "鏃嬮鍒€" },
-  { targetScore: 130, fruitSpeed: 1.75, bombChance: 0.17, fruitSizeMulti: 1.0, rotSpeedMulti: 1.0, bombSizeMulti: 1.0, spawnIntervalMin: 30, spawnIntervalMax: 46, extraFruits: 0, chainSlice: false, badge: "涓囧墤褰掑畻" },
-  { targetScore: 160, fruitSpeed: 1.75, bombChance: 0.18, fruitSizeMulti: 1.0, rotSpeedMulti: 1.2, bombSizeMulti: 0.7, spawnIntervalMin: 28, spawnIntervalMax: 44, extraFruits: 0, chainSlice: true,  badge: "鐐稿脊涓撳" },
-  { targetScore: 200, fruitSpeed: 2.0,  bombChance: 0.20, fruitSizeMulti: 1.15, rotSpeedMulti: 2.0, bombSizeMulti: 0.7, spawnIntervalMin: 26, spawnIntervalMax: 42, extraFruits: 1, chainSlice: true,  badge: "浣犲凡瓒呰劚鍑″皹" },
+  { targetScore: 15,  fruitSpeed: 1.0,  bombChance: 0.10, fruitSizeMulti: 1.0, rotSpeedMulti: 1.0, bombSizeMulti: 1.0, spawnIntervalMin: 45, spawnIntervalMax: 65, extraFruits: 0, chainSlice: false, badge: "初入刀道" },
+  { targetScore: 25,  fruitSpeed: 1.0,  bombChance: 0.12, fruitSizeMulti: 1.0, rotSpeedMulti: 1.0, bombSizeMulti: 1.0, spawnIntervalMin: 40, spawnIntervalMax: 60, extraFruits: 1, chainSlice: false, badge: "刀锋渐利" },
+  { targetScore: 40,  fruitSpeed: 1.25, bombChance: 0.13, fruitSizeMulti: 1.15, rotSpeedMulti: 1.0, bombSizeMulti: 1.0, spawnIntervalMin: 40, spawnIntervalMax: 58, extraFruits: 0, chainSlice: false, badge: "果雨初降" },
+  { targetScore: 55,  fruitSpeed: 1.25, bombChance: 0.14, fruitSizeMulti: 1.0, rotSpeedMulti: 1.0, bombSizeMulti: 1.0, spawnIntervalMin: 38, spawnIntervalMax: 55, extraFruits: 0, chainSlice: false, badge: "一刀两断" },
+  { targetScore: 70,  fruitSpeed: 1.25, bombChance: 0.15, fruitSizeMulti: 1.0, rotSpeedMulti: 1.0, bombSizeMulti: 1.0, spawnIntervalMin: 36, spawnIntervalMax: 52, extraFruits: 0, chainSlice: true,  badge: "连锁反应" },
+  { targetScore: 90,  fruitSpeed: 1.5,  bombChance: 0.15, fruitSizeMulti: 1.0, rotSpeedMulti: 1.0, bombSizeMulti: 1.0, spawnIntervalMin: 34, spawnIntervalMax: 50, extraFruits: 0, chainSlice: false, badge: "快刀手" },
+  { targetScore: 110, fruitSpeed: 1.5,  bombChance: 0.16, fruitSizeMulti: 1.0, rotSpeedMulti: 1.8, bombSizeMulti: 1.0, spawnIntervalMin: 32, spawnIntervalMax: 48, extraFruits: 0, chainSlice: false, badge: "旋风刀" },
+  { targetScore: 130, fruitSpeed: 1.75, bombChance: 0.17, fruitSizeMulti: 1.0, rotSpeedMulti: 1.0, bombSizeMulti: 1.0, spawnIntervalMin: 30, spawnIntervalMax: 46, extraFruits: 0, chainSlice: false, badge: "万剑归宗" },
+  { targetScore: 160, fruitSpeed: 1.75, bombChance: 0.18, fruitSizeMulti: 1.0, rotSpeedMulti: 1.2, bombSizeMulti: 0.7, spawnIntervalMin: 28, spawnIntervalMax: 44, extraFruits: 0, chainSlice: true,  badge: "炸弹专家" },
+  { targetScore: 200, fruitSpeed: 2.0,  bombChance: 0.20, fruitSizeMulti: 1.15, rotSpeedMulti: 2.0, bombSizeMulti: 0.7, spawnIntervalMin: 26, spawnIntervalMax: 42, extraFruits: 1, chainSlice: true,  badge: "你已超脱凡尘" },
+  { targetScore: 230, fruitSpeed: 2.1,  bombChance: 0.21, fruitSizeMulti: 1.0,  rotSpeedMulti: 2.1, bombSizeMulti: 0.68, spawnIntervalMin: 25, spawnIntervalMax: 40, extraFruits: 0, chainSlice: false, badge: "刀气纵横" },
+  { targetScore: 265, fruitSpeed: 2.2,  bombChance: 0.22, fruitSizeMulti: 0.95, rotSpeedMulti: 2.2, bombSizeMulti: 0.66, spawnIntervalMin: 24, spawnIntervalMax: 38, extraFruits: 1, chainSlice: true,  badge: "千刀万剐" },
+  { targetScore: 300, fruitSpeed: 2.3,  bombChance: 0.22, fruitSizeMulti: 1.1,  rotSpeedMulti: 2.3, bombSizeMulti: 0.64, spawnIntervalMin: 23, spawnIntervalMax: 36, extraFruits: 0, chainSlice: false, badge: "果海无涯" },
+  { targetScore: 335, fruitSpeed: 2.4,  bombChance: 0.23, fruitSizeMulti: 0.9,  rotSpeedMulti: 2.4, bombSizeMulti: 0.62, spawnIntervalMin: 22, spawnIntervalMax: 35, extraFruits: 1, chainSlice: true,  badge: "影刀无形" },
+  { targetScore: 375, fruitSpeed: 2.5,  bombChance: 0.24, fruitSizeMulti: 1.05, rotSpeedMulti: 2.5, bombSizeMulti: 0.60, spawnIntervalMin: 21, spawnIntervalMax: 34, extraFruits: 0, chainSlice: false, badge: "刀王降临" },
+  { targetScore: 420, fruitSpeed: 2.6,  bombChance: 0.24, fruitSizeMulti: 0.85, rotSpeedMulti: 2.7, bombSizeMulti: 0.58, spawnIntervalMin: 20, spawnIntervalMax: 32, extraFruits: 1, chainSlice: true,  badge: "破空斩" },
+  { targetScore: 465, fruitSpeed: 2.7,  bombChance: 0.25, fruitSizeMulti: 1.15, rotSpeedMulti: 2.9, bombSizeMulti: 0.56, spawnIntervalMin: 19, spawnIntervalMax: 31, extraFruits: 0, chainSlice: false, badge: "万物皆斩" },
+  { targetScore: 510, fruitSpeed: 2.8,  bombChance: 0.26, fruitSizeMulti: 0.9,  rotSpeedMulti: 3.1, bombSizeMulti: 0.54, spawnIntervalMin: 18, spawnIntervalMax: 30, extraFruits: 1, chainSlice: true,  badge: "刀神附体" },
+  { targetScore: 555, fruitSpeed: 2.9,  bombChance: 0.27, fruitSizeMulti: 1.0,  rotSpeedMulti: 3.3, bombSizeMulti: 0.52, spawnIntervalMin: 17, spawnIntervalMax: 28, extraFruits: 0, chainSlice: false, badge: "修罗刀域" },
+  { targetScore: 600, fruitSpeed: 3.0,  bombChance: 0.28, fruitSizeMulti: 0.8,  rotSpeedMulti: 3.5, bombSizeMulti: 0.50, spawnIntervalMin: 16, spawnIntervalMax: 26, extraFruits: 1, chainSlice: true,  badge: "无上刀圣" },
 ];
 
-/* ---------- 甯搁噺 ---------- */
+/* ---------- 常量 ---------- */
 const GRAVITY = 0.22;
 const CANVAS_H = window.innerWidth < 600 ? 300 : 360;
 const STORAGE_KEY = "fruit_slice_save";
 
 const SHAPES: Array<Exclude<Fruit["shape"], "bomb">> = ["watermelon", "orange", "apple", "grape", "lemon"];
 
-/* ---------- 姘存灉閰嶇疆 ---------- */
+/* ---------- 水果配置 ---------- */
 function fruitConfig(shape: Exclude<Fruit["shape"], "bomb">): Pick<Fruit, "color" | "innerColor" | "leafColor" | "r"> {
   switch (shape) {
     case "watermelon":
@@ -115,7 +126,7 @@ function fruitConfig(shape: Exclude<Fruit["shape"], "bomb">): Pick<Fruit, "color
   }
 }
 
-/* ---------- 瀛樻。璇诲啓 ---------- */
+/* ---------- 存档读写 ---------- */
 function loadSaveData(): FruitSaveData {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
@@ -130,7 +141,7 @@ function writeSaveData(data: FruitSaveData) {
   } catch { /* ignore */ }
 }
 
-/* ---------- 闊虫晥 ---------- */
+/* ---------- 音效 ---------- */
 const playSliceSound = () => {
   try {
     const ctx = new AudioContext();
@@ -146,7 +157,7 @@ const playSliceSound = () => {
     osc.start(ctx.currentTime);
     osc.stop(ctx.currentTime + 0.15);
   } catch {
-    /* 闈欓煶澶勭悊 */
+    /* 静音处理 */
   }
 };
 
@@ -165,11 +176,11 @@ const playBombSound = () => {
     osc.start(ctx.currentTime);
     osc.stop(ctx.currentTime + 0.25);
   } catch {
-    /* 闈欓煶澶勭悊 */
+    /* 静音处理 */
   }
 };
 
-/* ---------- 缁樺埗姘存灉锛堝畬鏁达級 ---------- */
+/* ---------- 绘制水果（完整） ---------- */
 function drawFruit(ctx: CanvasRenderingContext2D, f: Fruit) {
   ctx.save();
   ctx.globalAlpha = f.opacity;
@@ -345,7 +356,7 @@ function drawBomb(ctx: CanvasRenderingContext2D, r: number) {
   ctx.stroke();
 }
 
-/* ---------- 缁樺埗鍒囬潰鍗婄墖 ---------- */
+/* ---------- 绘制切面半片 ---------- */
 function drawSliceHalf(ctx: CanvasRenderingContext2D, h: SliceHalf) {
   ctx.save();
   ctx.globalAlpha = Math.max(0, h.life / 60);
@@ -429,7 +440,7 @@ function drawSliceHalf(ctx: CanvasRenderingContext2D, h: SliceHalf) {
   ctx.restore();
 }
 
-/* ---------- 鐢熸垚姘存灉 ---------- */
+/* ---------- 生成水果 ---------- */
 let nextId = 0;
 
 function spawnFruit(canvasW: number, canvasH: number, levelCfg: LevelConfig): Fruit {
@@ -462,7 +473,7 @@ function spawnFruit(canvasW: number, canvasH: number, levelCfg: LevelConfig): Fr
   };
 }
 
-/* ---------- 纰版挒妫€娴?---------- */
+/* ---------- 碰撞检测 ---------- */
 function hitTest(f: Fruit, x1: number, y1: number, x2: number, y2: number): boolean {
   const dx = x2 - x1;
   const dy = y2 - y1;
@@ -479,12 +490,14 @@ function hitTest(f: Fruit, x1: number, y1: number, x2: number, y2: number): bool
   return dist < f.r + 5;
 }
 
-/* ---------- 鍒涘缓鍒囧崐杈呭姪鍑芥暟 ---------- */
+/* ---------- 创建切半辅助函数 ---------- */
+let halvesRefGlobal: { current: SliceHalf[] } = { current: [] };
+
 function createHalves(f: Fruit, prevX: number, prevY: number, curX: number, curY: number) {
   const angle = Math.atan2(curY - prevY, curX - prevX) + Math.PI / 2;
   const spd = 1.5;
   for (const dir of [-1, 1]) {
-    halvesRefGlobal.push({
+    halvesRefGlobal.current.push({
       x: f.x,
       y: f.y,
       r: f.r,
@@ -501,17 +514,15 @@ function createHalves(f: Fruit, prevX: number, prevY: number, curX: number, curY
   }
 }
 
-/* 鍏ㄥ眬 halves ref 渚涜緟鍔╁嚱鏁颁娇鐢紝鍦ㄧ粍浠跺垵濮嬪寲鏃惰祴鍊?*/
-let halvesRefGlobal: React.MutableRefObject<SliceHalf[]> = { current: [] };
-
 /* ============================================================
-   涓荤粍浠?   ============================================================ */
+   主组件
+   ============================================================ */
 export default function FruitSliceGame() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const [, setCanvasW] = useState(400);
 
-  /* ---------- 娓告垙闃舵涓庡叧鍗?---------- */
+  /* ---------- 游戏阶段与关卡 ---------- */
   const [phase, setPhase] = useState<Phase>("menu");
   const [level, setLevel] = useState(1);
   const [score, setScore] = useState(0);
@@ -532,14 +543,14 @@ export default function FruitSliceGame() {
   const phaseRef = useRef<Phase>("menu");
   const rafRef = useRef(0);
   const spawnTimerRef = useRef(0);
-  const scoreInLevelRef = useRef(0); // 鏈叧宸茶幏鍒嗘暟
+  const scoreInLevelRef = useRef(0);
 
   halvesRefGlobal = halvesRef;
 
-  /* ---------- 鑾峰彇褰撳墠鍏冲崱閰嶇疆 ---------- */
+  /* ---------- 获取当前关卡配置 ---------- */
   const getLevelCfg = useCallback(() => LEVELS[Math.min(levelRef.current - 1, LEVELS.length - 1)], []);
 
-  /* ---------- 鏍稿績寰幆 ---------- */
+  /* ---------- 核心循环 ---------- */
   const gameLoop = useCallback(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -549,7 +560,6 @@ export default function FruitSliceGame() {
     const w = canvas.width;
     const h = canvas.height;
 
-    // 鑳屾櫙娓愬彉
     const grad = ctx.createLinearGradient(0, 0, 0, h);
     grad.addColorStop(0, "#faf8f5");
     grad.addColorStop(1, "#f3f0ed");
@@ -563,19 +573,18 @@ export default function FruitSliceGame() {
 
     const levelCfg = getLevelCfg();
 
-    // 鐢熸垚姘存灉
+    // 生成水果
     spawnTimerRef.current++;
     const spawnThreshold = levelCfg.spawnIntervalMin + Math.random() * (levelCfg.spawnIntervalMax - levelCfg.spawnIntervalMin);
     if (spawnTimerRef.current > spawnThreshold) {
       spawnTimerRef.current = 0;
       fruitsRef.current.push(spawnFruit(w, h, levelCfg));
-      // 棰濆姘存灉
       for (let i = 0; i < levelCfg.extraFruits; i++) {
         fruitsRef.current.push(spawnFruit(w, h, levelCfg));
       }
     }
 
-    // 鏇存柊姘存灉
+    // 更新水果
     const fruits = fruitsRef.current;
     for (let i = fruits.length - 1; i >= 0; i--) {
       const f = fruits[i];
@@ -583,20 +592,17 @@ export default function FruitSliceGame() {
       f.x += f.vx;
       f.y += f.vy;
       f.rot += f.rotV;
-      // 鍑虹晫绉婚櫎
       if (f.y > h + 60 && f.vy > 0) {
         if (f.type === "fruit" && !f.sliced) {
-          // 婕忔帀姘存灉鎵ｅ懡
           livesRef.current--;
           setLives(livesRef.current);
           if (livesRef.current <= 0) {
             phaseRef.current = "gameOver";
             setPhase("gameOver");
-            // 淇濆瓨瀛樻。
+            setNotification("坚持到了第" + levelRef.current + "关");
+            setTimeout(() => setNotification(null), 3000);
             const saved = loadSaveData();
-            if (scoreRef.current > saved.bestScore) {
-              saved.bestScore = scoreRef.current;
-            }
+            if (scoreRef.current > saved.bestScore) saved.bestScore = scoreRef.current;
             writeSaveData(saved);
           }
         }
@@ -611,13 +617,12 @@ export default function FruitSliceGame() {
       }
     }
 
-    // 妫€鏌ュ叧鍗￠€氳繃
+    // 检查关卡通过
     if (phaseRef.current === "playing" && scoreInLevelRef.current >= levelCfg.targetScore) {
       if (levelRef.current >= LEVELS.length) {
-        // 閫氬叧鍏ㄩ儴鍏冲崱
         phaseRef.current = "gameOver";
         setPhase("gameOver");
-        setNotification("鎭枩閫氬叧鍏ㄩ儴鍏冲崱锛?);
+        setNotification("恭喜通关全部关卡！");
         setTimeout(() => setNotification(null), 3000);
         const saved = loadSaveData();
         if (scoreRef.current > saved.bestScore) saved.bestScore = scoreRef.current;
@@ -626,10 +631,8 @@ export default function FruitSliceGame() {
         writeSaveData(saved);
         setSaveData({ ...saved });
       } else {
-        // 鍏冲崱閫氳繃
         phaseRef.current = "levelComplete";
         setPhase("levelComplete");
-        // 鍙戞斁寰界珷
         const saved = loadSaveData();
         let gotBadge = false;
         if (levelRef.current > saved.highestLevel) saved.highestLevel = levelRef.current;
@@ -642,9 +645,9 @@ export default function FruitSliceGame() {
         setSaveData({ ...saved });
 
         const badgeName = LEVELS[levelRef.current - 1].badge;
-        setNotification(gotBadge ? `鑾峰緱寰界珷: ${badgeName}` : `绗?{levelRef.current}鍏?閫氳繃锛乣);
+        setNotification(gotBadge ? "获得徽章: " + badgeName : "第" + levelRef.current + "关 通过！");
 
-        // 2绉掑悗鑷姩杩涘叆涓嬩竴鍏?        setTimeout(() => {
+        setTimeout(() => {
           if (phaseRef.current === "levelComplete") {
             levelRef.current++;
             setLevel(levelRef.current);
@@ -662,7 +665,7 @@ export default function FruitSliceGame() {
       }
     }
 
-    // 鏇存柊鍒囬潰鍗婄墖
+    // 更新切面半片
     const halves = halvesRef.current;
     for (let i = halves.length - 1; i >= 0; i--) {
       const hh = halves[i];
@@ -676,7 +679,7 @@ export default function FruitSliceGame() {
       }
     }
 
-    // 鏇存柊绮掑瓙
+    // 更新粒子
     const parts = particlesRef.current;
     for (let i = parts.length - 1; i >= 0; i--) {
       const p = parts[i];
@@ -689,7 +692,7 @@ export default function FruitSliceGame() {
       }
     }
 
-    // 鏇存柊杞ㄨ抗
+    // 更新轨迹
     const trail = trailRef.current;
     for (let i = trail.length - 1; i >= 0; i--) {
       trail[i].life--;
@@ -698,46 +701,42 @@ export default function FruitSliceGame() {
       }
     }
 
-    // ---- 缁樺埗 ----
+    // ---- 绘制 ----
 
-    // 缁樺埗杞ㄨ抗
     for (const t of trail) {
       const alpha = t.life / 12;
       ctx.beginPath();
       ctx.arc(t.x, t.y, 3 * alpha, 0, Math.PI * 2);
-      ctx.fillStyle = `rgba(255,255,255,${alpha * 0.8})`;
+      ctx.fillStyle = "rgba(255,255,255," + (alpha * 0.8) + ")";
       ctx.fill();
     }
 
-    // 缁樺埗姘存灉
     for (const f of fruits) {
       if (!f.sliced) {
         drawFruit(ctx, f);
       }
     }
 
-    // 缁樺埗鍒囬潰鍗婄墖
     for (const hh of halves) {
       drawSliceHalf(ctx, hh);
     }
 
-    // 缁樺埗绮掑瓙
     for (const p of parts) {
       const alpha = p.life / p.maxLife;
       ctx.beginPath();
       ctx.arc(p.x, p.y, p.r * alpha, 0, Math.PI * 2);
-      ctx.fillStyle = p.color.replace("1)", `${alpha})`);
+      ctx.fillStyle = p.color.replace("1)", String(alpha) + ")");
       ctx.fill();
     }
 
     rafRef.current = requestAnimationFrame(gameLoop);
   }, [getLevelCfg]);
 
-  /* ---------- 鍒囧壊澶勭悊 ---------- */
+  /* ---------- 切割处理 ---------- */
   const handleSlice = useCallback((x: number, y: number) => {
     if (phaseRef.current !== "playing") return;
 
-    // 娣诲姞杞ㄨ抗鐐?    trailRef.current.push({ x, y, life: 12 });
+    trailRef.current.push({ x, y, life: 12 });
 
     const prev = prevPointerRef.current;
     prevPointerRef.current = { x, y };
@@ -758,19 +757,17 @@ export default function FruitSliceGame() {
 
       if (f.type === "bomb") {
         playBombSound();
-        // 鎵ｅ懡
         livesRef.current--;
         setLives(livesRef.current);
         if (livesRef.current <= 0) {
           phaseRef.current = "gameOver";
           setPhase("gameOver");
-          setNotification("鍧氭寔鍒颁簡绗? + levelRef.current + "鍏?);
+          setNotification("坚持到了第" + levelRef.current + "关");
           setTimeout(() => setNotification(null), 3000);
           const saved = loadSaveData();
           if (scoreRef.current > saved.bestScore) saved.bestScore = scoreRef.current;
           writeSaveData(saved);
         }
-        // 鐖嗙偢绮掑瓙
         for (let j = 0; j < 16; j++) {
           const a = (j / 16) * Math.PI * 2;
           const spd = 2 + Math.random() * 4;
@@ -793,17 +790,17 @@ export default function FruitSliceGame() {
 
         createHalves(f, prev.x, prev.y, x, y);
 
-        // 鏋滄眮绮掑瓙
+        // 果汁粒子
         const juiceColor = f.innerColor;
         const tempEl = document.createElement("canvas");
         const tmpCtx = tempEl.getContext("2d");
         if (tmpCtx) {
           tmpCtx.fillStyle = juiceColor;
           const parsed = tmpCtx.fillStyle;
-          const r = parseInt(parsed.slice(1, 3), 16);
-          const g = parseInt(parsed.slice(3, 5), 16);
-          const b = parseInt(parsed.slice(5, 7), 16);
-          const rgba = `rgba(${r},${g},${b},1)`;
+          const cr = parseInt(parsed.slice(1, 3), 16);
+          const cg = parseInt(parsed.slice(3, 5), 16);
+          const cb = parseInt(parsed.slice(5, 7), 16);
+          const rgba = "rgba(" + cr + "," + cg + "," + cb + ",1)";
           for (let j = 0; j < 10; j++) {
             const a = Math.random() * Math.PI * 2;
             const s = 1 + Math.random() * 3;
@@ -822,11 +819,11 @@ export default function FruitSliceGame() {
       }
     }
 
-    // 杩為攣鍒囧壊锛堢5鍏冲強浠ュ悗锛?    if (levelCfg.chainSlice && slicedIds.length > 0) {
+    // 连锁切割
+    if (levelCfg.chainSlice && slicedIds.length > 0) {
       for (let i = fruits.length - 1; i >= 0; i--) {
         const f = fruits[i];
         if (f.sliced || f.type === "bomb") continue;
-        // 妫€鏌ユ槸鍚︿笌宸插垏姘存灉鐩搁偦
         for (const sid of slicedIds) {
           const slicedFruit = fruits.find((ff) => ff.id === sid);
           if (!slicedFruit) continue;
@@ -838,17 +835,15 @@ export default function FruitSliceGame() {
             scoreInLevelRef.current += 1;
             setScore(scoreRef.current);
             createHalves(f, f.x, f.y - 10, f.x + 10, f.y);
-            // 鏋滄眮绮掑瓙
-            const juiceColor = f.innerColor;
             const tempEl = document.createElement("canvas");
             const tmpCtx = tempEl.getContext("2d");
             if (tmpCtx) {
-              tmpCtx.fillStyle = juiceColor;
+              tmpCtx.fillStyle = f.innerColor;
               const parsed = tmpCtx.fillStyle;
-              const rr = parseInt(parsed.slice(1, 3), 16);
-              const gg = parseInt(parsed.slice(3, 5), 16);
-              const bb = parseInt(parsed.slice(5, 7), 16);
-              const rgba = `rgba(${rr},${gg},${bb},1)`;
+              const cr = parseInt(parsed.slice(1, 3), 16);
+              const cg = parseInt(parsed.slice(3, 5), 16);
+              const cb = parseInt(parsed.slice(5, 7), 16);
+              const rgba = "rgba(" + cr + "," + cg + "," + cb + ",1)";
               for (let j = 0; j < 6; j++) {
                 const a = Math.random() * Math.PI * 2;
                 const s = 1 + Math.random() * 2;
@@ -871,7 +866,7 @@ export default function FruitSliceGame() {
     }
   }, [getLevelCfg]);
 
-  /* ---------- Pointer 浜嬩欢 ---------- */
+  /* ---------- Pointer 事件 ---------- */
   const handlePointerDown = useCallback(
     (e: React.PointerEvent) => {
       if (phaseRef.current !== "playing") return;
@@ -904,7 +899,7 @@ export default function FruitSliceGame() {
     prevPointerRef.current = null;
   }, []);
 
-  /* ---------- 寮€濮嬫父鎴?---------- */
+  /* ---------- 开始游戏 ---------- */
   const startGame = useCallback(() => {
     fruitsRef.current = [];
     halvesRef.current = [];
@@ -924,7 +919,7 @@ export default function FruitSliceGame() {
     phaseRef.current = "playing";
   }, []);
 
-  /* ---------- 鍒濆鍖?Canvas 灏哄 ---------- */
+  /* ---------- 初始化 Canvas 尺寸 ---------- */
   useEffect(() => {
     const updateSize = () => {
       if (containerRef.current) {
@@ -941,13 +936,13 @@ export default function FruitSliceGame() {
     return () => window.removeEventListener("resize", updateSize);
   }, []);
 
-  /* ---------- 鍔ㄧ敾寰幆 ---------- */
+  /* ---------- 动画循环 ---------- */
   useEffect(() => {
     rafRef.current = requestAnimationFrame(gameLoop);
     return () => cancelAnimationFrame(rafRef.current);
   }, [gameLoop]);
 
-  /* ---------- 褰撳墠鍏冲崱鐩爣鍒?---------- */
+  /* ---------- 当前关卡目标分 ---------- */
   const currentTarget = LEVELS[Math.min(level - 1, LEVELS.length - 1)]?.targetScore ?? 15;
 
   return (
@@ -1139,7 +1134,7 @@ export default function FruitSliceGame() {
 
         {phase === "playing" && (
           <div className="sr-fs-hud">
-            <span className="sr-fs-hud-item">绗?{level}/10 鍏?/span>
+            <span className="sr-fs-hud-item">第 {level}/10 关</span>
             <span className="sr-fs-hud-item">{score} / {currentTarget}</span>
             <span className="sr-fs-hud-item">
               <span className="sr-fs-lives">
@@ -1153,7 +1148,7 @@ export default function FruitSliceGame() {
                 ))}
               </span>
             </span>
-            <span className="sr-fs-hud-item">寰界珷 {saveData.badges.length}/10</span>
+            <span className="sr-fs-hud-item">徽章 {saveData.badges.length}/10</span>
           </div>
         )}
 
@@ -1182,8 +1177,27 @@ export default function FruitSliceGame() {
               exit={{ opacity: 0, scale: 1.1 }}
               transition={{ duration: 0.4 }}
             >
-              <h2>绗?{level} 鍏?閫氳繃锛?/h2>
-              <p>鍑嗗杩涘叆绗?{level + 1} 鍏?...</p>
+              <button className="sr-overlay-close" onClick={() => {
+                if (levelRef.current < LEVELS.length) {
+                  const nextLvl = levelRef.current + 1;
+                  scoreInLevelRef.current = 0;
+                  fruitsRef.current = [];
+                  halvesRef.current = [];
+                  particlesRef.current = [];
+                  trailRef.current = [];
+                  spawnTimerRef.current = 0;
+                  prevPointerRef.current = null;
+                  levelRef.current = nextLvl;
+                  setLevel(nextLvl);
+                  phaseRef.current = "playing";
+                  setPhase("playing");
+                } else {
+                  phaseRef.current = "menu";
+                  setPhase("menu");
+                }
+              }} style={{ position: "absolute", top: 12, right: 14, background: "none", border: "none", fontSize: 20, color: "#aaa", cursor: "pointer", lineHeight: 1 }}>&times;</button>
+              <h2>第 {level} 关 通过！</h2>
+              <p>准备进入第 {level + 1} 关 ...</p>
             </motion.div>
           )}
         </AnimatePresence>
@@ -1191,15 +1205,16 @@ export default function FruitSliceGame() {
         {phase === "menu" && (
           <div className="sr-fs-overlay">
             <button className="sr-fs-start-btn" onClick={startGame}>
-              寮€濮?            </button>
-            <div className="sr-fs-idle-hint">婊戝姩榧犳爣鎴栨墜鎸囧垏鍓叉按鏋?/div>
+              开始
+            </button>
+            <div className="sr-fs-idle-hint">滑动鼠标或手指切割水果</div>
             {saveData.badges.length > 0 && (
               <div className="sr-fs-badge-section">
-                <h4>宸茶幏寰界珷</h4>
+                <h4>已获徽章</h4>
                 <div className="sr-fs-badge-list">
                   {saveData.badges.map((b) => (
                     <span key={b} className="sr-fs-badge-item">
-                      {LEVELS[b - 1]?.badge ?? `鍏冲崱${b}`}
+                      {LEVELS[b - 1]?.badge ?? ("关卡" + b)}
                     </span>
                   ))}
                 </div>
@@ -1210,21 +1225,42 @@ export default function FruitSliceGame() {
 
         {phase === "gameOver" && (
           <div className="sr-fs-overlay">
-            <div className="sr-fs-over-title">娓告垙缁撴潫</div>
+            <div className="sr-fs-over-title">游戏结束</div>
             <div className="sr-fs-over-score">
-              鍧氭寔鍒颁簡绗?{level} 鍏?&nbsp;|&nbsp; 寰楀垎: {score} &nbsp;|&nbsp; 鏈€浣? {Math.max(saveData.bestScore, score)}
+              坚持到了第 {level} 关 | 得分: {score} | 最佳: {Math.max(saveData.bestScore, score)}
             </div>
             <button className="sr-fs-start-btn" onClick={startGame}>
-              鍐嶆潵涓€娆?            </button>
+              再来一次
+            </button>
+            {/* 徽章墙 */}
             {saveData.badges.length > 0 && (
-              <div className="sr-fs-badge-section">
-                <h4>宸茶幏寰界珷</h4>
-                <div className="sr-fs-badge-list">
-                  {LEVELS.map((lv, idx) => (
-                    <span key={idx} className={`sr-fs-badge-item ${saveData.badges.includes(idx + 1) ? "" : "locked"}`}>
-                      {lv.badge}
-                    </span>
-                  ))}
+              <div style={{ marginTop: 12, width: '100%', maxHeight: 280, overflowY: 'auto' }}>
+                <div style={{ fontSize: 14, fontWeight: 700, color: '#5a4a52', textAlign: 'center', marginBottom: 8 }}>
+                  徽章墙 ({saveData.badges.length}/20)
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8, padding: '0 8px' }}>
+                  {LEVELS.map((lvl, i) => {
+                    const earned = saveData.badges.includes(i + 1);
+                    return (
+                      <div key={i} style={{
+                        display: 'flex', flexDirection: 'column', alignItems: 'center',
+                        gap: 2, padding: 6, opacity: earned ? 1 : 0.4,
+                      }}>
+                        <div style={{
+                          width: 28, height: 28, borderRadius: '50%',
+                          background: earned ? '#FFD700' : '#e0e0e0',
+                          display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          fontSize: 12, color: '#fff', fontWeight: 700,
+                        }}>
+                          {earned ? '★' : '🔒'}
+                        </div>
+                        <span style={{ fontSize: 11, fontWeight: 600, color: earned ? '#5a4a52' : '#aaa', textAlign: 'center' }}>
+                          {lvl.badge}
+                        </span>
+                        <span style={{ fontSize: 10, color: '#aaa' }}>第{i+1}关</span>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             )}

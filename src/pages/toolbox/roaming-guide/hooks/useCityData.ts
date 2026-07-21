@@ -7,6 +7,7 @@ interface UseCityDataReturn {
   addCity: (city: Omit<City, "id" | "created_at" | "updated_at">) => void;
   updateCity: (city: City) => void;
   deleteCity: (id: number) => void;
+  toggleCityStatus: (id: number) => void;
   getCityByCoord: (lng: number, lat: number) => City | undefined;
   stats: { provinces: number; cities: number; days: number };
   editingCity: City | null;
@@ -23,10 +24,18 @@ export function useCityData(): UseCityDataReturn {
   const [cities, setCities] = useState<City[]>(() => {
     try {
       const raw = localStorage.getItem(STORAGE_KEYS.CITIES);
-      if (raw) return JSON.parse(raw);
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        // 兼容旧数据：没有 status 字段的默认为 visited（已去）
+        return parsed.map((c: City) => ({
+          ...c,
+          status: c.status || "visited",
+        }));
+      }
     } catch { /* ignore */ }
     return DEFAULT_CITIES.map(c => ({
       ...c,
+      status: "visited" as const,
       created_at: c.created_at || new Date().toISOString(),
       updated_at: c.updated_at || new Date().toISOString(),
     }));
@@ -64,6 +73,14 @@ export function useCityData(): UseCityDataReturn {
     setCities(prev => prev.filter(c => c.id !== id));
   }, []);
 
+  const toggleCityStatus = useCallback((id: number) => {
+    setCities(prev => prev.map(c => {
+      if (c.id !== id) return c;
+      const newStatus: "want_to_go" | "visited" = c.status === "want_to_go" ? "visited" : "want_to_go";
+      return { ...c, status: newStatus, updated_at: new Date().toISOString() };
+    }));
+  }, []);
+
   const getCityByCoord = useCallback((lng: number, lat: number) => {
     // 在 0.5 度范围内查找最近城市
     return cities.find(c =>
@@ -81,7 +98,7 @@ export function useCityData(): UseCityDataReturn {
   }, [cities]);
 
   return {
-    cities, addCity, updateCity, deleteCity, getCityByCoord, stats,
+    cities, addCity, updateCity, deleteCity, toggleCityStatus, getCityByCoord, stats,
     editingCity, setEditingCity,
     selectedCity, setSelectedCity,
     detailOpen, setDetailOpen,

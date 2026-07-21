@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { siteLoad, legacyLoad, legacySave, publishDrafts, pushSiteData } from "../../utils/siteData";
 import { useAdminGuard } from "../../hooks/useAdminGuard";
 import { callAI } from "../../utils/aiClient";
@@ -1108,8 +1108,12 @@ const MuseumPage: React.FC = () => {
   // 聚光灯状态
   const [spotlightCardId, setSpotlightCardId] = useState<string | null>(null);
 
-  // 展厅导航
-  const [activeHall, setActiveHall] = useState<"film" | "music" | "net" | "honor" | "drawer" | null>(null);
+  // MP3 播放器索引
+  const [currentBgmIndex, setCurrentBgmIndex] = useState(0);
+
+  // URL-driven hall navigation
+  const [searchParams, setSearchParams] = useSearchParams();
+  const activeHall = searchParams.get("hall") as "film" | "music" | "net" | "honor" | null;
   const [transitioning, setTransitioning] = useState(false);
   const hallRefs = useRef<Record<string, HTMLDivElement | null>>({});
 
@@ -1382,10 +1386,10 @@ const MuseumPage: React.FC = () => {
     }
   }, []);
 
-  const handleHallNavigate = useCallback((hall: "film" | "music" | "net" | "honor" | "drawer") => {
+  const handleHallNavigate = useCallback((hall: "film" | "music" | "net" | "honor") => {
     if (transitioning) return;
     setTransitioning(true);
-    setActiveHall(hall);
+    setSearchParams({ hall });
     // Scroll to the corresponding hall section after transition completes
     setTimeout(() => {
       const el = hallRefs.current[hall];
@@ -1393,7 +1397,7 @@ const MuseumPage: React.FC = () => {
         el.scrollIntoView({ behavior: "smooth", block: "start" });
       }
     }, 3400); // after 3s transition + 400ms buffer
-  }, [transitioning]);
+  }, [transitioning, setSearchParams]);
 
   const handleTransitionComplete = useCallback(() => {
     setTransitioning(false);
@@ -1487,6 +1491,7 @@ const MuseumPage: React.FC = () => {
         flexWrap: "wrap",
       }}>
         {[
+          { key: null as const, label: "全部展厅" },
           { key: "film" as const, label: "时光放映厅" },
           { key: "music" as const, label: "声纹回廊" },
           { key: "net" as const, label: "数字足迹馆" },
@@ -1494,21 +1499,23 @@ const MuseumPage: React.FC = () => {
           { key: "drawer" as const, label: "私藏匣" },
         ].map(item => (
           <button
-            key={item.key}
+            key={item.key ?? "__all__"}
             onClick={() => {
               if (item.key === "drawer") {
                 setDrawerOpen(true);
+              } else if (item.key === null) {
+                setSearchParams({});
               } else {
                 handleHallNavigate(item.key);
               }
             }}
             style={{
-              background: activeHall === item.key ? "rgba(176,141,87,0.2)" : "none",
+              background: (activeHall === item.key || (activeHall === null && item.key === null)) ? "rgba(176,141,87,0.2)" : "none",
               border: "1px solid",
-              borderColor: activeHall === item.key ? "rgba(176,141,87,0.5)" : "rgba(176,141,87,0.15)",
+              borderColor: (activeHall === item.key || (activeHall === null && item.key === null)) ? "rgba(176,141,87,0.5)" : "rgba(176,141,87,0.15)",
               borderRadius: 20,
               padding: "5px 14px",
-              color: activeHall === item.key ? "#d4a84a" : "#8a7a64",
+              color: (activeHall === item.key || (activeHall === null && item.key === null)) ? "#d4a84a" : "#8a7a64",
               fontSize: 12,
               fontFamily: "'Noto Serif SC', serif",
               letterSpacing: "1px",
@@ -1523,6 +1530,7 @@ const MuseumPage: React.FC = () => {
       </div>
 
       {/* ===== 展厅一：时光放映厅 ===== */}
+      {(activeHall === null || activeHall === "film") && (
       <section className="museum-hall museum-era-section">
         <div className="museum-hall-head">
           <span className="museum-hall-roman">I</span>
@@ -1535,7 +1543,7 @@ const MuseumPage: React.FC = () => {
         <div ref={(el) => { hallRefs.current["film"] = el; }}>
         <TimeTheater
           tvCards={sortedTvs}
-          bgmCards={sortedBgms}
+          bgmCards={[]}
           onEdit={(card, type) => {
             if (type === "tv") setCardModal({ mode: "edit", section: "tv", data: card });
             else setCardModal({ mode: "edit", section: "bgm", data: card });
@@ -1543,8 +1551,10 @@ const MuseumPage: React.FC = () => {
         />
         </div>
       </section>
+      )}
 
       {/* ===== 展厅二：声纹回廊 ===== */}
+      {(activeHall === null || activeHall === "music") && (
       <section className="museum-hall museum-era-section">
         <div className="museum-hall-head">
           <span className="museum-hall-roman">II</span>
@@ -1555,21 +1565,84 @@ const MuseumPage: React.FC = () => {
         </div>
 
         <div className="zone-music" ref={(el) => { hallRefs.current["music"] = el; }}>
-        <VintageGallery title="声纹回廊" subtitle="耳机插上的那一刻，世界就只剩下旋律。" emoji="🎵" cards={sortedBgms}
-          onAdd={(data) => setCardModal({ mode: "add", section: "bgm", data: { ...data, id: "", year: data.year || String(new Date().getFullYear()) } })}
-          onEdit={(card) => setCardModal({ mode: "edit", section: "bgm", data: card })}
-          onDelete={(id) => handleCardDelete(id, "bgm")}
-          onImageUpload={(id, url) => handleImageUpload(id, url, "bgm")}
-          onImageDelete={(id) => handleImageDelete(id, "bgm")}
-          verifyAdmin={verifyAdmin}
-          onCuratorNote={handleCuratorNote}
-          onLendExhibit={handleLendExhibit}
-          spotlightActiveId={spotlightCardId}
-          onSpotlightToggle={(id) => setSpotlightCardId(prev => prev === id ? null : id)} />
+        {sortedBgms.length > 0 && (
+          <div className="svp-player">
+            {/* Background */}
+            <div className="svp-bg" />
+
+            {/* Sparkles */}
+            <div className="svp-sparkle svp-sparkle--1" />
+            <div className="svp-sparkle svp-sparkle--2" />
+            <div className="svp-sparkle svp-sparkle--3" />
+            <div className="svp-sparkle svp-sparkle--4" />
+
+            {/* Glass panel */}
+            <div className="svp-glass">
+              {/* Song info */}
+              <div className="svp-glass__info">
+                <h3 className="svp-title">{sortedBgms[currentBgmIndex]?.title || ""}</h3>
+                <p className="svp-artist">{sortedBgms[currentBgmIndex]?.year || ""}</p>
+                <div className="svp-divider" />
+                <div className="svp-lyrics">{sortedBgms[currentBgmIndex]?.description || ""}</div>
+              </div>
+              {/* Album art placeholder */}
+              <div className="svp-art">
+                {sortedBgms[currentBgmIndex]?.imageUrl ? (
+                  <img src={sortedBgms[currentBgmIndex].imageUrl} alt="" className="svp-art__img" />
+                ) : (
+                  <div className="svp-art__placeholder">
+                    <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="rgba(107,155,209,0.4)" strokeWidth="1.5">
+                      <circle cx="12" cy="12" r="10" />
+                      <circle cx="12" cy="12" r="3" />
+                      <line x1="12" y1="2" x2="12" y2="9" />
+                      <line x1="12" y1="15" x2="12" y2="22" />
+                    </svg>
+                  </div>
+                )}
+              </div>
+              {/* Reserved: playback controls area */}
+              <div className="svp-controls-reserved">
+                <div className="svp-progress" />
+              </div>
+            </div>
+
+            {/* Blue base (visual only) */}
+            <div className="svp-base">
+              <div className="svp-base__top" />
+              <div className="svp-base__front" />
+            </div>
+
+            {/* Navigation */}
+            <div className="svp-nav">
+              <button className="svp-nav-btn" onClick={() => setCurrentBgmIndex(p => p <= 0 ? sortedBgms.length - 1 : p - 1)}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><polygon points="18,3 6,12 18,21" /></svg>
+              </button>
+              <span className="svp-counter">{String(currentBgmIndex + 1).padStart(2, "0")} / {String(sortedBgms.length).padStart(2, "0")}</span>
+              <button className="svp-nav-btn" onClick={() => setCurrentBgmIndex(p => (p + 1) % sortedBgms.length)}>
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><polygon points="6,3 18,12 6,21" /></svg>
+              </button>
+            </div>
+
+            {/* Admin */}
+            <div style={{ display: "flex", justifyContent: "center", gap: 12, marginTop: 16 }}>
+              <button onClick={() => verifyAdmin(() => setCardModal({ mode: "edit", section: "bgm", data: sortedBgms[currentBgmIndex] }))} className="svp-admin">编辑</button>
+              <button onClick={() => verifyAdmin(() => handleCardDelete(sortedBgms[currentBgmIndex].id, "bgm"))} className="svp-admin svp-admin--del">删除</button>
+            </div>
+          </div>
+        )}
+        {/* Empty state */}
+        {sortedBgms.length === 0 && (
+          <div style={{ padding: "32px 16px", textAlign: "center" }}>
+            <p style={{ fontFamily: "'Noto Serif SC', serif", fontSize: 15, color: "#b8a890", fontStyle: "italic", lineHeight: 1.8, margin: "0 0 6px" }}>耳机里还没有响起任何旋律。</p>
+            <p style={{ fontFamily: "'Noto Serif SC', serif", fontSize: 13, color: "#8a7a64", fontStyle: "italic", lineHeight: 1.8, margin: 0 }}>但你一定记得，那副有线耳机在口袋里缠成一团的日子。</p>
+          </div>
+        )}
         </div>
       </section>
+      )}
 
       {/* ===== 展厅三：数字足迹馆 ===== */}
+      {(activeHall === null || activeHall === "net") && (
       <section className="museum-hall museum-era-section">
         <div className="museum-hall-head">
           <span className="museum-hall-roman">III</span>
@@ -1593,8 +1666,10 @@ const MuseumPage: React.FC = () => {
           onSpotlightToggle={(id) => setSpotlightCardId(prev => prev === id ? null : id)} />
         </div>
       </section>
+      )}
 
       {/* ===== 展厅四：荣耀殿堂 ===== */}
+      {(activeHall === null || activeHall === "honor") && (
       <section className="museum-hall">
         <div className="museum-hall-head">
           <span className="museum-hall-roman">IV</span>
@@ -1644,6 +1719,7 @@ const MuseumPage: React.FC = () => {
         </div>
         </div>
       </section>
+      )}
 
       {/* 页脚 */}
       <footer className="museum-foot"><span>时光不语，静待花开。</span></footer>
@@ -2057,6 +2133,185 @@ const MuseumPage: React.FC = () => {
           background: repeating-linear-gradient(0deg, transparent, transparent 8px, rgba(74,56,32,0.1) 8px, rgba(74,56,32,0.1) 9px);
           pointer-events: none;
         }
+
+        /* ===== 声纹回廊 V1 静态展示版 ===== */
+        .svp-player {
+          position: relative;
+          max-width: 380px;
+          margin: 0 auto;
+          padding: 48px 20px 32px;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+        }
+        .svp-bg {
+          position: absolute;
+          inset: 0;
+          background: linear-gradient(180deg, #C8E0F4 0%, #DAEAF8 30%, #EEF4FA 60%, #F8FAFE 100%);
+          border-radius: 20px;
+          z-index: 0;
+        }
+        /* Sparkles */
+        .svp-sparkle {
+          position: absolute;
+          z-index: 1;
+          pointer-events: none;
+        }
+        .svp-sparkle::before, .svp-sparkle::after {
+          content: "";
+          position: absolute;
+          background: rgba(255,255,255,0.9);
+          border-radius: 1px;
+        }
+        .svp-sparkle::before { width: 2px; height: 14px; left: 50%; top: 50%; transform: translate(-50%, -50%); }
+        .svp-sparkle::after { width: 14px; height: 2px; left: 50%; top: 50%; transform: translate(-50%, -50%); }
+        .svp-sparkle--1 { left: 8%; top: 25%; animation: svp-float 4s ease-in-out infinite; }
+        .svp-sparkle--2 { right: 10%; top: 20%; animation: svp-float 4s ease-in-out 1s infinite; width: 18px; height: 18px; }
+        .svp-sparkle--2::before { height: 18px; } .svp-sparkle--2::after { width: 18px; }
+        .svp-sparkle--3 { left: 12%; bottom: 35%; animation: svp-float 4s ease-in-out 2s infinite; }
+        .svp-sparkle--4 { right: 6%; bottom: 40%; animation: svp-float 4s ease-in-out 3s infinite; width: 12px; height: 12px; }
+        .svp-sparkle--4::before { height: 12px; } .svp-sparkle--4::after { width: 12px; }
+        @keyframes svp-float {
+          0%, 100% { opacity: 0.2; transform: translateY(0) scale(0.6); }
+          50% { opacity: 1; transform: translateY(-8px) scale(1); }
+        }
+        /* Glass panel */
+        .svp-glass {
+          position: relative;
+          z-index: 10;
+          width: 100%;
+          max-width: 320px;
+          background: rgba(255,255,255,0.3);
+          border: 1px solid rgba(255,255,255,0.5);
+          border-radius: 24px;
+          padding: 28px 24px 20px;
+          overflow: hidden;
+          box-shadow:
+            0 12px 40px rgba(107,155,209,0.12),
+            0 0 80px rgba(176,212,255,0.06),
+            inset 0 1px 0 rgba(255,255,255,0.8);
+        }
+        .svp-glass__info { text-align: center; margin-bottom: 20px; }
+        .svp-title {
+          font-size: 22px;
+          font-weight: 600;
+          color: #2A4B7C;
+          font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'PingFang SC', sans-serif;
+          margin: 0 0 6px;
+          line-height: 1.2;
+        }
+        .svp-artist {
+          font-size: 14px;
+          color: #7A9AB8;
+          font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'PingFang SC', sans-serif;
+          margin: 0 0 16px;
+        }
+        .svp-divider {
+          width: 40px;
+          height: 2px;
+          background: linear-gradient(90deg, transparent, #A0C0E0, transparent);
+          margin: 0 auto 16px;
+        }
+        .svp-lyrics {
+          font-size: 13px;
+          color: #5A8AB8;
+          font-family: 'Noto Serif SC', Georgia, serif;
+          line-height: 2;
+          font-style: italic;
+          max-height: 120px;
+          overflow: hidden;
+          word-break: break-word;
+        }
+        /* Album art placeholder */
+        .svp-art {
+          width: 100%;
+          aspect-ratio: 1;
+          border-radius: 16px;
+          overflow: hidden;
+          background: rgba(255,255,255,0.2);
+          margin-bottom: 16px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+        .svp-art__img { width: 100%; height: 100%; object-fit: cover; }
+        .svp-art__placeholder { opacity: 0.6; }
+        /* Reserved controls */
+        .svp-controls-reserved {
+          height: 24px;
+          display: flex;
+          align-items: center;
+          padding: 0 8px;
+        }
+        .svp-progress {
+          flex: 1;
+          height: 2px;
+          background: rgba(107,155,209,0.1);
+          border-radius: 1px;
+        }
+        /* Blue base (visual only) */
+        .svp-base {
+          position: relative;
+          z-index: 5;
+          width: 70%;
+          max-width: 220px;
+          margin-top: -4px;
+        }
+        .svp-base__top {
+          background: linear-gradient(170deg, #7EC4F0 0%, #6AAED8 100%);
+          border-radius: 16px 16px 4px 4px;
+          height: 12px;
+          box-shadow: 0 4px 16px rgba(90,158,200,0.2), inset 0 1px 0 rgba(255,255,255,0.3);
+        }
+        .svp-base__front {
+          background: linear-gradient(180deg, #5A9EC8 0%, #4A8EB8 100%);
+          height: 20px;
+          margin: 0 6px;
+          border-radius: 0 0 10px 10px;
+          box-shadow: 0 6px 20px rgba(74,142,184,0.15);
+        }
+        /* Navigation */
+        .svp-nav {
+          position: relative;
+          z-index: 10;
+          display: flex;
+          align-items: center;
+          gap: 20px;
+          margin-top: 20px;
+        }
+        .svp-nav-btn {
+          width: 40px; height: 40px; border-radius: 50%;
+          border: 1px solid rgba(107,155,209,0.3);
+          background: rgba(255,255,255,0.45);
+          color: #6B9BD1;
+          cursor: pointer;
+          display: flex; align-items: center; justify-content: center;
+          transition: all 0.2s;
+        }
+        .svp-nav-btn:hover { background: rgba(255,255,255,0.7); transform: scale(1.1); }
+        .svp-counter {
+          font-size: 12px;
+          color: #8AA8CC;
+          font-family: 'Courier New', monospace;
+          letter-spacing: 2px;
+        }
+        .svp-admin {
+          font-size: 11px;
+          color: #7A8BA5;
+          background: rgba(255,255,255,0.4);
+          border: 1px solid rgba(122,139,165,0.2);
+          border-radius: 12px;
+          padding: 4px 12px;
+          cursor: pointer;
+          font-family: "'Noto Serif SC', serif";
+          letter-spacing: 1px;
+          transition: all 0.2s;
+          position: relative;
+          z-index: 10;
+        }
+        .svp-admin:hover { background: rgba(255,255,255,0.7); }
+        .svp-admin--del { color: #B85450; border-color: rgba(184,84,80,0.2); }
+        .svp-admin--del:hover { background: rgba(184,84,80,0.08); }
 
         /* 数字足迹 (Net) */
         .zone-net {

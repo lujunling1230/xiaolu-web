@@ -412,6 +412,20 @@ export function getRecommendations(
       if (node.weather.length === 0 || node.weather.includes(state.weather)) {
         score += 20;
       }
+      // 雨天/雪天时：如果任务的 weather 标注里只含 sunny 等户外天气
+      // 且不包含 rainy/snowy/cloudy，则降权（它不适合室内做）
+      if (state.weather === "rainy" || state.weather === "snowy") {
+        const isOutdoorOnly = node.weather.length > 0 &&
+          !node.weather.includes("rainy") &&
+          !node.weather.includes("snowy") &&
+          !node.weather.includes("cloudy");
+        if (isOutdoorOnly) {
+          score -= 15;
+          if (!reasons.includes("适合在室内做")) {
+            reasons.push("适合在室内做");
+          }
+        }
+      }
 
       // 4) 心情匹配 (0-15)
       if (node.moods.length === 0 || node.moods.includes(state.mood)) {
@@ -433,11 +447,33 @@ export function getRecommendations(
       // 随机扰动 ±3 分，避免每次结果完全一样
       score += (Math.random() - 0.5) * 6;
 
-      const primaryReason = reasons.length > 0
-        ? reasons[0]
-        : "适合现在做的小事";
+      const allReasons: string[] = [];
+      // 精力匹配
+      if (userEffort >= EFFORT_SCORE[node.effort]) {
+        allReasons.push("精力匹配");
+      } else {
+        allReasons.push("不太费力气");
+      }
+      // 天气匹配
+      if (node.weather.length === 0) {
+        allReasons.push("不受天气限制");
+      } else if (node.weather.includes(state.weather)) {
+        allReasons.push("适合" + WEATHER_MAP[state.weather].label);
+      } else if ((state.weather === "rainy" || state.weather === "snowy") && node.weather.includes("cloudy")) {
+        allReasons.push("室内可做");
+      }
+      // 心情匹配
+      if (node.moods.length === 0 || node.moods.includes(state.mood)) {
+        allReasons.push("契合" + MOOD_MAP[state.mood].label + "心情");
+      }
+      // 标签匹配
+      const bestTag = node.tags.reduce((a, b) => ((MOOD_TAG_WEIGHTS[state.mood][a] || 0) >= (MOOD_TAG_WEIGHTS[state.mood][b] || 0) ? a : b));
+      if (MOOD_TAG_WEIGHTS[state.mood][bestTag] >= 2) {
+        allReasons.push(TAG_MAP[bestTag].label + "型");
+      }
 
-      return { node, score: Math.round(Math.max(0, Math.min(100, score))), reason: primaryReason };
+      const reasonText = allReasons.slice(0, 2).join(" · ");
+      return { node, score: Math.round(Math.max(0, Math.min(100, score))), reason: reasonText || "适合现在做的小事" };
     })
     .sort((a, b) => b.score - a.score);
 
@@ -632,6 +668,13 @@ export function getBadges(history: CompletionRecord[], streak: number, todayCoun
       icon: "🌈",
       description: "一天内完成4种不同类型的小事",
       unlocked: todayTags.size >= 4,
+    },
+    {
+      id: "hundred",
+      label: "百件小确幸",
+      icon: "💫",
+      description: "累计完成100件回血小事，每一个微小瞬间都在发光",
+      unlocked: totalCount >= 100,
     },
   ];
 }

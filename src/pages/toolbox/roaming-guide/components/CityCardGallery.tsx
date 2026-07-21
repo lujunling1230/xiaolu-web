@@ -32,6 +32,8 @@ interface City {
   lng?: number;
   /** 探索次数（新增字段） */
   exploreCount?: number;
+  /** 城市状态：想去 / 已去 */
+  status?: "want_to_go" | "visited";
 }
 
 export interface CityCardGalleryProps {
@@ -39,6 +41,7 @@ export interface CityCardGalleryProps {
   selectedCity: City | null;
   onSelect: (city: City) => void;
   onAdd: () => void;
+  onToggleStatus?: (id: number) => void;
 }
 
 export default function CityCardGallery({
@@ -46,6 +49,7 @@ export default function CityCardGallery({
   selectedCity,
   onSelect,
   onAdd,
+  onToggleStatus,
 }: CityCardGalleryProps) {
   return (
     <section className="rg-card-section" id="rg-cards">
@@ -112,8 +116,35 @@ export default function CityCardGallery({
                     </div>
                   </div>
 
-                  {/* 手动 / AI 标签 */}
+                  {/* 状态标签 + 手动/AI 标签 */}
                   <div className="rg-card-tag-row">
+                    {c.status === "want_to_go" ? (
+                      <span
+                        className="rg-card-status-tag want-to-go"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onToggleStatus?.(c.id);
+                        }}
+                        title="点击切换为已去"
+                        role="button"
+                        tabIndex={0}
+                      >
+                        想去
+                      </span>
+                    ) : (
+                      <span
+                        className="rg-card-status-tag visited"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          onToggleStatus?.(c.id);
+                        }}
+                        title="点击切换为想去"
+                        role="button"
+                        tabIndex={0}
+                      >
+                        已去
+                      </span>
+                    )}
                     {c.isAIPlan ? (
                       <span className="rg-card-tag ai">AI计划</span>
                     ) : (
@@ -363,6 +394,37 @@ export default function CityCardGallery({
           align-items: center;
           gap: 8px;
           padding: 6px 4px 0;
+          flex-wrap: wrap;
+        }
+        /* 想去/已去 状态标签 */
+        .rg-card-status-tag {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 11px;
+          letter-spacing: 1px;
+          padding: 2px 10px;
+          border-radius: 10px;
+          border: 1px solid;
+          background: transparent;
+          cursor: pointer;
+          transition: all 0.2s ease;
+          font-family: var(--rg-font-serif, 'Noto Serif SC', serif);
+          line-height: 1.6;
+        }
+        .rg-card-status-tag:hover {
+          opacity: 0.8;
+          transform: scale(0.97);
+        }
+        .rg-card-status-tag.want-to-go {
+          color: var(--rg-accent-dark, #B06A30);
+          border-color: rgba(212, 136, 74, 0.5);
+          background: rgba(212, 136, 74, 0.08);
+        }
+        .rg-card-status-tag.visited {
+          color: var(--rg-primary, #4A8B6F);
+          border-color: rgba(74, 139, 111, 0.5);
+          background: rgba(74, 139, 111, 0.08);
         }
         .rg-card-tag {
           display: inline-flex;

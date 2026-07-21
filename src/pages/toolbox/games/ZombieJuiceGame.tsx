@@ -5,7 +5,8 @@ import { motion, AnimatePresence } from "framer-motion";
  * ZombieJuice - 僵尸榨汁机
  *
  * 美漫扁平风 Canvas 塔防经营游戏。
- * 10关、4种武器、杯子售卖、海绵宝宝居民、徽章系统。
+ * 20关、4种武器、杯子售卖、比奇堡居民、武器墙、徽章墙。
+ * 三区域布局：榨僵尸区 | 榨汁装杯区 | 商店区
  */
 
 /* ============================================================
@@ -65,6 +66,7 @@ interface Customer {
   y: number;
   state: "walking_in" | "buying" | "walking_out";
   wobble: number;
+  customerType: string;
 }
 
 interface WeaponEffect {
@@ -108,6 +110,24 @@ interface GameState {
   highestLevel: number;
 }
 
+interface CustomerType {
+  id: string;
+  name: string;
+  bodyColor: string;
+  eyeColor: string;
+  pantsColor: string;
+  shape: "square" | "star" | "tall" | "round";
+  accessory: string;
+}
+
+interface FloatingText {
+  id: number;
+  text: string;
+  x: number;
+  y: number;
+  life: number;
+}
+
 /* ============================================================
    Constants
    ============================================================ */
@@ -148,6 +168,16 @@ const LEVELS: LevelDef[] = [
   { target: 25, speed: SPEED_FAST, reward: 400, description: "僵尸有护甲（需点击2次）" },
   { target: 30, speed: SPEED_VERY_FAST, reward: 500, description: "僵尸会隐身（半透明闪烁）" },
   { target: 40, speed: SPEED_VERY_FAST, reward: 800, description: "BOSS关卡，超大僵尸需5次点击" },
+  { target: 45, speed: SPEED_VERY_FAST, reward: 900, description: "连续2只护甲僵尸" },
+  { target: 50, speed: SPEED_VERY_FAST, reward: 1000, description: "全体加速50%" },
+  { target: 55, speed: SPEED_VERY_FAST, reward: 1100, description: "僵尸更小（极难点击）" },
+  { target: 60, speed: SPEED_VERY_FAST, reward: 1200, description: "护甲与隐身混合出现" },
+  { target: 65, speed: SPEED_VERY_FAST, reward: 1300, description: "僵尸反向移动" },
+  { target: 70, speed: SPEED_VERY_FAST, reward: 1400, description: "随机位置闪烁出现" },
+  { target: 75, speed: SPEED_VERY_FAST, reward: 1500, description: "大小僵尸混合" },
+  { target: 80, speed: SPEED_VERY_FAST, reward: 1600, description: "僵尸死亡分裂" },
+  { target: 90, speed: SPEED_VERY_FAST, reward: 1800, description: "极限隐身关卡" },
+  { target: 100, speed: SPEED_VERY_FAST, reward: 2000, description: "终极BOSS，需10次点击" },
 ];
 
 const BADGES: BadgeInfo[] = [
@@ -161,7 +191,32 @@ const BADGES: BadgeInfo[] = [
   { level: 8, name: "破甲勇士", icon: "\u{1F6E1}" },
   { level: 9, name: "隐形猎手", icon: "\u{1F52E}" },
   { level: 10, name: "终极榨神", icon: "\u{1F3C6}" },
+  { level: 11, name: "钢铁粉碎者", icon: "\u{1F528}" },
+  { level: 12, name: "疾风迅雷", icon: "\u{1F32A}" },
+  { level: 13, name: "鹰眼射手", icon: "\u{1F441}" },
+  { level: 14, name: "幻影猎杀者", icon: "\u{1F300}" },
+  { level: 15, name: "逆流勇士", icon: "\u{1F504}" },
+  { level: 16, name: "瞬影捕手", icon: "\u2728" },
+  { level: 17, name: "万物制衡", icon: "\u2696" },
+  { level: 18, name: "分裂终结者", icon: "\u2694" },
+  { level: 19, name: "虚空行者", icon: "\u{1F311}" },
+  { level: 20, name: "不灭传说", icon: "\u{1F451}" },
 ];
+
+const CUSTOMER_TYPES: CustomerType[] = [
+  { id: "spongebob", name: "海绵宝宝", bodyColor: "#FFE135", eyeColor: "#4FC3F7", pantsColor: "#8B4513", shape: "square", accessory: "白色领带" },
+  { id: "patrick", name: "派大星", bodyColor: "#FF69B4", eyeColor: "#FFFFFF", pantsColor: "#4CAF50", shape: "star", accessory: "绿底短裤" },
+  { id: "squidward", name: "章鱼哥", bodyColor: "#7EC8A0", eyeColor: "#8B0000", pantsColor: "#6B4226", shape: "tall", accessory: "长鼻子" },
+  { id: "krabs", name: "蟹老板", bodyColor: "#E53935", eyeColor: "#FFFFFF", pantsColor: "#4A90D9", shape: "round", accessory: "大钳子钱袋" },
+  { id: "sandy", name: "珊迪", bodyColor: "#8D6E63", eyeColor: "#212121", pantsColor: "#5D4037", shape: "square", accessory: "绿色头盔尾巴" },
+];
+
+const WEAPON_EMOJI: Record<string, string> = {
+  harpoon: "\u{1F3AF}",
+  lightning: "\u26A1",
+  net: "\u{1F578}",
+  grenade: "\u{1F4A3}",
+};
 
 /* ============================================================
    Web Audio
@@ -333,6 +388,27 @@ const drawBackground = (ctx: CanvasRenderingContext2D, w: number, h: number) => 
       ctx.fill();
     }
   }
+};
+
+/* Draw dashed separator line between left (zombie area) and right (juicer area) */
+const drawSeparator = (ctx: CanvasRenderingContext2D, w: number, h: number) => {
+  const sepX = w - JUICER_W - 50;
+  ctx.save();
+  ctx.strokeStyle = "rgba(0,0,0,0.12)";
+  ctx.lineWidth = 1.5;
+  ctx.setLineDash([8, 6]);
+  ctx.beginPath();
+  ctx.moveTo(sepX, 8);
+  ctx.lineTo(sepX, h - 8);
+  ctx.stroke();
+  ctx.setLineDash([]);
+  // Labels
+  ctx.fillStyle = "rgba(0,0,0,0.15)";
+  ctx.font = "10px 'Segoe UI', sans-serif";
+  ctx.textAlign = "center";
+  ctx.fillText("榨僵尸区", sepX / 2, 16);
+  ctx.fillText("榨汁装杯区", sepX + (w - sepX) / 2, 16);
+  ctx.restore();
 };
 
 const drawZombieBody = (
@@ -597,62 +673,241 @@ const drawCupIcon = (ctx: CanvasRenderingContext2D, x: number, y: number) => {
   ctx.stroke();
 };
 
-const drawCustomer = (ctx: CanvasRenderingContext2D, c: Customer, time: number) => {
+const drawCustomerType = (ctx: CanvasRenderingContext2D, c: Customer, time: number) => {
   ctx.save();
   const sway = Math.sin(time * 0.006 + c.wobble) * 3;
   ctx.translate(c.x, c.y);
 
+  const ct = CUSTOMER_TYPES.find(t => t.id === c.customerType) || CUSTOMER_TYPES[0];
+
   // Legs (walking animation)
-  ctx.fillStyle = "#8B4513";
   const legSwing = Math.sin(time * 0.008 + c.wobble) * 4;
+  ctx.fillStyle = "#555";
   ctx.fillRect(-8 + legSwing, 18, 6, 10);
   ctx.fillRect(2 - legSwing, 18, 6, 10);
 
-  // Body (yellow square)
-  ctx.fillStyle = "#FFE135";
-  roundRect(ctx, -15, -20 + sway * 0.3, 30, 40, 4);
-  ctx.fill();
-
-  // Brown pants
-  ctx.fillStyle = "#8B4513";
-  ctx.fillRect(-15, 10 + sway * 0.3, 30, 10);
-
-  // White tie
-  ctx.fillStyle = "#fff";
-  ctx.beginPath();
-  ctx.moveTo(0, -15 + sway * 0.3);
-  ctx.lineTo(4, -5 + sway * 0.3);
-  ctx.lineTo(0, 5 + sway * 0.3);
-  ctx.lineTo(-4, -5 + sway * 0.3);
-  ctx.closePath();
-  ctx.fill();
-
-  // Blue eyes
-  ctx.fillStyle = "#4FC3F7";
-  ctx.beginPath();
-  ctx.arc(-6, -8 + sway * 0.3, 4, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.beginPath();
-  ctx.arc(6, -8 + sway * 0.3, 4, 0, Math.PI * 2);
-  ctx.fill();
-
-  // Pupils
-  ctx.fillStyle = "#1a1a1a";
-  ctx.beginPath();
-  ctx.arc(-5, -8 + sway * 0.3, 2, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.beginPath();
-  ctx.arc(7, -8 + sway * 0.3, 2, 0, Math.PI * 2);
-  ctx.fill();
-
-  // Mouth
-  ctx.strokeStyle = "#e53935";
-  ctx.lineWidth = 1.5;
-  ctx.beginPath();
-  ctx.arc(0, -2 + sway * 0.3, 4, 0, Math.PI);
-  ctx.stroke();
+  if (ct.shape === "star") {
+    // Patrick: star shape
+    drawStarShape(ctx, 0, 0 + sway * 0.3, 18, ct.bodyColor);
+    // Green shorts
+    ctx.fillStyle = ct.pantsColor;
+    ctx.fillRect(-15, 10 + sway * 0.3, 30, 10);
+    // Dopey eyes (different sizes)
+    ctx.fillStyle = ct.eyeColor;
+    ctx.beginPath();
+    ctx.arc(-8, -8 + sway * 0.3, 5, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(6, -6 + sway * 0.3, 3.5, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = "#1a1a1a";
+    ctx.beginPath();
+    ctx.arc(-7, -9 + sway * 0.3, 2, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(7, -7 + sway * 0.3, 1.5, 0, Math.PI * 2);
+    ctx.fill();
+    // Mouth: dopey smile
+    ctx.strokeStyle = "#d32f2f";
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.arc(1, -1 + sway * 0.3, 5, 0.2, Math.PI - 0.2);
+    ctx.stroke();
+  } else if (ct.shape === "tall") {
+    // Squidward: tall blue-green
+    ctx.fillStyle = ct.bodyColor;
+    roundRect(ctx, -12, -30 + sway * 0.3, 24, 55, 5);
+    ctx.fill();
+    // Brown pants
+    ctx.fillStyle = ct.pantsColor;
+    ctx.fillRect(-12, 15 + sway * 0.3, 24, 12);
+    // Long nose
+    ctx.fillStyle = ct.bodyColor;
+    ctx.beginPath();
+    ctx.moveTo(0, -10 + sway * 0.3);
+    ctx.lineTo(16, 0 + sway * 0.3);
+    ctx.lineTo(0, 2 + sway * 0.3);
+    ctx.closePath();
+    ctx.fill();
+    // Tired eyes (half-closed)
+    ctx.fillStyle = ct.eyeColor;
+    ctx.beginPath();
+    ctx.ellipse(-5, -16 + sway * 0.3, 4, 3, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.ellipse(5, -16 + sway * 0.3, 4, 3, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = "#1a1a1a";
+    ctx.beginPath();
+    ctx.arc(-4, -16 + sway * 0.3, 1.5, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(6, -16 + sway * 0.3, 1.5, 0, Math.PI * 2);
+    ctx.fill();
+    // Half-closed eyelids
+    ctx.fillStyle = ct.bodyColor;
+    ctx.fillRect(-9, -20 + sway * 0.3, 8, 4);
+    ctx.fillRect(1, -20 + sway * 0.3, 8, 4);
+    // Mouth: frown
+    ctx.strokeStyle = "#4a2a0a";
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.arc(0, -4 + sway * 0.3, 4, Math.PI, 0);
+    ctx.stroke();
+  } else if (ct.shape === "round") {
+    // Mr. Krabs: round/square red body
+    ctx.fillStyle = ct.bodyColor;
+    roundRect(ctx, -15, -18 + sway * 0.3, 30, 38, 8);
+    ctx.fill();
+    // Blue pants
+    ctx.fillStyle = ct.pantsColor;
+    ctx.fillRect(-15, 10 + sway * 0.3, 30, 10);
+    // Big claws
+    ctx.fillStyle = ct.bodyColor;
+    ctx.beginPath();
+    ctx.ellipse(-20, 2 + sway * 0.3, 10, 6, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.ellipse(20, 2 + sway * 0.3, 10, 6, 0, 0, Math.PI * 2);
+    ctx.fill();
+    // Money bag
+    ctx.fillStyle = "#F9A825";
+    ctx.beginPath();
+    ctx.ellipse(0, 20 + sway * 0.3, 7, 8, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = "#F57F17";
+    ctx.font = "bold 8px sans-serif";
+    ctx.textAlign = "center";
+    ctx.fillText("$", 0, 23 + sway * 0.3);
+    // Eyes
+    ctx.fillStyle = ct.eyeColor;
+    ctx.beginPath();
+    ctx.arc(-6, -8 + sway * 0.3, 4, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(6, -8 + sway * 0.3, 4, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = "#1a1a1a";
+    ctx.beginPath();
+    ctx.arc(-5, -8 + sway * 0.3, 2, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(7, -8 + sway * 0.3, 2, 0, Math.PI * 2);
+    ctx.fill();
+    // Mouth: greedy grin
+    ctx.strokeStyle = "#6d0000";
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.arc(0, -2 + sway * 0.3, 5, 0.1, Math.PI - 0.1);
+    ctx.stroke();
+  } else if (ct.id === "sandy") {
+    // Sandy: brown square with green helmet and squirrel tail
+    ctx.fillStyle = ct.bodyColor;
+    roundRect(ctx, -14, -18 + sway * 0.3, 28, 38, 4);
+    ctx.fill();
+    // Brown pants
+    ctx.fillStyle = ct.pantsColor;
+    ctx.fillRect(-14, 10 + sway * 0.3, 28, 10);
+    // Green helmet
+    ctx.fillStyle = "#4CAF50";
+    ctx.beginPath();
+    ctx.ellipse(0, -20 + sway * 0.3, 14, 10, 0, Math.PI, 0);
+    ctx.fill();
+    ctx.strokeStyle = "#2E7D32";
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+    // Squirrel tail
+    ctx.fillStyle = ct.bodyColor;
+    ctx.beginPath();
+    ctx.moveTo(14, -5 + sway * 0.3);
+    ctx.quadraticCurveTo(28, -10 + sway * 0.3, 26, 5 + sway * 0.3);
+    ctx.quadraticCurveTo(20, 0 + sway * 0.3, 14, 5 + sway * 0.3);
+    ctx.fill();
+    // Eyes
+    ctx.fillStyle = ct.eyeColor;
+    ctx.beginPath();
+    ctx.arc(-6, -8 + sway * 0.3, 4, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(6, -8 + sway * 0.3, 4, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = "#1a1a1a";
+    ctx.beginPath();
+    ctx.arc(-5, -8 + sway * 0.3, 2, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(7, -8 + sway * 0.3, 2, 0, Math.PI * 2);
+    ctx.fill();
+    // Mouth: smile
+    ctx.strokeStyle = "#4a2a0a";
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.arc(0, -2 + sway * 0.3, 4, 0.1, Math.PI - 0.1);
+    ctx.stroke();
+  } else {
+    // SpongeBob: yellow square
+    ctx.fillStyle = ct.bodyColor;
+    roundRect(ctx, -15, -20 + sway * 0.3, 30, 40, 4);
+    ctx.fill();
+    // Brown pants
+    ctx.fillStyle = ct.pantsColor;
+    ctx.fillRect(-15, 10 + sway * 0.3, 30, 10);
+    // White tie
+    ctx.fillStyle = "#fff";
+    ctx.beginPath();
+    ctx.moveTo(0, -15 + sway * 0.3);
+    ctx.lineTo(4, -5 + sway * 0.3);
+    ctx.lineTo(0, 5 + sway * 0.3);
+    ctx.lineTo(-4, -5 + sway * 0.3);
+    ctx.closePath();
+    ctx.fill();
+    // Blue eyes
+    ctx.fillStyle = ct.eyeColor;
+    ctx.beginPath();
+    ctx.arc(-6, -8 + sway * 0.3, 4, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(6, -8 + sway * 0.3, 4, 0, Math.PI * 2);
+    ctx.fill();
+    // Pupils
+    ctx.fillStyle = "#1a1a1a";
+    ctx.beginPath();
+    ctx.arc(-5, -8 + sway * 0.3, 2, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.arc(7, -8 + sway * 0.3, 2, 0, Math.PI * 2);
+    ctx.fill();
+    // Mouth: smile
+    ctx.strokeStyle = "#e53935";
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.arc(0, -2 + sway * 0.3, 4, 0, Math.PI);
+    ctx.stroke();
+  }
 
   ctx.restore();
+};
+
+/* Draw a star shape for Patrick */
+const drawStarShape = (ctx: CanvasRenderingContext2D, cx: number, cy: number, r: number, color: string) => {
+  const spikes = 5;
+  const outerR = r;
+  const innerR = r * 0.45;
+  ctx.fillStyle = color;
+  ctx.beginPath();
+  for (let i = 0; i < spikes * 2; i++) {
+    const radius = i % 2 === 0 ? outerR : innerR;
+    const angle = (i * Math.PI) / spikes - Math.PI / 2;
+    const x = cx + Math.cos(angle) * radius;
+    const y = cy + Math.sin(angle) * radius;
+    if (i === 0) ctx.moveTo(x, y);
+    else ctx.lineTo(x, y);
+  }
+  ctx.closePath();
+  ctx.fill();
+  ctx.strokeStyle = darkenColor(color, 40);
+  ctx.lineWidth = 1;
+  ctx.stroke();
 };
 
 const drawWeaponEffect = (ctx: CanvasRenderingContext2D, e: WeaponEffect) => {
@@ -720,7 +975,10 @@ const ZombieJuiceGame: React.FC = () => {
 
   const [state, setState] = useState<GameState>(defaultState);
   const [showWeaponPanel, setShowWeaponPanel] = useState(false);
+  const [showWeaponWall, setShowWeaponWall] = useState(false);
+  const [showBadgeWall, setShowBadgeWall] = useState(false);
   const [newBadge, setNewBadge] = useState<BadgeInfo | null>(null);
+  const [floatingTexts, setFloatingTexts] = useState<FloatingText[]>([]);
   const [canvasH, setCanvasH] = useState(CANVAS_H_DESKTOP);
 
   // Load saved game
@@ -751,7 +1009,7 @@ const ZombieJuiceGame: React.FC = () => {
     const isSmall = level >= 6 && Math.random() < 0.35;
     const isInvisible = level >= 9 && Math.random() < 0.3;
     const hasArmor = level >= 8 && Math.random() < 0.4;
-    const isBoss = level === 10 && zombiesRef.current.filter(z => z.isBoss && z.state === "idle").length === 0 && Math.random() < 0.08;
+    const isBoss = (level === 10 || level === 20) && zombiesRef.current.filter(z => z.isBoss && z.state === "idle").length === 0 && Math.random() < 0.08;
     const isFast = level >= 3 && Math.random() < 0.25;
     const canDodge = level >= 5 && Math.random() < 0.3;
 
@@ -760,9 +1018,13 @@ const ZombieJuiceGame: React.FC = () => {
     const h = ZOMBIE_H * scale;
     const speedMul = isFast ? 1.6 : 1.0;
 
+    // Limiting zombies to the left area (before separator)
+    const sepX = cw - JUICER_W - 50;
+    const maxX = Math.max(ZOMBIE_W, sepX - ZOMBIE_W - 20);
+
     return {
       id: nextId(),
-      x: randRange(ZOMBIE_W, cw - ZOMBIE_W - JUICER_W - 40),
+      x: randRange(ZOMBIE_W, maxX),
       y: randRange(20, ch * 0.5),
       w, h,
       vx: randRange(-0.3, 0.3) * ld.speed * speedMul,
@@ -773,8 +1035,8 @@ const ZombieJuiceGame: React.FC = () => {
       wobble: randRange(0, Math.PI * 2),
       targetX: 0,
       targetY: 0,
-      hp: isBoss ? 5 : hasArmor ? 2 : 1,
-      maxHp: isBoss ? 5 : hasArmor ? 2 : 1,
+      hp: isBoss ? (level === 20 ? 10 : 5) : hasArmor ? 2 : 1,
+      maxHp: isBoss ? (level === 20 ? 10 : 5) : hasArmor ? 2 : 1,
       isSmall, isInvisible, hasArmor, isBoss,
       dodgeDir: canDodge ? (Math.random() > 0.5 ? 1 : -1) : 0,
       dodgeCooldown: canDodge ? randRange(40, 100) : 0,
@@ -855,7 +1117,6 @@ const ZombieJuiceGame: React.FC = () => {
         if (z.state !== "idle") continue;
         const d = Math.hypot(mx - (z.x + z.w / 2), my - (z.y + z.h / 2));
         if (d < 50) {
-          // Net auto-captures: slow zombies get instant kill
           if (z.maxHp <= 2) {
             z.hp = 0;
           } else {
@@ -900,7 +1161,7 @@ const ZombieJuiceGame: React.FC = () => {
       const newBadges = badges.includes(level) ? [...badges] : [...badges, level];
       const newHighest = Math.max(stateRef.current.highestLevel, level);
 
-      if (level >= 10) {
+      if (level >= 20) {
         playLevelUpSound();
         setState(prev => ({
           ...prev,
@@ -948,6 +1209,9 @@ const ZombieJuiceGame: React.FC = () => {
     const jx = w - JUICER_W - 20;
     const jy = h - JUICER_H - 10;
 
+    // Draw separator
+    drawSeparator(ctx, w, h);
+
     if (st.phase === "playing") {
       const ld = LEVELS[st.level - 1];
 
@@ -962,6 +1226,7 @@ const ZombieJuiceGame: React.FC = () => {
 
       // Update zombies
       let newJuiced = st.juiced;
+      const sepX = w - JUICER_W - 50;
       for (const z of zombiesRef.current) {
         if (z.state === "idle") {
           z.wobble += 0.02;
@@ -979,7 +1244,7 @@ const ZombieJuiceGame: React.FC = () => {
           }
 
           if (z.x < 10) { z.x = 10; z.vx *= -1; }
-          if (z.x > w - z.w - JUICER_W - 10) { z.x = w - z.w - JUICER_W - 10; z.vx *= -1; }
+          if (z.x > sepX - z.w - 10) { z.x = sepX - z.w - 10; z.vx *= -1; }
           if (z.y < 10) { z.y = 10; z.vy *= -1; }
           if (z.y > h * 0.55) { z.y = h * 0.55; z.vy *= -1; }
         } else if (z.state === "flying") {
@@ -1023,12 +1288,14 @@ const ZombieJuiceGame: React.FC = () => {
       const customerInterval = Math.max(120, 300 - st.juiced * 5);
       if (customerTimerRef.current >= customerInterval && stateRef.current.cups.length > 0 && customersRef.current.length < 3) {
         customerTimerRef.current = 0;
+        const randType = randItem(CUSTOMER_TYPES);
         customersRef.current.push({
           id: nextId(),
           x: -40,
           y: h - 30,
           state: "walking_in",
           wobble: randRange(0, Math.PI * 2),
+          customerType: randType.id,
         });
       }
 
@@ -1043,16 +1310,25 @@ const ZombieJuiceGame: React.FC = () => {
             c.x = counterX;
           }
         } else if (c.state === "buying") {
-          // Auto-buy after a short delay
           c.wobble += 0.05;
           if (c.wobble > Math.PI * 2) {
             c.state = "walking_out";
             const cups = [...stateRef.current.cups];
             if (cups.length > 0) {
               const sold = cups.shift()!;
-              earnedGold += sold.type === "rare" ? 10 : 5;
+              const goldEarned = sold.type === "rare" ? 10 : 5;
+              earnedGold += goldEarned;
               playDingSound();
               setState(prev => ({ ...prev, cups, gold: prev.gold + earnedGold }));
+              // Add floating text
+              const ft: FloatingText = {
+                id: nextId(),
+                text: `+${goldEarned}`,
+                x: counterX,
+                y: h - 50,
+                life: 60,
+              };
+              setFloatingTexts(prev => [...prev, ft]);
             }
           }
         } else if (c.state === "walking_out") {
@@ -1060,6 +1336,12 @@ const ZombieJuiceGame: React.FC = () => {
         }
       }
       customersRef.current = customersRef.current.filter(c => c.x > -60 || c.state !== "walking_out");
+
+      // Update floating texts
+      const updatedTexts = floatingTexts.map(ft => ({ ...ft, life: ft.life - 1, y: ft.y - 0.5 })).filter(ft => ft.life > 0);
+      if (updatedTexts.length !== floatingTexts.length) {
+        setFloatingTexts(updatedTexts);
+      }
 
       // Juice drops from spout
       if (st.juiced > 0) {
@@ -1124,11 +1406,11 @@ const ZombieJuiceGame: React.FC = () => {
 
     // Draw customers
     for (const c of customersRef.current) {
-      drawCustomer(ctx, c, timestamp);
+      drawCustomerType(ctx, c, timestamp);
     }
 
     animRef.current = requestAnimationFrame(gameLoop);
-  }, [createZombie, spawnSplash, checkLevelComplete]);
+  }, [createZombie, spawnSplash, checkLevelComplete, floatingTexts]);
 
   // Start/stop loop
   useEffect(() => {
@@ -1147,6 +1429,7 @@ const ZombieJuiceGame: React.FC = () => {
     dropTimerRef.current = 0;
     shakeRef.current = 0;
     lastSpawnRef.current = performance.now();
+    setFloatingTexts([]);
 
     const newState: GameState = {
       ...stateRef.current,
@@ -1161,11 +1444,11 @@ const ZombieJuiceGame: React.FC = () => {
   }, []);
 
   const handleStart = useCallback(() => {
-    startLevel(stateRef.current.highestLevel > 0 ? 1 : 1);
+    startLevel(1);
   }, [startLevel]);
 
   const handleNextLevel = useCallback(() => {
-    const nextLvl = Math.min(stateRef.current.level + 1, 10);
+    const nextLvl = Math.min(stateRef.current.level + 1, 20);
     startLevel(nextLvl);
   }, [startLevel]);
 
@@ -1178,6 +1461,7 @@ const ZombieJuiceGame: React.FC = () => {
     if (st.ownedWeapons.includes(weaponId)) {
       setState(prev => ({ ...prev, currentWeapon: weaponId }));
       setShowWeaponPanel(false);
+      setShowWeaponWall(false);
       saveGame({ ...stateRef.current, currentWeapon: weaponId });
       return;
     }
@@ -1190,9 +1474,11 @@ const ZombieJuiceGame: React.FC = () => {
     setState(newState);
     saveGame(newState);
     setShowWeaponPanel(false);
+    setShowWeaponWall(false);
   }, []);
 
   const currentWeaponDef = WEAPONS.find(w => w.id === state.currentWeapon);
+  const currentCustomerType = CUSTOMER_TYPES[0];
 
   return (
     <div className="sr-zj-wrapper">
@@ -1201,7 +1487,7 @@ const ZombieJuiceGame: React.FC = () => {
         <div className="sr-zj-hud">
           <span className="sr-zj-hud-item">
             <span className="sr-zj-hud-label">关卡</span>
-            <span className="sr-zj-hud-value">{state.level}/10</span>
+            <span className="sr-zj-hud-value">{state.level}/20</span>
           </span>
           <span className="sr-zj-hud-item">
             <span className="sr-zj-hud-label">金币</span>
@@ -1277,7 +1563,11 @@ const ZombieJuiceGame: React.FC = () => {
                 initial={{ scale: 0.7, y: 30 }}
                 animate={{ scale: 1, y: 0 }}
                 transition={{ type: "spring", damping: 18, stiffness: 260 }}
+                style={{ position: "relative" }}
               >
+                <button className="sr-overlay-close" onClick={() => {
+                  handleNextLevel();
+                }} style={{ position: "absolute", top: 12, right: 14, background: "none", border: "none", fontSize: 20, color: "#aaa", cursor: "pointer", lineHeight: 1 }}>&times;</button>
                 <div className="sr-zj-complete-title">关卡 {state.level} 通过!</div>
                 <div className="sr-zj-reward">+{LEVELS[state.level - 1].reward} 金币</div>
                 <button className="sr-zj-btn" onClick={handleNextLevel}>
@@ -1305,7 +1595,7 @@ const ZombieJuiceGame: React.FC = () => {
                 transition={{ type: "spring", damping: 15, stiffness: 200 }}
               >
                 <div className="sr-zj-complete-title">全部通关!</div>
-                <div className="sr-zj-subtitle">你是终极榨神</div>
+                <div className="sr-zj-subtitle">你是不灭传说</div>
                 <div className="sr-zj-badge-row">
                   {BADGES.filter(b => state.badges.includes(b.level)).map(b => (
                     <span key={b.level} className="sr-zj-badge-icon" title={b.name}>{b.icon}</span>
@@ -1322,75 +1612,207 @@ const ZombieJuiceGame: React.FC = () => {
         </AnimatePresence>
       </div>
 
-      {/* Cups + Customers area */}
+      {/* Shop area (cups + customer queue) */}
       {state.phase === "playing" && (
-        <div className="sr-zj-bottom-area">
+        <div className="sr-zj-shop-area">
+          <div className="sr-zj-shop-label">商店 - 比奇堡居民排队购买</div>
           <div className="sr-zj-cups-row">
-            <span className="sr-zj-cups-label">杯子:</span>
+            <span className="sr-zj-cups-label">杯子队列:</span>
             {state.cups.length === 0 && <span className="sr-zj-cups-empty">等待榨汁...</span>}
             {state.cups.map(c => (
               <span key={c.id} className="sr-zj-cup-item" title={c.type === "rare" ? "稀有果汁 10金" : "普通果汁 5金"}>
-                {c.type === "rare" ? "\u2728" : ""}🧃
+                {c.type === "rare" ? "\u2728" : ""}{'\u{1F9C3}'}
               </span>
             ))}
           </div>
-        </div>
-      )}
-
-      {/* Weapon bar */}
-      {state.phase === "playing" && (
-        <div className="sr-zj-weapon-bar">
-          <div className="sr-zj-gold-display">金币: {state.gold}</div>
-          <div className="sr-zj-weapon-selector" style={{ position: "relative" }}>
-            <button
-              className="sr-zj-weapon-btn"
-              onClick={() => setShowWeaponPanel(prev => !prev)}
-            >
-              {currentWeaponDef?.name || "武器"}
-              <span className="sr-zj-weapon-arrow">{showWeaponPanel ? "\u25B2" : "\u25BC"}</span>
-            </button>
-            <AnimatePresence>
-              {showWeaponPanel && (
-                <motion.div
-                  className="sr-zj-weapon-panel"
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: 10 }}
-                  transition={{ duration: 0.15 }}
-                >
-                  {WEAPONS.map(wp => {
-                    const owned = state.ownedWeapons.includes(wp.id);
-                    const unlocked = state.level >= wp.unlockLevel;
-                    const canAfford = state.gold >= wp.price;
-                    const active = state.currentWeapon === wp.id;
-                    const disabled = !unlocked || (!owned && !canAfford);
-
-                    return (
-                      <button
-                        key={wp.id}
-                        className={`sr-zj-wp-item ${active ? "sr-zj-wp-active" : ""} ${disabled ? "sr-zj-wp-disabled" : ""}`}
-                        onClick={() => {
-                          if (!disabled) buyWeapon(wp.id);
-                        }}
-                      >
-                        <span className="sr-zj-wp-name">
-                          {wp.name}
-                          {active && " (当前)"}
-                        </span>
-                        <span className="sr-zj-wp-info">
-                          {!unlocked ? `关卡${wp.unlockLevel}解锁` :
-                            owned ? "已拥有" : `${wp.price}金`}
-                        </span>
-                        <span className="sr-zj-wp-desc">{wp.description}</span>
-                      </button>
-                    );
-                  })}
-                </motion.div>
-              )}
-            </AnimatePresence>
+          <div className="sr-zj-customer-types">
+            {CUSTOMER_TYPES.map(ct => (
+              <span key={ct.id} className="sr-zj-ct-tag" title={ct.name + " - " + ct.accessory}>
+                {ct.id === "spongebob" ? "\u{1F9FD}" : ct.id === "patrick" ? "\u2B50" : ct.id === "squidward" ? "\u{1F419}" : ct.id === "krabs" ? "\u{1F980}" : "\u{1F43F}"}
+              </span>
+            ))}
+            <span className="sr-zj-ct-note">+5金普通 / +10金稀有</span>
           </div>
         </div>
       )}
+
+      {/* Bottom buttons */}
+      <div className="sr-zj-bottom-bar">
+        <button
+          className="sr-zj-bottom-btn"
+          onClick={() => setShowWeaponWall(true)}
+        >
+          {'\u{1F6E1}'} 武器墙
+        </button>
+        <button
+          className="sr-zj-bottom-btn"
+          onClick={() => setShowBadgeWall(true)}
+        >
+          {'\u{1F3C6}'} 徽章墙
+        </button>
+        {state.phase === "menu" && (
+          <button className="sr-zj-bottom-btn sr-zj-bottom-btn-primary" onClick={handleStart}>
+            {'\u25B6'} 开始
+          </button>
+        )}
+        {state.phase === "playing" && (
+          <button
+            className="sr-zj-bottom-btn"
+            onClick={() => setShowWeaponPanel(prev => !prev)}
+          >
+            {'\u{1F52B}'} {currentWeaponDef?.name || "武器"}
+            <span className="sr-zj-weapon-arrow">{showWeaponPanel ? " \u25B2" : " \u25BC"}</span>
+          </button>
+        )}
+      </div>
+
+      {/* Weapon quick-select panel */}
+      <AnimatePresence>
+        {showWeaponPanel && state.phase === "playing" && (
+          <motion.div
+            className="sr-zj-quick-weapon-panel"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 10 }}
+            transition={{ duration: 0.15 }}
+          >
+            {WEAPONS.map(wp => {
+              const owned = state.ownedWeapons.includes(wp.id);
+              const unlocked = state.level >= wp.unlockLevel;
+              const canAfford = state.gold >= wp.price;
+              const active = state.currentWeapon === wp.id;
+              const disabled = !unlocked || (!owned && !canAfford);
+
+              return (
+                <button
+                  key={wp.id}
+                  className={`sr-zj-wp-item ${active ? "sr-zj-wp-active" : ""} ${disabled ? "sr-zj-wp-disabled" : ""}`}
+                  onClick={() => {
+                    if (!disabled) buyWeapon(wp.id);
+                  }}
+                >
+                  <span className="sr-zj-wp-emoji">{WEAPON_EMOJI[wp.id] || "\u{1F52B}"}</span>
+                  <span className="sr-zj-wp-name">
+                    {wp.name}
+                    {active && " (当前)"}
+                  </span>
+                  <span className="sr-zj-wp-info">
+                    {!unlocked ? `关卡${wp.unlockLevel}解锁` :
+                      owned ? "已拥有" : `${wp.price}金`}
+                  </span>
+                  <span className="sr-zj-wp-desc">{wp.description}</span>
+                </button>
+              );
+            })}
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Weapon Wall Modal */}
+      <AnimatePresence>
+        {showWeaponWall && (
+          <motion.div
+            className="sr-zj-modal-overlay"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setShowWeaponWall(false)}
+          >
+            <motion.div
+              className="sr-zj-modal-card"
+              initial={{ scale: 0.8, y: 40 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.8, y: 40 }}
+              transition={{ type: "spring", damping: 22, stiffness: 300 }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="sr-zj-modal-title">{'\u{1F6E1}'} 武器墙</div>
+              <div className="sr-zj-modal-subtitle">选择你的武器，击败僵尸！</div>
+              <div className="sr-zj-weapon-grid">
+                {WEAPONS.map(wp => {
+                  const owned = state.ownedWeapons.includes(wp.id);
+                  const unlocked = state.level >= wp.unlockLevel || state.highestLevel >= wp.unlockLevel;
+                  const canAfford = state.gold >= wp.price;
+                  const active = state.currentWeapon === wp.id;
+                  const canBuy = unlocked && !owned && canAfford;
+                  const canEquip = owned && !active;
+
+                  return (
+                    <div key={wp.id} className={`sr-zj-weapon-card ${active ? "sr-zj-weapon-card-active" : ""} ${!unlocked ? "sr-zj-weapon-card-locked" : ""}`}>
+                      <div className="sr-zj-weapon-card-icon">{WEAPON_EMOJI[wp.id] || "\u{1F52B}"}</div>
+                      <div className="sr-zj-weapon-card-name">{wp.name}</div>
+                      <div className="sr-zj-weapon-card-info">
+                        <span>价格: {wp.price === 0 ? "免费" : `${wp.price}金`}</span>
+                        <span>解锁: 关卡{wp.unlockLevel}</span>
+                      </div>
+                      <div className="sr-zj-weapon-card-desc">{wp.description}</div>
+                      <div className="sr-zj-weapon-card-status">
+                        {active ? (
+                          <span className="sr-zj-status-active">当前使用</span>
+                        ) : owned ? (
+                          <button className="sr-zj-btn-sm" onClick={() => buyWeapon(wp.id)}>装备</button>
+                        ) : !unlocked ? (
+                          <span className="sr-zj-status-locked">关卡{wp.unlockLevel}解锁</span>
+                        ) : canBuy ? (
+                          <button className="sr-zj-btn-sm sr-zj-btn-buy" onClick={() => buyWeapon(wp.id)}>购买 {wp.price}金</button>
+                        ) : (
+                          <span className="sr-zj-status-nogold">金币不足</span>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+              <button className="sr-zj-btn sr-zj-btn-secondary" onClick={() => setShowWeaponWall(false)}>
+                关闭
+              </button>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Badge Wall Modal */}
+      <AnimatePresence>
+        {showBadgeWall && (
+          <motion.div
+            className="sr-zj-modal-overlay"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setShowBadgeWall(false)}
+          >
+            <motion.div
+              className="sr-zj-modal-card"
+              initial={{ scale: 0.8, y: 40 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.8, y: 40 }}
+              transition={{ type: "spring", damping: 22, stiffness: 300 }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="sr-zj-modal-title">{'\u{1F3C6}'} 徽章墙</div>
+              <div className="sr-zj-modal-subtitle">已获得 {state.badges.length} / 20 个徽章</div>
+              <div className="sr-zj-badge-grid">
+                {BADGES.map(b => {
+                  const earned = state.badges.includes(b.level);
+                  const unlocked = state.highestLevel >= b.level || state.level >= b.level;
+                  return (
+                    <div key={b.level} className={`sr-zj-badge-card ${earned ? "sr-zj-badge-earned" : "sr-zj-badge-locked"}`}>
+                      <div className="sr-zj-badge-card-icon">{earned ? b.icon : "?"}</div>
+                      <div className="sr-zj-badge-card-name">{earned ? b.name : "???"}</div>
+                      <div className="sr-zj-badge-card-level">
+                        {earned ? `关卡${b.level}` : `通关关卡${b.level}解锁`}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+              <button className="sr-zj-btn sr-zj-btn-secondary" onClick={() => setShowBadgeWall(false)}>
+                关闭
+              </button>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Badge notification */}
       <AnimatePresence>
@@ -1539,14 +1961,22 @@ const ZombieJuiceGame: React.FC = () => {
           font-size: 24px;
           cursor: default;
         }
-        .sr-zj-bottom-area {
+        /* Shop area */
+        .sr-zj-shop-area {
           width: 100%;
           max-width: 600px;
           margin-top: 6px;
-          padding: 6px 12px;
+          padding: 8px 12px;
           background: rgba(255,255,255,0.6);
           border-radius: 10px;
           min-height: 36px;
+        }
+        .sr-zj-shop-label {
+          font-size: 11px;
+          color: #aaa;
+          font-weight: 600;
+          margin-bottom: 4px;
+          text-align: center;
         }
         .sr-zj-cups-row {
           display: flex;
@@ -1554,6 +1984,7 @@ const ZombieJuiceGame: React.FC = () => {
           gap: 6px;
           font-size: 13px;
           color: #5a5a5a;
+          flex-wrap: wrap;
         }
         .sr-zj-cups-label {
           font-weight: 600;
@@ -1568,31 +1999,39 @@ const ZombieJuiceGame: React.FC = () => {
           font-size: 20px;
           line-height: 1;
         }
-        .sr-zj-weapon-bar {
+        .sr-zj-customer-types {
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          margin-top: 4px;
+          flex-wrap: wrap;
+        }
+        .sr-zj-ct-tag {
+          font-size: 16px;
+          cursor: default;
+        }
+        .sr-zj-ct-note {
+          font-size: 11px;
+          color: #aaa;
+          margin-left: 4px;
+        }
+        /* Bottom bar */
+        .sr-zj-bottom-bar {
           width: 100%;
           max-width: 600px;
           display: flex;
           align-items: center;
-          justify-content: space-between;
+          justify-content: center;
+          gap: 10px;
           margin-top: 8px;
           padding: 0 4px;
+          flex-wrap: wrap;
         }
-        .sr-zj-gold-display {
-          font-size: 14px;
-          font-weight: 700;
-          color: #F9A825;
-          background: rgba(249,168,37,0.1);
-          padding: 4px 12px;
-          border-radius: 12px;
-        }
-        .sr-zj-weapon-selector {
-          position: relative;
-        }
-        .sr-zj-weapon-btn {
+        .sr-zj-bottom-btn {
           display: flex;
           align-items: center;
-          gap: 6px;
-          padding: 6px 16px;
+          gap: 4px;
+          padding: 8px 18px;
           font-size: 13px;
           font-weight: 600;
           color: #3a3a3a;
@@ -1600,35 +2039,44 @@ const ZombieJuiceGame: React.FC = () => {
           border: 1.5px solid #ddd;
           border-radius: 14px;
           cursor: pointer;
-          transition: border-color 0.15s;
+          transition: border-color 0.15s, background 0.15s;
         }
-        .sr-zj-weapon-btn:hover {
+        .sr-zj-bottom-btn:hover {
           border-color: #4a7a3a;
+          background: #f8faf6;
+        }
+        .sr-zj-bottom-btn-primary {
+          background: linear-gradient(135deg, #4a7a3a, #6b8e5a);
+          color: #fff;
+          border-color: transparent;
+        }
+        .sr-zj-bottom-btn-primary:hover {
+          background: linear-gradient(135deg, #5a8a4a, #7b9e6a);
+          border-color: transparent;
         }
         .sr-zj-weapon-arrow {
           font-size: 10px;
           color: #aaa;
         }
-        .sr-zj-weapon-panel {
-          position: absolute;
-          bottom: calc(100% + 6px);
-          right: 0;
-          width: 240px;
-          background: #fff;
-          border: 1.5px solid #e0e0e0;
-          border-radius: 12px;
-          box-shadow: 0 4px 16px rgba(0,0,0,0.1);
-          padding: 6px;
-          z-index: 30;
+        /* Quick weapon panel */
+        .sr-zj-quick-weapon-panel {
+          width: 100%;
+          max-width: 600px;
           display: flex;
           flex-direction: column;
           gap: 4px;
+          margin-top: 4px;
+          padding: 8px;
+          background: #fff;
+          border: 1.5px solid #e0e0e0;
+          border-radius: 12px;
+          box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+          z-index: 30;
         }
         .sr-zj-wp-item {
           display: flex;
-          flex-direction: column;
-          align-items: flex-start;
-          gap: 1px;
+          align-items: center;
+          gap: 8px;
           padding: 8px 10px;
           border: none;
           border-radius: 8px;
@@ -1647,23 +2095,193 @@ const ZombieJuiceGame: React.FC = () => {
           opacity: 0.45;
           cursor: not-allowed;
         }
+        .sr-zj-wp-emoji {
+          font-size: 20px;
+          flex-shrink: 0;
+        }
         .sr-zj-wp-name {
           font-size: 13px;
           font-weight: 700;
           color: #3a3a3a;
+          flex: 1;
         }
         .sr-zj-wp-info {
           font-size: 11px;
           color: #F9A825;
           font-weight: 600;
+          white-space: nowrap;
         }
         .sr-zj-wp-desc {
           font-size: 11px;
           color: #999;
+          white-space: nowrap;
         }
+        /* Modal overlays */
+        .sr-zj-modal-overlay {
+          position: fixed;
+          inset: 0;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          background: rgba(0,0,0,0.5);
+          z-index: 100;
+          padding: 20px;
+        }
+        .sr-zj-modal-card {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          gap: 16px;
+          padding: 24px 28px;
+          background: #fff;
+          border-radius: 20px;
+          box-shadow: 0 8px 40px rgba(0,0,0,0.2);
+          max-width: 560px;
+          width: 100%;
+          max-height: 80vh;
+          overflow-y: auto;
+        }
+        .sr-zj-modal-title {
+          font-size: 22px;
+          font-weight: 800;
+          color: #3a3a3a;
+        }
+        .sr-zj-modal-subtitle {
+          font-size: 13px;
+          color: #8a8a8a;
+        }
+        /* Weapon wall grid */
+        .sr-zj-weapon-grid {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 10px;
+          width: 100%;
+        }
+        .sr-zj-weapon-card {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          gap: 6px;
+          padding: 14px 10px;
+          border: 2px solid #e8e8e8;
+          border-radius: 14px;
+          background: #fafafa;
+          transition: border-color 0.15s, background 0.15s;
+        }
+        .sr-zj-weapon-card-active {
+          border-color: #4a7a3a;
+          background: #f0f8ee;
+        }
+        .sr-zj-weapon-card-locked {
+          opacity: 0.5;
+        }
+        .sr-zj-weapon-card-icon {
+          font-size: 36px;
+        }
+        .sr-zj-weapon-card-name {
+          font-size: 15px;
+          font-weight: 700;
+          color: #3a3a3a;
+        }
+        .sr-zj-weapon-card-info {
+          display: flex;
+          gap: 8px;
+          font-size: 11px;
+          color: #888;
+        }
+        .sr-zj-weapon-card-desc {
+          font-size: 11px;
+          color: #666;
+          text-align: center;
+          line-height: 1.4;
+        }
+        .sr-zj-weapon-card-status {
+          margin-top: 2px;
+        }
+        .sr-zj-status-active {
+          font-size: 12px;
+          font-weight: 700;
+          color: #4a7a3a;
+          background: #e8f0e4;
+          padding: 3px 10px;
+          border-radius: 10px;
+        }
+        .sr-zj-status-locked {
+          font-size: 12px;
+          color: #999;
+        }
+        .sr-zj-status-nogold {
+          font-size: 12px;
+          color: #e53935;
+        }
+        .sr-zj-btn-sm {
+          padding: 5px 16px;
+          font-size: 12px;
+          font-weight: 700;
+          color: #fff;
+          background: linear-gradient(135deg, #4a7a3a, #6b8e5a);
+          border: none;
+          border-radius: 12px;
+          cursor: pointer;
+          transition: transform 0.12s;
+        }
+        .sr-zj-btn-sm:hover {
+          transform: scale(1.05);
+        }
+        .sr-zj-btn-sm:active {
+          transform: scale(0.95);
+        }
+        .sr-zj-btn-buy {
+          background: linear-gradient(135deg, #F9A825, #FBC02D);
+        }
+        /* Badge wall grid */
+        .sr-zj-badge-grid {
+          display: grid;
+          grid-template-columns: repeat(5, 1fr);
+          gap: 8px;
+          width: 100%;
+        }
+        .sr-zj-badge-card {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          gap: 3px;
+          padding: 10px 6px;
+          border: 2px solid #e8e8e8;
+          border-radius: 12px;
+          background: #fafafa;
+          transition: transform 0.12s;
+        }
+        .sr-zj-badge-earned {
+          border-color: #F9A825;
+          background: #fffde7;
+        }
+        .sr-zj-badge-earned:hover {
+          transform: scale(1.05);
+        }
+        .sr-zj-badge-locked {
+          opacity: 0.45;
+          background: #f5f5f5;
+        }
+        .sr-zj-badge-card-icon {
+          font-size: 28px;
+        }
+        .sr-zj-badge-card-name {
+          font-size: 11px;
+          font-weight: 600;
+          color: #3a3a3a;
+          text-align: center;
+          line-height: 1.2;
+        }
+        .sr-zj-badge-card-level {
+          font-size: 10px;
+          color: #999;
+          text-align: center;
+        }
+        /* Achievement */
         .sr-zj-achievement {
-          position: absolute;
-          bottom: 12px;
+          position: fixed;
+          bottom: 24px;
           left: 50%;
           transform: translateX(-50%);
           display: flex;
@@ -1676,7 +2294,7 @@ const ZombieJuiceGame: React.FC = () => {
           font-size: 14px;
           font-weight: 600;
           box-shadow: 0 3px 12px rgba(0,0,0,0.15);
-          z-index: 10;
+          z-index: 200;
           pointer-events: none;
           white-space: nowrap;
         }
@@ -1685,6 +2303,17 @@ const ZombieJuiceGame: React.FC = () => {
         }
         .sr-zj-achievement-label {
           letter-spacing: 0.5px;
+        }
+        @media (max-width: 480px) {
+          .sr-zj-weapon-grid {
+            grid-template-columns: 1fr;
+          }
+          .sr-zj-badge-grid {
+            grid-template-columns: repeat(4, 1fr);
+          }
+          .sr-zj-modal-card {
+            padding: 16px 14px;
+          }
         }
       `}</style>
     </div>

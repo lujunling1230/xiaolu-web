@@ -1,22 +1,19 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 
 /**
- * HealingCompanion — 疗愈师「小愈」
+ * HealingCompanion — 疗愈室悬浮球
  *
- * 纯 SVG 角色浮于疗愈室右下角，具备：
- * - 5 种情绪识别（焦虑/疲惫/低落/平淡/平静）+ 关键词匹配话术库
- * - 页面加载 3s 主动问候气泡
- * - 悬停放大上浮，点击展开聊天面板
- * - 快捷情绪按钮、打字指示器、说话口型动画
- * - 长时间不交互每 15s 概率主动关怀
- * - 第 2 轮对话自动追加工具推荐
- * - 零第三方依赖（仅 React + 内联 SVG/CSS）
+ * 右下角悬浮球，点击展开面板，包含两个 Tab：
+ * 1. 「小愈」— AI 疗愈师聊天（情绪识别 + 共情话术库）
+ * 2. 「统计」— 本周 / 本月 / 本年疗愈数据统计
+ *
+ * 零外部 AI 依赖，全部本地模板匹配。
  */
 
-/* ──────────────────────────────
+/* ═══════════════════════════════════
    话术库
-   ────────────────────────────── */
+   ═══════════════════════════════════ */
 
 type EmotionKey = "anxiety" | "exhausted" | "low" | "neutral" | "calm";
 
@@ -57,19 +54,19 @@ const EMOTIONS: EmotionRule[] = [
   {
     key: "low",
     label: "低落",
-    keywords: ["难过", "伤心", "哭", "失落", "失望", "痛", "孤独", "寂寞", "无助", "绝望", "抑郁", "伤心", "不开心", "不想", "没意思", "无聊", "没劲"],
+    keywords: ["难过", "伤心", "哭", "失落", "失望", "痛", "孤独", "寂寞", "无助", "绝望", "抑郁", "不开心", "不想", "没意思", "无聊", "没劲"],
     responses: [
       "我能感受到你心里下着雨。没关系的，我在这里，陪你等雨停。",
       "低落的时候，不需要强迫自己开心。允许自己难过，本身就是一种力量。",
       "你愿意把这些写下来告诉我，已经很勇敢了。你不需要独自承受。",
     ],
-    followUps: ["有什么特别让你难过的事吗？还是说不清的无力感？", "你有多久没有好好照顾自己了？", "如果此刻能给过去的自己一个拥抱，你想说什么？"],
+    followUps: ["有什么特别让你难过的事吗？还是说不清的无力感？", "你有多久没有好好照顾自己了？", "如果此刻能给过去的自己一个拥抱，你会说什么？"],
     toolSuggestion: "写下来也是一种疗愈。试试感恩日记，把心里的东西倒出来。",
   },
   {
     key: "neutral",
     label: "平淡",
-    keywords: ["还好", "一般", "凑合", "就这样", "没什么", "不知道", "麻木", "没感觉", "normal", "哦", "嗯"],
+    keywords: ["还好", "一般", "凑合", "就这样", "没什么", "不知道", "麻木", "没感觉"],
     responses: [
       "平淡也是一种状态，不需要每天都轰轰烈烈。你在用自己的节奏生活。",
       "今天虽然没什么特别的事，但你来了这里——说明你心里还有想要照顾自己的意愿。",
@@ -87,8 +84,7 @@ const EMOTIONS: EmotionRule[] = [
       "你现在的状态很棒。记住这种感觉，它会在你不那么好的日子里，成为你的力量。",
       "好开心看到你这么放松。你值得拥有这样的时刻。",
     ],
-    followUps: ["是什么让你感到这么平静的呢？", "有没有想把它记录下来，以后翻看时提醒自己？", "你的平静能感染周围的人，包括我。",
-    ],
+    followUps: ["是什么让你感到这么平静的呢？", "有没有想把它记录下来，以后翻看时提醒自己？", "你的平静能感染周围的人，包括我。"],
     toolSuggestion: "平静的时候特别适合写感恩日记，把这份美好存下来。",
   },
 ];
@@ -108,10 +104,6 @@ const IDLE_BUBBLES = [
   "有什么想倾诉的吗？我一直在。",
 ];
 
-/* ──────────────────────────────
-   情绪分析
-   ────────────────────────────── */
-
 function detectEmotion(text: string): EmotionRule | null {
   const lower = text.toLowerCase();
   for (const emo of EMOTIONS) {
@@ -124,9 +116,131 @@ function pickRandom<T>(arr: T[]): T {
   return arr[Math.floor(Math.random() * arr.length)];
 }
 
-/* ──────────────────────────────
+/* ═══════════════════════════════════
+   统计数据
+   ═══════════════════════════════════ */
+
+interface ModuleStat {
+  week: number;
+  month: number;
+  year: number;
+  total: number;
+}
+
+interface Stats {
+  diary: ModuleStat;
+  breathing: ModuleStat;
+  meditation: ModuleStat;
+  moodDistribution: { label: string; color: string; count: number }[];
+  recentDays: { date: string; hasDiary: boolean; hasBreathing: boolean; hasMeditation: boolean }[];
+}
+
+function loadStats(): Stats {
+  const now = new Date();
+  const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${String(now.getDate()).padStart(2, "0")}`;
+
+  // 本周起始（周一）
+  const dayOfWeek = now.getDay() === 0 ? 7 : now.getDay();
+  const weekStart = new Date(now);
+  weekStart.setDate(now.getDate() - dayOfWeek + 1);
+  weekStart.setHours(0, 0, 0, 0);
+  const weekStartStr = `${weekStart.getFullYear()}-${String(weekStart.getMonth() + 1).padStart(2, "0")}-${String(weekStart.getDate()).padStart(2, "0")}`;
+
+  // 本月起始
+  const monthStartStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-01`;
+
+  // 本年起始
+  const yearStartStr = `${now.getFullYear()}-01-01`;
+
+  /* ── 日记 ── */
+  let entries: { date: string; color: string; content: string }[] = [];
+  try {
+    entries = JSON.parse(localStorage.getItem("gratitude_entries") || "[]");
+  } catch { /* */ }
+
+  const diaryWeek = entries.filter((e) => e.date >= weekStartStr && e.date <= todayStr).length;
+  const diaryMonth = entries.filter((e) => e.date >= monthStartStr && e.date <= todayStr).length;
+  const diaryYear = entries.filter((e) => e.date >= yearStartStr && e.date <= todayStr).length;
+
+  /* ── 呼吸引导 ── */
+  let breathingRecords: { date: string; mode: string; cycles: number }[] = [];
+  try {
+    breathingRecords = JSON.parse(localStorage.getItem("breathing_records") || "[]");
+  } catch { /* */ }
+
+  const breathingWeek = breathingRecords.filter((r) => r.date >= weekStartStr && r.date <= todayStr).length;
+  const breathingMonth = breathingRecords.filter((r) => r.date >= monthStartStr && r.date <= todayStr).length;
+  const breathingYear = breathingRecords.filter((r) => r.date >= yearStartStr && r.date <= todayStr).length;
+
+  /* ── 冥想 ── */
+  let totalMeditationSec = 0;
+  try {
+    totalMeditationSec = parseInt(localStorage.getItem("meditation_total") || "0", 10);
+  } catch { /* */ }
+
+  // 心情分布（本月）
+  const MOOD_MAP: Record<string, { label: string; color: string }> = {
+    joy: { label: "喜悦", color: "#F4A6B8" },
+    calm: { label: "平静", color: "#A5C4A0" },
+    cool: { label: "清冷", color: "#7EB8D4" },
+    tender: { label: "温柔", color: "#F5CEAA" },
+    soulful: { label: "深情", color: "#C4A0D4" },
+    mellow: { label: "慵懒", color: "#D4C47E" },
+  };
+  const moodFreq: Record<string, number> = {};
+  for (const e of entries.filter((e) => e.date >= monthStartStr && e.date <= todayStr)) {
+    if (e.color) moodFreq[e.color] = (moodFreq[e.color] || 0) + 1;
+  }
+  const moodDistribution = Object.entries(moodFreq)
+    .map(([key, count]) => ({
+      label: MOOD_MAP[key]?.label || key,
+      color: MOOD_MAP[key]?.color || "#ccc",
+      count,
+    }))
+    .sort((a, b) => b.count - a.count);
+
+  // 最近 7 天活动热力图
+  const recentDays: { date: string; hasDiary: boolean; hasBreathing: boolean; hasMeditation: boolean }[] = [];
+  for (let i = 6; i >= 0; i--) {
+    const d = new Date(now);
+    d.setDate(now.getDate() - i);
+    const ds = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+    recentDays.push({
+      date: ds,
+      hasDiary: entries.some((e) => e.date === ds),
+      hasBreathing: breathingRecords.some((r) => r.date === ds),
+      hasMeditation: false, // 冥想暂无法按天判断
+    });
+  }
+
+  return {
+    diary: { week: diaryWeek, month: diaryMonth, year: diaryYear, total: entries.length },
+    breathing: { week: breathingWeek, month: breathingMonth, year: breathingYear, total: breathingRecords.length },
+    meditation: { week: 0, month: 0, year: totalMeditationSec, total: totalMeditationSec },
+    moodDistribution,
+    recentDays,
+  };
+}
+
+function formatDuration(seconds: number): string {
+  if (seconds < 60) return `${seconds}s`;
+  const m = Math.floor(seconds / 60);
+  const s = seconds % 60;
+  if (m < 60) return s > 0 ? `${m}m${s}s` : `${m}m`;
+  const h = Math.floor(m / 60);
+  const rm = m % 60;
+  return rm > 0 ? `${h}h${rm}m` : `${h}h`;
+}
+
+function getWeekdayShort(dateStr: string): string {
+  const days = ["日", "一", "二", "三", "四", "五", "六"];
+  const d = new Date(dateStr);
+  return days[d.getDay()];
+}
+
+/* ═══════════════════════════════════
    组件
-   ────────────────────────────── */
+   ═══════════════════════════════════ */
 
 interface Message {
   id: string;
@@ -135,21 +249,28 @@ interface Message {
   timestamp: number;
 }
 
+type Tab = "chat" | "stats";
+
 const HealingCompanion: React.FC = () => {
-  const [chatOpen, setChatOpen] = useState(false);
-  const [messages, setMessages] = useState<Message[]>([]);
-  const [inputValue, setInputValue] = useState("");
+  const [panelOpen, setPanelOpen] = useState(false);
+  const [tab, setTab] = useState<Tab>("chat");
   const [showBubble, setShowBubble] = useState(false);
   const [bubbleText, setBubbleText] = useState("");
+  const [hovered, setHovered] = useState(false);
+
+  // 聊天
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [inputValue, setInputValue] = useState("");
   const [isTyping, setIsTyping] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
   const [expression, setExpression] = useState<"smile" | "concern" | "think">("smile");
-  const [hovered, setHovered] = useState(false);
   const [turnCount, setTurnCount] = useState(0);
-
   const chatEndRef = useRef<HTMLDivElement>(null);
   const idleTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const lastInteractionRef = useRef(Date.now());
+
+  // 统计
+  const [stats, setStats] = useState<Stats | null>(null);
 
   // 滚动到底部
   useEffect(() => {
@@ -161,8 +282,6 @@ const HealingCompanion: React.FC = () => {
     const t = setTimeout(() => {
       setBubbleText(pickRandom(GREETINGS));
       setShowBubble(true);
-      setExpression("smile");
-      // 4s 后隐藏
       setTimeout(() => setShowBubble(false), 4500);
     }, 3000);
     return () => clearTimeout(t);
@@ -170,10 +289,10 @@ const HealingCompanion: React.FC = () => {
 
   // 主动关怀（15s 检查）
   useEffect(() => {
-    if (chatOpen) return; // 聊天面板打开时不弹出
+    if (panelOpen) return;
     idleTimerRef.current = setInterval(() => {
       const elapsed = Date.now() - lastInteractionRef.current;
-      if (elapsed > 15000 && !showBubble && !chatOpen) {
+      if (elapsed > 15000 && !showBubble && !panelOpen) {
         if (Math.random() > 0.6) {
           setBubbleText(pickRandom(IDLE_BUBBLES));
           setShowBubble(true);
@@ -186,9 +305,15 @@ const HealingCompanion: React.FC = () => {
     return () => {
       if (idleTimerRef.current) clearInterval(idleTimerRef.current);
     };
-  }, [chatOpen, showBubble]);
+  }, [panelOpen, showBubble]);
 
-  // 添加消息 + 模拟打字
+  // 打开面板时加载统计
+  useEffect(() => {
+    if (panelOpen && !stats) {
+      setStats(loadStats());
+    }
+  }, [panelOpen, stats]);
+
   const addCompanionMessage = useCallback((text: string, delay = 800) => {
     setIsTyping(true);
     setExpression("think");
@@ -201,13 +326,11 @@ const HealingCompanion: React.FC = () => {
         ...prev,
         { id: `${Date.now()}`, role: "companion", text, timestamp: Date.now() },
       ]);
-      // 说话动画 1.5s 后停止
       setTimeout(() => setIsSpeaking(false), 1500);
       chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
     }, delay + typingDuration);
   }, []);
 
-  // 发送消息
   const handleSend = useCallback(
     (text?: string) => {
       const msg = (text || inputValue).trim();
@@ -221,22 +344,16 @@ const HealingCompanion: React.FC = () => {
         { id: `${Date.now()}`, role: "user", text: msg, timestamp: Date.now() },
       ]);
 
-      // 情绪识别
       const emotion = detectEmotion(msg);
 
       setTimeout(() => {
         if (emotion) {
           setExpression("concern");
-          const response = pickRandom(emotion.responses);
-          addCompanionMessage(response);
+          addCompanionMessage(pickRandom(emotion.responses));
 
-          // 第 2 轮追加工具推荐
           if (turnCount >= 1) {
-            setTimeout(() => {
-              addCompanionMessage(emotion.toolSuggestion, 600);
-            }, 2500);
+            setTimeout(() => addCompanionMessage(emotion.toolSuggestion, 600), 2500);
           }
-          // 偶发追问
           if (Math.random() > 0.4) {
             setTimeout(() => {
               setExpression("think");
@@ -244,11 +361,10 @@ const HealingCompanion: React.FC = () => {
             }, turnCount >= 1 ? 5000 : 3500);
           }
         } else {
-          // 无法识别情绪时的通用回复
           const generic = [
             "嗯，我在听。能再多说一些吗？",
             "谢谢你愿意告诉我这些。你今天过得怎么样？",
-            "我感受到了你的心声。如果累了，可以试试左侧的呼吸引导或冥想。",
+            "我感受到了你的心声。如果累了，可以试试呼吸引导或冥想。",
             "每个人都需要一个倾听者。我在这里，不急，慢慢说。",
           ];
           addCompanionMessage(pickRandom(generic));
@@ -258,7 +374,6 @@ const HealingCompanion: React.FC = () => {
     [inputValue, turnCount, addCompanionMessage]
   );
 
-  // 快捷情绪按钮
   const handleQuickEmotion = useCallback(
     (emo: EmotionRule) => {
       handleSend(emo.label);
@@ -266,235 +381,32 @@ const HealingCompanion: React.FC = () => {
     [handleSend]
   );
 
-  // 点击角色 → 展开聊天 + 欢迎语
-  const handleCharacterClick = useCallback(() => {
-    setChatOpen((v) => {
+  const handleBallClick = useCallback(() => {
+    setPanelOpen((v) => {
       if (!v && messages.length === 0) {
-        // 首次打开，发送欢迎语
-        setTimeout(() => {
-          addCompanionMessage(pickRandom(GREETINGS), 300);
-        }, 200);
+        setTimeout(() => addCompanionMessage(pickRandom(GREETINGS), 300), 200);
       }
+      if (!v) setStats(loadStats()); // 每次打开都刷新统计
       return !v;
     });
     setShowBubble(false);
     lastInteractionRef.current = Date.now();
   }, [messages.length, addCompanionMessage]);
 
-  /* ─── SVG 角色 ─── */
-
-  const CharacterSVG = () => (
-    <svg viewBox="0 0 140 220" className="hc-character" aria-hidden="true">
-      {/* 背后光晕 — 多层渐变 */}
-      <defs>
-        <radialGradient id="hcAuraGrad" cx="50%" cy="42%" r="50%">
-          <stop offset="0%" stopColor="rgba(165,196,160,0.22)" />
-          <stop offset="60%" stopColor="rgba(122,154,130,0.08)" />
-          <stop offset="100%" stopColor="rgba(122,154,130,0)" />
-        </radialGradient>
-        <linearGradient id="hcRobeGrad2" x1="0" y1="0" x2="0.3" y2="1">
-          <stop offset="0%" stopColor="#9CC5A8" />
-          <stop offset="35%" stopColor="#7BAF8E" />
-          <stop offset="100%" stopColor="#5A8E6E" />
-        </linearGradient>
-        <linearGradient id="hcHairGrad" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="#5A3E2E" />
-          <stop offset="100%" stopColor="#3A2518" />
-        </linearGradient>
-        <linearGradient id="hcSkinGrad" x1="0.3" y1="0" x2="0.7" y2="1">
-          <stop offset="0%" stopColor="#FDE4CA" />
-          <stop offset="100%" stopColor="#F5CEAA" />
-        </linearGradient>
-      </defs>
-      <ellipse cx="70" cy="120" rx="64" ry="88" fill="url(#hcAuraGrad)" className="hc-aura" />
-
-      {/* 身体/长袍 — 更有体积感 */}
-      <path
-        d="M70 100 C44 106 24 132 22 178 C22 194 36 210 70 210 C104 210 118 194 118 178 C116 132 96 106 70 100Z"
-        fill="url(#hcRobeGrad2)"
-        stroke="rgba(90,142,110,0.25)"
-        strokeWidth="0.5"
-      />
-      {/* 袍子折叠阴影 — 左侧 */}
-      <path
-        d="M34 140 C30 158 28 178 36 200"
-        stroke="rgba(60,100,72,0.15)"
-        strokeWidth="8"
-        fill="none"
-        strokeLinecap="round"
-      />
-      {/* 袍子折叠阴影 — 右侧 */}
-      <path
-        d="M106 140 C110 158 112 178 104 200"
-        stroke="rgba(60,100,72,0.12)"
-        strokeWidth="7"
-        fill="none"
-        strokeLinecap="round"
-      />
-      {/* 袍子褶皱线 */}
-      <path d="M50 120 C48 140 46 160 48 185" stroke="rgba(90,142,110,0.12)" strokeWidth="0.8" fill="none" />
-      <path d="M90 120 C92 140 94 160 92 185" stroke="rgba(90,142,110,0.12)" strokeWidth="0.8" fill="none" />
-      <path d="M70 110 L70 190" stroke="rgba(90,142,110,0.06)" strokeWidth="0.6" fill="none" />
-
-      {/* 叶脉纹理 */}
-      <path d="M60 115 C62 132 63 150 61 170" stroke="rgba(107,155,123,0.2)" strokeWidth="0.7" fill="none" />
-      <path d="M80 115 C78 132 77 150 79 170" stroke="rgba(107,155,123,0.2)" strokeWidth="0.7" fill="none" />
-      <path d="M70 110 L66 124 M70 110 L74 124 M70 124 L65 140 M70 124 L75 140 M70 140 L67 155 M70 140 L73 155" stroke="rgba(107,155,123,0.1)" strokeWidth="0.5" fill="none" />
-
-      {/* 肩膀 */}
-      <path d="M70 100 C52 102 36 108 30 116" stroke="url(#hcRobeGrad2)" strokeWidth="10" fill="none" strokeLinecap="round" />
-      <path d="M70 100 C88 102 104 108 110 116" stroke="url(#hcRobeGrad2)" strokeWidth="10" fill="none" strokeLinecap="round" />
-
-      {/* 左手臂（自然垂下，微微向内） */}
-      <path
-        d="M38 120 C34 135 30 150 34 162 C36 168 40 170 44 166"
-        fill="url(#hcRobeGrad2)"
-        stroke="rgba(90,142,110,0.2)"
-        strokeWidth="0.5"
-      />
-      {/* 左手 */}
-      <ellipse cx="42" cy="166" rx="5" ry="4" fill="url(#hcSkinGrad)" transform="rotate(-15 42 166)" />
-
-      {/* 右手臂（持花，微微抬起） */}
-      <path
-        d="M102 120 C106 132 110 142 112 148 C113 152 112 154 108 156"
-        fill="url(#hcRobeGrad2)"
-        stroke="rgba(90,142,110,0.2)"
-        strokeWidth="0.5"
-      />
-      {/* 右手 */}
-      <ellipse cx="107" cy="155" rx="5" ry="4" fill="url(#hcSkinGrad)" transform="rotate(20 107 155)" />
-
-      {/* 脖子 */}
-      <path d="M64 88 C64 98 76 98 76 88" fill="url(#hcSkinGrad)" />
-
-      {/* 头发后层 */}
-      <path d="M48 52 C44 70 40 85 46 98 L52 92 C48 80 48 66 52 54Z" fill="url(#hcHairGrad)" />
-      <path d="M92 52 C96 70 100 85 94 98 L88 92 C92 80 92 66 88 54Z" fill="url(#hcHairGrad)" />
-      {/* 马尾辫 — 更自然 */}
-      <path
-        d="M86 48 C94 44 100 50 102 64 C104 78 100 92 94 102 C92 94 88 80 86 66 C84 56 84 50 86 48Z"
-        fill="url(#hcHairGrad)"
-      />
-      {/* 马尾高光 */}
-      <path
-        d="M90 56 C94 58 96 66 96 74"
-        stroke="rgba(120,80,50,0.2)"
-        strokeWidth="2"
-        fill="none"
-        strokeLinecap="round"
-      />
-      {/* 扎绳 */}
-      <ellipse cx="88" cy="48" rx="3.5" ry="2.5" fill="#A5C4A0" transform="rotate(-10 88 48)" />
-
-      {/* 头 */}
-      <ellipse cx="70" cy="58" rx="24" ry="26" fill="url(#hcSkinGrad)" />
-
-      {/* 耳朵（左） */}
-      <ellipse cx="46" cy="60" rx="4" ry="6" fill="#F5CEAA" />
-      <ellipse cx="46" cy="60" rx="2.5" ry="4" fill="#F0C49A" opacity="0.5" />
-
-      {/* 头发前层（刘海） — 更有层次 */}
-      <path
-        d="M46 52 C48 38 58 30 70 30 C82 30 92 38 94 52 C92 44 84 36 70 36 C56 36 48 44 46 52Z"
-        fill="url(#hcHairGrad)"
-      />
-      {/* 刘海层次 1 */}
-      <path d="M50 50 C52 42 58 36 66 35" fill="url(#hcHairGrad)" opacity="0.85" />
-      {/* 刘海层次 2 */}
-      <path d="M90 50 C88 42 82 36 74 35" fill="url(#hcHairGrad)" opacity="0.85" />
-      {/* 刘海高光 */}
-      <path d="M58 40 C60 36 64 34 68 34" stroke="rgba(140,100,60,0.2)" strokeWidth="1.5" fill="none" strokeLinecap="round" />
-
-      {/* 腮红 — 更自然 */}
-      <ellipse cx="52" cy="68" rx="7" ry="4" fill="rgba(240,140,130,0.25)" />
-      <ellipse cx="88" cy="68" rx="7" ry="4" fill="rgba(240,140,130,0.25)" />
-
-      {/* 眼睛 — 更大更有神 */}
-      <g className="hc-eyes">
-        {expression === "think" ? (
-          <>
-            <ellipse cx="60" cy="60" rx="3" ry="3.5" fill="#3E3028" />
-            <circle cx="61" cy="59" r="1" fill="rgba(255,255,255,0.5)" />
-            <path d="M84 58 Q86 61 84 64" stroke="#3E3028" strokeWidth="2.2" fill="none" strokeLinecap="round" />
-          </>
-        ) : expression === "concern" ? (
-          <>
-            <ellipse cx="60" cy="60" rx="3" ry="3.5" fill="#3E3028" />
-            <circle cx="61" cy="59" r="1" fill="rgba(255,255,255,0.5)" />
-            <ellipse cx="80" cy="60" rx="3" ry="3.5" fill="#3E3028" />
-            <circle cx="81" cy="59" r="1" fill="rgba(255,255,255,0.5)" />
-            <path d="M54 52 Q60 49 66 52" stroke="#3E3028" strokeWidth="1.5" fill="none" strokeLinecap="round" />
-            <path d="M74 52 Q80 49 86 52" stroke="#3E3028" strokeWidth="1.5" fill="none" strokeLinecap="round" />
-          </>
-        ) : (
-          <>
-            <ellipse cx="60" cy="60" rx="3" ry="3.5" fill="#3E3028" />
-            <circle cx="61" cy="59" r="1" fill="rgba(255,255,255,0.5)" />
-            <ellipse cx="80" cy="60" rx="3" ry="3.5" fill="#3E3028" />
-            <circle cx="81" cy="59" r="1" fill="rgba(255,255,255,0.5)" />
-            <path d="M54 53 Q60 50 66 53" stroke="#3E3028" strokeWidth="1.3" fill="none" strokeLinecap="round" />
-            <path d="M74 53 Q80 50 86 53" stroke="#3E3028" strokeWidth="1.3" fill="none" strokeLinecap="round" />
-          </>
-        )}
-      </g>
-
-      {/* 鼻子 — 小巧 */}
-      <path d="M69 64 Q70 66.5 71 64" stroke="#D4A882" strokeWidth="0.8" fill="none" strokeLinecap="round" />
-
-      {/* 嘴巴 */}
-      <path
-        d={
-          isSpeaking
-            ? "M65 72 Q70 77 75 72"
-            : expression === "concern"
-              ? "M65 73.5 Q70 71 75 73.5"
-              : "M65 71 Q70 76 75 71"
-        }
-        stroke="#B07060"
-        strokeWidth="1.4"
-        fill={isSpeaking ? "rgba(200,110,100,0.15)" : "none"}
-        strokeLinecap="round"
-      />
-
-      {/* 手中花 — 更精致 */}
-      <g className="hc-flower">
-        <line x1="104" y1="148" x2="112" y2="122" stroke="#6B9B7B" strokeWidth="1.8" strokeLinecap="round" />
-        {/* 花瓣 */}
-        <circle cx="112" cy="118" r="6" fill="#F4A6B8" opacity="0.7" />
-        <circle cx="108" cy="121" r="5.5" fill="#F4A6B8" opacity="0.6" />
-        <circle cx="116" cy="121" r="5.5" fill="#F4A6B8" opacity="0.6" />
-        <circle cx="110" cy="115" r="5" fill="#F8BCC8" opacity="0.5" />
-        <circle cx="114" cy="115" r="5" fill="#F8BCC8" opacity="0.5" />
-        {/* 花心 */}
-        <circle cx="112" cy="119" r="3" fill="#F4D88A" />
-        <circle cx="112" cy="119" r="1.5" fill="#E8C060" />
-        {/* 花茎叶子 */}
-        <path d="M107 134 Q104 128 107 124" fill="#7BAF8E" opacity="0.8" />
-        <path d="M117 132 Q118 126 114 122" fill="#7BAF8E" opacity="0.7" />
-      </g>
-
-      {/* 叶形吊坠项链 */}
-      <g className="hc-necklace" opacity="0.75">
-        <path d="M56 92 Q63 100 70 101 Q77 100 84 92" fill="none" stroke="#A5C4A0" strokeWidth="1" />
-        <path d="M68 100 L70 109 L72 100Z" fill="#A5C4A0" />
-        <line x1="70" y1="101" x2="70" y2="107" stroke="#8BAA86" strokeWidth="0.4" />
-      </g>
-    </svg>
-  );
+  const totalDiary = stats?.diary.total ?? 0;
 
   return (
     <>
-      {/* 角色浮标 */}
+      {/* 悬浮球 */}
       <div
-        className={`hc-float ${hovered ? "hc-float-hover" : ""}`}
+        className={`hc-ball-wrap ${hovered ? "hc-ball-hover" : ""}`}
         onMouseEnter={() => { setHovered(true); lastInteractionRef.current = Date.now(); }}
         onMouseLeave={() => setHovered(false)}
-        onClick={handleCharacterClick}
+        onClick={handleBallClick}
       >
         {/* 对话气泡 */}
         <AnimatePresence>
-          {showBubble && !chatOpen && (
+          {showBubble && !panelOpen && (
             <motion.div
               className="hc-bubble"
               initial={{ opacity: 0, y: 6, scale: 0.9 }}
@@ -508,13 +420,34 @@ const HealingCompanion: React.FC = () => {
           )}
         </AnimatePresence>
 
-        <CharacterSVG />
-        <span className="hc-name">小愈</span>
+        {/* 球体 */}
+        <div className="hc-ball">
+          <div className="hc-ball-glow" />
+          <svg viewBox="0 0 40 40" className="hc-ball-icon" aria-hidden="true">
+            <path
+              d="M20 6 C14 6 8 12 8 20 C8 28 14 34 20 34 C26 34 32 28 32 20 C32 14 26 8 20 10 C16 11 14 16 16 20 C17 22 19 23 20 21"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.8"
+              strokeLinecap="round"
+            />
+            <path
+              d="M14 18 L12 22 M26 18 L28 22 M10 26 L8 30 M30 26 L32 30"
+              stroke="currentColor"
+              strokeWidth="1.2"
+              strokeLinecap="round"
+              opacity="0.4"
+            />
+          </svg>
+          {/* 说话时脉动 */}
+          {isSpeaking && <div className="hc-ball-speak-ring" />}
+        </div>
+        <span className="hc-ball-label">小愈</span>
       </div>
 
-      {/* 聊天面板 */}
+      {/* 面板 */}
       <AnimatePresence>
-        {chatOpen && (
+        {panelOpen && (
           <motion.div
             className="hc-panel"
             initial={{ opacity: 0, y: 20, scale: 0.95 }}
@@ -522,147 +455,261 @@ const HealingCompanion: React.FC = () => {
             exit={{ opacity: 0, y: 16, scale: 0.97 }}
             transition={{ duration: 0.3, ease: "easeOut" }}
           >
-            {/* 面板头 */}
-            <div className="hc-panel-header">
-              <div className="hc-panel-title">
-                <span className="hc-panel-dot" />
-                小愈 · 疗愈师
-              </div>
-              <button className="hc-panel-close" onClick={() => setChatOpen(false)} aria-label="关闭">
-                ×
+            {/* Tab 切换 */}
+            <div className="hc-tabs">
+              <button
+                className={`hc-tab ${tab === "chat" ? "hc-tab-active" : ""}`}
+                onClick={() => setTab("chat")}
+              >
+                小愈
+              </button>
+              <button
+                className={`hc-tab ${tab === "stats" ? "hc-tab-active" : ""}`}
+                onClick={() => { setTab("stats"); setStats(loadStats()); }}
+              >
+                统计
+              </button>
+              <button className="hc-panel-close" onClick={() => setPanelOpen(false)} aria-label="关闭">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M18 6L6 18M6 6l12 12" /></svg>
               </button>
             </div>
 
-            {/* 消息列表 */}
-            <div className="hc-messages">
-              {messages.map((msg) => (
-                <motion.div
-                  key={msg.id}
-                  className={`hc-msg hc-msg-${msg.role}`}
-                  initial={{ opacity: 0, y: 8 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.25 }}
-                >
-                  <p>{msg.text}</p>
-                </motion.div>
-              ))}
-              {/* 打字指示器 */}
-              {isTyping && (
-                <div className="hc-msg hc-msg-companion">
-                  <div className="hc-typing">
-                    <span /><span /><span />
-                  </div>
+            {/* 聊天 Tab */}
+            {tab === "chat" && (
+              <>
+                <div className="hc-messages">
+                  {messages.map((msg) => (
+                    <motion.div
+                      key={msg.id}
+                      className={`hc-msg hc-msg-${msg.role}`}
+                      initial={{ opacity: 0, y: 8 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.25 }}
+                    >
+                      <p>{msg.text}</p>
+                    </motion.div>
+                  ))}
+                  {isTyping && (
+                    <div className="hc-msg hc-msg-companion">
+                      <div className="hc-typing"><span /><span /><span /></div>
+                    </div>
+                  )}
+                  <div ref={chatEndRef} />
                 </div>
-              )}
-              <div ref={chatEndRef} />
-            </div>
-
-            {/* 快捷情绪按钮 */}
-            {messages.length === 0 && (
-              <div className="hc-quick-bar">
-                {EMOTIONS.map((emo) => (
-                  <button
-                    key={emo.key}
-                    className="hc-quick-btn"
-                    onClick={() => handleQuickEmotion(emo)}
-                  >
-                    {emo.label}
+                {messages.length === 0 && (
+                  <div className="hc-quick-bar">
+                    {EMOTIONS.map((emo) => (
+                      <button key={emo.key} className="hc-quick-btn" onClick={() => handleQuickEmotion(emo)}>
+                        {emo.label}
+                      </button>
+                    ))}
+                  </div>
+                )}
+                <div className="hc-input-bar">
+                  <input
+                    className="hc-input"
+                    value={inputValue}
+                    onChange={(e) => { setInputValue(e.target.value); lastInteractionRef.current = Date.now(); }}
+                    onKeyDown={(e) => e.key === "Enter" && handleSend()}
+                    placeholder="说说你现在的感受…"
+                  />
+                  <button className="hc-send-btn" onClick={() => handleSend()} disabled={!inputValue.trim()} aria-label="发送">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M22 2L11 13M22 2L15 22L11 13M22 2L2 9L11 13" />
+                    </svg>
                   </button>
-                ))}
-              </div>
+                </div>
+                <p className="hc-disclaimer">我是你的 AI 伙伴，不是医生。如果长期情绪低落，建议找专业咨询师。</p>
+              </>
             )}
 
-            {/* 输入栏 */}
-            <div className="hc-input-bar">
-              <input
-                className="hc-input"
-                value={inputValue}
-                onChange={(e) => { setInputValue(e.target.value); lastInteractionRef.current = Date.now(); }}
-                onKeyDown={(e) => e.key === "Enter" && handleSend()}
-                placeholder="说说你现在的感受…"
-              />
-              <button
-                className="hc-send-btn"
-                onClick={() => handleSend()}
-                disabled={!inputValue.trim()}
-                aria-label="发送"
-              >
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M22 2L11 13M22 2L15 22L11 13M22 2L2 9L11 13" />
-                </svg>
-              </button>
-            </div>
+            {/* 统计 Tab */}
+            {tab === "stats" && stats && (
+              <div className="hc-stats">
+                {/* 模块概览 */}
+                <div className="hc-stats-modules">
+                  <div className="hc-stats-mod">
+                    <div className="hc-stats-mod-icon" style={{ background: "rgba(244,166,184,0.15)" }}>
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#F4A6B8" strokeWidth="1.8" strokeLinecap="round"><path d="M12 2C8 6 4 10 4 14c0 4.4 3.6 8 8 8s8-3.6 8-8c0-4-4-8-8-12z"/></svg>
+                    </div>
+                    <div className="hc-stats-mod-info">
+                      <div className="hc-stats-mod-title">感恩日记</div>
+                      <div className="hc-stats-mod-row">
+                        <span>周 {stats.diary.week}</span>
+                        <span>月 {stats.diary.month}</span>
+                        <span>年 {stats.diary.year}</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="hc-stats-mod">
+                    <div className="hc-stats-mod-icon" style={{ background: "rgba(126,184,212,0.15)" }}>
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#7EB8D4" strokeWidth="1.8" strokeLinecap="round"><circle cx="12" cy="12" r="8"/><path d="M12 8v4l3 3"/></svg>
+                    </div>
+                    <div className="hc-stats-mod-info">
+                      <div className="hc-stats-mod-title">呼吸引导</div>
+                      <div className="hc-stats-mod-row">
+                        <span>周 {stats.breathing.week}</span>
+                        <span>月 {stats.breathing.month}</span>
+                        <span>年 {stats.breathing.year}</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="hc-stats-mod">
+                    <div className="hc-stats-mod-icon" style={{ background: "rgba(165,196,160,0.15)" }}>
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#A5C4A0" strokeWidth="1.8" strokeLinecap="round"><path d="M12 3v18M3 12h18M6 6l12 12M6 18L18 6"/></svg>
+                    </div>
+                    <div className="hc-stats-mod-info">
+                      <div className="hc-stats-mod-title">冥想空间</div>
+                      <div className="hc-stats-mod-row">
+                        <span>{formatDuration(stats.meditation.total)}</span>
+                        <span>累计</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
 
-            {/* 安全提示 */}
-            <p className="hc-disclaimer">我是你的 AI 伙伴，不是医生。如果长期情绪低落，建议找专业咨询师。</p>
+                {/* 近 7 天热力图 */}
+                <div className="hc-stats-section">
+                  <div className="hc-stats-section-title">近 7 天</div>
+                  <div className="hc-stats-days">
+                    {stats.recentDays.map((d) => (
+                      <div key={d.date} className="hc-stats-day">
+                        <div className="hc-stats-day-dots">
+                          <div className={`hc-stats-dot hc-dot-diary ${d.hasDiary ? "hc-dot-active" : ""}`} title="日记" />
+                          <div className={`hc-stats-dot hc-dot-breathing ${d.hasBreathing ? "hc-dot-active" : ""}`} title="呼吸" />
+                          <div className={`hc-stats-dot hc-dot-meditation ${d.hasMeditation ? "hc-dot-active" : ""}`} title="冥想" />
+                        </div>
+                        <span className="hc-stats-day-label">{getWeekdayShort(d.date)}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* 心情分布 */}
+                {stats.moodDistribution.length > 0 && (
+                  <div className="hc-stats-section">
+                    <div className="hc-stats-section-title">本月心情</div>
+                    <div className="hc-stats-mood-list">
+                      {stats.moodDistribution.map((m) => (
+                        <div key={m.label} className="hc-stats-mood-row">
+                          <span className="hc-stats-mood-dot" style={{ background: m.color }} />
+                          <span className="hc-stats-mood-name">{m.label}</span>
+                          <span className="hc-stats-mood-count">{m.count} 次</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* 累计成就 */}
+                <div className="hc-stats-section">
+                  <div className="hc-stats-section-title">累计成就</div>
+                  <div className="hc-stats-achievements">
+                    <div className="hc-stats-ach">
+                      <span className="hc-stats-ach-icon">{totalDiary > 0 ? "|" : "-"}</span>
+                      <div>
+                        <div className="hc-stats-ach-title">{totalDiary} 篇日记</div>
+                        <div className="hc-stats-ach-desc">{totalDiary >= 100 ? "心灵园丁" : totalDiary >= 30 ? "坚持记录" : totalDiary >= 7 ? "初露锋芒" : "刚刚起步"}</div>
+                      </div>
+                    </div>
+                    <div className="hc-stats-ach">
+                      <span className="hc-stats-ach-icon">{stats.breathing.total > 0 ? "°" : "-"}</span>
+                      <div>
+                        <div className="hc-stats-ach-title">{stats.breathing.total} 次呼吸</div>
+                        <div className="hc-stats-ach-desc">{stats.breathing.total >= 50 ? "呼吸大师" : stats.breathing.total >= 20 ? "气息调和" : stats.breathing.total >= 5 ? "初识呼吸" : "还未开始"}</div>
+                      </div>
+                    </div>
+                    <div className="hc-stats-ach">
+                      <span className="hc-stats-ach-icon">{stats.meditation.total >= 3600 ? "~" : "-"}</span>
+                      <div>
+                        <div className="hc-stats-ach-title">{formatDuration(stats.meditation.total)} 冥想</div>
+                        <div className="hc-stats-ach-desc">{stats.meditation.total >= 7200 ? "深度修行" : stats.meditation.total >= 1800 ? "心灵旅者" : stats.meditation.total >= 300 ? "初学冥想" : "还未开始"}</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
           </motion.div>
         )}
       </AnimatePresence>
 
       <style>{`
-        /* ===== 角色浮标 ===== */
-        .hc-float {
-          position: fixed;
-          right: 28px;
-          bottom: 28px;
-          z-index: 80;
+        /* ===== 导航栏小愈按钮 ===== */
+        .hc-ball-wrap {
           cursor: pointer;
           display: flex;
-          flex-direction: column;
           align-items: center;
-          gap: 4px;
-          transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+          gap: 10px;
+          padding: 8px 12px;
+          border-radius: 10px;
+          transition: background 0.25s, transform 0.2s;
           -webkit-tap-highlight-color: transparent;
+          margin-top: auto;
         }
-        .hc-float-hover {
-          transform: translateY(-6px) scale(1.06);
+        .hc-ball-wrap:hover {
+          background: rgba(255, 255, 255, 0.06);
         }
-        .hc-float:active {
-          transform: scale(0.96);
-          transition-duration: 0.1s;
+        .hc-ball {
+          position: relative;
+          width: 34px;
+          height: 34px;
+          border-radius: 50%;
+          background: linear-gradient(135deg, #A5C4A0 0%, #7BAF8E 50%, #5E8A6E 100%);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          box-shadow: 0 2px 10px -2px rgba(46, 64, 55, 0.25), inset 0 1px 0 rgba(255,255,255,0.2);
+          transition: box-shadow 0.3s;
+          flex-shrink: 0;
         }
-        .hc-character {
-          width: 100px;
-          height: auto;
-          filter: drop-shadow(0 4px 12px rgba(46, 64, 55, 0.18));
-          transition: filter 0.3s;
+        .hc-ball-wrap:hover .hc-ball {
+          box-shadow: 0 4px 16px -2px rgba(46, 64, 55, 0.35), inset 0 1px 0 rgba(255,255,255,0.25);
         }
-        .hc-float-hover .hc-character {
-          filter: drop-shadow(0 8px 20px rgba(46, 64, 55, 0.25));
+
+        .hc-ball-glow {
+          position: absolute;
+          inset: -6px;
+          border-radius: 50%;
+          background: rgba(122, 154, 130, 0.15);
+          animation: hcBallGlow 3s ease-in-out infinite;
+          pointer-events: none;
         }
-        .hc-name {
+        @keyframes hcBallGlow {
+          0%, 100% { transform: scale(1); opacity: 0.6; }
+          50% { transform: scale(1.15); opacity: 1; }
+        }
+
+        .hc-ball-speak-ring {
+          position: absolute;
+          inset: -4px;
+          border-radius: 50%;
+          border: 2px solid rgba(122, 154, 130, 0.4);
+          animation: hcSpeakRing 0.8s ease-out infinite;
+          pointer-events: none;
+        }
+        @keyframes hcSpeakRing {
+          0% { transform: scale(1); opacity: 0.6; }
+          100% { transform: scale(1.4); opacity: 0; }
+        }
+
+        .hc-ball-icon {
+          width: 18px;
+          height: 18px;
+          color: rgba(255, 255, 255, 0.9);
+        }
+
+        .hc-ball-label {
           font-family: "Noto Serif SC", Georgia, serif;
-          font-size: 11px;
-          color: var(--text-soft);
-          opacity: 0.6;
-          letter-spacing: 0.1em;
+          font-size: 12px;
+          color: rgba(255, 255, 255, 0.75);
+          letter-spacing: 0.05em;
         }
-
-        /* SVG 样式 — 光晕脉动 */
-        .hc-aura {
-          fill: rgba(122, 154, 130, 0.12);
-          animation: hcAuraPulse 3s ease-in-out infinite;
-        }
-        @keyframes hcAuraPulse {
-          0%, 100% { opacity: 0.6; rx: 64; ry: 88; }
-          50% { opacity: 1; rx: 67; ry: 91; }
-        }
-
-        /* 说话时身体微晃 */
-        ${isSpeaking ? `
-        .hc-character {
-          animation: hcSway 0.4s ease-in-out infinite alternate;
-        }
-        @keyframes hcSway {
-          from { transform: rotate(-1deg); }
-          to { transform: rotate(1deg); }
-        }
-        ` : ""}
 
         /* ===== 对话气泡 ===== */
         .hc-bubble {
           position: absolute;
-          bottom: calc(100% + 8px);
+          bottom: calc(100% + 12px);
           right: 0;
           min-width: 160px;
           max-width: 220px;
@@ -690,13 +737,13 @@ const HealingCompanion: React.FC = () => {
           transform: rotate(45deg);
         }
 
-        /* ===== 聊天面板 ===== */
+        /* ===== 面板 ===== */
         .hc-panel {
           position: fixed;
-          right: 20px;
-          bottom: 110px;
+          left: 236px;
+          bottom: 20px;
           width: 340px;
-          max-height: 480px;
+          max-height: 520px;
           z-index: 90;
           background: var(--card-bg, #fff);
           border: 1px solid var(--border, rgba(0,0,0,0.08));
@@ -706,37 +753,43 @@ const HealingCompanion: React.FC = () => {
           flex-direction: column;
           overflow: hidden;
         }
-        .hc-panel-header {
+
+        /* Tab */
+        .hc-tabs {
           display: flex;
           align-items: center;
-          justify-content: space-between;
-          padding: 14px 16px;
+          padding: 8px 12px;
           border-bottom: 1px solid var(--border, rgba(0,0,0,0.06));
+          gap: 4px;
         }
-        .hc-panel-title {
-          display: flex;
-          align-items: center;
-          gap: 8px;
-          font-family: "Noto Serif SC", Georgia, serif;
+        .hc-tab {
+          padding: 6px 16px;
           font-size: 13px;
-          font-weight: 600;
-          color: var(--text);
+          font-family: "Noto Serif SC", Georgia, serif;
+          font-weight: 500;
+          border: none;
+          border-radius: 8px;
+          background: transparent;
+          color: var(--text-soft);
+          cursor: pointer;
+          transition: all 0.2s;
         }
-        .hc-panel-dot {
-          width: 7px;
-          height: 7px;
-          border-radius: 50%;
-          background: var(--accent);
-          opacity: 0.8;
+        .hc-tab:hover {
+          background: rgba(122, 154, 130, 0.06);
+        }
+        .hc-tab-active {
+          background: rgba(122, 154, 130, 0.1);
+          color: var(--accent);
+          font-weight: 600;
         }
         .hc-panel-close {
+          margin-left: auto;
           width: 28px;
           height: 28px;
           border: none;
           border-radius: 8px;
           background: transparent;
           color: var(--text-soft);
-          font-size: 16px;
           cursor: pointer;
           display: flex;
           align-items: center;
@@ -755,19 +808,11 @@ const HealingCompanion: React.FC = () => {
           display: flex;
           flex-direction: column;
           gap: 10px;
-          min-height: 160px;
-          max-height: 300px;
+          min-height: 140px;
+          max-height: 280px;
         }
-        .hc-msg {
-          max-width: 85%;
-          padding: 9px 13px;
-          border-radius: 12px;
-          font-size: 13px;
-          line-height: 1.7;
-        }
-        .hc-msg p {
-          margin: 0;
-        }
+        .hc-msg { max-width: 85%; padding: 9px 13px; border-radius: 12px; font-size: 13px; line-height: 1.7; }
+        .hc-msg p { margin: 0; }
         .hc-msg-companion {
           align-self: flex-start;
           background: rgba(122, 154, 130, 0.08);
@@ -782,18 +827,9 @@ const HealingCompanion: React.FC = () => {
           border-radius: 12px 12px 4px 12px;
         }
 
-        /* 打字指示器 */
-        .hc-typing {
-          display: flex;
-          gap: 4px;
-          padding: 4px 0;
-        }
+        .hc-typing { display: flex; gap: 4px; padding: 4px 0; }
         .hc-typing span {
-          width: 5px;
-          height: 5px;
-          border-radius: 50%;
-          background: var(--accent);
-          opacity: 0.4;
+          width: 5px; height: 5px; border-radius: 50%; background: var(--accent); opacity: 0.4;
           animation: hcTypingDot 1.2s ease-in-out infinite;
         }
         .hc-typing span:nth-child(2) { animation-delay: 0.2s; }
@@ -803,108 +839,198 @@ const HealingCompanion: React.FC = () => {
           30% { opacity: 0.9; transform: translateY(-3px); }
         }
 
-        /* 快捷按钮 */
-        .hc-quick-bar {
-          display: flex;
-          flex-wrap: wrap;
-          gap: 6px;
-          padding: 0 14px 10px;
-        }
+        .hc-quick-bar { display: flex; flex-wrap: wrap; gap: 6px; padding: 0 14px 10px; }
         .hc-quick-btn {
-          padding: 5px 12px;
-          font-size: 12px;
-          font-family: inherit;
-          border: 1px solid rgba(122, 154, 130, 0.25);
-          border-radius: 999px;
-          background: transparent;
-          color: var(--accent);
-          cursor: pointer;
-          transition: all 0.2s;
+          padding: 5px 12px; font-size: 12px; font-family: inherit;
+          border: 1px solid rgba(122, 154, 130, 0.25); border-radius: 999px;
+          background: transparent; color: var(--accent); cursor: pointer; transition: all 0.2s;
         }
-        .hc-quick-btn:hover {
-          background: rgba(122, 154, 130, 0.1);
-          border-color: var(--accent);
+        .hc-quick-btn:hover { background: rgba(122, 154, 130, 0.1); border-color: var(--accent); }
+
+        .hc-input-bar { display: flex; align-items: center; gap: 8px; padding: 10px 14px; border-top: 1px solid var(--border, rgba(0,0,0,0.06)); }
+        .hc-input {
+          flex: 1; padding: 8px 12px; font-size: 13px; font-family: inherit;
+          border: 1px solid var(--border, rgba(0,0,0,0.08)); border-radius: 999px;
+          background: rgba(0, 0, 0, 0.02); color: var(--text); outline: none; transition: border-color 0.2s;
+        }
+        .hc-input:focus { border-color: var(--accent); }
+        .hc-input::placeholder { color: var(--text-soft); opacity: 0.5; }
+        .hc-send-btn {
+          width: 32px; height: 32px; border: none; border-radius: 50%;
+          background: var(--accent); color: #fff; cursor: pointer;
+          display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+          transition: opacity 0.2s, transform 0.2s;
+        }
+        .hc-send-btn:disabled { opacity: 0.35; cursor: default; }
+        .hc-send-btn:not(:disabled):hover { transform: scale(1.06); }
+
+        .hc-disclaimer {
+          font-size: 9.5px; color: var(--text-soft); opacity: 0.4;
+          text-align: center; padding: 6px 14px 10px; margin: 0; line-height: 1.4;
         }
 
-        /* 输入栏 */
-        .hc-input-bar {
+        /* ===== 统计 Tab ===== */
+        .hc-stats {
+          flex: 1;
+          overflow-y: auto;
+          padding: 16px;
+          display: flex;
+          flex-direction: column;
+          gap: 16px;
+          max-height: 440px;
+        }
+        /* 模块概览 */
+        .hc-stats-modules {
+          display: flex;
+          flex-direction: column;
+          gap: 8px;
+        }
+        .hc-stats-mod {
           display: flex;
           align-items: center;
-          gap: 8px;
-          padding: 10px 14px;
-          border-top: 1px solid var(--border, rgba(0,0,0,0.06));
+          gap: 10px;
+          padding: 10px 12px;
+          border-radius: 10px;
+          background: rgba(122, 154, 130, 0.04);
+          border: 1px solid rgba(122, 154, 130, 0.08);
         }
-        .hc-input {
-          flex: 1;
-          padding: 8px 12px;
-          font-size: 13px;
-          font-family: inherit;
-          border: 1px solid var(--border, rgba(0,0,0,0.08));
-          border-radius: 999px;
-          background: rgba(0, 0, 0, 0.02);
-          color: var(--text);
-          outline: none;
-          transition: border-color 0.2s;
-        }
-        .hc-input:focus {
-          border-color: var(--accent);
-        }
-        .hc-input::placeholder {
-          color: var(--text-soft);
-          opacity: 0.5;
-        }
-        .hc-send-btn {
-          width: 34px;
-          height: 34px;
-          border: none;
-          border-radius: 50%;
-          background: var(--accent);
-          color: #fff;
-          cursor: pointer;
+        .hc-stats-mod-icon {
+          width: 30px;
+          height: 30px;
+          border-radius: 8px;
           display: flex;
           align-items: center;
           justify-content: center;
           flex-shrink: 0;
-          transition: opacity 0.2s, transform 0.2s;
         }
-        .hc-send-btn:disabled {
-          opacity: 0.35;
-          cursor: default;
+        .hc-stats-mod-info { flex: 1; }
+        .hc-stats-mod-title {
+          font-size: 12px;
+          font-weight: 600;
+          color: var(--text);
+          margin-bottom: 2px;
         }
-        .hc-send-btn:not(:disabled):hover {
-          transform: scale(1.06);
+        .hc-stats-mod-row {
+          display: flex;
+          gap: 10px;
+          font-size: 11px;
+          color: var(--text-soft);
+          opacity: 0.7;
         }
 
-        /* 安全提示 */
-        .hc-disclaimer {
-          font-size: 9.5px;
+        .hc-stats-section {}
+        .hc-stats-section-title {
+          font-size: 11px;
           color: var(--text-soft);
-          opacity: 0.4;
-          text-align: center;
-          padding: 6px 14px 10px;
-          margin: 0;
-          line-height: 1.4;
+          opacity: 0.6;
+          letter-spacing: 0.08em;
+          margin-bottom: 10px;
+        }
+
+        /* 近 7 天 */
+        .hc-stats-days {
+          display: flex;
+          justify-content: space-between;
+          gap: 2px;
+        }
+        .hc-stats-day {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          gap: 5px;
+        }
+        .hc-stats-day-dots {
+          display: flex;
+          gap: 2px;
+        }
+        .hc-stats-dot {
+          width: 6px;
+          height: 6px;
+          border-radius: 50%;
+          background: rgba(122, 154, 130, 0.1);
+          transition: background 0.2s;
+        }
+        .hc-dot-diary.hc-dot-active { background: #F4A6B8; }
+        .hc-dot-breathing.hc-dot-active { background: #7EB8D4; }
+        .hc-dot-meditation.hc-dot-active { background: #A5C4A0; }
+        .hc-stats-day-label {
+          font-size: 9px;
+          color: var(--text-soft);
+          opacity: 0.5;
+        }
+
+        /* 心情分布 */
+        .hc-stats-mood-list {
+          display: flex;
+          flex-direction: column;
+          gap: 6px;
+        }
+        .hc-stats-mood-row {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+        }
+        .hc-stats-mood-dot {
+          width: 8px;
+          height: 8px;
+          border-radius: 50%;
+          flex-shrink: 0;
+        }
+        .hc-stats-mood-name {
+          font-size: 12px;
+          color: var(--text);
+          flex: 1;
+        }
+        .hc-stats-mood-count {
+          font-size: 11px;
+          color: var(--text-soft);
+          opacity: 0.6;
+        }
+
+        /* 累计成就 */
+        .hc-stats-achievements {
+          display: flex;
+          flex-direction: column;
+          gap: 10px;
+        }
+        .hc-stats-ach {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          padding: 10px 12px;
+          border-radius: 10px;
+          background: rgba(122, 154, 130, 0.04);
+          border: 1px solid rgba(122, 154, 130, 0.08);
+        }
+        .hc-stats-ach-icon {
+          width: 32px;
+          height: 32px;
+          border-radius: 8px;
+          background: rgba(122, 154, 130, 0.1);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 16px;
+          color: var(--accent);
+          flex-shrink: 0;
+        }
+        .hc-stats-ach-title {
+          font-size: 13px;
+          font-weight: 600;
+          color: var(--text);
+        }
+        .hc-stats-ach-desc {
+          font-size: 11px;
+          color: var(--text-soft);
+          opacity: 0.6;
+          margin-top: 1px;
         }
 
         /* 响应式 */
         @media (max-width: 768px) {
-          .hc-float {
-            right: 16px;
-            bottom: 20px;
-          }
-          .hc-character {
-            width: 76px;
-          }
-          .hc-panel {
-            right: 8px;
-            left: 8px;
-            bottom: 90px;
-            width: auto;
-            max-height: 55vh;
-          }
+          .hc-panel { left: 8px; right: 8px; bottom: 16px; width: auto; max-height: 55vh; }
         }
       `}</style>
-
     </>
   );
 };

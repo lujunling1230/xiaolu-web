@@ -137,7 +137,6 @@ const TimeTheater: React.FC<TimeTheaterProps> = ({ tvCards, bgmCards, onEdit }) 
   const safeChannel = totalChannels > 0 ? currentChannel % totalChannels : 0;
   const currentCard = totalChannels > 0 ? tvCards[safeChannel] : null;
   const currentBgm = bgmCards.length > 0 ? bgmCards[currentSong % bgmCards.length] : null;
-  const formatType = currentCard ? (seededRandom(currentCard.id) > 0.5 ? "VCD" : "DVD") : "VCD";
 
   /* ---- boot-up sequence (runs once on mount) ---- */
   useEffect(() => {
@@ -281,39 +280,15 @@ const TimeTheater: React.FC<TimeTheaterProps> = ({ tvCards, bgmCards, onEdit }) 
                         exit={{ opacity: 0 }}
                         transition={{ duration: 0.4, ease: "easeOut" }}
                       >
-                        {/* VCD/DVD badge */}
-                        <span className={`tt-format-badge ${formatType === "DVD" ? "tt-badge-dvd" : "tt-badge-vcd"}`}>
-                          {formatType}
-                        </span>
-
-                        {/* Year */}
-                        <span className="tt-card-year">{currentCard.year}</span>
-
-                        {/* Image */}
-                        {currentCard.imageUrl && (
+                        {/* Card content - image only */}
+                        {currentCard.imageUrl ? (
                           <div className="tt-card-image-wrap">
-                            <img src={currentCard.imageUrl} alt={currentCard.title} className="tt-card-image" />
-                            <div className="tt-card-image-lines" />
+                            <img src={currentCard.imageUrl} alt={currentCard.title} className="tt-card-img" />
                           </div>
-                        )}
-
-                        {/* Title */}
-                        <div className="tt-card-title">{currentCard.title}</div>
-
-                        {/* Description / quote */}
-                        <div className="tt-card-desc">{currentCard.description}</div>
-
-                        {/* Edit button */}
-                        {onEdit && (
-                          <button
-                            className="tt-card-edit"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              onEdit(currentCard, "tv");
-                            }}
-                          >
-                            编辑此频道
-                          </button>
+                        ) : (
+                          <div className="tt-card-no-img">
+                            <span>{currentCard.title || "空白频道"}</span>
+                          </div>
                         )}
                       </motion.div>
                     ) : (
@@ -757,133 +732,28 @@ const CSS = `
   overflow: hidden;
 }
 
-/* Format badge */
-.tt-format-badge {
-  position: absolute;
-  top: 10px;
-  left: 12px;
-  font-family: 'Courier New', monospace;
-  font-size: 10px;
-  font-weight: 700;
-  padding: 2px 6px;
-  border-radius: 3px;
-  letter-spacing: 1px;
-  z-index: 9;
-}
-.tt-badge-vcd {
-  background: #cc3333;
-  color: #fff;
-}
-.tt-badge-dvd {
-  background: #3355cc;
-  color: #fff;
-}
-
-/* Card year */
-.tt-card-year {
-  position: absolute;
-  top: 10px;
-  right: 12px;
-  font-family: 'Courier New', 'Consolas', monospace;
-  font-size: 11px;
-  color: rgba(255,255,255,0.45);
-  z-index: 9;
-}
-
-/* Card image */
+/* Card image (full-screen) */
 .tt-card-image-wrap {
-  width: 100%;
-  max-width: 240px;
-  margin: 0 auto 12px;
-  position: relative;
-  border-radius: 4px;
-  overflow: hidden;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.5);
-}
-.tt-card-image {
-  width: 100%;
-  display: block;
-  filter: sepia(0.2) contrast(1.05);
-  object-fit: cover;
-  max-height: 160px;
-}
-.tt-card-image-lines {
   position: absolute;
   inset: 0;
-  background: repeating-linear-gradient(
-    0deg,
-    transparent,
-    transparent 3px,
-    rgba(0,0,0,0.06) 3px,
-    rgba(0,0,0,0.06) 6px
-  );
-  pointer-events: none;
+  overflow: hidden;
 }
-
-/* Card title */
-.tt-card-title {
-  font-family: 'Noto Serif SC', 'Songti SC', serif;
-  font-size: 20px;
-  font-weight: 700;
-  color: #fff;
-  margin-bottom: 8px;
-  line-height: 1.4;
-  text-shadow: 0 2px 8px rgba(0,0,0,0.5);
+.tt-card-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  filter: sepia(0.15) contrast(1.05);
 }
-
-/* Card description / quote */
-.tt-card-desc {
-  font-family: 'Noto Serif SC', 'Songti SC', serif;
-  font-size: 14px;
-  font-style: italic;
-  color: rgba(240,232,216,0.7);
-  line-height: 1.6;
-  max-width: 320px;
-  word-break: break-word;
-}
-
-/* Card edit button */
-.tt-card-edit {
+.tt-card-no-img {
   position: absolute;
-  bottom: 10px;
-  right: 12px;
-  font-size: 11px;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   font-family: 'Noto Serif SC', serif;
-  color: rgba(255,255,255,0.35);
-  background: rgba(255,255,255,0.05);
-  border: 1px solid rgba(255,255,255,0.1);
-  border-radius: 4px;
-  padding: 3px 8px;
-  cursor: pointer;
-  z-index: 9;
-  transition: color 0.2s, border-color 0.2s;
-}
-.tt-card-edit:hover {
-  color: rgba(255,255,255,0.7);
-  border-color: rgba(255,255,255,0.3);
-}
-
-/* Card hover 3D pop-out + disc back text */
-.tt-card:hover {
-  transform: perspective(600px) rotateY(-3deg) translateZ(8px);
-  box-shadow: 8px 8px 24px rgba(0,0,0,0.6);
-  transition: transform 0.4s ease, box-shadow 0.4s ease;
-}
-.tt-card:hover::after {
-  content: "那是我们一起追过的剧，也是再也回不去的夏天。";
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  padding: 12px;
-  background: rgba(0,0,0,0.75);
-  color: rgba(200,192,176,0.9);
-  font-size: 13px;
-  font-style: italic;
-  font-family: 'Noto Serif SC', serif;
-  text-align: center;
-  line-height: 1.6;
-  border-top: 1px solid rgba(176,141,87,0.3);
+  font-size: 24px;
+  color: rgba(232,220,200,0.5);
+  letter-spacing: 4px;
 }
 
 /* No signal */

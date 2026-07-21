@@ -5,6 +5,7 @@ import GratitudeJournal from "../components/GratitudeJournal";
 import BreathingGuide from "../components/BreathingGuide";
 import MeditationTimer from "../components/MeditationTimer";
 import HealingCompanion from "../components/HealingCompanion";
+import AchievementPage from "../components/AchievementPage";
 
 /* ===== 图标 ===== */
 const JournalIcon = () => (
@@ -28,7 +29,13 @@ const MeditationIcon = () => (
 );
 
 
-type ModuleId = "welcome" | "journal" | "breathing" | "meditation";
+type ModuleId = "welcome" | "journal" | "breathing" | "meditation" | "achievements";
+
+const AchievementIcon = () => (
+  <svg width="18" height="18" viewBox="0 0 20 20" fill="none">
+    <path d="M10 2L12 7L17 7L13 11L14.5 16L10 13.5L5.5 16L7 11L3 7L8 7Z" stroke="currentColor" strokeWidth="1.4" strokeLinejoin="round" />
+  </svg>
+);
 
 const NAV_ITEMS = [
   { id: "journal" as ModuleId, label: "感恩日记", subtitle: "Gratitude Journal", icon: <JournalIcon /> },
@@ -59,6 +66,7 @@ const HealingRoomPage: React.FC = () => {
       case "journal": return <GratitudeJournal />;
       case "breathing": return <BreathingGuide />;
       case "meditation": return <MeditationTimer />;
+      case "achievements": return <AchievementPage />;
       default: return <WelcomeCard />;
     }
   };
@@ -106,10 +114,31 @@ const HealingRoomPage: React.FC = () => {
               </span>
             </button>
           ))}
+          {/* 成就入口 */}
+          <button
+            className={`hl-nav-item ${active === "achievements" ? "hl-nav-active" : ""}`}
+            onClick={() => handleSelect("achievements")}
+          >
+            {active === "achievements" && (
+              <motion.span
+                className="hl-nav-bar"
+                layoutId="hl-nav-bar"
+                transition={{ duration: 0.3, ease: "easeOut" }}
+              />
+            )}
+            <span className="hl-nav-icon"><AchievementIcon /></span>
+            <span className="hl-nav-text">
+              <span className="hl-nav-label">疗愈成就</span>
+              <span className="hl-nav-sub">Achievements</span>
+            </span>
+          </button>
         </nav>
 
         {/* 装饰语 */}
         <p className="hl-sidebar-quote">「平静是内心的力量」</p>
+
+        {/* 疗愈师小愈 */}
+        <HealingCompanion />
       </aside>
 
       {/* ===== 移动端顶部导航 ===== */}
@@ -141,6 +170,13 @@ const HealingRoomPage: React.FC = () => {
                 {item.label}
               </button>
             ))}
+            <button
+              className={`hl-mobile-nav-item ${active === "achievements" ? "hl-mobile-nav-active" : ""}`}
+              onClick={() => handleSelect("achievements")}
+            >
+              <span className="hl-nav-icon"><AchievementIcon /></span>
+              疗愈成就
+            </button>
           </motion.div>
         )}
       </AnimatePresence>
@@ -162,9 +198,6 @@ const HealingRoomPage: React.FC = () => {
           </AnimatePresence>
         </div>
       </main>
-
-      {/* 疗愈师小愈 */}
-      <HealingCompanion />
 
       <style>{`
         /* ===== 根容器 ===== */

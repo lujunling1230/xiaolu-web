@@ -6,15 +6,9 @@ import {
   type Recommendation,
   type Badge,
   type MoodType,
-  type WeatherType,
-  type EnergyLevel,
-  type EnergyTag,
   type CompletionRecord,
   TAGGED_NODES,
-  WEATHER_MAP,
-  MOOD_MAP,
   TAG_MAP,
-  SCENE_PRESETS,
   getRecommendations,
   loadHistory,
   saveCompletion,
@@ -22,8 +16,6 @@ import {
   getStreakDays,
   getBadges,
   extractPreferenceKeywords,
-  loadUserState,
-  saveUserState,
 } from "./rechargeTags";
 
 /**
@@ -221,16 +213,15 @@ const playZap = () => {
 /* ============================================================
    反馈 Toast 消息
    ============================================================ */
-const feedbackMessages = [
-  "太棒了，能量 +10",
-  "一件小事，一份治愈",
-  "你正在好好照顾自己",
-  "今天也很努力呢",
-  "温柔地充好了一格电",
-  "又多了一件值得记录的小事",
-  "生活因为这些小事闪闪发光",
-  "你值得被温柔以待",
-];
+const MOOD_HEALING: Record<string, { emoji: string; messages: string[] }> = {
+  happy:  { emoji: "☀️", messages: ["今天心情很好呢，去做件让自己更开心的事吧", "快乐加倍！挑一件喜欢的小事犒劳自己", "心情好的时候，适合去探索新的可能"] },
+  calm:   { emoji: "🍃", messages: ["平静的日子，也值得被好好记住", "安静地做一件小事，享受此刻的从容", "不急不躁，按自己的节奏来"] },
+  tired:  { emoji: "🌙", messages: ["辛苦了，今天对自己温柔一点吧", "累了就休息，做一件不费力气的小事", "你已经做得够好了，剩下的事交给明天"] },
+  low:    { emoji: "🌧", messages: ["心情不好的时候，做一件小事就是最好的疗愈", "慢慢来，一件小事也能照亮今天", "你不需要现在就振作，一件小事就足够了"] },
+  anxious:{ emoji: "☁", messages: ["焦虑的时候，做一件有确定感的小事吧", "把注意力放在眼前的小事上，会好很多", "深呼吸，选一件小事让自己安定下来"] },
+  angry:  { emoji: "🔥", messages: ["有点烦躁？做一件能释放或平复的小事吧", "不如把情绪转化成行动力，去做一件事", "冷静下来之后，一件小事就能帮到你"] },
+};
+const DEFAULT_HEALING = { emoji: "🌸", messages: ["今天也在好好照顾自己呢", "哪怕一点点，也是在发光", "温柔地对待自己，就是最好的回血", "不必完美，只要真实", "你值得被温柔以待", "慢慢来，不着急"] };
 
 /* ============================================================
    Tab 类型
@@ -429,35 +420,18 @@ const MOOD_EXTENDED: { key: string; label: string; icon: string; moodType: MoodT
   { key: "angry", label: "烦躁", icon: "😡", moodType: "anxious" },
 ];
 
-const WEATHER_EXTENDED: { key: WeatherType; label: string; icon: string }[] = [
-  { key: "sunny", label: "晴天", icon: "☀️" },
-  { key: "cloudy", label: "阴天", icon: "☁️" },
-  { key: "rainy", label: "雨天·室内", icon: "🏠" },
-  { key: "snowy", label: "雪天·室内", icon: "☕" },
-];
-
 /* ============================================================
    Tab 1 — 首页
    ============================================================ */
 const HomePage: React.FC<{
   doneIds: Set<number>;
   onToggle: (id: number) => void;
+  onRequestCompletion: (id: number, elapsed?: number) => void;
   onShowBadge: (badge: Badge) => void;
-}> = ({ doneIds, onToggle, onShowBadge }) => {
-  const healingMessages = [
-    "今天也在好好照顾自己呢",
-    "哪怕一点点，也是在发光",
-    "你已经做得很好了",
-    "温柔地对待自己，就是最好的回血",
-    "不必完美，只要真实",
-    "慢慢来，不着急",
-    "你值得被温柔以待",
-    "今天也辛苦了，好好休息吧",
-  ];
-  const savedState = useMemo(() => loadUserState(), []);
-  const [selectedMood, setSelectedMood] = useState<string>(savedState?.mood || "happy");
-  const [energyLevel, setEnergyLevel] = useState<EnergyLevel>(savedState?.energy || "medium");
-  const [selectedWeather, setSelectedWeather] = useState<WeatherType>(savedState?.weather || "sunny");
+}> = ({ doneIds, onToggle, onRequestCompletion, onShowBadge }) => {
+  const [selectedMood, setSelectedMood] = useState<string>("happy");
+  const currentHealing = MOOD_HEALING[selectedMood] || DEFAULT_HEALING;
+  const [healingText, setHealingText] = useState(() => currentHealing.messages[Math.floor(Math.random() * currentHealing.messages.length)]);
   const [recommendations, setRecommendations] = useState<Recommendation[]>([]);
   const [hasGenerated, setHasGenerated] = useState(false);
   const [toasts, setToasts] = useState<{ id: number; text: string; icon: string }[]>([]);
@@ -479,7 +453,7 @@ const HomePage: React.FC<{
     setTodayCount(tc);
     setStreak(sd);
     setBadges(getBadges(history, sd, tc));
-  }, []);
+  }, [doneIds.size]);
 
   useEffect(() => {
     if (!timer || !timer.active) return;
@@ -489,56 +463,30 @@ const HomePage: React.FC<{
     return () => clearInterval(interval);
   }, [timer?.active]);
 
-  const moodType = useMemo((): MoodType => {
-    const found = MOOD_EXTENDED.find(m => m.key === selectedMood);
-    return found ? found.moodType : "happy";
-  }, [selectedMood]);
-
   const generateRecommendations = useCallback(() => {
-    const state: UserState = { mood: moodType, weather: selectedWeather, energy: energyLevel };
-    saveUserState(state);
+    const moodType = MOOD_EXTENDED.find(m => m.key === selectedMood)?.moodType || "happy";
+    const state: UserState = { mood: moodType, weather: "sunny", energy: "medium" };
     const recs = getRecommendations(state, doneIds, historyKeywords, 5);
     setRecommendations(recs);
     setHasGenerated(true);
-  }, [moodType, selectedWeather, energyLevel, doneIds, historyKeywords]);
+  }, [selectedMood, doneIds, historyKeywords]);
 
   const handleDoIt = useCallback((rec: Recommendation) => {
-    onToggle(rec.node.id);
-    const newTodayCount = getTodayCount();
-    const newStreak = getStreakDays();
-    const newHistory = loadHistory();
-    const newBadges = getBadges(newHistory, newStreak, newTodayCount);
-    setTodayCount(newTodayCount);
-    setStreak(newStreak);
-    setBadges(newBadges);
+    const elapsed = (timer && timer.recId === rec.node.id) ? timer.seconds : undefined;
+    onRequestCompletion(rec.node.id, elapsed);
 
-    // 检查新徽章
-    for (const b of newBadges) {
-      if (b.unlocked && badges.find(pb => pb.id === b.id)?.unlocked === false) {
-        onShowBadge(b);
-        break;
-      }
-    }
-    setBadges(newBadges);
-
-    // 计时器
+    // 计时器停止
     if (timer && timer.recId === rec.node.id) {
       setTimer(prev => prev ? { ...prev, active: false } : null);
     }
-
-    // Toast
-    const msg = feedbackMessages[Math.floor(Math.random() * feedbackMessages.length)];
-    const toast = { id: Date.now(), text: msg, icon: rec.node.icon };
-    setToasts(prev => [...prev, toast]);
-    setTimeout(() => setToasts(prev => prev.filter(t => t.id !== toast.id)), 3000);
-  }, [onToggle, onShowBadge, badges, timer]);
+  }, [onRequestCompletion, timer]);
 
   return (
     <div className="tab-home">
       {/* 治愈文案 */}
       <div className="home-healing-card">
-        <span className="home-healing-emoji">🌸</span>
-        <span className="home-healing-text">{healingMessages[Math.floor(Math.random() * healingMessages.length)]}</span>
+        <span className="home-healing-emoji">{currentHealing.emoji}</span>
+        <span className="home-healing-text">{healingText}</span>
         {streak > 0 && <span className="home-streak">连续 {streak} 天</span>}
       </div>
 
@@ -554,46 +502,14 @@ const HomePage: React.FC<{
               <button
                 key={m.key}
                 className={`home-mood-btn ${selectedMood === m.key ? "active" : ""}`}
-                onClick={() => setSelectedMood(m.key)}
+                onClick={() => {
+                  setSelectedMood(m.key);
+                  const h = MOOD_HEALING[m.key] || DEFAULT_HEALING;
+                  setHealingText(h.messages[Math.floor(Math.random() * h.messages.length)]);
+                }}
               >
                 <span className="home-mood-icon">{m.icon}</span>
                 <span className="home-mood-label">{m.label}</span>
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* 精力值 */}
-        <div className="home-state-row">
-          <span className="home-state-key">精力</span>
-          <div className="home-state-options">
-            <button
-              className={`home-energy-dot ${energyLevel === "high" ? "active" : ""}`}
-              onClick={() => setEnergyLevel("high")}
-            >充沛</button>
-            <button
-              className={`home-energy-dot ${energyLevel === "medium" ? "active" : ""}`}
-              onClick={() => setEnergyLevel("medium")}
-            >一般</button>
-            <button
-              className={`home-energy-dot ${energyLevel === "low" ? "active" : ""}`}
-              onClick={() => setEnergyLevel("low")}
-            >不足</button>
-          </div>
-        </div>
-
-        {/* 天气 */}
-        <div className="home-state-row">
-          <span className="home-state-key">天气</span>
-          <div className="home-state-options">
-            {WEATHER_EXTENDED.map(w => (
-              <button
-                key={w.key}
-                className={`home-weather-btn ${selectedWeather === w.key ? "active" : ""}`}
-                onClick={() => setSelectedWeather(w.key)}
-                title={w.label}
-              >
-                <span className="home-weather-icon">{w.icon}</span>
               </button>
             ))}
           </div>
@@ -817,202 +733,47 @@ const ListPage: React.FC<{
    Tab 3 — 统计
    ============================================================ */
 const StatsPage: React.FC = () => {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const [expandedId, setExpandedId] = useState<number | null>(null);
 
   const stats = useMemo(() => {
     const history = loadHistory();
-    const totalCount = history.length;
-    const streak = getStreakDays();
-    const todayCount = getTodayCount();
-    const totalEnergy = totalCount * 10;
-
-    // 标签分布
-    const tagCounts: Record<string, number> = {};
-    for (const tagKey of Object.keys(TAG_MAP)) {
-      tagCounts[tagKey] = 0;
-    }
+    // 按 id 去重，每件小事只保留最新一次完成记录
+    const latestMap = new Map<number, CompletionRecord>();
     for (const r of history) {
-      for (const tag of r.tags) {
-        if (tagCounts[tag] !== undefined) tagCounts[tag]++;
+      if (!latestMap.has(r.id) || r.timestamp > latestMap.get(r.id)!.timestamp) {
+        latestMap.set(r.id, r);
       }
     }
-    const maxTagCount = Math.max(1, ...Object.values(tagCounts));
+    const uniqueRecords = [...latestMap.values()].sort((a, b) => b.timestamp - a.timestamp).slice(0, 8);
 
-    // 14天能量折线数据
-    const dailyCounts: { date: string; count: number }[] = [];
-    const now = new Date();
-    for (let i = 13; i >= 0; i--) {
-      const d = new Date(now);
-      d.setDate(d.getDate() - i);
-      d.setHours(0, 0, 0, 0);
-      const nextD = new Date(d);
-      nextD.setDate(nextD.getDate() + 1);
-      const count = history.filter(r => r.timestamp >= d.getTime() && r.timestamp < nextD.getTime()).length;
-      const month = d.getMonth() + 1;
-      const day = d.getDate();
-      dailyCounts.push({ date: `${month}/${day}`, count });
-    }
+    // 读取感受记录
+    const notesMap = new Map<number, { note: string; img: string | null; date: string }>();
+    try {
+      const raw = localStorage.getItem("recharge_notes");
+      const notesArr: any[] = raw ? JSON.parse(raw) : [];
+      for (const n of notesArr) {
+        if (!notesMap.has(n.id) || n.timestamp > (notesMap.get(n.id) as any)?._ts) {
+          notesMap.set(n.id, { note: n.note, img: n.img, date: n.date, _ts: n.timestamp } as any);
+        }
+      }
+    } catch { /* ignore */ }
 
-    // 最近8条完成记录
-    const recentRecords = history.slice(-8).reverse();
-
-    // 徽章
+    const streak = getStreakDays();
+    const todayCount = getTodayCount();
     const badges = getBadges(history, streak, todayCount);
-
-    return { totalCount, streak, todayCount, totalEnergy, tagCounts, maxTagCount, dailyCounts, recentRecords, badges };
+    return { recentRecords: uniqueRecords, badges, notesMap };
   }, []);
-
-  // 14天折线图 Canvas
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const dpr = window.devicePixelRatio || 1;
-    const rect = canvas.getBoundingClientRect();
-    const w = rect.width;
-    const h = rect.height;
-    canvas.width = w * dpr;
-    canvas.height = h * dpr;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
-    ctx.scale(dpr, dpr);
-
-    const pad = { top: 20, right: 16, bottom: 28, left: 32 };
-    const chartW = w - pad.left - pad.right;
-    const chartH = h - pad.top - pad.bottom;
-    const data = stats.dailyCounts;
-    const maxVal = Math.max(5, ...data.map(d => d.count));
-
-    // 网格线
-    ctx.strokeStyle = "rgba(180,170,160,0.12)";
-    ctx.lineWidth = 1;
-    for (let i = 0; i <= 4; i++) {
-      const y = pad.top + (chartH / 4) * i;
-      ctx.beginPath();
-      ctx.moveTo(pad.left, y);
-      ctx.lineTo(pad.left + chartW, y);
-      ctx.stroke();
-    }
-
-    // Y轴标签
-    ctx.fillStyle = "#b8aa9a";
-    ctx.font = "10px sans-serif";
-    ctx.textAlign = "right";
-    for (let i = 0; i <= 4; i++) {
-      const y = pad.top + (chartH / 4) * i;
-      const val = Math.round(maxVal - (maxVal / 4) * i);
-      ctx.fillText(String(val), pad.left - 6, y + 3);
-    }
-
-    // 数据点坐标
-    const points = data.map((d, i) => ({
-      x: pad.left + (chartW / (data.length - 1)) * i,
-      y: pad.top + chartH - (d.count / maxVal) * chartH,
-    }));
-
-    // 渐变填充
-    const gradient = ctx.createLinearGradient(0, pad.top, 0, pad.top + chartH);
-    gradient.addColorStop(0, "rgba(124,106,154,0.25)");
-    gradient.addColorStop(1, "rgba(124,106,154,0.02)");
-    ctx.beginPath();
-    ctx.moveTo(points[0].x, pad.top + chartH);
-    for (const p of points) ctx.lineTo(p.x, p.y);
-    ctx.lineTo(points[points.length - 1].x, pad.top + chartH);
-    ctx.closePath();
-    ctx.fillStyle = gradient;
-    ctx.fill();
-
-    // 折线
-    ctx.beginPath();
-    ctx.moveTo(points[0].x, points[0].y);
-    for (let i = 1; i < points.length; i++) {
-      ctx.lineTo(points[i].x, points[i].y);
-    }
-    ctx.strokeStyle = "#7C6A9A";
-    ctx.lineWidth = 2;
-    ctx.lineJoin = "round";
-    ctx.stroke();
-
-    // 数据点
-    for (const p of points) {
-      ctx.beginPath();
-      ctx.arc(p.x, p.y, 3, 0, Math.PI * 2);
-      ctx.fillStyle = "#FFFFFF";
-      ctx.fill();
-      ctx.strokeStyle = "#7C6A9A";
-      ctx.lineWidth = 1.5;
-      ctx.stroke();
-    }
-
-    // X轴日期标签
-    ctx.fillStyle = "#b8aa9a";
-    ctx.font = "9px sans-serif";
-    ctx.textAlign = "center";
-    for (let i = 0; i < data.length; i += 2) {
-      ctx.fillText(data[i].date, points[i].x, pad.top + chartH + 16);
-    }
-  }, [stats.dailyCounts]);
 
   return (
     <div className="tab-stats">
-      {/* 2x2 总览 */}
-      <div className="stats-overview">
-        <div className="stats-card stats-card-green">
-          <span className="stats-card-value">{stats.totalCount}</span>
-          <span className="stats-card-label">累计完成</span>
-        </div>
-        <div className="stats-card stats-card-gold">
-          <span className="stats-card-value">{stats.streak}</span>
-          <span className="stats-card-label">连续打卡</span>
-        </div>
-        <div className="stats-card stats-card-purple">
-          <span className="stats-card-value">{stats.todayCount}</span>
-          <span className="stats-card-label">今日完成</span>
-        </div>
-        <div className="stats-card stats-card-pink">
-          <span className="stats-card-value">{stats.totalEnergy}</span>
-          <span className="stats-card-label">累计能量</span>
-        </div>
-      </div>
-
-      {/* 标签分布条形图 */}
-      <div className="stats-section">
-        <h3 className="stats-section-label">标签分布</h3>
-        <div className="stats-tag-bars">
-          {(Object.keys(TAG_MAP) as EnergyTag[]).map(tag => {
-            const count = stats.tagCounts[tag] || 0;
-            const pct = stats.maxTagCount > 0 ? (count / stats.maxTagCount) * 100 : 0;
-            return (
-              <div key={tag} className="stats-tag-bar-row">
-                <span className="stats-tag-bar-label">
-                  {TAG_MAP[tag].icon} {TAG_MAP[tag].label}
-                </span>
-                <div className="stats-tag-bar-track">
-                  <motion.div
-                    className="stats-tag-bar-fill"
-                    initial={{ width: 0 }}
-                    animate={{ width: `${pct}%` }}
-                    transition={{ duration: 0.6, ease: "easeOut" }}
-                    style={{ background: TAG_MAP[tag].color }}
-                  />
-                </div>
-                <span className="stats-tag-bar-count">{count}</span>
-              </div>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* 14天能量折线图 */}
-      <div className="stats-section">
-        <h3 className="stats-section-label">近14天能量曲线</h3>
-        <div className="stats-chart-wrap">
-          <canvas ref={canvasRef} className="stats-chart-canvas" />
-        </div>
-      </div>
-
-      {/* 最近8条完成时间线 */}
+      {/* 最近完成 */}
       <div className="stats-section">
         <h3 className="stats-section-label">最近完成</h3>
+        <div className="stats-timeline-legend">
+          <span className="stats-legend-item"><span className="stats-legend-dot pink" />有记录</span>
+          <span className="stats-legend-item"><span className="stats-legend-dot purple" />无记录</span>
+          <span className="stats-legend-hint">点击条目查看</span>
+        </div>
         <div className="stats-timeline">
           {stats.recentRecords.length === 0 && (
             <p className="stats-timeline-empty">还没有完成记录，去清单里打卡吧</p>
@@ -1021,17 +782,33 @@ const StatsPage: React.FC = () => {
             const node = TAGGED_NODES.find(n => n.id === rec.id);
             const d = new Date(rec.timestamp);
             const timeStr = `${d.getMonth() + 1}/${d.getDate()} ${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
+            const noteData = stats.notesMap.get(rec.id);
+            const isExpanded = expandedId === rec.id;
+            const hasNote = !!stats.notesMap.get(rec.id);
             return (
-              <div key={rec.timestamp + i} className="stats-timeline-item">
-                <div className="stats-timeline-dot" />
+              <div key={rec.id} className={`stats-timeline-item ${isExpanded ? "expanded" : ""} ${hasNote ? "has-record" : ""}`}>
+                <div className={`stats-timeline-dot ${hasNote ? "has-record" : ""}`} />
                 {i < stats.recentRecords.length - 1 && <div className="stats-timeline-line" />}
-                <div className="stats-timeline-content">
+                <div className="stats-timeline-content" onClick={() => setExpandedId(isExpanded ? null : rec.id)}>
                   <span className="stats-timeline-icon">{node?.icon || "📝"}</span>
                   <span className="stats-timeline-text">
                     {node ? (node.text.length > 24 ? node.text.slice(0, 24) + "…" : node.text) : `#${rec.id}`}
                   </span>
                   <span className="stats-timeline-time">{timeStr}</span>
                 </div>
+                {isExpanded && (
+                  <div className="stats-timeline-detail">
+                    {noteData?.note && (
+                      <p className="stats-timeline-note">💬 {noteData.note}</p>
+                    )}
+                    {noteData?.img && (
+                      <img src={noteData.img} alt="" className="stats-timeline-img" />
+                    )}
+                    {noteData?.date && (
+                      <span className="stats-timeline-date">📅 {noteData.date}</span>
+                    )}
+                  </div>
+                )}
               </div>
             );
           })}
@@ -1055,10 +832,332 @@ const StatsPage: React.FC = () => {
 };
 
 /* ============================================================
+   分享卡片
+   ============================================================ */
+const ShareCard: React.FC<{ totalCount: number; streak: number; onClose: () => void }> = ({ totalCount, streak, onClose }) => {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const [ready, setReady] = useState(false);
+
+  const healingLines = [
+    "今天也在好好照顾自己呢",
+    "哪怕一点点，也是在发光",
+    "你已经做得很好了",
+    "温柔地对待自己，就是最好的回血",
+    "不必完美，只要真实",
+    "慢慢来，不着急",
+    "你值得被温柔以待",
+    "今天也辛苦了，好好休息吧",
+  ];
+  const line = useMemo(() => healingLines[Math.floor(Math.random() * healingLines.length)], []);
+
+  const cardData = useMemo(() => {
+    const history = loadHistory();
+    // 按 id 去重，每件小事只取最新一次
+    const seen = new Set<number>();
+    const unique = history.slice().reverse().filter(r => {
+      if (seen.has(r.id)) return false;
+      seen.add(r.id);
+      return true;
+    });
+    // 取最近3件完成的小事名称 + 日期
+    const recent3 = unique.slice(0, 3).map(r => {
+      const node = TAGGED_NODES.find(n => n.id === r.id);
+      const d = new Date(r.timestamp);
+      const dateStr = `${d.getMonth() + 1}/${d.getDate()}`;
+      return node ? { text: node.text, date: dateStr } : null;
+    }).filter(Boolean) as { text: string; date: string }[];
+
+    // 最近解锁的徽章
+    const sd = getStreakDays();
+    const tc = getTodayCount();
+    const badges = getBadges(history, sd, tc);
+    const unlockedBadges = badges.filter(b => b.unlocked).map(b => b.label);
+
+    return { recent3, unlockedBadges };
+  }, []);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const dpr = window.devicePixelRatio || 1;
+    const w = 380;
+    const h = 700;
+    canvas.width = w * dpr;
+    canvas.height = h * dpr;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+    ctx.scale(dpr, dpr);
+
+    // 暖色渐变背景
+    const bgGrad = ctx.createLinearGradient(0, 0, 0, h);
+    bgGrad.addColorStop(0, "#FDFBF7");
+    bgGrad.addColorStop(1, "#F8F4EF");
+    ctx.fillStyle = bgGrad;
+    ctx.fillRect(0, 0, w, h);
+
+    // 顶部装饰 - 小叶子
+    ctx.fillStyle = "rgba(124,106,154,0.08)";
+    ctx.beginPath();
+    ctx.ellipse(w - 60, 35, 40, 20, -0.3, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = "rgba(124,106,154,0.05)";
+    ctx.beginPath();
+    ctx.ellipse(50, 55, 30, 15, 0.4, 0, Math.PI * 2);
+    ctx.fill();
+
+    // 顶部双线装饰
+    ctx.strokeStyle = "#7C6A9A";
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(30, 55);
+    ctx.lineTo(w - 30, 55);
+    ctx.stroke();
+    ctx.strokeStyle = "rgba(124,106,154,0.3)";
+    ctx.lineWidth = 0.5;
+    ctx.beginPath();
+    ctx.moveTo(50, 62);
+    ctx.lineTo(w - 50, 62);
+    ctx.stroke();
+
+    // 标题
+    ctx.fillStyle = "#3a3a3a";
+    ctx.font = '700 24px "Noto Serif SC", Georgia, serif';
+    ctx.textAlign = "center";
+    ctx.fillText("我的回血日记", w / 2, 105);
+
+    // 副标题
+    ctx.fillStyle = "#9a8a7e";
+    ctx.font = '13px "Noto Sans SC", system-ui, sans-serif';
+    ctx.fillText("每天做一件滋养自己的小事", w / 2, 132);
+
+    // 数据区域 - 圆角卡片
+    const cardY = 165;
+    const cardH = 120;
+    ctx.fillStyle = "#FFFFFF";
+    ctx.beginPath();
+    ctx.roundRect(30, cardY, w - 60, cardH, 16);
+    ctx.fill();
+    ctx.strokeStyle = "rgba(180,170,160,0.1)";
+    ctx.lineWidth = 1;
+    ctx.stroke();
+
+    // 左侧 - 累计完成
+    ctx.fillStyle = "#7C6A9A";
+    ctx.font = '700 42px "Noto Serif SC", Georgia, serif';
+    ctx.textAlign = "center";
+    ctx.fillText(String(totalCount), 95, cardY + 68);
+    ctx.fillStyle = "#9a8a7e";
+    ctx.font = '12px "Noto Sans SC", system-ui, sans-serif';
+    ctx.fillText("累计完成", 95, cardY + 92);
+
+    // 中间分隔
+    ctx.strokeStyle = "rgba(180,170,160,0.15)";
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(w / 2, cardY + 20);
+    ctx.lineTo(w / 2, cardY + cardH - 20);
+    ctx.stroke();
+
+    // 右侧 - 连续天数
+    ctx.fillStyle = "#FF8FA3";
+    ctx.font = '700 42px "Noto Serif SC", Georgia, serif';
+    ctx.fillText(String(streak), w - 95, cardY + 68);
+    ctx.fillStyle = "#9a8a7e";
+    ctx.font = '12px "Noto Sans SC", system-ui, sans-serif';
+    ctx.fillText("连续打卡", w - 95, cardY + 92);
+
+    // 治愈文案区
+    const quoteY = cardY + cardH + 30;
+    ctx.fillStyle = "rgba(124,106,154,0.06)";
+    ctx.beginPath();
+    ctx.roundRect(40, quoteY, w - 80, 80, 12);
+    ctx.fill();
+
+    ctx.fillStyle = "#6b5e50";
+    ctx.font = '15px "Noto Serif SC", Georgia, serif';
+    ctx.textAlign = "center";
+    // 左引号
+    ctx.fillStyle = "rgba(124,106,154,0.2)";
+    ctx.font = '28px Georgia, serif';
+    ctx.fillText("\u201C", 58, quoteY + 50);
+    // 右引号
+    ctx.fillText("\u201D", w - 58, quoteY + 80);
+
+    ctx.fillStyle = "#6b5e50";
+    ctx.font = '14px "Noto Serif SC", Georgia, serif';
+    const maxWidth = w - 120;
+    const chars = line.split("");
+    let currentLn = "";
+    const lns: string[] = [];
+    for (const c of chars) {
+      const test = currentLn + c;
+      if (ctx.measureText(test).width > maxWidth && currentLn.length > 0) {
+        lns.push(currentLn);
+        currentLn = c;
+      } else {
+        currentLn = test;
+      }
+    }
+    lns.push(currentLn);
+    let ty = quoteY + 45;
+    for (const l of lns) {
+      ctx.fillText(l, w / 2, ty);
+      ty += 22;
+    }
+
+    // 最近完成的小事 — 圆角卡片背景
+    if (cardData.recent3.length > 0) {
+      let curY = quoteY + 105;
+      const recentCardTop = curY - 18;
+      const recentCardPad = 14;
+
+      // 先计算总高度（确保字体先设置）
+      ctx.font = '12px "Noto Sans SC", system-ui, sans-serif';
+      let totalH = 20;
+      for (const item of cardData.recent3) {
+        const nameMaxW = w - 130;
+        const nameChars = item.text.split("");
+        let nameLine = "";
+        let lineCount = 1;
+        for (const ch of nameChars) {
+          const test = nameLine + ch;
+          if (ctx.measureText(test).width > nameMaxW && nameLine.length > 0) {
+            lineCount++;
+            nameLine = ch;
+          } else {
+            nameLine = test;
+          }
+        }
+        totalH += lineCount * 18 + 6;
+      }
+      if (cardData.unlockedBadges.length > 0) {
+        totalH += 18 + Math.min(cardData.unlockedBadges.length, 2) * 28 + 6;
+      }
+
+      // 绘制背景卡片
+      ctx.fillStyle = "rgba(124,106,154,0.04)";
+      ctx.beginPath();
+      ctx.roundRect(30, recentCardTop, w - 60, totalH + recentCardPad, 14);
+      ctx.fill();
+
+      ctx.fillStyle = "#b0a090";
+      ctx.font = '11px "Noto Sans SC", system-ui, sans-serif';
+      ctx.textAlign = "left";
+      ctx.fillText("最近完成", 44, curY);
+      curY += 22;
+
+      for (const item of cardData.recent3) {
+        // 自动换行计算名称
+        const nameMaxW = w - 130;
+        const nameChars = item.text.split("");
+        let nameLine = "";
+        const nameLines: string[] = [];
+        for (const ch of nameChars) {
+          const test = nameLine + ch;
+          if (ctx.measureText(test).width > nameMaxW && nameLine.length > 0) {
+            nameLines.push(nameLine);
+            nameLine = ch;
+          } else {
+            nameLine = test;
+          }
+        }
+        nameLines.push(nameLine);
+
+        // 绘制日期（第一行右侧）
+        ctx.fillStyle = "#c0b0a0";
+        ctx.font = '10px "Noto Sans SC", system-ui, sans-serif';
+        ctx.textAlign = "right";
+        ctx.fillText(item.date, w - 40, curY);
+
+        // 绘制名称行
+        ctx.textAlign = "left";
+        ctx.fillStyle = "#7a6e62";
+        ctx.font = '12px "Noto Sans SC", system-ui, sans-serif';
+        for (const nl of nameLines) {
+          ctx.fillText(nl, 50, curY);
+          curY += 18;
+        }
+        curY += 6; // item 间距
+      }
+
+      // 最近解锁徽章
+      if (cardData.unlockedBadges.length > 0) {
+        ctx.fillStyle = "#c0b0a0";
+        ctx.font = '11px "Noto Sans SC", system-ui, sans-serif';
+        ctx.textAlign = "left";
+        ctx.fillText("最近解锁", 40, curY);
+        curY += 18;
+
+        const latestBadges = cardData.unlockedBadges.slice(-2);
+        for (const badgeLabel of latestBadges) {
+          ctx.fillStyle = "rgba(124,106,154,0.1)";
+          const badgeText = `🏅 ${badgeLabel}`;
+          const badgeW = ctx.measureText(badgeText).width + 16;
+          ctx.beginPath();
+          ctx.roundRect(50, curY - 12, badgeW, 22, 11);
+          ctx.fill();
+          ctx.fillStyle = "#7C6A9A";
+          ctx.font = '11px "Noto Sans SC", system-ui, sans-serif';
+          ctx.fillText(badgeText, 58, curY + 2);
+          curY += 28;
+        }
+      }
+    }
+
+    // 底部装饰线
+    const bottomY = h - 48;
+    ctx.strokeStyle = "rgba(124,106,154,0.15)";
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(90, bottomY);
+    ctx.lineTo(w - 90, bottomY);
+    ctx.stroke();
+
+    ctx.fillStyle = "#c0b0a0";
+    ctx.font = '10px "Noto Sans SC", system-ui, sans-serif';
+    ctx.textAlign = "center";
+    ctx.fillText("回血清单 · Recharge Station", w / 2, bottomY + 22);
+
+    // 右下角小装饰
+    ctx.fillStyle = "rgba(255,143,163,0.12)";
+    ctx.beginPath();
+    ctx.arc(w - 42, bottomY - 10, 14, 0, Math.PI * 2);
+    ctx.fill();
+
+    setReady(true);
+  }, [totalCount, streak, line, cardData]);
+
+  const handleDownload = () => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const url = canvas.toDataURL("image/png");
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `我的回血日记-${new Date().toISOString().slice(0, 10)}.png`;
+    a.click();
+  };
+
+  return (
+    <motion.div className="share-overlay" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={onClose}>
+      <motion.div className="share-popup" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 20 }} onClick={e => e.stopPropagation()}>
+        <button className="share-close" onClick={onClose}>✕</button>
+        <h3 className="share-title">分享卡片</h3>
+        <div className="share-canvas-wrap">
+          <canvas ref={canvasRef} style={{ width: 380, height: 700, borderRadius: 12, display: ready ? "block" : "none" }} />
+          {!ready && <div className="share-canvas-placeholder">生成中...</div>}
+        </div>
+        <button className="share-download" onClick={handleDownload}>下载卡片</button>
+      </motion.div>
+    </motion.div>
+  );
+};
+
+/* ============================================================
    Tab 4 — 我的
    ============================================================ */
 const MePage: React.FC = () => {
   const [aboutOpen, setAboutOpen] = useState(false);
+  const [shareOpen, setShareOpen] = useState(false);
 
   const userData = useMemo(() => {
     const history = loadHistory();
@@ -1103,21 +1202,8 @@ const MePage: React.FC = () => {
     }
   }, []);
 
-  const handleExport = useCallback(() => {
-    const data = {
-      version: 1,
-      exportedAt: new Date().toISOString(),
-      doneIds: JSON.parse(localStorage.getItem(DONE_KEY) || "[]"),
-      history: JSON.parse(localStorage.getItem("recharge_history") || "[]"),
-      userState: JSON.parse(localStorage.getItem("recharge_user_state") || "null"),
-    };
-    const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `recharge-backup-${new Date().toISOString().slice(0, 10)}.json`;
-    a.click();
-    URL.revokeObjectURL(url);
+  const handleShare = useCallback(() => {
+    setShareOpen(true);
   }, []);
 
   return (
@@ -1169,9 +1255,9 @@ const MePage: React.FC = () => {
             <span className="me-settings-text">重置数据</span>
             <span className="me-settings-arrow">›</span>
           </button>
-          <button className="me-settings-btn" onClick={handleExport}>
-            <span className="me-settings-icon">📤</span>
-            <span className="me-settings-text">导出数据</span>
+          <button className="me-settings-btn" onClick={handleShare}>
+            <span className="me-settings-icon">📷</span>
+            <span className="me-settings-text">分享卡片</span>
             <span className="me-settings-arrow">›</span>
           </button>
           <button className="me-settings-btn" onClick={() => setAboutOpen(true)}>
@@ -1210,6 +1296,17 @@ const MePage: React.FC = () => {
               <div className="about-deco" />
             </motion.div>
           </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* 分享卡片弹窗 */}
+      <AnimatePresence>
+        {shareOpen && (
+          <ShareCard
+            totalCount={userData.totalCount}
+            streak={userData.streak}
+            onClose={() => setShareOpen(false)}
+          />
         )}
       </AnimatePresence>
     </div>
@@ -1272,6 +1369,57 @@ const BadgePopup: React.FC<{ badge: Badge; onClose: () => void }> = ({ badge, on
 );
 
 /* ============================================================
+   完成弹窗
+   ============================================================ */
+const CompletionModal: React.FC<{
+  id: number; note: string; img: string | null; date: string; elapsed?: number;
+  onNoteChange: (v: string) => void; onImgChange: (v: string | null) => void; onDateChange: (v: string) => void;
+  onConfirm: () => void; onCancel: () => void;
+}> = ({ id, note, img, date, elapsed, onNoteChange, onImgChange, onDateChange, onConfirm, onCancel }) => {
+  const thing = nodes.find(n => n.id === id);
+  const handleImgUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => onImgChange(reader.result as string);
+    reader.readAsDataURL(file);
+  };
+  const formatElapsed = (s: number) => {
+    const m = Math.floor(s / 60);
+    const sec = s % 60;
+    return m > 0 ? `${m}分${sec > 0 ? sec + "秒" : ""}` : `${sec}秒`;
+  };
+  return (
+    <motion.div className="completion-overlay" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={onCancel}>
+      <motion.div className="completion-popup" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 20 }} onClick={e => e.stopPropagation()}>
+        <button className="completion-close" onClick={onCancel}>✕</button>
+        <span className="completion-icon">{thing?.icon}</span>
+        <h3 className="completion-name">{thing?.text}</h3>
+        {elapsed !== undefined && elapsed > 0 && (
+          <div className="completion-elapsed">⏱ 用时 {formatElapsed(elapsed)}</div>
+        )}
+        <input type="date" className="completion-date" value={date} onChange={e => onDateChange(e.target.value)} />
+        <textarea className="completion-note" placeholder="记录下这一刻的感受吧..." value={note} onChange={e => onNoteChange(e.target.value)} rows={3} />
+        <div className="completion-img-row">
+          {img ? (
+            <div className="completion-img-preview">
+              <img src={img} alt="" />
+              <button className="completion-img-remove" onClick={() => onImgChange(null)}>✕</button>
+            </div>
+          ) : (
+            <label className="completion-img-upload">
+              <span>📷 上传照片</span>
+              <input type="file" accept="image/*" onChange={handleImgUpload} style={{ display: "none" }} />
+            </label>
+          )}
+        </div>
+        <button className="completion-confirm" onClick={onConfirm}>完成</button>
+      </motion.div>
+    </motion.div>
+  );
+};
+
+/* ============================================================
    主组件
    ============================================================ */
 const RechargePage: React.FC = () => {
@@ -1282,21 +1430,68 @@ const RechargePage: React.FC = () => {
   const [newBadge, setNewBadge] = useState<Badge | null>(null);
   const catTriggered = useRef(false);
 
-  const handleToggle = useCallback((id: number) => {
+  const [completionModal, setCompletionModal] = useState<{ open: boolean; id: number; elapsed?: number } | null>(null);
+  const [completionNote, setCompletionNote] = useState("");
+  const [completionImg, setCompletionImg] = useState<string | null>(null);
+  const [completionDate, setCompletionDate] = useState(() => new Date().toISOString().slice(0, 10));
+
+  const doneIdsRef = useRef(doneIds);
+  useEffect(() => { doneIdsRef.current = doneIds; }, [doneIds]);
+
+  const doCompleteCore = useCallback((id: number) => {
     setDoneIds((prev) => {
+      if (prev.has(id)) return prev; // 防止重复记录
       const next = new Set(prev);
-      if (next.has(id)) {
-        next.delete(id);
-      } else {
-        next.add(id);
-        saveCompletion(id);
-      }
+      next.add(id);
+      saveCompletion(id);
       try {
         localStorage.setItem(DONE_KEY, JSON.stringify([...next]));
       } catch { /* ignore */ }
       return next;
     });
   }, []);
+
+  const handleToggle = useCallback((id: number) => {
+    if (doneIdsRef.current.has(id)) {
+      setDoneIds((prev) => {
+        const next = new Set(prev);
+        next.delete(id);
+        try {
+          localStorage.setItem(DONE_KEY, JSON.stringify([...next]));
+        } catch { /* ignore */ }
+        return next;
+      });
+    } else {
+      // 先变绿，再弹窗
+      doCompleteCore(id);
+      setTimeout(() => setCompletionModal({ open: true, id }), 600);
+    }
+  }, []);
+
+  const handleConfirmCompletion = useCallback(() => {
+    if (!completionModal) return;
+    const { id } = completionModal;
+
+    try {
+      const raw = localStorage.getItem("recharge_notes");
+      const notes = raw ? JSON.parse(raw) : [];
+      notes.push({
+        id,
+        note: completionNote,
+        img: completionImg,
+        date: completionDate,
+        timestamp: Date.now(),
+      });
+      localStorage.setItem("recharge_notes", JSON.stringify(notes));
+    } catch { /* ignore */ }
+
+    doCompleteCore(id);
+
+    setCompletionModal(null);
+    setCompletionNote("");
+    setCompletionImg(null);
+    setCompletionDate(new Date().toISOString().slice(0, 10));
+  }, [completionModal, completionNote, completionImg, completionDate, doCompleteCore]);
 
   const handleHiddenClick = () => {
     setHiddenFound(true);
@@ -1352,7 +1547,7 @@ const RechargePage: React.FC = () => {
               exit={{ opacity: 0, x: -20 }}
               transition={{ duration: 0.25 }}
             >
-              <HomePage doneIds={doneIds} onToggle={handleToggle} onShowBadge={setNewBadge} />
+              <HomePage doneIds={doneIds} onToggle={doCompleteCore} onRequestCompletion={(id, elapsed) => setCompletionModal({ open: true, id, elapsed })} onShowBadge={setNewBadge} />
             </motion.div>
           )}
           {activeTab === "list" && (
@@ -1411,6 +1606,24 @@ const RechargePage: React.FC = () => {
       {/* 徽章解锁弹窗 */}
       <AnimatePresence>
         {newBadge && <BadgePopup badge={newBadge} onClose={() => setNewBadge(null)} />}
+      </AnimatePresence>
+
+      {/* 完成弹窗 */}
+      <AnimatePresence>
+        {completionModal?.open && (
+          <CompletionModal
+            id={completionModal.id}
+            note={completionNote}
+            img={completionImg}
+            date={completionDate}
+            elapsed={completionModal.elapsed}
+            onNoteChange={setCompletionNote}
+            onImgChange={setCompletionImg}
+            onDateChange={setCompletionDate}
+            onConfirm={handleConfirmCompletion}
+            onCancel={() => setCompletionModal(null)}
+          />
+        )}
       </AnimatePresence>
 
       <style>{`
@@ -1770,29 +1983,6 @@ const RechargePage: React.FC = () => {
         .home-mood-icon { font-size: 18px; }
         .home-mood-label { font-size: 10px; letter-spacing: 0.02em; }
 
-        .home-energy-dot {
-          font-size: 20px; line-height: 1; padding: 4px 8px;
-          border: none; background: none; cursor: pointer;
-          color: rgba(180,170,160,0.3); transition: all 0.25s ease;
-        }
-        .home-energy-dot:hover { color: rgba(124,106,154,0.5); }
-        .home-energy-dot.active { color: #7C6A9A; }
-
-        .home-weather-btn {
-          display: flex; align-items: center; justify-content: center;
-          width: 40px; height: 40px; padding: 0;
-          border: 1px solid rgba(180,170,160,0.12);
-          border-radius: 10px; background: rgba(253,251,247,0.6);
-          font-family: inherit; font-size: 18px; color: #9a8a7e;
-          transition: all 0.25s ease;
-        }
-        .home-weather-btn:hover { border-color: rgba(124,106,154,0.3); background: rgba(253,251,247,0.9); }
-        .home-weather-btn.active {
-          border-color: rgba(124,106,154,0.5); background: rgba(184,169,217,0.15);
-          box-shadow: 0 2px 8px rgba(124,106,154,0.1);
-        }
-        .home-weather-icon { font-size: 18px; }
-
         .home-recommend-btn {
           width: 100%; margin-top: 14px; padding: 12px;
           border: none; border-radius: 12px;
@@ -2010,8 +2200,19 @@ const RechargePage: React.FC = () => {
         .stats-section-label {
           font-family: "Noto Serif SC", Georgia, serif;
           font-size: 14px; font-weight: 600; color: #7C6A9A;
-          letter-spacing: 0.06em; margin: 0 0 12px;
+          letter-spacing: 0.06em; margin: 0 0 8px;
         }
+        .stats-timeline-legend {
+          display: flex; align-items: center; gap: 14px; margin-bottom: 12px;
+          font-size: 11px; color: #b8aa9a; letter-spacing: 0.03em;
+        }
+        .stats-legend-dot {
+          display: inline-block; width: 7px; height: 7px; border-radius: 50%;
+          margin-right: 4px; vertical-align: middle;
+        }
+        .stats-legend-dot.pink { background: #FF8FA3; }
+        .stats-legend-dot.purple { background: #B8A9D9; }
+        .stats-legend-hint { flex: 1; text-align: right; color: #B8A9D9; }
 
         /* 标签分布条形图 */
         .stats-tag-bars { display: flex; flex-direction: column; gap: 10px; }
@@ -2057,6 +2258,12 @@ const RechargePage: React.FC = () => {
           position: absolute; left: -20px; top: 16px;
           width: 8px; height: 8px; border-radius: 50%;
           background: #B8A9D9; border: 2px solid #FFFFFF;
+          transition: background 0.25s ease;
+        }
+        .stats-timeline-dot.has-record {
+          background: #FF8FA3;
+          width: 10px; height: 10px; left: -21px; top: 15px;
+          box-shadow: 0 0 0 3px rgba(255,143,163,0.2);
         }
         .stats-timeline-line {
           position: absolute; left: -17px; top: 28px;
@@ -2074,6 +2281,23 @@ const RechargePage: React.FC = () => {
         .stats-timeline-time {
           flex-shrink: 0; font-size: 10px; color: #b8aa9a;
           letter-spacing: 0.02em;
+        }
+        .stats-timeline-content { cursor: pointer; }
+        .stats-timeline-detail {
+          margin-top: 8px; padding: 12px 14px;
+          background: rgba(245, 240, 235, 0.5); border-radius: 10px;
+          animation: fadeUp 0.3s ease;
+        }
+        .stats-timeline-note {
+          font-size: 13px; color: #5a5048; line-height: 1.6; margin: 0 0 6px;
+          font-style: italic;
+        }
+        .stats-timeline-img {
+          width: 100%; max-width: 200px; border-radius: 8px;
+          margin-bottom: 6px; box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+        }
+        .stats-timeline-date {
+          font-size: 11px; color: #b8aa9a; letter-spacing: 0.02em;
         }
 
         /* 徽章墙 */
@@ -2200,6 +2424,143 @@ const RechargePage: React.FC = () => {
           background: linear-gradient(90deg, transparent, rgba(180, 220, 190, 0.6), transparent);
         }
 
+        /* ===== 完成弹窗 ===== */
+        .completion-overlay {
+          position: fixed; inset: 0; z-index: 200;
+          display: flex; align-items: center; justify-content: center; padding: 24px;
+          background: rgba(200, 195, 185, 0.3);
+        }
+        .completion-popup {
+          position: relative; max-width: 400px; width: 100%;
+          padding: 32px 28px 28px; border-radius: 20px; text-align: center;
+          background: rgba(245, 250, 247, 0.95);
+          border: 1px solid rgba(180, 220, 190, 0.4);
+          box-shadow: 0 2px 8px rgba(160, 180, 150, 0.06), 0 8px 28px rgba(0,0,0,0.03), 0 0 24px rgba(180, 220, 190, 0.12);
+        }
+        .completion-close {
+          position: absolute; top: 14px; right: 18px;
+          font-size: 14px; color: #9aaa9a; background: none; border: none;
+          padding: 4px 8px; cursor: pointer; transition: color 0.3s ease;
+          font-family: "Noto Sans SC", system-ui, sans-serif;
+        }
+        .completion-close:hover { color: #5a5048; }
+        .completion-icon { font-size: 36px; display: block; margin-bottom: 10px; }
+        .completion-elapsed {
+          display: inline-flex; align-items: center; gap: 4px;
+          padding: 4px 14px; border-radius: 20px;
+          background: rgba(255,217,61,0.12); color: #B8860B;
+          font-size: 13px; font-weight: 500; margin-bottom: 12px;
+        }
+        .completion-name {
+          font-family: "Noto Serif SC", Georgia, serif;
+          font-size: 15px; font-weight: 600; color: #3a3a3a;
+          margin: 0 0 14px; line-height: 1.5; letter-spacing: 0.04em;
+        }
+        .completion-date {
+          width: 100%; padding: 8px 10px; margin-bottom: 10px;
+          border: 1px solid rgba(180,170,160,0.15); border-radius: 10px;
+          background: #FFFFFF; font-family: inherit; font-size: 13px; color: #5a5048;
+          text-align: left;
+        }
+        .completion-note {
+          width: 100%; padding: 10px 12px; margin-bottom: 10px;
+          border: 1px solid rgba(180,170,160,0.15); border-radius: 10px;
+          background: #FFFFFF; font-family: inherit; font-size: 13px; color: #5a5048;
+          line-height: 1.5; resize: none;
+        }
+        .completion-note:focus {
+          outline: none; border-color: rgba(124,106,154,0.3);
+        }
+        .completion-img-row {
+          display: flex; justify-content: center; margin-bottom: 16px;
+        }
+        .completion-img-upload {
+          display: flex; align-items: center; gap: 6px;
+          padding: 10px 18px; border-radius: 10px;
+          border: 1px dashed rgba(180,170,160,0.3); background: rgba(253,251,247,0.6);
+          font-size: 13px; color: #9a8a7e; cursor: pointer; transition: all 0.25s ease;
+        }
+        .completion-img-upload:hover {
+          border-color: rgba(124,106,154,0.3); color: #7C6A9A;
+        }
+        .completion-img-preview {
+          position: relative; width: 100px; height: 100px; border-radius: 10px;
+          overflow: hidden; border: 1px solid rgba(180,170,160,0.15);
+        }
+        .completion-img-preview img { width: 100%; height: 100%; object-fit: cover; }
+        .completion-img-remove {
+          position: absolute; top: 4px; right: 4px;
+          width: 20px; height: 20px; border-radius: 50%;
+          background: rgba(0,0,0,0.4); color: #fff; border: none;
+          font-size: 10px; cursor: pointer; display: flex;
+          align-items: center; justify-content: center;
+        }
+        .completion-confirm {
+          width: 100%; padding: 11px;
+          border: none; border-radius: 12px;
+          background: linear-gradient(135deg, #7C6A9A, #B8A9D9);
+          font-family: "Noto Serif SC", Georgia, serif;
+          font-size: 14px; font-weight: 600; color: #FFFFFF;
+          letter-spacing: 0.06em; cursor: pointer;
+          transition: all 0.3s ease;
+          box-shadow: 0 4px 16px rgba(124,106,154,0.2);
+        }
+        .completion-confirm:hover {
+          box-shadow: 0 6px 20px rgba(124,106,154,0.3);
+          transform: translateY(-1px);
+        }
+
+        /* ===== 分享卡片弹窗 ===== */
+        .share-overlay {
+          position: fixed; inset: 0; z-index: 200;
+          display: flex; align-items: center; justify-content: center; padding: 24px;
+          background: rgba(200, 195, 185, 0.3);
+        }
+        .share-popup {
+          position: relative; max-width: 420px; width: 100%;
+          padding: 28px 24px 24px; border-radius: 20px; text-align: center;
+          background: rgba(245, 250, 247, 0.95);
+          border: 1px solid rgba(180, 220, 190, 0.4);
+          box-shadow: 0 2px 8px rgba(160, 180, 150, 0.06), 0 8px 28px rgba(0,0,0,0.03), 0 0 24px rgba(180, 220, 190, 0.12);
+        }
+        .share-close {
+          position: absolute; top: 14px; right: 18px;
+          font-size: 14px; color: #9aaa9a; background: none; border: none;
+          padding: 4px 8px; cursor: pointer; transition: color 0.3s ease;
+          font-family: "Noto Sans SC", system-ui, sans-serif;
+        }
+        .share-close:hover { color: #5a5048; }
+        .share-title {
+          font-family: "Noto Serif SC", Georgia, serif;
+          font-size: 18px; font-weight: 600; color: #3a3a3a;
+          margin: 0 0 16px; letter-spacing: 0.08em;
+        }
+        .share-canvas-wrap {
+          display: flex; justify-content: center; margin-bottom: 16px;
+        }
+        .share-canvas-wrap canvas {
+          box-shadow: 0 4px 16px rgba(160,150,140,0.12);
+        }
+        .share-canvas-placeholder {
+          width: 360px; height: 520px; border-radius: 12px;
+          background: #FFFFFF; border: 1px solid rgba(180,170,160,0.1);
+          display: flex; align-items: center; justify-content: center;
+          font-size: 14px; color: #b8aa9a;
+        }
+        .share-download {
+          padding: 10px 32px; border: none; border-radius: 12px;
+          background: linear-gradient(135deg, #7C6A9A, #B8A9D9);
+          font-family: "Noto Serif SC", Georgia, serif;
+          font-size: 14px; font-weight: 600; color: #FFFFFF;
+          letter-spacing: 0.06em; cursor: pointer;
+          transition: all 0.3s ease;
+          box-shadow: 0 4px 16px rgba(124,106,154,0.2);
+        }
+        .share-download:hover {
+          box-shadow: 0 6px 20px rgba(124,106,154,0.3);
+          transform: translateY(-1px);
+        }
+
         /* ===== 移动端 ===== */
         @media (max-width: 640px) {
           .recharge-page { padding: 0 16px 0; }
@@ -2218,7 +2579,6 @@ const RechargePage: React.FC = () => {
           .home-mood-btn { padding: 6px 8px; min-width: 38px; }
           .home-mood-icon { font-size: 16px; }
           .home-mood-label { font-size: 9px; }
-          .home-weather-btn { width: 36px; height: 36px; font-size: 16px; }
           .home-rec-card-actions { flex-direction: column; gap: 4px; }
           .stats-card-value { font-size: 24px; }
           .stats-chart-wrap { height: 170px; }

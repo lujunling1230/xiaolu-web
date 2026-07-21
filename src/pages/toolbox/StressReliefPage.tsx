@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Link } from "react-router-dom";
 import Match3Game from "./games/Match3Game";
@@ -27,6 +27,10 @@ const GAMES: {
   desc: string;
   icon: string;
   gradient: string;
+  totalLevels: number;
+  totalBadges: number;
+  saveKey: string;
+  gameCode: string;
 }[] = [
   {
     key: "match3",
@@ -34,6 +38,10 @@ const GAMES: {
     desc: "三消归零，万念俱散。",
     icon: "✨",
     gradient: "linear-gradient(135deg, #F4C2C2, #C2D4F4)",
+    totalLevels: 20,
+    totalBadges: 20,
+    saveKey: "match3_badges",
+    gameCode: "match3",
   },
   {
     key: "fruitslice",
@@ -41,6 +49,10 @@ const GAMES: {
     desc: "一刀两断，万念皆空。",
     icon: "🍉",
     gradient: "linear-gradient(135deg, #e8e0d0, #d0d8d4)",
+    totalLevels: 20,
+    totalBadges: 20,
+    saveKey: "fruit_slice_save",
+    gameCode: "fruitslice",
   },
   {
     key: "zombiejuice",
@@ -48,6 +60,10 @@ const GAMES: {
     desc: "榨干烦恼，只剩快乐。",
     icon: "🧟",
     gradient: "linear-gradient(135deg, #c8e6c8, #d4e8c8)",
+    totalLevels: 20,
+    totalBadges: 20,
+    saveKey: "zombie_juice_save",
+    gameCode: "zombiejuice",
   },
   {
     key: "towerdefense",
@@ -55,11 +71,66 @@ const GAMES: {
     desc: "筑塔守卫，寸步不让。",
     icon: "🥕",
     gradient: "linear-gradient(135deg, #f5e1b8, #c8e6c8)",
+    totalLevels: 20,
+    totalBadges: 10,
+    saveKey: "tower_defense_save",
+    gameCode: "towerdefense",
   },
 ];
 
 const StressReliefPage: React.FC = () => {
   const [active, setActive] = useState<GameKey | null>(null);
+
+  // 游戏进度数据
+  const [gameProgress, setGameProgress] = useState<Record<string, { level: number; badges: number }>>({});
+
+  const loadProgress = useCallback(() => {
+    const progress: Record<string, { level: number; badges: number }> = {};
+    for (const g of GAMES) {
+      try {
+        const raw = localStorage.getItem(g.saveKey);
+        if (raw) {
+          const data = JSON.parse(raw);
+          if (g.gameCode === "towerdefense") {
+            progress[g.gameCode] = {
+              level: data.highestWave || 0,
+              badges: (data.badges || []).length,
+            };
+          } else if (g.gameCode === "zombiejuice") {
+            progress[g.gameCode] = {
+              level: data.highestLevel || 0,
+              badges: (data.badges || []).length,
+            };
+          } else if (g.gameCode === "fruitslice") {
+            progress[g.gameCode] = {
+              level: data.highestLevel || 0,
+              badges: (data.badges || []).length,
+            };
+          } else if (g.gameCode === "match3") {
+            progress[g.gameCode] = {
+              level: data.highestLevel || 0,
+              badges: (data.badges || []).length,
+            };
+          }
+        } else {
+          progress[g.gameCode] = { level: 0, badges: 0 };
+        }
+      } catch {
+        progress[g.gameCode] = { level: 0, badges: 0 };
+      }
+    }
+    setGameProgress(progress);
+  }, []);
+
+  useEffect(() => {
+    loadProgress();
+  }, [loadProgress]);
+
+  // 从游戏返回时刷新进度
+  const handleBack = useCallback(() => {
+    setActive(null);
+    setTimeout(loadProgress, 100);
+  }, [loadProgress]);
 
   return (
     <div className="sr-page">
@@ -102,24 +173,46 @@ const StressReliefPage: React.FC = () => {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
             >
-              {GAMES.map((g) => (
-                <motion.button
-                  key={g.key}
-                  className="sr-card"
-                  onClick={() => setActive(g.key)}
-                  whileHover={{ y: -6 }}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.4 }}
-                >
-                  <div className="sr-card-icon" style={{ background: g.gradient }}>
-                    {g.icon}
-                  </div>
-                  <h3 className="sr-card-name">{g.name}</h3>
-                  <p className="sr-card-desc">{g.desc}</p>
-                  <span className="sr-card-play">开始 →</span>
-                </motion.button>
-              ))}
+              {GAMES.map((g) => {
+                const pg = gameProgress[g.gameCode] || { level: 0, badges: 0 };
+                const totalLevels = g.totalLevels;
+                const totalBadges = g.totalBadges;
+                return (
+                  <motion.button
+                    key={g.key}
+                    className="sr-card"
+                    onClick={() => setActive(g.key)}
+                    whileHover={{ y: -6 }}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.4 }}
+                  >
+                    <div className="sr-card-icon" style={{ background: g.gradient }}>
+                      {g.icon}
+                    </div>
+                    <h3 className="sr-card-name">{g.name}</h3>
+                    <p className="sr-card-desc">{g.desc}</p>
+                    <div className="sr-card-progress">
+                      <div className="sr-card-progress-item">
+                        <span className="sr-card-progress-label">关卡</span>
+                        <span className="sr-card-progress-value">{pg.level}/{totalLevels}</span>
+                      </div>
+                      <div className="sr-card-progress-item">
+                        <span className="sr-card-progress-label">徽章</span>
+                        <span className="sr-card-progress-value">{pg.badges}/{totalBadges}</span>
+                      </div>
+                    </div>
+                    <span className="sr-card-play">开始</span>
+                    <Link
+                      to={`/toolbox/games/badges/${g.gameCode}`}
+                      className="sr-card-badge-link"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      徽章墙
+                    </Link>
+                  </motion.button>
+                );
+              })}
             </motion.div>
           ) : (
             <motion.div
@@ -129,7 +222,7 @@ const StressReliefPage: React.FC = () => {
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.96 }}
             >
-              <button className="sr-game-back" onClick={() => setActive(null)}>
+              <button className="sr-game-back" onClick={handleBack}>
                 ← 换一个
               </button>
               {active === "match3" && <Match3Game />}
@@ -212,8 +305,33 @@ const StressReliefPage: React.FC = () => {
           box-shadow: inset 0 -4px 10px rgba(255,255,255,0.4);
         }
         .sr-card-name { font-size: 17px; font-weight: 700; color: #5a4a52; margin: 0 0 6px; }
-        .sr-card-desc { font-size: 13px; color: #a898a0; margin: 0 0 16px; line-height: 1.6; }
+        .sr-card-desc { font-size: 13px; color: #a898a0; margin: 0 0 12px; line-height: 1.6; }
+        .sr-card-progress {
+          display: flex; gap: 16px; margin: 0 0 14px; padding: 8px 12px;
+          background: rgba(180,140,160,0.06); border-radius: 10px;
+        }
+        .sr-card-progress-item {
+          display: flex; flex-direction: column; gap: 2px;
+        }
+        .sr-card-progress-label { font-size: 10px; color: #b8a8b0; letter-spacing: 0.04em; }
+        .sr-card-progress-value { font-size: 14px; font-weight: 700; color: #8a6a7a; }
         .sr-card-play { font-size: 13px; color: #d48a9a; font-weight: 600; letter-spacing: 0.04em; }
+        .sr-card-badge-link {
+          display: inline-block;
+          margin-top: 8px;
+          font-size: 11px;
+          color: #a898a0;
+          text-decoration: none;
+          letter-spacing: 0.04em;
+          padding: 4px 10px;
+          border-radius: 10px;
+          background: rgba(180,160,170,0.06);
+          transition: all 0.2s;
+        }
+        .sr-card-badge-link:hover {
+          color: #8a6a7a;
+          background: rgba(180,160,170,0.12);
+        }
 
         /* 游戏视图 */
         .sr-game-view { position: relative; padding: 8px 4px; }

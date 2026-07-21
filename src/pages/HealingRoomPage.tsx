@@ -57,7 +57,7 @@ const WelcomeCard = () => (
     <h3 className="hl-welcome-title">欢迎来到疗愈室</h3>
     <p className="hl-welcome-sub">哦~土豆，选一个工具，开始今天的疗愈吧。</p>
     <div className="hl-welcome-hint">
-      <span>左侧任选一项</span>
+      <span>开启疗愈之旅</span>
       <span className="hl-welcome-arrow">→</span>
     </div>
   </div>

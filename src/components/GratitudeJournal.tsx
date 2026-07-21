@@ -1237,11 +1237,11 @@ const GratitudeJournal: React.FC = () => {
             0 12px 40px -8px rgba(0,0,0,0.25);
         }
         [data-theme="night"] .gj-cover {
-          background: #1C2520;
+          background: #E8DCC8;
           box-shadow:
-            0 0 0 1px rgba(255,255,255,0.18),
-            0 0 36px 6px rgba(255,250,240,0.14),
-            0 16px 48px -8px rgba(0,0,0,0.5);
+            0 0 0 1px rgba(255,255,255,0.25),
+            0 0 28px 4px rgba(255,250,240,0.18),
+            0 12px 40px -8px rgba(0,0,0,0.25);
         }
 
         .gj-cover-scene {
@@ -1274,8 +1274,8 @@ const GratitudeJournal: React.FC = () => {
         }
         [data-theme="night"] .gj-cover-veil {
           background:
-            radial-gradient(ellipse 70% 55% at 50% 45%, rgba(28,37,32,0.3) 0%, rgba(28,37,32,0) 65%),
-            linear-gradient(to bottom, rgba(28,37,32,0.15) 0%, rgba(28,37,32,0) 30%, rgba(28,37,32,0) 70%, rgba(28,37,32,0.2) 100%);
+            radial-gradient(ellipse 70% 55% at 50% 45%, rgba(232,220,200,0.3) 0%, rgba(232,220,200,0) 65%),
+            linear-gradient(to bottom, rgba(232,220,200,0.15) 0%, rgba(232,220,200,0) 30%, rgba(232,220,200,0) 70%, rgba(232,220,200,0.2) 100%);
         }
 
         /* 极淡光斑（点缀边缘留白，保留呼吸感） */
@@ -1312,7 +1312,7 @@ const GratitudeJournal: React.FC = () => {
         }
         [data-theme="night"] .gj-cover-text-veil {
           background:
-            radial-gradient(ellipse 60% 40% at 50% 42%, rgba(20,28,24,0.5) 0%, rgba(20,28,24,0) 70%);
+            radial-gradient(ellipse 60% 40% at 50% 42%, rgba(232,220,200,0.5) 0%, rgba(232,220,200,0) 70%);
         }
         .gj-cover-title {
           font-family: "Noto Serif SC", Georgia, serif;
@@ -1320,13 +1320,13 @@ const GratitudeJournal: React.FC = () => {
           text-shadow: 0 2px 16px rgba(255,255,255,0.6), 0 0 24px rgba(255,250,240,0.3);
         }
         [data-theme="night"] .gj-cover-title {
-          color: #E8F0E4;
-          text-shadow: 0 2px 16px rgba(0,0,0,0.6), 0 0 24px rgba(200,230,180,0.15);
+          color: #36533F;
+          text-shadow: 0 2px 16px rgba(255,255,255,0.6), 0 0 24px rgba(255,250,240,0.3);
         }
         .gj-cover-sub {
           color: #9A958C;
         }
-        [data-theme="night"] .gj-cover-sub { color: #9DB0A4; }
+        [data-theme="night"] .gj-cover-sub { color: #9A958C; }
         .gj-cover-en {
           color: #9CA3AF;
           font-family: Georgia, "Times New Roman", serif;
@@ -1343,7 +1343,7 @@ const GratitudeJournal: React.FC = () => {
           animation: gj-hint 2.6s ease-in-out infinite;
           white-space: nowrap;
         }
-        [data-theme="night"] .gj-cover-hint { color: rgba(157,184,164,0.7); }
+        [data-theme="night"] .gj-cover-hint { color: rgba(122,154,130,0.8); }
         @keyframes gj-hint {
           0%,100% { opacity: 0.4; }
           50% { opacity: 0.9; }
@@ -1359,6 +1359,9 @@ const GratitudeJournal: React.FC = () => {
           margin: 0 0 6px;
           letter-spacing: 0.06em;
         }
+        [data-theme="night"] .gj-page-title {
+          color: #F0E6D2;
+        }
         .gj-page-sub {
           font-family: Georgia, serif;
           font-size: 13px;
@@ -1367,6 +1370,9 @@ const GratitudeJournal: React.FC = () => {
           margin: 0;
           line-height: 1.95;
           letter-spacing: 0.04em;
+        }
+        [data-theme="night"] .gj-page-sub {
+          color: rgba(240, 230, 210, 0.65);
         }
 
         .gj-grid {
@@ -1413,12 +1419,14 @@ const GratitudeJournal: React.FC = () => {
           line-height: 1;
           margin-bottom: 8px;
         }
+        [data-theme="night"] .gj-month-num { color: #F0E6D2; }
         .gj-current .gj-month-num { color: var(--accent); }
         .gj-month-theme {
           font-size: 12px;
           color: var(--text-soft);
           letter-spacing: 0.08em;
         }
+        [data-theme="night"] .gj-month-theme { color: rgba(240, 230, 210, 0.65); }
         .gj-month-dot {
           position: absolute;
           top: 9px; right: 9px;
@@ -1870,8 +1878,9 @@ const GratitudeJournal: React.FC = () => {
           transition: color 0.22s, border-color 0.22s, background 0.22s, transform 0.22s;
         }
         [data-theme="night"] .gj-close-book {
-          background: rgba(30,41,59,0.6);
-          border-color: rgba(140,160,140,0.25);
+          background: rgba(232,220,200,0.5);
+          border-color: rgba(180,160,120,0.3);
+          color: rgba(240, 230, 210, 0.75);
         }
         .gj-close-book:hover {
           color: var(--accent);

@@ -135,8 +135,9 @@ export default function MapContainer({ cities, selectedCity, onSelectCity }: Map
           height: min(520px, 60vh);
           border-radius: 12px;
           overflow: hidden;
-          border: 2px solid rgba(200,184,152,0.5);
-          box-shadow: 0 4px 24px rgba(139, 115, 85, 0.12), 0 1px 4px rgba(0,0,0,0.06);
+          border: 1px solid rgba(90, 74, 58, 0.08);
+          box-shadow: 0 4px 12px rgba(90, 74, 58, 0.08);
+          background: #E8ECEF;
         }
         .rg-map-container {
           width: 100%;
@@ -147,11 +148,11 @@ export default function MapContainer({ cities, selectedCity, onSelectCity }: Map
         .rg-map-loading {
           width: 100%; height: 100%;
           display: flex; align-items: center; justify-content: center;
-          font-family: var(--rg-font-serif, "Noto Serif SC", serif);
+          font-family: 'Source Han Serif SC', 'Noto Serif SC', serif;
           font-size: 16px;
-          color: var(--rg-ink-light, #8B7355);
+          color: #2C3E50;
           letter-spacing: 0.15em;
-          background: linear-gradient(135deg, #E8E0D0 0%, #F5F0E6 40%, #EDE5D5 100%);
+          background: #E8ECEF;
         }
         .rg-map-loading::before {
           content: "";
@@ -164,9 +165,9 @@ export default function MapContainer({ cities, selectedCity, onSelectCity }: Map
           display: flex; flex-direction: column;
           align-items: center; justify-content: center;
           gap: 8px;
-          font-family: var(--rg-font-serif, "Noto Serif SC", serif);
-          color: #A08060;
-          background: linear-gradient(135deg, #E8E0D0 0%, #F5F0E6 40%, #EDE5D5 100%);
+          font-family: 'Source Han Serif SC', 'Noto Serif SC', serif;
+          color: #2C3E50;
+          background: #E8ECEF;
         }
         .rg-map-error-icon {
           font-size: 28px;
@@ -187,8 +188,8 @@ export default function MapContainer({ cities, selectedCity, onSelectCity }: Map
         .rg-marker-dot {
           width: 14px; height: 14px;
           border-radius: 50%;
-          background: #C49452;
-          box-shadow: 0 2px 6px rgba(196, 148, 82, 0.45);
+          background: #7BA89E;
+          box-shadow: 0 2px 6px rgba(123, 168, 158, 0.45);
           position: relative;
         }
         .rg-marker-dot::after {
@@ -197,14 +198,14 @@ export default function MapContainer({ cities, selectedCity, onSelectCity }: Map
           bottom: -6px; left: 50%;
           transform: translateX(-50%);
           width: 2px; height: 6px;
-          background: #C49452;
+          background: #7BA89E;
           border-radius: 0 0 1px 1px;
         }
 
         /* 已访问城市标记 - 点亮效果 */
         .rg-marker.visited .rg-marker-dot {
-          background: #D4A84A;
-          box-shadow: 0 0 12px rgba(212,168,74,0.6), 0 0 24px rgba(212,168,74,0.3), 0 2px 6px rgba(196,148,82,0.45);
+          background: #F4D35E;
+          box-shadow: 0 0 10px rgba(244,211,94,0.5), 0 2px 6px rgba(244,211,94,0.3);
           width: 16px;
           height: 16px;
         }
@@ -216,7 +217,7 @@ export default function MapContainer({ cities, selectedCity, onSelectCity }: Map
           height: 32px;
           transform: translate(-50%, -50%);
           border-radius: 50%;
-          background: radial-gradient(circle, rgba(212,168,74,0.2) 0%, transparent 70%);
+          background: radial-gradient(circle, rgba(244,211,94,0.2) 0%, transparent 70%);
           animation: rg-marker-pulse 2s ease-in-out infinite;
           pointer-events: none;
         }
@@ -230,14 +231,15 @@ export default function MapContainer({ cities, selectedCity, onSelectCity }: Map
           position: absolute;
           top: -24px; left: 50%;
           transform: translateX(-50%);
-          font-family: var(--rg-font-serif, "Noto Serif SC", serif);
+          font-family: 'Source Han Serif SC', 'Noto Serif SC', serif;
           font-size: 11px;
-          color: var(--rg-ink, #3D3427);
+          color: #5A4A3A;
           white-space: nowrap;
-          background: rgba(255,255,255,0.88);
+          background: rgba(245,243,238,0.9);
           padding: 1px 6px;
           border-radius: 4px;
-          box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+          border: 1px solid rgba(90,74,58,0.1);
+          box-shadow: 0 4px 12px rgba(90, 74, 58, 0.08);
           opacity: 0;
           transition: opacity 0.2s;
           pointer-events: none;
@@ -248,8 +250,8 @@ export default function MapContainer({ cities, selectedCity, onSelectCity }: Map
 
         /* ===== AI 推荐 Marker ===== */
         .rg-marker.ai .rg-marker-dot {
-          background: #5D8A6A;
-          box-shadow: 0 0 8px rgba(93, 138, 106, 0.5);
+          background: #7BA89E;
+          box-shadow: 0 0 8px rgba(123, 168, 158, 0.5);
           animation: rg-pulse 2s ease-in-out infinite;
         }
         /* 虚线圆环 */
@@ -257,20 +259,20 @@ export default function MapContainer({ cities, selectedCity, onSelectCity }: Map
           content: "";
           position: absolute;
           inset: -4px;
-          border: 1.5px dashed #5D8A6A;
+          border: 1.5px dashed #7BA89E;
           border-radius: 50%;
           animation: rg-pulse-ring 2s ease-in-out infinite;
         }
         .rg-marker.ai .rg-marker-dot::after {
-          background: #5D8A6A;
+          background: #7BA89E;
         }
         .rg-marker.ai .rg-marker-label {
-          background: rgba(93, 138, 106, 0.12);
-          border: 1px solid rgba(93, 138, 106, 0.25);
+          background: rgba(123, 168, 158, 0.12);
+          border: 1px solid rgba(123, 168, 158, 0.25);
         }
         .rg-marker-ai-badge {
           font-size: 9px;
-          background: #5D8A6A;
+          background: #7BA89E;
           color: #fff;
           padding: 0 3px;
           border-radius: 2px;
@@ -281,8 +283,8 @@ export default function MapContainer({ cities, selectedCity, onSelectCity }: Map
         }
         .rg-marker-want-badge {
           font-size: 9px;
-          background: var(--rg-accent, #D4884A);
-          color: #fff;
+          background: #F4D35E;
+          color: #5A4A3A;
           padding: 0 4px;
           border-radius: 2px;
           margin-left: 2px;
@@ -290,27 +292,27 @@ export default function MapContainer({ cities, selectedCity, onSelectCity }: Map
           font-weight: 600;
         }
 
-        /* ===== 想去 Marker（琥珀色） ===== */
+        /* ===== 想去 Marker（青苔绿） ===== */
         .rg-marker.want-to-go .rg-marker-dot {
-          background: var(--rg-accent, #D4884A);
-          box-shadow: 0 0 8px rgba(212, 136, 74, 0.6);
+          background: #7BA89E;
+          box-shadow: 0 0 8px rgba(123, 168, 158, 0.6);
           animation: rg-want-pulse 2s ease-in-out infinite;
         }
         .rg-marker.want-to-go .rg-marker-dot::before {
           content: "";
           position: absolute;
           inset: -5px;
-          border: 1.5px dashed var(--rg-accent, #D4884A);
+          border: 1.5px dashed #7BA89E;
           border-radius: 50%;
           animation: rg-want-pulse-ring 2s ease-in-out infinite;
         }
         .rg-marker.want-to-go .rg-marker-dot::after {
-          background: var(--rg-accent, #D4884A);
+          background: #7BA89E;
         }
         .rg-marker.want-to-go .rg-marker-label {
-          background: rgba(212, 136, 74, 0.1);
-          border: 1px solid rgba(212, 136, 74, 0.3);
-          color: var(--rg-accent-dark, #B06A30);
+          background: rgba(123, 168, 158, 0.1);
+          border: 1px solid rgba(123, 168, 158, 0.3);
+          color: #5A4A3A;
         }
 
         @keyframes rg-want-pulse {
@@ -324,24 +326,24 @@ export default function MapContainer({ cities, selectedCity, onSelectCity }: Map
 
         /* 脉冲动画 */
         @keyframes rg-pulse {
-          0%, 100% { box-shadow: 0 0 8px rgba(93, 138, 106, 0.4); }
-          50% { box-shadow: 0 0 16px rgba(93, 138, 106, 0.7); }
+          0%, 100% { box-shadow: 0 0 8px rgba(123, 168, 158, 0.4); }
+          50% { box-shadow: 0 0 16px rgba(123, 168, 158, 0.7); }
         }
         @keyframes rg-pulse-ring {
           0%, 100% { transform: scale(1); opacity: 0.6; }
           50% { transform: scale(1.3); opacity: 0.2; }
         }
 
-        /* ===== InfoWindow 古风样式 ===== */
+        /* ===== InfoWindow 温柔漫游风格 ===== */
         .rg-info-window {
-          background: #F5F0E6;
-          border: 2px solid #C49452;
-          border-radius: 6px;
+          background: #F5F3EE;
+          border: 1px solid rgba(90,74,58,0.1);
+          border-radius: 12px;
           padding: 12px 16px;
           min-width: 160px;
           max-width: 240px;
-          font-family: var(--rg-font-serif, "Noto Serif SC", serif);
-          box-shadow: 0 4px 16px rgba(139, 115, 85, 0.2);
+          font-family: 'Source Han Serif SC', 'Noto Serif SC', serif;
+          box-shadow: 0 4px 12px rgba(90, 74, 58, 0.08);
         }
         .rg-info-window::after {
           content: "";
@@ -351,22 +353,22 @@ export default function MapContainer({ cities, selectedCity, onSelectCity }: Map
           width: 0; height: 0;
           border-left: 8px solid transparent;
           border-right: 8px solid transparent;
-          border-top: 8px solid #C49452;
+          border-top: 8px solid rgba(90,74,58,0.1);
         }
         .rg-info-title {
           font-size: 16px;
           font-weight: 700;
-          color: #3D3427;
+          color: #2C3E50;
           letter-spacing: 0.05em;
         }
         .rg-info-province {
           font-size: 12px;
-          color: #8B7355;
+          color: #7A7A7A;
           margin-top: 2px;
         }
         .rg-info-divider {
           height: 1px;
-          background: rgba(196, 148, 82, 0.3);
+          background: rgba(90,74,58,0.08);
           margin: 8px 0;
         }
         .rg-info-slogan {
@@ -383,7 +385,7 @@ export default function MapContainer({ cities, selectedCity, onSelectCity }: Map
         }
         .rg-info-count {
           font-size: 11px;
-          color: #8B7355;
+          color: #7A7A7A;
         }
         .rg-info-source {
           font-size: 10px;
@@ -393,14 +395,14 @@ export default function MapContainer({ cities, selectedCity, onSelectCity }: Map
           letter-spacing: 0.02em;
         }
         .rg-info-source-ai {
-          background: rgba(93, 138, 106, 0.15);
-          color: #3D6B4A;
-          border: 1px solid rgba(93, 138, 106, 0.3);
+          background: rgba(123, 168, 158, 0.15);
+          color: #5A8A7E;
+          border: 1px solid rgba(123, 168, 158, 0.3);
         }
         .rg-info-source-manual {
-          background: rgba(196, 148, 82, 0.15);
-          color: #8B6930;
-          border: 1px solid rgba(196, 148, 82, 0.3);
+          background: rgba(244, 211, 94, 0.15);
+          color: #5A4A3A;
+          border: 1px solid rgba(244, 211, 94, 0.3);
         }
 
         /* ===== 四角装饰图钉 ===== */
@@ -415,16 +417,16 @@ export default function MapContainer({ cities, selectedCity, onSelectCity }: Map
           position: absolute;
           top: 0; left: 0;
           width: 12px; height: 12px;
-          background: radial-gradient(circle at 4px 4px, #D4B483 0%, #B8956A 60%, #8B7355 100%);
+          background: radial-gradient(circle at 4px 4px, #7BA89E 0%, #5A8A7E 60%, #3A6A5E 100%);
           border-radius: 50%;
-          box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+          box-shadow: 0 1px 3px rgba(0,0,0,0.15);
         }
         .rg-map-pin::after {
           content: "";
           position: absolute;
           top: 10px; left: 3px;
           width: 6px; height: 6px;
-          background: rgba(0,0,0,0.2);
+          background: rgba(0,0,0,0.08);
           border-radius: 50% 50% 0 0;
           transform: rotate(-45deg);
         }
@@ -437,7 +439,7 @@ export default function MapContainer({ cities, selectedCity, onSelectCity }: Map
         @media (prefers-reduced-motion: reduce) {
           .rg-marker.ai .rg-marker-dot {
             animation: none;
-            box-shadow: 0 0 8px rgba(93, 138, 106, 0.5);
+            box-shadow: 0 0 8px rgba(123, 168, 158, 0.5);
           }
           .rg-marker.ai .rg-marker-dot::before {
             animation: none;
@@ -462,7 +464,7 @@ export default function MapContainer({ cities, selectedCity, onSelectCity }: Map
             <div className="rg-map-error">
               <span className="rg-map-error-icon">&#9888;</span>
               <span>地图加载遇到问题</span>
-              <span style={{ fontSize: 12, color: "#B0A090" }}>{error}</span>
+              <span style={{ fontSize: 12, color: "#7A7A7A" }}>{error}</span>
             </div>
           )}
           <div

@@ -29,7 +29,14 @@ const MeditationIcon = () => (
 );
 
 
-type ModuleId = "welcome" | "journal" | "breathing" | "meditation" | "achievements";
+type ModuleId = "welcome" | "journal" | "breathing" | "meditation" | "achievements" | "companion";
+
+const CompanionIcon = () => (
+  <svg width="18" height="18" viewBox="0 0 20 20" fill="none">
+    <path d="M10 3C7 6 4 9 4 12.5C4 16 6.7 19 10 19C13.3 19 16 16 16 12.5C16 9 13 6 10 7C8 7.3 6.5 9.5 7.5 12C8 13.2 9 13.8 10 12.5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
+    <path d="M7 10L5.5 13M13 10L14.5 13M5 15L3.5 17.5M15 15L16.5 17.5" stroke="currentColor" strokeWidth="1" strokeLinecap="round" opacity="0.4" />
+  </svg>
+);
 
 const AchievementIcon = () => (
   <svg width="18" height="18" viewBox="0 0 20 20" fill="none">
@@ -67,6 +74,7 @@ const HealingRoomPage: React.FC = () => {
       case "breathing": return <BreathingGuide />;
       case "meditation": return <MeditationTimer />;
       case "achievements": return <AchievementPage />;
+      case "companion": return <HealingCompanion />;
       default: return <WelcomeCard />;
     }
   };
@@ -132,13 +140,28 @@ const HealingRoomPage: React.FC = () => {
               <span className="hl-nav-sub">Achievements</span>
             </span>
           </button>
+          {/* 疗愈对话入口 */}
+          <button
+            className={`hl-nav-item ${active === "companion" ? "hl-nav-active" : ""}`}
+            onClick={() => handleSelect("companion")}
+          >
+            {active === "companion" && (
+              <motion.span
+                className="hl-nav-bar"
+                layoutId="hl-nav-bar"
+                transition={{ duration: 0.3, ease: "easeOut" }}
+              />
+            )}
+            <span className="hl-nav-icon"><CompanionIcon /></span>
+            <span className="hl-nav-text">
+              <span className="hl-nav-label">疗愈对话</span>
+              <span className="hl-nav-sub">Companion</span>
+            </span>
+          </button>
         </nav>
 
         {/* 装饰语 */}
         <p className="hl-sidebar-quote">「平静是内心的力量」</p>
-
-        {/* 疗愈师小愈 */}
-        <HealingCompanion />
       </aside>
 
       {/* ===== 移动端顶部导航 ===== */}
@@ -176,6 +199,13 @@ const HealingRoomPage: React.FC = () => {
             >
               <span className="hl-nav-icon"><AchievementIcon /></span>
               疗愈成就
+            </button>
+            <button
+              className={`hl-mobile-nav-item ${active === "companion" ? "hl-mobile-nav-active" : ""}`}
+              onClick={() => handleSelect("companion")}
+            >
+              <span className="hl-nav-icon"><CompanionIcon /></span>
+              疗愈对话
             </button>
           </motion.div>
         )}

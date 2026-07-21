@@ -40,30 +40,33 @@ export default function MapPage() {
           gap: 6px;
           padding: 8px 18px;
           border-radius: 20px;
-          border: 1px solid var(--rg-ink-border, #C8B898);
-          background: rgba(255,255,255,0.7);
-          color: var(--rg-ink, #5c3a21);
+          border: 1px solid rgba(90, 74, 58, 0.08);
+          background: rgba(245,243,238,0.8);
+          color: #5A4A3A;
           font-size: 13px;
-          font-family: var(--rg-font-serif, 'Noto Serif SC', serif);
+          font-family: 'PingFang SC', system-ui, sans-serif;
           letter-spacing: 1px;
           cursor: pointer;
           transition: all 0.2s;
+          backdrop-filter: blur(8px);
         }
         .rg-map-action-btn:hover {
-          border-color: #8B7355;
-          background: rgba(255,255,255,0.9);
-          box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+          border-color: rgba(90, 74, 58, 0.15);
+          background: rgba(245,243,238,0.95);
+          box-shadow: 0 4px 12px rgba(90, 74, 58, 0.08);
         }
         .rg-map-action-btn--primary {
-          background: rgba(92,58,33,0.06);
-          border-color: #5c3a21;
+          background: #F4D35E;
+          border-color: #F4D35E;
+          color: #5A4A3A;
         }
         .rg-map-action-btn--primary:hover {
-          background: rgba(92,58,33,0.1);
+          background: #e8c74e;
+          border-color: #e8c74e;
         }
       `}</style>
 
-      <main style={{ maxWidth: 1200, margin: "0 auto", padding: "24px 20px 60px" }}>
+      <main style={{ maxWidth: 1200, margin: "0 auto", padding: "24px 20px 60px", background: "#F5F3EE", fontFamily: "'PingFang SC', system-ui, sans-serif", minHeight: "100vh" }}>
         <MapContainer
           cities={cities}
           selectedCity={selectedCity}

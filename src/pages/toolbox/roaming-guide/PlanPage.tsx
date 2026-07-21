@@ -28,25 +28,29 @@ export default function PlanPage() {
           max-width: 720px;
           margin: 0 auto;
           padding: 32px 20px 80px;
+          background: #F5F3EE;
+          min-height: 100vh;
+          font-family: 'PingFang SC', system-ui, sans-serif;
         }
         .rg-plan-card {
-          background: rgba(255,255,255,0.7);
-          border: 1px solid var(--rg-ink-border, #C8B898);
-          border-radius: 12px;
+          background: #fff;
+          border: none;
+          border-radius: 16px;
           padding: 24px;
           margin-bottom: 20px;
+          box-shadow: 0 4px 12px rgba(90, 74, 58, 0.08);
         }
         .rg-plan-card h3 {
-          font-family: var(--rg-font-serif, 'Noto Serif SC', serif);
+          font-family: 'Source Han Serif SC', 'Noto Serif SC', serif;
           font-size: 16px;
-          color: #5c3a21;
+          color: #2C3E50;
           margin: 0 0 12px;
           letter-spacing: 2px;
         }
         .rg-plan-card p {
           font-size: 13px;
           line-height: 1.8;
-          color: #666;
+          color: #5A4A3A;
           margin: 0;
         }
         .rg-plan-city {
@@ -54,28 +58,28 @@ export default function PlanPage() {
           align-items: center;
           gap: 10px;
           padding: 10px 14px;
-          background: rgba(250,248,243,0.8);
+          background: rgba(244,211,94,0.06);
           border-radius: 8px;
           margin-bottom: 8px;
           font-size: 13px;
-          color: #5c3a21;
+          color: #5A4A3A;
         }
         .rg-plan-city__dot {
           width: 6px;
           height: 6px;
           border-radius: 50%;
-          background: var(--rg-primary, #4A8B6F);
+          background: #7BA89E;
           flex-shrink: 0;
         }
         .rg-plan-empty {
           text-align: center;
           padding: 60px 20px;
-          color: #8B7D6B;
+          color: #5A4A3A;
         }
         .rg-plan-empty h3 {
-          font-family: var(--rg-font-serif, 'Noto Serif SC', serif);
+          font-family: 'Source Han Serif SC', 'Noto Serif SC', serif;
           font-size: 18px;
-          color: #5c3a21;
+          color: #2C3E50;
           margin: 0 0 12px;
           letter-spacing: 2px;
         }
@@ -90,10 +94,10 @@ export default function PlanPage() {
           gap: 6px;
           margin-top: 16px;
           padding: 6px 14px;
-          background: rgba(92,58,33,0.06);
+          background: rgba(244,211,94,0.1);
           border-radius: 20px;
           font-size: 12px;
-          color: #5c3a21;
+          color: #F4D35E;
         }
       `}</style>
 
@@ -129,7 +133,7 @@ export default function PlanPage() {
         {hasRecommend && (
           <div className="rg-plan-card">
             <h3>最近推荐</h3>
-            <p style={{ marginBottom: 12, fontSize: 12, color: '#8B7D6B' }}>
+            <p style={{ marginBottom: 12, fontSize: 12, color: '#5A4A3A' }}>
               {lastRecommendResult!.summary}
             </p>
             {lastRecommendResult!.cities.map((c, i) => (
@@ -149,14 +153,14 @@ export default function PlanPage() {
               <button
                 onClick={() => setExpandedPlan(!expandedPlan)}
                 style={{
-                  background: "none",
-                  border: "1px solid var(--rg-ink-border, #C8B898)",
-                  borderRadius: 16,
+                  background: "rgba(244,211,94,0.1)",
+                  border: "none",
+                  borderRadius: 20,
                   padding: "3px 12px",
                   fontSize: 12,
-                  color: "#8B7D6B",
+                  color: "#F4D35E",
                   cursor: "pointer",
-                  fontFamily: "var(--rg-font-serif, 'Noto Serif SC', serif)",
+                  fontFamily: "'Source Han Serif SC', 'Noto Serif SC', serif",
                   letterSpacing: "1px",
                 }}
               >
@@ -168,23 +172,23 @@ export default function PlanPage() {
             </p>
             <p>{lastGenerateResult!.plan.summary}</p>
             {lastGenerateResult!.plan.budget_hint && (
-              <p style={{ marginTop: 8, fontSize: 12, color: "#8B7D6B" }}>
+              <p style={{ marginTop: 8, fontSize: 12, color: "#5A4A3A" }}>
                 {lastGenerateResult!.plan.budget_hint}
               </p>
             )}
 
             {/* 展开后的完整攻略详情 */}
             {expandedPlan && lastGenerateResult!.detailed_guide.length > 0 && (
-              <div style={{ marginTop: 16, borderTop: "1px solid #E0D8C8", paddingTop: 16 }}>
+              <div style={{ marginTop: 16, borderTop: "1px solid rgba(90,74,58,0.1)", paddingTop: 16 }}>
                 {lastGenerateResult!.plan.highlights.length > 0 && (
                   <div style={{ marginBottom: 12, display: "flex", gap: 6, flexWrap: "wrap" }}>
                     {lastGenerateResult!.plan.highlights.map((h, i) => (
                       <span key={i} style={{
                         padding: "3px 10px",
-                        background: "rgba(92,58,33,0.06)",
+                        background: "rgba(244,211,94,0.12)",
                         borderRadius: 12,
                         fontSize: 12,
-                        color: "#5c3a21",
+                        color: "#5A4A3A",
                       }}>{h}</span>
                     ))}
                   </div>
@@ -193,39 +197,39 @@ export default function PlanPage() {
                   <div key={day.day} style={{
                     marginBottom: 16,
                     padding: "14px 16px",
-                    background: "rgba(250,248,243,0.8)",
-                    borderRadius: 8,
+                    background: "rgba(244,211,94,0.04)",
+                    borderRadius: 10,
                   }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
                       <span style={{
                         fontSize: 11,
                         fontWeight: 600,
-                        color: "#C4953A",
+                        color: "#F4D35E",
                         letterSpacing: "1px",
-                        background: "rgba(196,149,58,0.1)",
+                        background: "rgba(244,211,94,0.12)",
                         padding: "2px 8px",
                         borderRadius: 4,
                       }}>
                         DAY {String(day.day).padStart(2, "0")}
                       </span>
-                      <span style={{ fontSize: 14, color: "#5c3a21", fontWeight: 500 }}>
+                      <span style={{ fontSize: 14, color: "#2C3E50", fontWeight: 500 }}>
                         {day.theme}
                       </span>
                     </div>
                     <div style={{ marginBottom: 8 }}>
-                      <span style={{ fontSize: 12, color: "#8B7D6B", fontWeight: 600 }}>行程安排</span>
-                      <ul style={{ margin: "4px 0 0", paddingLeft: 18, fontSize: 13, lineHeight: 1.8, color: "#555" }}>
+                      <span style={{ fontSize: 12, color: "#7BA89E", fontWeight: 600 }}>行程安排</span>
+                      <ul style={{ margin: "4px 0 0", paddingLeft: 18, fontSize: 13, lineHeight: 1.8, color: "#5A4A3A" }}>
                         {day.activities.map((a, i) => <li key={i}>{a}</li>)}
                       </ul>
                     </div>
                     <div>
-                      <span style={{ fontSize: 12, color: "#8B7D6B", fontWeight: 600 }}>美食推荐</span>
-                      <ul style={{ margin: "4px 0 0", paddingLeft: 18, fontSize: 13, lineHeight: 1.8, color: "#555" }}>
+                      <span style={{ fontSize: 12, color: "#7BA89E", fontWeight: 600 }}>美食推荐</span>
+                      <ul style={{ margin: "4px 0 0", paddingLeft: 18, fontSize: 13, lineHeight: 1.8, color: "#5A4A3A" }}>
                         {day.food_recommendations.map((f, i) => <li key={i}>{f}</li>)}
                       </ul>
                     </div>
                     {day.transport_tip && (
-                      <p style={{ marginTop: 8, fontSize: 12, color: "#8B7D6B", fontStyle: "italic" }}>
+                      <p style={{ marginTop: 8, fontSize: 12, color: "#5A4A3A", fontStyle: "italic" }}>
                         交通：{day.transport_tip}
                       </p>
                     )}

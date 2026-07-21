@@ -269,17 +269,17 @@ export default function AIAssistantPanel({
       >
         <svg className="rg-ai-globe__svg" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
           {/* 地球外轮廓 */}
-          <circle cx="32" cy="32" r="28" stroke="#5B9A8B" strokeWidth="2.5" fill="rgba(91,154,139,0.12)" />
+          <circle cx="32" cy="32" r="28" stroke="#7BA89E" strokeWidth="2.5" fill="rgba(123,168,158,0.12)" />
           {/* 赤道 */}
-          <ellipse cx="32" cy="32" rx="28" ry="8" stroke="#5B9A8B" strokeWidth="1.2" fill="none" opacity="0.6" />
+          <ellipse cx="32" cy="32" rx="28" ry="8" stroke="#7BA89E" strokeWidth="1.2" fill="none" opacity="0.6" />
           {/* 经线 */}
-          <ellipse cx="32" cy="32" rx="12" ry="28" stroke="#5B9A8B" strokeWidth="1.2" fill="none" opacity="0.5" />
-          <ellipse cx="32" cy="32" rx="22" ry="28" stroke="#5B9A8B" strokeWidth="1" fill="none" opacity="0.35" />
+          <ellipse cx="32" cy="32" rx="12" ry="28" stroke="#7BA89E" strokeWidth="1.2" fill="none" opacity="0.5" />
+          <ellipse cx="32" cy="32" rx="22" ry="28" stroke="#7BA89E" strokeWidth="1" fill="none" opacity="0.35" />
           {/* 大陆轮廓（简化） */}
-          <path d="M20 24 Q26 20 30 26 T38 22 Q42 24 40 30 T44 36 Q40 42 34 40 T28 44 Q22 42 24 36 T20 30 Q18 26 20 24Z" fill="rgba(91,154,139,0.25)" stroke="#5B9A8B" strokeWidth="1" />
+          <path d="M20 24 Q26 20 30 26 T38 22 Q42 24 40 30 T44 36 Q40 42 34 40 T28 44 Q22 42 24 36 T20 30 Q18 26 20 24Z" fill="rgba(123,168,158,0.25)" stroke="#7BA89E" strokeWidth="1" />
           {/* 定位标记 */}
-          <circle cx="44" cy="20" r="3" fill="#C4953A" />
-          <circle cx="44" cy="20" r="6" stroke="#C4953A" strokeWidth="1" fill="none" opacity="0.4">
+          <circle cx="44" cy="20" r="3" fill="#F4D35E" />
+          <circle cx="44" cy="20" r="6" stroke="#F4D35E" strokeWidth="1" fill="none" opacity="0.4">
             <animate attributeName="r" values="6;9;6" dur="2s" repeatCount="indefinite" />
             <animate attributeName="opacity" values="0.4;0;0.4" dur="2s" repeatCount="indefinite" />
           </circle>
@@ -309,7 +309,7 @@ export default function AIAssistantPanel({
         {/* 标题栏 */}
         <div className="rg-ai-drawer__header">
           <div className="rg-ai-drawer__brand">
-            <svg className="rg-ai-drawer__globe-icon" viewBox="0 0 24 24" fill="none" stroke="#5B9A8B" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <svg className="rg-ai-drawer__globe-icon" viewBox="0 0 24 24" fill="none" stroke="#7BA89E" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <circle cx="12" cy="12" r="10" />
               <line x1="2" y1="12" x2="22" y2="12" />
               <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
@@ -958,15 +958,15 @@ const CSS = `
   height: 56px;
   border: none;
   border-radius: 50%;
-  background: linear-gradient(135deg, #f8f6f2 0%, #ede8e0 100%);
+  background: linear-gradient(135deg, #F5F3EE 0%, #E8ECEF 100%);
   cursor: pointer;
   padding: 0;
   display: flex;
   align-items: center;
   justify-content: center;
   box-shadow:
-    0 4px 16px rgba(0,0,0,0.12),
-    0 0 0 1px rgba(176,141,87,0.15),
+    0 4px 16px rgba(90, 74, 58, 0.12),
+    0 0 0 1px rgba(90, 74, 58, 0.08),
     inset 0 1px 0 rgba(255,255,255,0.8);
   transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1),
               box-shadow 0.3s ease;
@@ -991,7 +991,7 @@ const CSS = `
   position: absolute;
   inset: -4px;
   border-radius: 50%;
-  border: 2px solid rgba(196,149,58,0.3);
+  border: 2px solid rgba(244,211,94,0.3);
   opacity: 0;
   animation: rg-globe-pulse 2s ease-in-out infinite;
 }
@@ -1000,8 +1000,8 @@ const CSS = `
 .rg-ai-globe:hover {
   transform: translateY(-4px) scale(1.05);
   box-shadow:
-    0 8px 24px rgba(0,0,0,0.15),
-    0 0 0 1px rgba(176,141,87,0.3),
+    0 8px 24px rgba(90, 74, 58, 0.15),
+    0 0 0 1px rgba(90, 74, 58, 0.12),
     inset 0 1px 0 rgba(255,255,255,0.8);
 }
 
@@ -1013,8 +1013,8 @@ const CSS = `
 .rg-ai-globe:active {
   transform: scale(0.92);
   box-shadow:
-    0 2px 8px rgba(0,0,0,0.1),
-    0 0 0 1px rgba(176,141,87,0.2);
+    0 2px 8px rgba(90, 74, 58, 0.08),
+    0 0 0 1px rgba(90, 74, 58, 0.06);
 }
 
 @keyframes rg-globe-spin {
@@ -1034,7 +1034,7 @@ const CSS = `
   position: fixed;
   inset: 0;
   z-index: 9001;
-  background: rgba(44, 24, 12, 0.25);
+  background: rgba(44, 62, 80, 0.2);
   opacity: 0;
   visibility: hidden;
   transition: opacity 0.35s ease, visibility 0.35s ease;
@@ -1057,16 +1057,17 @@ const CSS = `
   z-index: 9002;
   width: 380px;
   height: 100vh;
-  background: var(--rg-paper, #F5F0E6);
-  box-shadow: -6px 0 28px rgba(60, 40, 20, 0.18), -2px 0 8px rgba(60, 40, 20, 0.08);
-  font-family: "KaiTi", "STKaiti", "Noto Serif SC", serif;
+  background: rgba(245,243,238,0.95);
+  backdrop-filter: blur(12px);
+  box-shadow: -6px 0 28px rgba(90, 74, 58, 0.1), -2px 0 8px rgba(90, 74, 58, 0.05);
+  font-family: 'PingFang SC', system-ui, sans-serif;
   display: flex;
   flex-direction: column;
   transform: translateX(100%);
   opacity: 0;
   transition: transform 0.4s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.35s ease;
   overflow: hidden;
-  color: var(--rg-ink, #5c3a21);
+  color: #5A4A3A;
 }
 
 .rg-ai-drawer--open {
@@ -1102,15 +1103,15 @@ const CSS = `
   pointer-events: auto;
   padding: 10px 20px;
   border-radius: 8px;
-  background: var(--rg-accent, #D4884A);
-  color: #fff;
+  background: #F4D35E;
+  color: #5A4A3A;
   font-size: 14px;
   font-weight: 400;
   letter-spacing: 0.06em;
   line-height: 1.5;
   white-space: nowrap;
   animation: rg-ai-toast-in 0.3s ease forwards;
-  box-shadow: 0 4px 12px rgba(212, 136, 74, 0.35);
+  box-shadow: 0 4px 12px rgba(244, 211, 94, 0.35);
 }
 
 .rg-ai-toast:last-child {
@@ -1125,7 +1126,7 @@ const CSS = `
   align-items: center;
   justify-content: space-between;
   padding: 20px 20px 16px;
-  border-bottom: 1px solid var(--rg-ink-border, #C8B898);
+  border-bottom: 1px solid rgba(90,74,58,0.1);
   flex-shrink: 0;
 }
 
@@ -1143,9 +1144,9 @@ const CSS = `
 }
 
 .rg-ai-drawer__title {
-  font-size: var(--rg-text-h3, 17px);
-  font-weight: var(--rg-weight-title, 600);
-  color: var(--rg-ink, #5c3a21);
+  font-size: 17px;
+  font-weight: 600;
+  color: #2C3E50;
   letter-spacing: 3px;
   margin: 0;
   line-height: 1.3;
@@ -1153,7 +1154,7 @@ const CSS = `
 
 .rg-ai-drawer__subtitle {
   font-size: 11px;
-  color: var(--rg-ink-light, #8B7D6B);
+  color: #9A9A9A;
   letter-spacing: 1px;
   display: block;
   margin-top: 2px;
@@ -1166,7 +1167,7 @@ const CSS = `
   background: none;
   cursor: pointer;
   font-size: 18px;
-  color: var(--rg-ink-light, #8B7D6B);
+  color: #9A9A9A;
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -1175,8 +1176,8 @@ const CSS = `
 }
 
 .rg-ai-drawer__close:hover {
-  background: rgba(92, 58, 33, 0.08);
-  color: var(--rg-ink, #5c3a21);
+  background: rgba(90, 74, 58, 0.06);
+  color: #5A4A3A;
 }
 
 /* ================================================================
@@ -1186,7 +1187,7 @@ const CSS = `
   display: flex;
   padding: 12px 20px 0;
   gap: 0;
-  border-bottom: 1px solid var(--rg-ink-border, #C8B898);
+  border-bottom: 1px solid rgba(90,74,58,0.1);
   flex-shrink: 0;
 }
 
@@ -1196,9 +1197,9 @@ const CSS = `
   border: none;
   background: none;
   cursor: pointer;
-  font-family: "KaiTi", "STKaiti", "Noto Serif SC", serif;
-  font-size: var(--rg-text-body, 15px);
-  color: var(--rg-ink-light, #8B7D6B);
+  font-family: 'PingFang SC', system-ui, sans-serif;
+  font-size: 15px;
+  color: #9A9A9A;
   letter-spacing: 2px;
   position: relative;
   transition: color 0.25s ease;
@@ -1206,13 +1207,15 @@ const CSS = `
 }
 
 .rg-ai-tabs__btn--active {
-  color: var(--rg-primary, #4A8B6F);
-  font-weight: var(--rg-weight-title, 600);
-  border-bottom-color: var(--rg-primary, #4A8B6F);
+  background: rgba(244,211,94,0.12);
+  color: #5A4A3A;
+  font-weight: 600;
+  border-bottom-color: transparent;
+  border-radius: 20px 20px 0 0;
 }
 
 .rg-ai-tabs__btn:hover:not(.rg-ai-tabs__btn--active) {
-  color: var(--rg-ink, #5c3a21);
+  color: #5A4A3A;
 }
 
 /* ================================================================
@@ -1221,11 +1224,11 @@ const CSS = `
 .rg-ai-body {
   flex: 1;
   overflow-y: auto;
-  padding: var(--rg-space-md, 16px) 20px 32px;
-  font-size: var(--rg-text-body, 15px);
-  font-weight: var(--rg-weight-body, 400);
-  line-height: var(--rg-leading-body, 1.85);
-  letter-spacing: var(--rg-tracking-body, 0.06em);
+  padding: 16px 20px 32px;
+  font-size: 15px;
+  font-weight: 400;
+  line-height: 1.85;
+  letter-spacing: 0.06em;
 }
 
 .rg-ai-body::-webkit-scrollbar {
@@ -1237,7 +1240,7 @@ const CSS = `
 }
 
 .rg-ai-body::-webkit-scrollbar-thumb {
-  background: var(--rg-ink-border, #C8B898);
+  background: rgba(90,74,58,0.1);
   border-radius: 2px;
 }
 
@@ -1249,11 +1252,12 @@ const CSS = `
 }
 
 .rg-ai-section__title {
-  font-size: var(--rg-text-h3, 18px);
-  font-weight: var(--rg-weight-title, 600);
-  color: var(--rg-ink, #5c3a21);
-  letter-spacing: 3px;
+  font-size: 16px;
+  font-weight: 600;
+  color: #2C3E50;
+  letter-spacing: 2px;
   margin: 0 0 10px;
+  font-family: 'Source Han Serif SC', 'Noto Serif SC', serif;
 }
 
 /* ================================================================
@@ -1268,26 +1272,26 @@ const CSS = `
 .rg-ai-tag {
   padding: 5px 14px;
   border-radius: 20px;
-  border: 1.5px solid var(--rg-ink-border, #C8B898);
+  border: 1.5px solid rgba(90,74,58,0.12);
   background: transparent;
   cursor: pointer;
-  font-family: "KaiTi", "STKaiti", "Noto Serif SC", serif;
+  font-family: 'PingFang SC', system-ui, sans-serif;
   font-size: 13px;
-  color: var(--rg-ink-light, #8B7D6B);
+  color: #5A4A3A;
   transition: all 0.25s ease;
   white-space: nowrap;
 }
 
 .rg-ai-tag:hover {
-  border-color: var(--rg-primary, #4A8B6F);
-  color: var(--rg-ink, #5c3a21);
-  background: rgba(74, 139, 111, 0.06);
+  border-color: rgba(244,211,94,0.3);
+  color: #5A4A3A;
+  background: rgba(244,211,94,0.06);
 }
 
 .rg-ai-tag--active {
-  background: var(--rg-primary, #4A8B6F);
-  border-color: var(--rg-primary, #4A8B6F);
-  color: #fff;
+  background: rgba(244,211,94,0.12);
+  border-color: rgba(244,211,94,0.3);
+  color: #5A4A3A;
 }
 
 /* ================================================================
@@ -1302,24 +1306,24 @@ const CSS = `
   width: 48px;
   height: 48px;
   border-radius: 50%;
-  border: 1.5px solid var(--rg-ink-border, #C8B898);
+  border: 1.5px solid rgba(90,74,58,0.12);
   background: transparent;
   cursor: pointer;
-  font-family: "KaiTi", "STKaiti", "Noto Serif SC", serif;
+  font-family: 'PingFang SC', system-ui, sans-serif;
   font-size: 16px;
-  color: var(--rg-ink, #5c3a21);
+  color: #5A4A3A;
   transition: all 0.25s ease;
 }
 
 .rg-ai-season-btn:hover {
-  border-color: var(--rg-primary, #4A8B6F);
-  background: rgba(74, 139, 111, 0.06);
+  border-color: rgba(244,211,94,0.3);
+  background: rgba(244,211,94,0.06);
 }
 
 .rg-ai-season-btn--active {
-  background: var(--rg-primary, #4A8B6F);
-  border-color: var(--rg-primary, #4A8B6F);
-  color: #fff;
+  background: rgba(244,211,94,0.15);
+  border-color: rgba(244,211,94,0.3);
+  color: #5A4A3A;
   font-weight: 700;
 }
 
@@ -1335,12 +1339,12 @@ const CSS = `
   width: 64px;
   height: 64px;
   border-radius: 50%;
-  border: 1.5px solid var(--rg-ink-border, #C8B898);
+  border: 1.5px solid rgba(90,74,58,0.12);
   background: transparent;
   cursor: pointer;
-  font-family: "KaiTi", "STKaiti", "Noto Serif SC", serif;
+  font-family: 'PingFang SC', system-ui, sans-serif;
   font-size: 14px;
-  color: var(--rg-ink, #5c3a21);
+  color: #5A4A3A;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1349,15 +1353,15 @@ const CSS = `
 }
 
 .rg-ai-circle-btn:hover {
-  border-color: var(--rg-primary, #4A8B6F);
-  background: rgba(74, 139, 111, 0.06);
+  border-color: rgba(244,211,94,0.3);
+  background: rgba(244,211,94,0.06);
 }
 
 .rg-ai-circle-btn--active {
-  background: var(--rg-primary, #4A8B6F);
-  border-color: var(--rg-primary, #4A8B6F);
-  color: #fff;
-  font-weight: var(--rg-weight-title, 600);
+  background: rgba(244,211,94,0.15);
+  border-color: rgba(244,211,94,0.3);
+  color: #5A4A3A;
+  font-weight: 600;
 }
 
 /* ================================================================
@@ -1367,21 +1371,21 @@ const CSS = `
   width: 100%;
   padding: 12px 0;
   border: none;
-  border-radius: 10px;
-  background: linear-gradient(135deg, var(--rg-primary, #4A8B6F) 0%, #3a7a5e 100%);
+  border-radius: 24px;
+  background: #F4D35E;
   cursor: pointer;
-  font-family: "KaiTi", "STKaiti", "Noto Serif SC", serif;
-  font-size: var(--rg-text-h3, 18px);
-  color: #fff;
+  font-family: 'PingFang SC', system-ui, sans-serif;
+  font-size: 16px;
+  color: #5A4A3A;
   letter-spacing: 4px;
-  font-weight: var(--rg-weight-title, 600);
+  font-weight: 600;
   transition: all 0.3s ease;
   margin-top: 4px;
-  box-shadow: 0 2px 8px rgba(74, 139, 111, 0.3);
+  box-shadow: 0 2px 8px rgba(244, 211, 94, 0.3);
 }
 
 .rg-ai-submit-btn:hover:not(:disabled) {
-  box-shadow: 0 4px 16px rgba(74, 139, 111, 0.45);
+  box-shadow: 0 4px 16px rgba(244, 211, 94, 0.45);
   transform: translateY(-1px);
 }
 
@@ -1409,15 +1413,15 @@ const CSS = `
   display: inline-block;
   width: 36px;
   height: 36px;
-  border: 3px solid var(--rg-ink-border, #C8B898);
-  border-top-color: var(--rg-primary, #4A8B6F);
+  border: 3px solid rgba(90,74,58,0.1);
+  border-top-color: #7BA89E;
   border-radius: 50%;
   animation: rg-ai-spin 1.2s linear infinite;
 }
 
 .rg-ai-loading__text {
   font-size: 13px;
-  color: var(--rg-ink-light, #8B7D6B);
+  color: #9A9A9A;
   letter-spacing: 2px;
 }
 
@@ -1458,14 +1462,14 @@ const CSS = `
 
 .rg-ai-results__summary {
   font-size: 13px;
-  color: var(--rg-ink-light, #8B7D6B);
-  line-height: var(--rg-leading-body, 1.85);
+  color: #9A9A9A;
+  line-height: 1.85;
   margin: 0 0 16px;
   padding: 12px 14px;
-  background: rgba(74, 139, 111, 0.08);
+  background: rgba(123,168,158,0.08);
   border-radius: 8px;
-  border-left: 3px solid var(--rg-primary, #4A8B6F);
-  letter-spacing: var(--rg-tracking-body, 0.06em);
+  border-left: 3px solid #7BA89E;
+  letter-spacing: 0.06em;
 }
 
 .rg-ai-results__list {
@@ -1479,14 +1483,15 @@ const CSS = `
   display: flex;
   gap: 12px;
   padding: 14px;
-  border-radius: 10px;
-  background: var(--rg-paper, #F5F0E6);
-  border: 1px solid var(--rg-ink-border, #C8B898);
+  border-radius: 14px;
+  background: #fff;
+  border: none;
+  box-shadow: 0 4px 12px rgba(90, 74, 58, 0.08);
   transition: box-shadow 0.3s ease, transform 0.2s ease;
 }
 
 .rg-ai-city-card:hover {
-  box-shadow: 0 4px 16px rgba(60, 40, 20, 0.1);
+  box-shadow: 0 6px 20px rgba(90, 74, 58, 0.12);
   transform: translateY(-1px);
 }
 
@@ -1506,25 +1511,25 @@ const CSS = `
 .rg-ai-city-card__detail-btn {
   margin-left: auto;
   background: none;
-  border: 1px solid var(--rg-ink-border, #C8B898);
+  border: 1px solid rgba(90,74,58,0.15);
   border-radius: 12px;
   padding: 2px 10px;
   font-size: 11px;
-  color: var(--rg-ink-light, #8B7D6B);
+  color: #5A4A3A;
   cursor: pointer;
-  font-family: var(--rg-font-serif, 'Noto Serif SC', serif);
+  font-family: 'Source Han Serif SC', 'Noto Serif SC', serif;
   letter-spacing: 1px;
   transition: all 0.2s;
 }
 
 .rg-ai-city-card__detail-btn:hover {
-  border-color: #8B7355;
-  color: #5c3a21;
+  border-color: rgba(244,211,94,0.4);
+  color: #5A4A3A;
 }
 
 .rg-ai-city-card__index {
   font-size: 12px;
-  color: var(--rg-primary, #4A8B6F);
+  color: #7BA89E;
   font-weight: 700;
   letter-spacing: 1px;
 }
@@ -1532,25 +1537,25 @@ const CSS = `
 .rg-ai-city-card__name {
   font-size: 17px;
   font-weight: 700;
-  color: var(--rg-ink, #5c3a21);
+  color: #2C3E50;
   letter-spacing: 2px;
 }
 
 .rg-ai-city-card__province {
   font-size: 12px;
-  color: var(--rg-ink-light, #8B7D6B);
+  color: #9A9A9A;
 }
 
 .rg-ai-city-card__reason {
   font-size: 13px;
-  color: var(--rg-ink-light, #8B7D6B);
-  line-height: var(--rg-leading-body, 1.85);
+  color: #9A9A9A;
+  line-height: 1.85;
   margin: 0 0 8px;
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
-  letter-spacing: var(--rg-tracking-body, 0.06em);
+  letter-spacing: 0.06em;
 }
 
 .rg-ai-city-card__meta {
@@ -1561,7 +1566,7 @@ const CSS = `
 
 .rg-ai-city-card__label {
   font-size: 12px;
-  color: var(--rg-ink-border, #C8B898);
+  color: #9A9A9A;
   line-height: 1.5;
   display: -webkit-box;
   -webkit-line-clamp: 1;
@@ -1574,27 +1579,27 @@ const CSS = `
   align-self: flex-start;
   flex-shrink: 0;
   padding: 6px 14px;
-  border-radius: 8px;
-  border: 1.5px solid var(--rg-primary, #4A8B6F);
-  background: transparent;
+  border-radius: 20px;
+  border: none;
+  background: #F4D35E;
   cursor: pointer;
-  font-family: "KaiTi", "STKaiti", "Noto Serif SC", serif;
+  font-family: 'PingFang SC', system-ui, sans-serif;
   font-size: 13px;
-  color: var(--rg-primary, #4A8B6F);
+  color: #5A4A3A;
   letter-spacing: 2px;
   transition: all 0.25s ease;
   white-space: nowrap;
 }
 
 .rg-ai-city-card__adopt:hover:not(:disabled) {
-  background: var(--rg-primary, #4A8B6F);
-  color: #fff;
+  background: #E8C44E;
+  color: #5A4A3A;
 }
 
 .rg-ai-city-card__adopt--done {
-  background: rgba(74, 139, 111, 0.1);
-  border-color: var(--rg-ink-border, #C8B898);
-  color: var(--rg-ink-light, #8B7D6B);
+  background: rgba(123,168,158,0.15);
+  border: none;
+  color: #7BA89E;
   cursor: default;
 }
 
@@ -1606,7 +1611,7 @@ const CSS = `
 .rg-ai-city-card__details {
   margin-top: 12px;
   padding-top: 12px;
-  border-top: 1px dashed var(--rg-ink-border, #E0D8C8);
+  border-top: 1px dashed rgba(90,74,58,0.1);
   display: flex;
   flex-direction: column;
   gap: 10px;
@@ -1627,7 +1632,7 @@ const CSS = `
 .rg-ai-detail-label {
   flex-shrink: 0;
   font-size: 12px;
-  color: var(--rg-primary, #4A8B6F);
+  color: #7BA89E;
   font-weight: 600;
   letter-spacing: 1px;
   min-width: 48px;
@@ -1635,7 +1640,7 @@ const CSS = `
 
 .rg-ai-detail-text {
   font-size: 12px;
-  color: var(--rg-ink, #5c3a21);
+  color: #5A4A3A;
   line-height: 1.7;
   margin: 0;
   flex: 1;
@@ -1650,8 +1655,8 @@ const CSS = `
 
 .rg-ai-detail-chip {
   font-size: 11px;
-  color: var(--rg-ink, #5c3a21);
-  background: rgba(92,58,33,0.06);
+  color: #5A4A3A;
+  background: rgba(244,211,94,0.06);
   padding: 2px 8px;
   border-radius: 10px;
   line-height: 1.6;
@@ -1674,10 +1679,10 @@ const CSS = `
 }
 
 .rg-ai-empty-state__text {
-  font-size: var(--rg-text-body, 15px);
-  color: var(--rg-ink-light, #8B7D6B);
+  font-size: 15px;
+  color: #9A9A9A;
   margin: 0;
-  letter-spacing: var(--rg-tracking-body, 0.06em);
+  letter-spacing: 0.06em;
 }
 
 /* ================================================================
@@ -1687,14 +1692,14 @@ const CSS = `
   width: 100%;
   padding: 10px 14px;
   border-radius: 8px;
-  border: 1.5px solid var(--rg-ink-border, #C8B898);
+  border: 1.5px solid rgba(90,74,58,0.12);
   background: #fff;
-  font-family: "KaiTi", "STKaiti", "Noto Serif SC", serif;
+  font-family: 'PingFang SC', system-ui, sans-serif;
   font-size: 14px;
-  color: var(--rg-ink, #5c3a21);
+  color: #5A4A3A;
   appearance: none;
   -webkit-appearance: none;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%234A8B6F' stroke-width='1.5' fill='none'/%3E%3C/svg%3E");
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%237BA89E' stroke-width='1.5' fill='none'/%3E%3C/svg%3E");
   background-repeat: no-repeat;
   background-position: right 14px center;
   cursor: pointer;
@@ -1703,7 +1708,7 @@ const CSS = `
 
 .rg-ai-select:focus {
   outline: none;
-  border-color: var(--rg-primary, #4A8B6F);
+  border-color: #7BA89E;
 }
 
 /* ================================================================
@@ -1720,12 +1725,12 @@ const CSS = `
   width: 36px;
   height: 36px;
   border-radius: 50%;
-  border: 1.5px solid var(--rg-ink-border, #C8B898);
+  border: 1.5px solid rgba(90,74,58,0.12);
   background: transparent;
   cursor: pointer;
   font-size: 18px;
-  font-family: "KaiTi", "STKaiti", "Noto Serif SC", serif;
-  color: var(--rg-ink, #5c3a21);
+  font-family: 'PingFang SC', system-ui, sans-serif;
+  color: #5A4A3A;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1733,8 +1738,8 @@ const CSS = `
 }
 
 .rg-ai-days-input__btn:hover:not(:disabled) {
-  background: rgba(74, 139, 111, 0.06);
-  border-color: var(--rg-primary, #4A8B6F);
+  background: rgba(244,211,94,0.06);
+  border-color: rgba(244,211,94,0.3);
 }
 
 .rg-ai-days-input__btn:disabled {
@@ -1744,8 +1749,8 @@ const CSS = `
 
 .rg-ai-days-input__value {
   font-size: 20px;
-  font-weight: var(--rg-weight-title, 600);
-  color: var(--rg-ink, #5c3a21);
+  font-weight: 600;
+  color: #2C3E50;
   letter-spacing: 2px;
   min-width: 50px;
   text-align: center;
@@ -1768,13 +1773,13 @@ const CSS = `
 
 .rg-ai-compactness__label {
   font-size: 13px;
-  color: var(--rg-ink-light, #8B7D6B);
+  color: #9A9A9A;
   transition: color 0.2s ease, font-weight 0.2s ease;
 }
 
 .rg-ai-compactness__label--active {
-  color: var(--rg-primary, #4A8B6F);
-  font-weight: var(--rg-weight-title, 600);
+  color: #7BA89E;
+  font-weight: 600;
 }
 
 .rg-ai-compactness__slider {
@@ -1783,7 +1788,7 @@ const CSS = `
   width: 100%;
   height: 6px;
   border-radius: 3px;
-  background: var(--rg-ink-border, #C8B898);
+  background: rgba(90,74,58,0.1);
   outline: none;
   cursor: pointer;
 }
@@ -1794,24 +1799,24 @@ const CSS = `
   width: 22px;
   height: 22px;
   border-radius: 50%;
-  background: var(--rg-primary, #4A8B6F);
+  background: #7BA89E;
   border: 2px solid #fff;
-  box-shadow: 0 2px 6px rgba(74, 139, 111, 0.35);
+  box-shadow: 0 2px 6px rgba(123, 168, 158, 0.35);
   cursor: pointer;
   transition: box-shadow 0.2s ease;
 }
 
 .rg-ai-compactness__slider::-webkit-slider-thumb:hover {
-  box-shadow: 0 3px 10px rgba(74, 139, 111, 0.5);
+  box-shadow: 0 3px 10px rgba(123, 168, 158, 0.5);
 }
 
 .rg-ai-compactness__slider::-moz-range-thumb {
   width: 22px;
   height: 22px;
   border-radius: 50%;
-  background: var(--rg-primary, #4A8B6F);
+  background: #7BA89E;
   border: 2px solid #fff;
-  box-shadow: 0 2px 6px rgba(74, 139, 111, 0.35);
+  box-shadow: 0 2px 6px rgba(123, 168, 158, 0.35);
   cursor: pointer;
 }
 
@@ -1825,35 +1830,37 @@ const CSS = `
 /* ---- 摘要 ---- */
 .rg-ai-plan__summary {
   padding: 16px;
-  border-radius: 10px;
+  border-radius: 14px;
   background: linear-gradient(
     135deg,
-    rgba(74, 139, 111, 0.08) 0%,
-    rgba(74, 139, 111, 0.03) 100%
+    rgba(123,168,158,0.08) 0%,
+    rgba(244,211,94,0.04) 100%
   );
-  border: 1px solid rgba(74, 139, 111, 0.25);
+  border: 1px solid rgba(123,168,158,0.15);
   margin-bottom: 16px;
+  box-shadow: 0 4px 12px rgba(90, 74, 58, 0.08);
 }
 
 .rg-ai-plan__summary-title {
-  font-size: var(--rg-text-h3, 18px);
-  font-weight: var(--rg-weight-title, 600);
-  color: var(--rg-ink, #5c3a21);
+  font-size: 18px;
+  font-weight: 600;
+  color: #2C3E50;
   letter-spacing: 3px;
   margin: 0 0 8px;
+  font-family: 'Source Han Serif SC', 'Noto Serif SC', serif;
 }
 
 .rg-ai-plan__summary-text {
   font-size: 13px;
-  color: var(--rg-ink-light, #8B7D6B);
-  line-height: var(--rg-leading-body, 1.85);
+  color: #9A9A9A;
+  line-height: 1.85;
   margin: 0 0 10px;
-  letter-spacing: var(--rg-tracking-body, 0.06em);
+  letter-spacing: 0.06em;
 }
 
 .rg-ai-plan__budget {
   font-size: 13px;
-  color: var(--rg-accent, #D4884A);
+  color: #F4D35E;
   margin: 0 0 10px;
   letter-spacing: 1px;
 }
@@ -1867,10 +1874,10 @@ const CSS = `
 .rg-ai-plan__highlight-tag {
   padding: 3px 10px;
   border-radius: 12px;
-  background: rgba(74, 139, 111, 0.08);
-  border: 1px solid rgba(74, 139, 111, 0.25);
+  background: rgba(123,168,158,0.08);
+  border: 1px solid rgba(123,168,158,0.15);
   font-size: 12px;
-  color: var(--rg-primary, #4A8B6F);
+  color: #7BA89E;
   letter-spacing: 1px;
 }
 
@@ -1882,15 +1889,16 @@ const CSS = `
 }
 
 .rg-ai-day-card {
-  border-radius: 10px;
-  border: 1px solid var(--rg-ink-border, #C8B898);
+  border-radius: 14px;
+  border: none;
   background: #fff;
   overflow: hidden;
   transition: box-shadow 0.3s ease;
+  box-shadow: 0 4px 12px rgba(90, 74, 58, 0.08);
 }
 
 .rg-ai-day-card:hover {
-  box-shadow: 0 4px 16px rgba(60, 40, 20, 0.08);
+  box-shadow: 0 6px 20px rgba(90, 74, 58, 0.12);
 }
 
 .rg-ai-day-card__header {
@@ -1898,23 +1906,23 @@ const CSS = `
   align-items: center;
   gap: 12px;
   padding: 12px 14px;
-  background: rgba(74, 139, 111, 0.06);
-  border-bottom: 1px solid var(--rg-ink-border, #C8B898);
+  background: rgba(123,168,158,0.06);
+  border-bottom: 1px solid rgba(90,74,58,0.1);
 }
 
 .rg-ai-day-card__num {
   font-size: 12px;
   font-weight: 700;
-  color: var(--rg-primary, #4A8B6F);
+  color: #7BA89E;
   letter-spacing: 2px;
   flex-shrink: 0;
 }
 
 .rg-ai-day-card__theme {
   font-size: 14px;
-  color: var(--rg-ink, #5c3a21);
+  color: #2C3E50;
   letter-spacing: 2px;
-  font-weight: var(--rg-weight-title, 600);
+  font-weight: 600;
 }
 
 .rg-ai-day-card__body {
@@ -1925,7 +1933,7 @@ const CSS = `
   display: block;
   font-size: 12px;
   font-weight: 700;
-  color: var(--rg-ink-light, #8B7D6B);
+  color: #7BA89E;
   letter-spacing: 2px;
   margin-bottom: 6px;
 }
@@ -1939,13 +1947,13 @@ const CSS = `
   margin: 0;
   padding-left: 18px;
   font-size: 13px;
-  color: var(--rg-ink-light, #8B7D6B);
-  line-height: var(--rg-leading-body, 1.85);
-  letter-spacing: var(--rg-tracking-body, 0.06em);
+  color: #9A9A9A;
+  line-height: 1.85;
+  letter-spacing: 0.06em;
 }
 
 .rg-ai-day-card__food {
-  border-top: 1px dashed var(--rg-ink-border, #C8B898);
+  border-top: 1px dashed rgba(90,74,58,0.1);
   padding-top: 12px;
 }
 
@@ -1954,21 +1962,21 @@ const CSS = `
   width: 100%;
   padding: 12px 0;
   border: none;
-  border-radius: 10px;
-  background: linear-gradient(135deg, var(--rg-primary, #4A8B6F) 0%, #3a7a5e 100%);
+  border-radius: 24px;
+  background: #E8ECEF;
   cursor: pointer;
-  font-family: "KaiTi", "STKaiti", "Noto Serif SC", serif;
-  font-size: var(--rg-text-h3, 18px);
-  color: #fff;
+  font-family: 'PingFang SC', system-ui, sans-serif;
+  font-size: 16px;
+  color: #5A4A3A;
   letter-spacing: 4px;
-  font-weight: var(--rg-weight-title, 600);
+  font-weight: 600;
   margin-top: 18px;
   transition: all 0.3s ease;
-  box-shadow: 0 2px 8px rgba(74, 139, 111, 0.3);
+  box-shadow: 0 2px 8px rgba(90, 74, 58, 0.06);
 }
 
 .rg-ai-save-btn:hover {
-  box-shadow: 0 4px 16px rgba(74, 139, 111, 0.45);
+  box-shadow: 0 4px 16px rgba(90, 74, 58, 0.12);
   transform: translateY(-1px);
 }
 

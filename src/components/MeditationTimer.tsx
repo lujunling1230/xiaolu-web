@@ -1060,7 +1060,7 @@ const MeditationTimer: React.FC = () => {
         .ms-time-label {
           font-size: 12px;
           color: var(--text);
-          opacity: 0.7;
+          opacity: 0.85;
         }
         .ms-end-btn {
           padding: 8px 28px;
@@ -1069,7 +1069,7 @@ const MeditationTimer: React.FC = () => {
           border-radius: 999px;
           background: transparent;
           color: var(--text);
-          opacity: 0.7;
+          opacity: 0.85;
           cursor: pointer;
         }
         .ms-end-btn:hover {
@@ -1117,7 +1117,7 @@ const MeditationTimer: React.FC = () => {
         .ms-complete-duration {
           font-size: 13px;
           color: var(--text);
-          opacity: 0.7;
+          opacity: 0.85;
           margin: 0 0 16px;
           position: relative;
           z-index: 1;
@@ -1144,7 +1144,7 @@ const MeditationTimer: React.FC = () => {
         /* Coming Soon 占位卡样式 */
         .ms-sound-coming {
           border-style: dashed;
-          opacity: 0.65;
+          opacity: 0.78;
         }
         .ms-sound-coming:hover {
           opacity: 1;

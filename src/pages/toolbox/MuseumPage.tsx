@@ -8,6 +8,7 @@ import CuratorChatPanel from "./museum/CuratorChatPanel";
 import PrivateDrawer from "./museum/PrivateDrawer";
 import TimeTheater from "./museum/TimeTheater";
 import HallTransition from "./museum/HallTransition";
+import RetroGameConsole from "./museum/RetroGameConsole";
 
 /**
  * 时光博物馆 · Museum of Memories
@@ -1494,7 +1495,7 @@ const MuseumPage: React.FC = () => {
           { key: null as const, label: "全部展厅" },
           { key: "film" as const, label: "时光放映厅" },
           { key: "music" as const, label: "声纹回廊" },
-          { key: "net" as const, label: "数字足迹馆" },
+          { key: "net" as const, label: "童年游戏机" },
           { key: "honor" as const, label: "荣耀殿堂" },
           { key: "drawer" as const, label: "私藏匣" },
         ].map(item => (
@@ -1641,29 +1642,19 @@ const MuseumPage: React.FC = () => {
       </section>
       )}
 
-      {/* ===== 展厅三：数字足迹馆 ===== */}
+      {/* ===== 展厅三：童年游戏机 ===== */}
       {(activeHall === null || activeHall === "net") && (
       <section className="museum-hall museum-era-section">
         <div className="museum-hall-head">
           <span className="museum-hall-roman">III</span>
           <div>
-            <h2 className="museum-hall-title">数字足迹馆</h2>
-            <p className="museum-hall-sub">每一个网址，都是通往旧时光的门。</p>
+            <h2 className="museum-hall-title">童年游戏机</h2>
+            <p className="museum-hall-sub">按下A键，回到那个夏天。</p>
           </div>
         </div>
 
         <div className="zone-net" ref={(el) => { hallRefs.current["net"] = el; }}>
-        <VintageGallery title="数字足迹馆" subtitle="每一个网址，都是通往旧时光的门。" emoji="📱" cards={sortedNets}
-          onAdd={(data) => setCardModal({ mode: "add", section: "net", data: { ...data, id: "", year: data.year || String(new Date().getFullYear()) } })}
-          onEdit={(card) => setCardModal({ mode: "edit", section: "net", data: card })}
-          onDelete={(id) => handleCardDelete(id, "net")}
-          onImageUpload={(id, url) => handleImageUpload(id, url, "net")}
-          onImageDelete={(id) => handleImageDelete(id, "net")}
-          verifyAdmin={verifyAdmin}
-          onCuratorNote={handleCuratorNote}
-          onLendExhibit={handleLendExhibit}
-          spotlightActiveId={spotlightCardId}
-          onSpotlightToggle={(id) => setSpotlightCardId(prev => prev === id ? null : id)} />
+          <RetroGameConsole />
         </div>
       </section>
       )}

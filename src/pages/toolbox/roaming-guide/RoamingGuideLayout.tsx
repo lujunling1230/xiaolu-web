@@ -8,23 +8,36 @@ export default function RoamingGuideLayout() {
         .rg-layout {
           min-height: 100vh;
           display: flex;
-          font-family: 'Noto Sans SC', 'PingFang SC', system-ui, sans-serif;
-          background: #faf7f0;
+          font-family: 'Source Han Serif SC', 'Noto Serif SC', 'PingFang SC', serif;
+          background: #F5F3EE;
           position: relative;
-          color: #4a4a4a;
+          color: #2C3E50;
         }
 
-        /* 背景装饰 */
+        /* 背景装饰 - 暖橘光 + 雾蓝灰 */
         .rg-layout::before {
           content: "";
           position: fixed;
           inset: 0;
           background:
-            radial-gradient(ellipse 80% 50% at 15% 10%, rgba(255,183,120,0.08) 0%, transparent 60%),
-            radial-gradient(ellipse 60% 40% at 85% 85%, rgba(160,210,180,0.07) 0%, transparent 60%),
-            radial-gradient(ellipse 50% 30% at 50% 50%, rgba(200,180,255,0.04) 0%, transparent 50%);
+            radial-gradient(ellipse 80% 50% at 15% 10%, rgba(244,211,94,0.06) 0%, transparent 60%),
+            radial-gradient(ellipse 60% 40% at 85% 85%, rgba(123,168,158,0.05) 0%, transparent 60%),
+            radial-gradient(ellipse 50% 30% at 50% 50%, rgba(123,168,158,0.03) 0%, transparent 50%);
           pointer-events: none;
           z-index: 0;
+        }
+
+        /* 胶片颗粒感 noise 纹理覆盖 */
+        .rg-layout::after {
+          content: "";
+          position: fixed;
+          inset: 0;
+          pointer-events: none;
+          z-index: 9999;
+          opacity: 0.03;
+          background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+          background-repeat: repeat;
+          background-size: 256px 256px;
         }
 
         /* ===== 侧边栏 ===== */
@@ -35,20 +48,20 @@ export default function RoamingGuideLayout() {
           bottom: 0;
           width: 200px;
           z-index: 100;
-          background: rgba(255,255,255,0.85);
-          backdrop-filter: blur(16px);
-          -webkit-backdrop-filter: blur(16px);
-          border-right: 1px solid rgba(200,190,175,0.25);
+          background: rgba(245,243,238,0.75);
+          backdrop-filter: blur(8px);
+          -webkit-backdrop-filter: blur(8px);
+          border-right: 1px solid rgba(90,74,58,0.08);
           display: flex;
           flex-direction: column;
           overflow-y: auto;
-          box-shadow: 2px 0 24px rgba(0,0,0,0.03);
+          box-shadow: 2px 0 24px rgba(90,74,58,0.04);
         }
 
         .rg-sidebar-top {
           padding: 32px 20px 18px;
           text-align: center;
-          border-bottom: 1px solid rgba(200,190,175,0.15);
+          border-bottom: 1px solid rgba(90,74,58,0.08);
           position: relative;
         }
 
@@ -59,7 +72,8 @@ export default function RoamingGuideLayout() {
           left: 50%;
           transform: translateX(-50%);
           font-size: 10px;
-          opacity: 0.4;
+          opacity: 0.3;
+          color: #B0A898;
         }
 
         .rg-sidebar-back {
@@ -67,25 +81,25 @@ export default function RoamingGuideLayout() {
           align-items: center;
           gap: 4px;
           font-size: 11px;
-          color: #b0a597;
+          color: #B0A898;
           text-decoration: none;
           letter-spacing: 1px;
           margin-bottom: 14px;
           transition: color 0.2s;
         }
-        .rg-sidebar-back:hover { color: #5BA4CF; }
+        .rg-sidebar-back:hover { color: #7BA89E; }
 
         .rg-sidebar-title {
           font-size: 19px;
           font-weight: 600;
-          color: #5a5a5a;
+          color: #5A4A3A;
           letter-spacing: 4px;
           margin: 0 0 4px;
         }
 
         .rg-sidebar-subtitle {
           font-size: 10px;
-          color: #c4b9ab;
+          color: #B0A898;
           letter-spacing: 2px;
           margin: 0;
         }
@@ -105,7 +119,7 @@ export default function RoamingGuideLayout() {
           gap: 10px;
           padding: 11px 14px;
           border-radius: 14px;
-          color: #9e958a;
+          color: #5A4A3A;
           font-size: 13px;
           letter-spacing: 1px;
           text-decoration: none;
@@ -113,20 +127,38 @@ export default function RoamingGuideLayout() {
           position: relative;
         }
 
+        .rg-sidebar-link::after {
+          content: "";
+          position: absolute;
+          bottom: 4px;
+          left: 14px;
+          width: 0;
+          height: 2px;
+          border-radius: 1px;
+          background: #F4D35E;
+          transition: width 0.3s ease;
+        }
+
+        .rg-sidebar-link:hover::after {
+          width: 16px;
+        }
+
         .rg-sidebar-link:hover {
-          color: #5BA4CF;
-          background: rgba(91,164,207,0.06);
+          color: #5A4A3A;
+          background: rgba(244,211,94,0.12);
           transform: translateX(3px);
         }
 
         .rg-sidebar-link.active {
-          color: #fff;
-          background: linear-gradient(135deg, #87CEEB, #5BA4CF);
+          color: #5A4A3A;
+          background: #F4D35E;
           font-weight: 500;
-          box-shadow: 0 4px 14px rgba(91,164,207,0.2);
+          box-shadow: 0 4px 12px rgba(90,74,58,0.08);
         }
 
         .rg-sidebar-link.active:hover { transform: translateX(0); }
+
+        .rg-sidebar-link.active::after { display: none; }
 
         .rg-sidebar-link__icon {
           width: 22px;
@@ -139,9 +171,9 @@ export default function RoamingGuideLayout() {
         .rg-sidebar-footer {
           padding: 14px 20px;
           text-align: center;
-          border-top: 1px solid rgba(200,190,175,0.12);
+          border-top: 1px solid rgba(90,74,58,0.08);
           font-size: 10px;
-          color: #ccc3b6;
+          color: #B0A898;
           letter-spacing: 1px;
         }
 
@@ -166,6 +198,7 @@ export default function RoamingGuideLayout() {
           .rg-sidebar-back { font-size: 14px; margin-bottom: 8px; }
           .rg-sidebar-nav { padding: 16px 8px; }
           .rg-sidebar-link { justify-content: center; padding: 10px 0; }
+          .rg-sidebar-link::after { left: 50%; transform: translateX(-50%); }
           .rg-content { margin-left: 60px; }
         }
       `}</style>

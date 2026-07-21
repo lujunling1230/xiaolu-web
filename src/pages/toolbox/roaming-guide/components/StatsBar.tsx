@@ -8,18 +8,17 @@ export default function StatsBar({ provinces, cities, days }: StatsBarProps) {
   return (
     <>
       <style>{`
-        /* ===== 木质告示牌统计 ===== */
+        /* ===== 温柔漫游统计栏 ===== */
         .rg-stats-bar {
           position: relative;
           max-width: 480px;
           margin: 28px auto 0;
           padding: 20px 32px;
-          background: linear-gradient(180deg, #8B6914 0%, #7A5C10 50%, #6B4F0C 100%);
-          border-radius: 8px;
-          box-shadow:
-            0 6px 20px -4px rgba(60,40,10,0.35),
-            inset 0 1px 0 rgba(255,255,255,0.1),
-            inset 0 -2px 0 rgba(0,0,0,0.2);
+          background: rgba(245,243,238,0.8);
+          backdrop-filter: blur(12px);
+          border: 1px solid rgba(90,74,58,0.08);
+          border-radius: 16px;
+          box-shadow: 0 4px 12px rgba(90, 74, 58, 0.08);
           display: flex;
           align-items: center;
           justify-content: space-between;
@@ -33,9 +32,9 @@ export default function StatsBar({ provinces, cities, days }: StatsBarProps) {
           left: 24px;
           width: 8px;
           height: 14px;
-          background: linear-gradient(180deg, #A08060, #6B5344);
+          background: linear-gradient(180deg, #F4D35E, #d4b84e);
           border-radius: 2px;
-          box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+          box-shadow: 0 1px 3px rgba(0,0,0,0.1);
         }
         .rg-stats-bar::after {
           content: "";
@@ -44,9 +43,9 @@ export default function StatsBar({ provinces, cities, days }: StatsBarProps) {
           right: 24px;
           width: 8px;
           height: 14px;
-          background: linear-gradient(180deg, #A08060, #6B5344);
+          background: linear-gradient(180deg, #F4D35E, #d4b84e);
           border-radius: 2px;
-          box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+          box-shadow: 0 1px 3px rgba(0,0,0,0.1);
         }
         @keyframes rg-sign-appear {
           from {
@@ -66,11 +65,10 @@ export default function StatsBar({ provinces, cities, days }: StatsBarProps) {
           gap: 4px;
         }
         .rg-stats-label {
-          font-family: var(--rg-font-hand, var(--font-hand));
+          font-family: 'Source Han Serif SC', 'Noto Serif SC', serif;
           font-size: 20px;
-          color: #F5E6D0;
+          color: #2C3E50;
           letter-spacing: 0.1em;
-          text-shadow: 0 1px 3px rgba(0,0,0,0.4);
         }
         .rg-stats-detail {
           display: flex;
@@ -81,13 +79,13 @@ export default function StatsBar({ provinces, cities, days }: StatsBarProps) {
           display: inline-flex;
           align-items: center;
           gap: 3px;
-          font-family: var(--rg-font-serif);
-          font-size: var(--rg-text-caption, 13px);
-          color: var(--rg-ink-light, #8B7D6B);
-          background: #F5F0E6;
+          font-family: 'PingFang SC', system-ui, sans-serif;
+          font-size: 13px;
+          color: #7A7A7A;
+          background: #F5F3EE;
           padding: 2px 10px;
           border-radius: 3px;
-          box-shadow: 0 1px 2px rgba(0,0,0,0.15);
+          box-shadow: 0 1px 2px rgba(0,0,0,0.06);
           transform: rotate(-0.5deg);
         }
         .rg-stats-paper-tag + .rg-stats-paper-tag {
@@ -95,17 +93,17 @@ export default function StatsBar({ provinces, cities, days }: StatsBarProps) {
           margin-left: 2px;
         }
         .rg-stats-paper-tag .rg-stats-num {
-          font-weight: var(--rg-weight-title, 600);
-          color: var(--rg-primary, #4A8B6F);
-          font-family: var(--rg-font-hand, var(--font-hand));
-          font-size: var(--rg-text-h2, 18px);
+          font-weight: 600;
+          color: #2C3E50;
+          font-family: 'Source Han Serif SC', 'Noto Serif SC', serif;
+          font-size: 18px;
         }
 
         /* 分隔线 */
         .rg-stats-divider {
           width: 1px;
           height: 36px;
-          background: rgba(255,255,255,0.15);
+          background: rgba(90,74,58,0.08);
           flex-shrink: 0;
         }
 
@@ -125,8 +123,8 @@ export default function StatsBar({ provinces, cities, days }: StatsBarProps) {
           position: absolute;
           inset: 0;
           border-radius: 50%;
-          background: linear-gradient(145deg, #4A90D9 0%, #2E8B57 40%, #4A90D9 100%);
-          box-shadow: 0 4px 12px rgba(0,0,0,0.2), inset 0 -4px 8px rgba(0,0,0,0.15);
+          background: linear-gradient(145deg, #7BA89E 0%, #5A8A7E 40%, #7BA89E 100%);
+          box-shadow: 0 4px 12px rgba(0,0,0,0.1), inset 0 -4px 8px rgba(0,0,0,0.08);
           overflow: hidden;
         }
         .rg-earth-pal-face::before {
@@ -173,7 +171,7 @@ export default function StatsBar({ provinces, cities, days }: StatsBarProps) {
           top: 48%;
           width: 8px;
           height: 5px;
-          background: rgba(255,150,150,0.35);
+          background: rgba(244,211,94,0.35);
           border-radius: 50%;
         }
         .rg-earth-pal-blush.left { left: 18%; }

@@ -1156,10 +1156,40 @@ const InventoryPage: React.FC = () => {
     return '💬 我可以帮您查库存哦！试试问：\n• "有什么库存？"\n• "牛奶在哪里？"\n• "洗衣液还有多久过期？"\n• "有什么快过期了？"';
   };
 
-  const askAI = (q: string) => {
+  const askAI = async (q: string) => {
     if (!q.trim()) return;
     setChatHistory((prev) => [...prev, { role: "user", text: q }]);
     setChatInput("");
+
+    // 尝试调用 API，失败则回退到本地规则
+    try {
+      const inventoryData = items.map((it) => ({
+        name: it.name,
+        count: it.count,
+        unit: it.unit,
+        expiryDate: it.expiryDate,
+        location: it.location,
+        daysLeft: daysUntil(it.expiryDate, today),
+      }));
+
+      const res = await fetch("/api/ai-chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ message: q, inventoryData }),
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        if (data.reply) {
+          setChatHistory((prev) => [...prev, { role: "ai", text: data.reply }]);
+          return;
+        }
+      }
+    } catch {
+      /* API 不可用，回退本地 */
+    }
+
+    // 本地规则兜底
     const answer = getAnswer(q);
     setTimeout(() => {
       setChatHistory((prev) => [...prev, { role: "ai", text: answer }]);

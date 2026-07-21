@@ -40,8 +40,10 @@ export interface CityCardGalleryProps {
   cities: City[];
   selectedCity: City | null;
   onSelect: (city: City) => void;
-  onAdd: () => void;
+  onAdd?: () => void;
   onToggleStatus?: (id: number) => void;
+  title?: string;
+  showAddButton?: boolean;
 }
 
 export default function CityCardGallery({
@@ -50,18 +52,22 @@ export default function CityCardGallery({
   onSelect,
   onAdd,
   onToggleStatus,
+  title,
+  showAddButton = true,
 }: CityCardGalleryProps) {
   return (
     <section className="rg-card-section" id="rg-cards">
-      <div
-        className="rg-card-section-head"
-        style={{ justifyContent: "space-between" }}
-      >
-        <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-          <span className="rg-stamp">攻略</span>
-          <h2 className="rg-card-section-title">城市记忆</h2>
+      {title && (
+        <div
+          className="rg-card-section-head"
+          style={{ justifyContent: "space-between" }}
+        >
+          <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+            <span className="rg-stamp">攻略</span>
+            <h2 className="rg-card-section-title">{title}</h2>
+          </div>
         </div>
-      </div>
+      )}
 
       <div className="rg-cards-scroll">
         <div className="rg-cards-track">
@@ -167,19 +173,21 @@ export default function CityCardGallery({
           })}
 
           {/* 添加城市空白卡片 */}
-          <motion.button
-            className="rg-city-card rg-add-card"
-            onClick={onAdd}
-            initial={{ opacity: 0, y: 24 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true, margin: "-30px" }}
-            transition={{ duration: 0.5, delay: cities.length * 0.08 }}
-          >
-            <div className="rg-add-card-inner">
-              <span className="rg-add-card-icon">+</span>
-              <span className="rg-add-card-text">添加城市</span>
-            </div>
-          </motion.button>
+          {showAddButton && onAdd && (
+            <motion.button
+              className="rg-city-card rg-add-card"
+              onClick={onAdd}
+              initial={{ opacity: 0, y: 24 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, margin: "-30px" }}
+              transition={{ duration: 0.5, delay: cities.length * 0.08 }}
+            >
+              <div className="rg-add-card-inner">
+                <span className="rg-add-card-icon">+</span>
+                <span className="rg-add-card-text">添加城市</span>
+              </div>
+            </motion.button>
+          )}
         </div>
       </div>
 

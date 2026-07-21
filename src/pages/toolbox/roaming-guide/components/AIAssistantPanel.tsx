@@ -293,9 +293,9 @@ export default function AIAssistantPanel({
         onClick={() => setOpen(false)}
       />
 
-      {/* ===== 侧栏抽屉 ===== */}
+      {/* ===== 侧栏抽屉 / 居中模态框 ===== */}
       <aside
-        className={`rg-ai-drawer${open ? " rg-ai-drawer--open" : ""}`}
+        className={`rg-ai-drawer${open ? " rg-ai-drawer--open" : ""}${centered ? " rg-ai-drawer--centered" : ""}`}
       >
         {/* Toast 容器 */}
         <div className="rg-ai-toast-container">
@@ -1075,10 +1075,34 @@ const CSS = `
   opacity: 1;
 }
 
-/* 移动端全屏 */
+/* ===== 居中模态框模式 ===== */
+.rg-ai-drawer--centered {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  right: auto;
+  width: 480px;
+  max-width: 92vw;
+  height: auto;
+  max-height: 85vh;
+  border-radius: 20px;
+  transform: translate(-50%, -50%) scale(0.92);
+  box-shadow: 0 24px 60px rgba(90, 74, 58, 0.12), 0 8px 20px rgba(90, 74, 58, 0.06);
+}
+
+.rg-ai-drawer--centered.rg-ai-drawer--open {
+  transform: translate(-50%, -50%) scale(1);
+}
+
+/* 移动端 */
 @media (max-width: 640px) {
   .rg-ai-drawer {
     width: 100vw;
+  }
+  .rg-ai-drawer--centered {
+    width: 92vw;
+    max-height: 88vh;
+    border-radius: 16px;
   }
 }
 

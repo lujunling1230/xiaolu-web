@@ -895,7 +895,7 @@ const MeditationTimer: React.FC = () => {
           padding: 14px 6px 10px;
           border: 1.5px solid var(--border);
           border-radius: 12px;
-          background: #fff;
+          background: var(--card-bg);
           cursor: pointer;
           transition: border-color 0.2s, background 0.2s;
           -webkit-tap-highlight-color: transparent;

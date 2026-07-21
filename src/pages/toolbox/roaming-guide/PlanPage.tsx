@@ -162,6 +162,8 @@ export default function PlanPage() {
                   cursor: "pointer",
                   fontFamily: "'Source Han Serif SC', 'Noto Serif SC', serif",
                   letterSpacing: "1px",
+                  position: "relative",
+                  zIndex: 2,
                 }}
               >
                 {expandedPlan ? "收起" : "查看详情"}

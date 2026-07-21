@@ -509,7 +509,7 @@ const BreathingGuide: React.FC = () => {
         .bg-rhythm-text {
           font-size: 12px;
           color: var(--text);
-          opacity: 0.62;
+          opacity: 0.78;
           transition: opacity 0.3s, color 0.3s;
         }
         .bg-rhythm-text.active {

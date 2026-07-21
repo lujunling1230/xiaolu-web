@@ -435,6 +435,13 @@ const HealingRoomPage: React.FC = () => {
           padding: 36px;
           box-shadow: 0 12px 48px rgba(0, 0, 0, 0.18);
           color: rgba(255, 255, 255, 0.92);
+
+          /* 覆盖子组件的 CSS 变量为白色系，适配深色卡片背景 */
+          --text: rgba(255, 255, 255, 0.92);
+          --text-soft: rgba(255, 255, 255, 0.6);
+          --accent: #A5C4A0;
+          --card-bg: rgba(255, 255, 255, 0.08);
+          --border: rgba(255, 255, 255, 0.15);
         }
 
         /* ===== 欢迎卡片 ===== */

@@ -243,37 +243,94 @@ const TocPage: React.FC<{ onPick: (projectIndex: number) => void; onClose?: () =
 };
 
 /* ============================================================
-   QuotePage — 卷首语（左页）
+   QuotePage — 广告叙事卷首语（左页）
    ============================================================ */
 const QuotePage: React.FC<{ project: Project; index: number }> = ({
   project,
   index,
 }) => {
   const pn = getSpreadPageNums(index + 2);
+
+  // 将结构化痛点转化为情感叙事
+  const painNarrative = project.painPoints.map((p) => {
+    // 去掉开头的"用户"等词，转化为更口语化的表达
+    const cleaned = p
+      .replace(/^用户/, "")
+      .replace(/^传统/, "")
+      .replace(/^现有/, "")
+      .replace(/^当前/, "");
+    return cleaned.trim();
+  });
+
+  // 将解决方案转化为"像...一样"的场景描述
+  const highlightNarrative = project.solutions.length > 0
+    ? project.solutions
+    : project.highlights;
+
   return (
     <div className="lb-page-content lb-quote-page">
       <div className="lb-page-vein" />
-      <div className="lb-quote-wrap">
-        <span className="lb-quote-mark">"</span>
-        <motion.p
-          className="lb-quote-text"
-          initial={{ opacity: 0, y: 20 }}
+
+      <div className="lb-story-wrap">
+        {/* 卷首语 */}
+        <motion.div
+          className="lb-story-quote"
+          initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, delay: 0.2, ease: "easeOut" }}
+          transition={{ duration: 0.7, delay: 0.15, ease: "easeOut" }}
         >
-          {QUOTES[index] ?? "每一页都是新的开始。"}
+          <p className="lb-story-quote-text">
+            {QUOTES[index] ?? "每一页都是新的开始。"}
+          </p>
+          <p className="lb-story-quote-from">— {project.title}</p>
+        </motion.div>
+
+        {/* 水彩分隔线 */}
+        <div className="lb-story-divider" />
+
+        {/* 痛点叙事 */}
+        <motion.div
+          className="lb-story-pain"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.5, duration: 0.6 }}
+        >
+          <p className="lb-story-pain-title">你有没有过这样的时刻？</p>
+          <ul className="lb-story-pain-list">
+            {painNarrative.map((item, i) => (
+              <li key={i}>{item}；</li>
+            ))}
+          </ul>
+        </motion.div>
+
+        {/* 亮点叙事 */}
+        <motion.div
+          className="lb-story-highlight"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.8, duration: 0.6 }}
+        >
+          <p className="lb-story-highlight-intro">
+            但现在，<span className="lb-story-highlight-name">{project.title}</span> 为你开着。
+          </p>
+          <ul className="lb-story-highlight-list">
+            {highlightNarrative.map((item, i) => (
+              <li key={i}>像{item}；</li>
+            ))}
+          </ul>
+        </motion.div>
+
+        {/* 底部 CTA */}
+        <motion.p
+          className="lb-story-cta"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 1.1, duration: 0.6 }}
+        >
+          点击右侧，推开这扇门。
         </motion.p>
-        <span className="lb-quote-mark lb-quote-mark-end">"</span>
-        <p className="lb-quote-attribution">— {project.title}</p>
       </div>
-      <motion.p
-        className="lb-quote-continue"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 1, duration: 0.6 }}
-      >
-        点击右侧翻页
-      </motion.p>
+
       <PageNumber current={pn.left} />
     </div>
   );
@@ -352,19 +409,6 @@ const PreviewPage: React.FC<{
 
         {/* 内容区 */}
         <div className="lb-doc-content">
-          {/* 用户痛点 */}
-          <div className="lb-doc-section">
-            <div className="lb-doc-section-header">
-              <PainPointIcon />
-              <span>用户痛点</span>
-            </div>
-            <ul className="lb-doc-list">
-              {project.painPoints.map((item, i) => (
-                <li key={i}>{item}</li>
-              ))}
-            </ul>
-          </div>
-
           {/* 适合人群 */}
           <div className="lb-doc-section">
             <div className="lb-doc-section-header">
@@ -413,19 +457,6 @@ const PreviewPage: React.FC<{
             <ul className="lb-doc-list lb-doc-list-inline">
               {project.useCases.map((item, i) => (
                 <li key={i}><span className="lb-doc-tag-inline">{item}</span></li>
-              ))}
-            </ul>
-          </div>
-
-          {/* 产品亮点 */}
-          <div className="lb-doc-section">
-            <div className="lb-doc-section-header">
-              <HighlightIcon />
-              <span>产品亮点</span>
-            </div>
-            <ul className="lb-doc-list">
-              {project.highlights.map((item, i) => (
-                <li key={i}>{item}</li>
               ))}
             </ul>
           </div>
@@ -1698,60 +1729,157 @@ const LeafBook: React.FC<LeafBookProps> = ({ registerOpenBook, flipTriggerRef, a
           margin: 0;
         }
 
-        /* ===== 金句页 ===== */
+        /* ===== 广告叙事卷首语页 ===== */
         .lb-quote-page {
           display: flex;
           flex-direction: column;
           align-items: center;
-          justify-content: center;
-          padding: 50px 44px;
+          justify-content: flex-start;
+          padding: 36px 32px 50px;
+          overflow-y: auto;
+          scrollbar-width: thin;
+          scrollbar-color: rgba(140, 110, 80, 0.12) transparent;
         }
-        .lb-quote-wrap {
+        .lb-quote-page::-webkit-scrollbar { width: 3px; }
+        .lb-quote-page::-webkit-scrollbar-thumb {
+          background: rgba(140, 110, 80, 0.12);
+          border-radius: 2px;
+        }
+        .lb-story-wrap {
           position: relative;
           z-index: 1;
+          width: 100%;
+          max-width: 340px;
+        }
+
+        /* 卷首语 */
+        .lb-story-quote {
           text-align: center;
-          max-width: 320px;
+          margin-bottom: 16px;
         }
-        .lb-quote-mark {
-          font-family: Georgia, "Noto Serif SC", serif;
-          font-size: 64px;
-          line-height: 0.6;
-          color: var(--accent);
-          opacity: 0.25;
-          display: block;
-          margin-bottom: 8px;
-        }
-        .lb-quote-mark-end {
-          margin-top: 12px;
-          margin-bottom: 0;
-        }
-        .lb-quote-text {
+        .lb-story-quote-text {
           font-family: "Noto Serif SC", Georgia, serif;
-          font-size: 22px;
+          font-size: 18px;
           font-weight: 600;
           color: var(--lb-text);
           line-height: 1.85;
-          letter-spacing: 0.06em;
+          letter-spacing: 0.04em;
           margin: 0;
+          opacity: 0.9;
         }
-        .lb-quote-attribution {
+        .lb-story-quote-from {
           font-family: "Noto Serif SC", Georgia, serif;
-          font-size: 13px;
+          font-size: 12px;
           color: var(--lb-text-soft);
-          letter-spacing: 0.1em;
-          margin: 18px 0 0;
+          letter-spacing: 0.08em;
+          margin: 10px 0 0;
+          opacity: 0.7;
         }
-        .lb-quote-continue {
+
+        /* 水彩分隔线 */
+        .lb-story-divider {
+          width: 60%;
+          height: 2px;
+          margin: 16px auto;
+          background: linear-gradient(90deg, transparent, rgba(122, 154, 130, 0.35), transparent);
+          border-radius: 1px;
+          position: relative;
+        }
+        .lb-story-divider::after {
+          content: "";
           position: absolute;
-          bottom: 50px;
+          top: -3px;
           left: 50%;
           transform: translateX(-50%);
-          font-size: 11px;
-          letter-spacing: 0.22em;
+          width: 8px;
+          height: 8px;
+          background: rgba(122, 154, 130, 0.2);
+          border-radius: 50%;
+        }
+
+        /* 痛点叙事 */
+        .lb-story-pain {
+          margin-bottom: 16px;
+        }
+        .lb-story-pain-title {
+          font-size: 13px;
+          font-weight: 500;
           color: var(--lb-text-soft);
+          margin: 0 0 10px;
+          letter-spacing: 0.04em;
+          opacity: 0.75;
+        }
+        .lb-story-pain-list {
+          list-style: none;
+          padding: 0;
+          margin: 0;
+        }
+        .lb-story-pain-list li {
+          font-size: 12px;
+          line-height: 1.85;
+          color: var(--lb-text-soft);
+          opacity: 0.7;
+          margin-bottom: 6px;
+          padding-left: 14px;
+          position: relative;
+        }
+        .lb-story-pain-list li::before {
+          content: "·";
+          position: absolute;
+          left: 0;
+          top: 0;
+          color: var(--accent);
           opacity: 0.5;
-          z-index: 2;
-          animation: lb-hint-pulse 2.8s ease-in-out infinite;
+          font-size: 14px;
+        }
+
+        /* 亮点叙事 */
+        .lb-story-highlight {
+          margin-bottom: 16px;
+        }
+        .lb-story-highlight-intro {
+          font-size: 13px;
+          font-weight: 500;
+          color: var(--lb-text);
+          margin: 0 0 10px;
+          letter-spacing: 0.02em;
+        }
+        .lb-story-highlight-name {
+          color: var(--accent);
+          font-weight: 600;
+        }
+        .lb-story-highlight-list {
+          list-style: none;
+          padding: 0;
+          margin: 0;
+        }
+        .lb-story-highlight-list li {
+          font-size: 12px;
+          line-height: 1.85;
+          color: var(--lb-text);
+          margin-bottom: 6px;
+          padding-left: 14px;
+          position: relative;
+        }
+        .lb-story-highlight-list li::before {
+          content: "✦";
+          position: absolute;
+          left: 0;
+          top: 0;
+          color: var(--accent);
+          opacity: 0.6;
+          font-size: 10px;
+        }
+
+        /* 底部 CTA */
+        .lb-story-cta {
+          text-align: center;
+          font-size: 12px;
+          color: var(--lb-text-soft);
+          opacity: 0.6;
+          letter-spacing: 0.06em;
+          margin-top: 8px;
+          font-style: italic;
         }
 
         /* ===== 产品文档页 ===== */
@@ -2055,10 +2183,12 @@ const LeafBook: React.FC<LeafBookProps> = ({ registerOpenBook, flipTriggerRef, a
           .lb-cover-leaf-wrap { margin-bottom: 16px; }
           .lb-cover-intro { font-size: 13px; max-width: 100%; padding: 0 8px; margin-bottom: 20px; }
           .lb-cover-year { font-size: 11px; }
-          /* 金句页 */
-          .lb-quote-page { padding: 36px 28px; }
-          .lb-quote-text { font-size: 17px; line-height: 1.75; }
-          .lb-quote-mark { font-size: 48px; }
+          /* 广告叙事页移动端 */
+          .lb-quote-page { padding: 28px 22px 40px; }
+          .lb-story-quote-text { font-size: 15px; line-height: 1.75; }
+          .lb-story-pain-title, .lb-story-highlight-intro { font-size: 12px; }
+          .lb-story-pain-list li, .lb-story-highlight-list li { font-size: 11px; }
+          .lb-story-cta { font-size: 11px; }
           /* 文档页移动端 */
           .lb-doc-layout { padding: 24px 18px 40px; }
           .lb-doc-title { font-size: 18px; }

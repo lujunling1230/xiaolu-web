@@ -29,6 +29,10 @@ interface AIAssistantPanelProps {
   onSavePlan: (city: City, plan: AIForwardGenerateResponse) => void;
   /** 居中模式：地球按钮内联居中，不固定在右下角 */
   centered?: boolean;
+  /** 受控打开状态 */
+  open?: boolean;
+  /** 打开状态变化回调 */
+  onOpenChange?: (open: boolean) => void;
 }
 
 /* ============================================================
@@ -106,9 +110,21 @@ export default function AIAssistantPanel({
   onAdoptCity,
   onSavePlan,
   centered = false,
+  open: externalOpen,
+  onOpenChange,
 }: AIAssistantPanelProps) {
   /* ---- 状态 ---- */
-  const [open, setOpen] = useState(false);
+  const isControlled = externalOpen !== undefined;
+  const [internalOpen, setInternalOpen] = useState(false);
+  const open = isControlled ? externalOpen : internalOpen;
+
+  const setOpen = useCallback((value: boolean) => {
+    if (!isControlled) {
+      setInternalOpen(value);
+    }
+    onOpenChange?.(value);
+  }, [isControlled, onOpenChange]);
+
   const [activeTab, setActiveTab] = useState<TabType>("reverse");
 
   /* 监听导航栏打开事件 */
@@ -116,7 +132,7 @@ export default function AIAssistantPanel({
     const handler = () => setOpen(true);
     window.addEventListener("rg-open-ai", handler);
     return () => window.removeEventListener("rg-open-ai", handler);
-  }, []);
+  }, [setOpen]);
 
   /* Toast 系统 */
   const [toasts, setToasts] = useState<{ id: number; message: string }[]>([]);

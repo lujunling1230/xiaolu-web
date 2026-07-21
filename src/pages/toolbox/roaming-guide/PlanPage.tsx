@@ -17,6 +17,7 @@ export default function PlanPage() {
   } = useRoamingGuide();
 
   const [expandedPlan, setExpandedPlan] = useState(false);
+  const [aiOpen, setAiOpen] = useState(false);
 
   const hasRecommend = lastRecommendResult && lastRecommendResult.cities.length > 0;
   const hasGenerate = lastGenerateResult && lastGenerateResult.plan;
@@ -125,6 +126,8 @@ export default function PlanPage() {
               onAdoptCity={handleAdoptCity}
               onSavePlan={handleSavePlan}
               centered
+              open={aiOpen}
+              onOpenChange={setAiOpen}
             />
           </div>
         </div>

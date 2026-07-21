@@ -20,7 +20,7 @@ export type EnergyTag =
 export type WeatherType = "sunny" | "rainy" | "cloudy" | "snowy";
 
 /** 心情类型 */
-export type MoodType = "happy" | "tired" | "anxious" | "low";
+export type MoodType = "happy" | "tired" | "anxious" | "low" | "calm" | "angry";
 
 /** 精力等级 */
 export type EnergyLevel = "high" | "medium" | "low";
@@ -81,6 +81,20 @@ export const MOOD_MAP: Record<MoodType, { label: string; icon: string }> = {
   anxious: { label: "焦虑", icon: "⚡" },
   low:     { label: "低落", icon: "🌧" },
 };
+
+/** 心情模式 — 替换旧版"精力匹配"文案 */
+export const MOOD_MODE_MAP: Record<MoodType, { label: string; desc: string }> = {
+  happy:   { label: "快乐续航", desc: "延续好状态，做点有成就感的事" },
+  calm:    { label: "温柔待己", desc: "做舒缓、有仪式感的小事" },
+  tired:   { label: "轻量修复", desc: "不费力但能恢复能量的事" },
+  low:     { label: "情绪暖流", desc: "带来微小满足、温暖感的事" },
+  anxious: { label: "稳定锚点", desc: "帮你找回掌控感的结构化任务" },
+  angry:   { label: "快速清空", desc: "短平快、能释放压力的事" },
+};
+
+export function getMoodMode(mood: MoodType): string {
+  return MOOD_MODE_MAP[mood]?.label || "快乐续航";
+}
 
 export const ENERGY_MAP: Record<EnergyLevel, { label: string; bars: number; icon: string }> = {
   high:   { label: "充沛", bars: 3, icon: "⚡" },
@@ -448,12 +462,9 @@ export function getRecommendations(
       score += (Math.random() - 0.5) * 6;
 
       const allReasons: string[] = [];
-      // 精力匹配
-      if (userEffort >= EFFORT_SCORE[node.effort]) {
-        allReasons.push("精力匹配");
-      } else {
-        allReasons.push("不太费力气");
-      }
+      // 精力匹配 → 替换为心情模式
+      const moodMode = getMoodMode(state.mood);
+      allReasons.push(moodMode);
       // 天气匹配
       if (node.weather.length === 0) {
         allReasons.push("不受天气限制");

@@ -15,6 +15,8 @@ import {
   getTodayCount,
   getStreakDays,
   getBadges,
+  getMoodMode,
+  MOOD_MODE_MAP,
   extractPreferenceKeywords,
 } from "./rechargeTags";
 
@@ -413,11 +415,11 @@ const StationCat: React.FC<{ state: "sleep" | "stare" | "yawn" }> = ({ state }) 
    ============================================================ */
 const MOOD_EXTENDED: { key: string; label: string; icon: string; moodType: MoodType }[] = [
   { key: "happy", label: "开心", icon: "😄", moodType: "happy" },
-  { key: "calm", label: "平静", icon: "😌", moodType: "happy" },
+  { key: "calm", label: "平静", icon: "😌", moodType: "calm" },
   { key: "tired", label: "疲惫", icon: "😴", moodType: "tired" },
   { key: "low", label: "低落", icon: "😔", moodType: "low" },
   { key: "anxious", label: "焦虑", icon: "😰", moodType: "anxious" },
-  { key: "angry", label: "烦躁", icon: "😡", moodType: "anxious" },
+  { key: "angry", label: "烦躁", icon: "😡", moodType: "angry" },
 ];
 
 /* ============================================================
@@ -519,6 +521,9 @@ const HomePage: React.FC<{
           <span className="home-recommend-btn-icon">✨</span>
           AI 帮我推荐
         </button>
+        <p className="home-mode-hint">
+          根据你的心情，为你匹配「{getMoodMode(MOOD_EXTENDED.find(m => m.key === selectedMood)?.moodType || "happy")}」模式的小事
+        </p>
       </div>
 
       {/* 推荐结果卡片 */}
@@ -531,6 +536,9 @@ const HomePage: React.FC<{
             transition={{ duration: 0.35 }}
           >
             <h3 className="home-section-label">为你推荐</h3>
+            <p className="home-rec-header-mode">
+              {getMoodMode(MOOD_EXTENDED.find(m => m.key === selectedMood)?.moodType || "happy")}模式
+            </p>
             <div className="home-rec-cards">
               {recommendations.map((rec, i) => (
                 <motion.div
@@ -1998,6 +2006,11 @@ const RechargePage: React.FC = () => {
           transform: translateY(-1px);
         }
         .home-recommend-btn-icon { margin-right: 6px; }
+        .home-mode-hint {
+          margin-top: 10px; text-align: center;
+          font-size: 12px; color: #b8aa9a;
+          letter-spacing: 0.03em; line-height: 1.5;
+        }
 
         .home-results { padding-bottom: 8px; }
         .home-rec-cards { display: flex; flex-direction: column; gap: 10px; }
@@ -2028,6 +2041,10 @@ const RechargePage: React.FC = () => {
         }
         .home-rec-card-reason {
           font-size: 11px; color: #b8aa9a; margin: 0 0 4px; letter-spacing: 0.02em;
+        }
+        .home-rec-header-mode {
+          font-size: 11px; color: #b8aa9a; margin: 0 0 12px;
+          letter-spacing: 0.04em; font-style: italic;
         }
         .home-rec-card-tags { display: flex; gap: 6px; flex-wrap: wrap; }
         .home-rec-tag {

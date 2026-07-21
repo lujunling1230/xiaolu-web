@@ -1723,6 +1723,47 @@ const InventoryPage: React.FC = () => {
                   </div>
                 </div>
               ))}
+
+              {/* 猜你还想问 */}
+              {chatHistory.length > 0 && (
+                <div className="space-y-2 pt-1">
+                  <p className="text-center text-[10px] text-gray-400">
+                    ✨ 猜你还想问
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    {(() => {
+                      const suggestions: string[] = [];
+                      const expired = items.filter(
+                        (it) => daysUntil(it.expiryDate, today) < 0
+                      );
+                      const near = items.filter((it) => {
+                        const d = daysUntil(it.expiryDate, today);
+                        return d >= 0 && d <= 7;
+                      });
+                      if (expired.length > 0) suggestions.push("已过期的有哪些？");
+                      if (near.length > 0) suggestions.push("有什么快过期了？");
+                      if (items.length > 0) suggestions.push("有什么库存？");
+                      if (items.length > 0) {
+                        const randomItem =
+                          items[Math.floor(Math.random() * items.length)];
+                        suggestions.push(`${randomItem.name}在哪里？`);
+                      }
+                      // 去重后取前3个
+                      const unique = [...new Set(suggestions)].slice(0, 3);
+                      return unique;
+                    })().map((q) => (
+                      <button
+                        key={q}
+                        type="button"
+                        onClick={() => askAI(q)}
+                        className="rounded-full border border-[#F8C8DC]/60 bg-[#FFF0F5]/50 px-3 py-1.5 text-xs text-[#C85A8A] transition-all hover:bg-[#F8C8DC]/40 hover:shadow-sm active:scale-95"
+                      >
+                        {q}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* 输入框 */}

@@ -14,15 +14,22 @@ export default function RoamingGuideLayout() {
           color: #2C3E50;
         }
 
-        /* 背景装饰 - 暖橘光 + 雾蓝灰 */
+        /* 背景装饰 - 黄昏雨后多层渐变 */
         .rg-layout::before {
           content: "";
           position: fixed;
           inset: 0;
           background:
-            radial-gradient(ellipse 80% 50% at 15% 10%, rgba(244,211,94,0.06) 0%, transparent 60%),
-            radial-gradient(ellipse 60% 40% at 85% 85%, rgba(123,168,158,0.05) 0%, transparent 60%),
-            radial-gradient(ellipse 50% 30% at 50% 50%, rgba(123,168,158,0.03) 0%, transparent 50%);
+            /* 左上角暖橘光 */
+            radial-gradient(ellipse 70% 60% at 5% 5%, rgba(244,211,94,0.08) 0%, transparent 55%),
+            /* 右下角雾蓝 */
+            radial-gradient(ellipse 60% 50% at 92% 92%, rgba(123,168,158,0.07) 0%, transparent 50%),
+            /* 中间偏上淡薰衣草 */
+            radial-gradient(ellipse 40% 30% at 70% 15%, rgba(180,160,200,0.04) 0%, transparent 50%),
+            /* 中间偏下淡薄荷 */
+            radial-gradient(ellipse 45% 35% at 25% 75%, rgba(123,168,158,0.05) 0%, transparent 50%),
+            /* 底部暖黄微光 */
+            radial-gradient(ellipse 80% 30% at 50% 100%, rgba(244,211,94,0.04) 0%, transparent 45%);
           pointer-events: none;
           z-index: 0;
         }

@@ -250,22 +250,7 @@ const QuotePage: React.FC<{ project: Project; index: number }> = ({
   index,
 }) => {
   const pn = getSpreadPageNums(index + 2);
-
-  // 将结构化痛点转化为情感叙事
-  const painNarrative = project.painPoints.map((p) => {
-    // 去掉开头的"用户"等词，转化为更口语化的表达
-    const cleaned = p
-      .replace(/^用户/, "")
-      .replace(/^传统/, "")
-      .replace(/^现有/, "")
-      .replace(/^当前/, "");
-    return cleaned.trim();
-  });
-
-  // 将解决方案转化为"像...一样"的场景描述
-  const highlightNarrative = project.solutions.length > 0
-    ? project.solutions
-    : project.highlights;
+  const { story } = project;
 
   return (
     <div className="lb-page-content lb-quote-page">
@@ -285,6 +270,20 @@ const QuotePage: React.FC<{ project: Project; index: number }> = ({
           <p className="lb-story-quote-from">— {project.title}</p>
         </motion.div>
 
+        {/* 引子 */}
+        {story.intro.length > 0 && (
+          <motion.div
+            className="lb-story-intro"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.35, duration: 0.6 }}
+          >
+            {story.intro.map((line, i) => (
+              <p key={i} className="lb-story-intro-line">{line}</p>
+            ))}
+          </motion.div>
+        )}
+
         {/* 水彩分隔线 */}
         <div className="lb-story-divider" />
 
@@ -297,8 +296,8 @@ const QuotePage: React.FC<{ project: Project; index: number }> = ({
         >
           <p className="lb-story-pain-title">你有没有过这样的时刻？</p>
           <ul className="lb-story-pain-list">
-            {painNarrative.map((item, i) => (
-              <li key={i}>{item}；</li>
+            {story.pain.map((item, i) => (
+              <li key={i}>{item}</li>
             ))}
           </ul>
         </motion.div>
@@ -310,24 +309,32 @@ const QuotePage: React.FC<{ project: Project; index: number }> = ({
           animate={{ opacity: 1 }}
           transition={{ delay: 0.8, duration: 0.6 }}
         >
-          <p className="lb-story-highlight-intro">
-            但现在，<span className="lb-story-highlight-name">{project.title}</span> 为你开着。
-          </p>
+          <p className="lb-story-highlight-intro">{story.highlightIntro}</p>
           <ul className="lb-story-highlight-list">
-            {highlightNarrative.map((item, i) => (
-              <li key={i}>像{item}；</li>
+            {story.highlight.map((item, i) => (
+              <li key={i}>{item}</li>
             ))}
           </ul>
         </motion.div>
 
-        {/* 底部 CTA */}
+        {/* CTA */}
         <motion.p
           className="lb-story-cta"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 1.1, duration: 0.6 }}
         >
-          点击右侧，推开这扇门。
+          {story.cta}
+        </motion.p>
+
+        {/* 收尾金句 */}
+        <motion.p
+          className="lb-story-closing"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 1.3, duration: 0.6 }}
+        >
+          {story.closing}
         </motion.p>
       </div>
 
@@ -1755,7 +1762,20 @@ const LeafBook: React.FC<LeafBookProps> = ({ registerOpenBook, flipTriggerRef, a
         /* 卷首语 */
         .lb-story-quote {
           text-align: center;
-          margin-bottom: 16px;
+          margin-bottom: 12px;
+        }
+        /* 引子 */
+        .lb-story-intro {
+          margin-bottom: 12px;
+        }
+        .lb-story-intro-line {
+          font-size: 12px;
+          line-height: 1.85;
+          color: var(--lb-text-soft);
+          opacity: 0.75;
+          margin: 0 0 4px;
+          text-align: center;
+          font-style: italic;
         }
         .lb-story-quote-text {
           font-family: "Noto Serif SC", Georgia, serif;
@@ -1871,15 +1891,25 @@ const LeafBook: React.FC<LeafBookProps> = ({ registerOpenBook, flipTriggerRef, a
           font-size: 10px;
         }
 
-        /* 底部 CTA */
+        /* CTA */
         .lb-story-cta {
           text-align: center;
           font-size: 12px;
           color: var(--lb-text-soft);
-          opacity: 0.6;
+          opacity: 0.7;
           letter-spacing: 0.06em;
-          margin-top: 8px;
+          margin-top: 10px;
           font-style: italic;
+        }
+        /* 收尾金句 */
+        .lb-story-closing {
+          text-align: center;
+          font-size: 13px;
+          font-weight: 500;
+          color: var(--accent);
+          opacity: 0.85;
+          letter-spacing: 0.04em;
+          margin-top: 6px;
         }
 
         /* ===== 产品文档页 ===== */
@@ -2186,9 +2216,11 @@ const LeafBook: React.FC<LeafBookProps> = ({ registerOpenBook, flipTriggerRef, a
           /* 广告叙事页移动端 */
           .lb-quote-page { padding: 28px 22px 40px; }
           .lb-story-quote-text { font-size: 15px; line-height: 1.75; }
+          .lb-story-intro-line { font-size: 11px; }
           .lb-story-pain-title, .lb-story-highlight-intro { font-size: 12px; }
           .lb-story-pain-list li, .lb-story-highlight-list li { font-size: 11px; }
           .lb-story-cta { font-size: 11px; }
+          .lb-story-closing { font-size: 12px; }
           /* 文档页移动端 */
           .lb-doc-layout { padding: 24px 18px 40px; }
           .lb-doc-title { font-size: 18px; }

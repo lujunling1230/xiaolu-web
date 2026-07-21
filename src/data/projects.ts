@@ -17,6 +17,7 @@ export interface Project {
     highlightIntro: string; // 转折句 "但在[项目名]..."
     highlight: string[];   // 亮点列表（3句）
     cta: string;           // CTA 文案
+    ctaLabel: string;      // CTA 按钮文案（与项目气质贴合）
     closing: string;       // 收尾金句
   };
 
@@ -56,6 +57,7 @@ export const projects: Project[] = [
         "白噪音像一层薄毯，把你轻轻盖住，不用做任何决定。",
       ],
       cta: "点开右侧，走进这片森林。",
+      ctaLabel: "走进森林",
       closing: "这里没有时间表，只有风。",
     },
     painPoints: [
@@ -117,6 +119,7 @@ export const projects: Project[] = [
         "朋友圈在刷新，评论区在冒泡，日子像楼下那家便利店一样，每天都在照常营业。",
       ],
       cta: "点开右侧，把门关上。",
+      ctaLabel: "搬进 3601",
       closing: "今晚，不做屏幕前的旁观者，做爱情公寓的住户。",
     },
     painPoints: [
@@ -177,6 +180,7 @@ export const projects: Project[] = [
         "等级在涨，角色在变强，原来平凡日常也能闯关。",
       ],
       cta: "点开右侧，领取今日任务。",
+      ctaLabel: "领取任务",
       closing: "人生这场 RPG，你才是主角。",
     },
     painPoints: [
@@ -233,6 +237,7 @@ export const projects: Project[] = [
         "打开APP，冰箱、药箱、杂物间，尽在掌握。",
       ],
       cta: "点开右侧，打开你的家庭仓库。",
+      ctaLabel: "打开仓库",
       closing: "让家井井有条，也是爱自己的方式。",
     },
     painPoints: [
@@ -289,6 +294,7 @@ export const projects: Project[] = [
         "不用解释，不用铺垫，打开就是一句「我懂」。",
       ],
       cta: "点开右侧，抽一张属于你的牌。",
+      ctaLabel: "抽一张牌",
       closing: "总有一句话，能解开你的心结。",
     },
     painPoints: [
@@ -345,6 +351,7 @@ export const projects: Project[] = [
         "手绘地图上的每个呼吸动画，都在替你说「我来过」。",
       ],
       cta: "点开右侧，打开你的旅行地图。",
+      ctaLabel: "打开地图",
       closing: "世界很大，但每一步都算数。",
     },
     painPoints: [
@@ -401,6 +408,7 @@ export const projects: Project[] = [
         "回血历史在累计，原来你已经走了这么远，只是没发现。",
       ],
       cta: "点开右侧，选一个最小的动作开始。",
+      ctaLabel: "开始回血",
       closing: "微小也是力量，崩塌也是开始。",
     },
     painPoints: [
@@ -457,6 +465,7 @@ export const projects: Project[] = [
         "不用思考，不用策略，只带上手指和坏情绪，进来就好。",
       ],
       cta: "点开右侧，选一个游戏开始释放。",
+      ctaLabel: "选一个游戏",
       closing: "风还是风，但帆，由你调。",
     },
     painPoints: [
@@ -514,6 +523,7 @@ export const projects: Project[] = [
         "你不需要整理全部，只需要把最想留住的，轻轻放进来。",
       ],
       cta: "点开右侧，走进你的时光展厅。",
+      ctaLabel: "走进展厅",
       closing: "每一步都算数，每一秒都值得被记住。",
     },
     painPoints: [

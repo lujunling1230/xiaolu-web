@@ -245,9 +245,10 @@ const TocPage: React.FC<{ onPick: (projectIndex: number) => void; onClose?: () =
 /* ============================================================
    QuotePage — 广告叙事卷首语（左页）
    ============================================================ */
-const QuotePage: React.FC<{ project: Project; index: number }> = ({
+const QuotePage: React.FC<{ project: Project; index: number; onJump: () => void }> = ({
   project,
   index,
+  onJump,
 }) => {
   const pn = getSpreadPageNums(index + 2);
   const { story } = project;
@@ -317,15 +318,27 @@ const QuotePage: React.FC<{ project: Project; index: number }> = ({
           </ul>
         </motion.div>
 
-        {/* CTA */}
-        <motion.p
-          className="lb-story-cta"
+        {/* CTA + 按钮 */}
+        <motion.div
+          className="lb-story-cta-row"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 1.1, duration: 0.6 }}
         >
-          {story.cta}
-        </motion.p>
+          <span className="lb-story-cta-text">{story.cta}</span>
+          <a
+            className="lb-story-cta-btn"
+            href={project.liveUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {story.ctaLabel}
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M7 17L17 7" /><path d="M7 7h10v10" />
+            </svg>
+          </a>
+        </motion.div>
 
         {/* 收尾金句 */}
         <motion.p
@@ -496,23 +509,7 @@ const PreviewPage: React.FC<{
           </div>
         )}
 
-        {/* 操作按钮 */}
-        <div className="lb-doc-actions">
-          <button
-            className="lb-doc-visit"
-            onClick={(e) => {
-              e.stopPropagation();
-              onJump();
-            }}
-          >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
-              <polyline points="15 3 21 3 21 9"/>
-              <line x1="10" y1="14" x2="21" y2="3"/>
-            </svg>
-            打开作品
-          </button>
-        </div>
+
       </div>
 
       <PageNumber current={pn.right} />
@@ -683,7 +680,7 @@ const LeafBook: React.FC<LeafBookProps> = ({ registerOpenBook, flipTriggerRef, a
       const pn = getSpreadPageNums(index + 2);
       result.push({
         id: `project-${index}`,
-        left: <QuotePage project={project} index={index} />,
+        left: <QuotePage project={project} index={index} onJump={jumpToWork} />,
         right: <PreviewPage project={project} index={index} onNext={goForward} onJump={jumpToWork} />,
         leftPageNum: pn.left,
         rightPageNum: pn.right,
@@ -1891,15 +1888,42 @@ const LeafBook: React.FC<LeafBookProps> = ({ registerOpenBook, flipTriggerRef, a
           font-size: 10px;
         }
 
-        /* CTA */
-        .lb-story-cta {
-          text-align: center;
+        /* CTA 行 */
+        .lb-story-cta-row {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 10px;
+          margin-top: 12px;
+          flex-wrap: wrap;
+        }
+        .lb-story-cta-text {
           font-size: 12px;
           color: var(--lb-text-soft);
           opacity: 0.7;
-          letter-spacing: 0.06em;
-          margin-top: 10px;
+          letter-spacing: 0.04em;
           font-style: italic;
+        }
+        .lb-story-cta-btn {
+          display: inline-flex;
+          align-items: center;
+          gap: 5px;
+          font-size: 12px;
+          font-weight: 500;
+          color: var(--accent);
+          border: 1px solid var(--accent);
+          border-radius: 20px;
+          padding: 5px 14px;
+          text-decoration: none;
+          opacity: 0.85;
+          transition: all 0.25s ease;
+          cursor: pointer;
+          line-height: 1.4;
+        }
+        .lb-story-cta-btn:hover {
+          opacity: 1;
+          background: var(--accent);
+          color: var(--lb-page-bg, #f6f2eb);
         }
         /* 收尾金句 */
         .lb-story-closing {
@@ -2221,6 +2245,7 @@ const LeafBook: React.FC<LeafBookProps> = ({ registerOpenBook, flipTriggerRef, a
           .lb-story-pain-list li, .lb-story-highlight-list li { font-size: 11px; }
           .lb-story-cta { font-size: 11px; }
           .lb-story-closing { font-size: 12px; }
+          .lb-story-cta-btn { font-size: 11px; padding: 4px 12px; }
           /* 文档页移动端 */
           .lb-doc-layout { padding: 24px 18px 40px; }
           .lb-doc-title { font-size: 18px; }

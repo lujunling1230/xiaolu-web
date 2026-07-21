@@ -295,8 +295,8 @@ const AchievementPage: React.FC = () => {
         }
         .ach-header-desc {
           font-size: 13px;
-          color: var(--text-soft);
-          opacity: 0.7;
+          color: var(--text);
+          opacity: 0.85;
           margin: 0;
         }
 
@@ -333,7 +333,7 @@ const AchievementPage: React.FC = () => {
         .ach-mod-unit {
           font-size: 14px;
           font-weight: 400;
-          opacity: 0.6;
+          opacity: 0.75;
           margin-left: 4px;
         }
         .ach-mod-tier {
@@ -341,7 +341,8 @@ const AchievementPage: React.FC = () => {
           align-items: center;
           gap: 6px;
           font-size: 13px;
-          color: var(--text-soft);
+          color: var(--text);
+          opacity: 0.88;
         }
         .ach-mod-tier-icon { font-size: 16px; }
         .ach-mod-tier-name { font-weight: 500; }
@@ -363,8 +364,8 @@ const AchievementPage: React.FC = () => {
         }
         .ach-mod-progress-label {
           font-size: 11px;
-          color: var(--text-soft);
-          opacity: 0.55;
+          color: var(--text);
+          opacity: 0.68;
         }
         .ach-mod-max {
           font-size: 12px;
@@ -376,8 +377,8 @@ const AchievementPage: React.FC = () => {
         .ach-hint {
           text-align: center;
           font-size: 12px;
-          color: var(--text-soft);
-          opacity: 0.45;
+          color: var(--text);
+          opacity: 0.6;
           margin-top: 24px;
           font-family: "Noto Serif SC", Georgia, serif;
         }

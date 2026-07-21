@@ -351,7 +351,8 @@ const BreathingGuide: React.FC = () => {
         }
         .bg-subtitle {
           font-size: 12.5px;
-          color: var(--text-soft);
+          color: var(--text);
+          opacity: 0.88;
           margin: 0;
           letter-spacing: 0.02em;
         }
@@ -455,19 +456,20 @@ const BreathingGuide: React.FC = () => {
         .bg-countdown {
           font-family: ${SERIF_FONT};
           font-size: 52px;
-          font-weight: 600;
+          font-weight: 700;
           line-height: 1;
           color: var(--text);
           margin: 0;
-          text-shadow: 0 1px 12px rgba(255,255,255,0.35);
+          text-shadow: 0 2px 16px rgba(0,0,0,0.12);
           transition: opacity 0.3s ease;
         }
         [data-theme="night"] .bg-countdown {
-          text-shadow: 0 1px 12px rgba(0,0,0,0.4);
+          text-shadow: 0 2px 16px rgba(0,0,0,0.5);
         }
         .bg-phase-label {
           font-size: 13px;
-          color: var(--text-soft);
+          color: var(--text);
+          opacity: 0.92;
           margin: 8px 0 0;
           letter-spacing: 0.1em;
         }
@@ -506,11 +508,15 @@ const BreathingGuide: React.FC = () => {
         }
         .bg-rhythm-text {
           font-size: 12px;
-          color: var(--text-soft);
-          transition: color 0.35s ease;
-          white-space: nowrap;
+          color: var(--text);
+          opacity: 0.62;
+          transition: opacity 0.3s, color 0.3s;
         }
-        .bg-rhythm-text.active { color: var(--text); font-weight: 500; }
+        .bg-rhythm-text.active {
+          color: var(--text);
+          font-weight: 600;
+          opacity: 1;
+        }
 
         /* ===== 模式信息 ===== */
         .bg-mode-info { text-align: center; }
@@ -523,14 +529,15 @@ const BreathingGuide: React.FC = () => {
         }
         .bg-mode-desc {
           font-size: 11px;
-          color: var(--text-soft);
+          color: var(--text);
+          opacity: 0.78;
           margin: 3px 0 0;
           letter-spacing: 0.04em;
-          opacity: 0.8;
         }
         .bg-cycle-count {
           font-size: 12px;
-          color: var(--text-soft);
+          color: var(--text);
+          opacity: 0.82;
           margin: 6px 0 0;
         }
         .bg-cycle-count span {

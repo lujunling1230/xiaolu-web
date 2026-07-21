@@ -351,14 +351,15 @@ const HealingCompanion: React.FC = () => {
           setExpression("concern");
           addCompanionMessage(pickRandom(emotion.responses));
 
-          if (turnCount >= 1) {
-            setTimeout(() => addCompanionMessage(emotion.toolSuggestion, 600), 2500);
-          }
-          if (Math.random() > 0.4) {
+          // 第一轮就推荐工具（不再等第二轮）
+          setTimeout(() => addCompanionMessage(emotion.toolSuggestion, 600), 2500);
+
+          // 偶发追问（轮次靠后时）
+          if (turnCount >= 1 && Math.random() > 0.4) {
             setTimeout(() => {
               setExpression("think");
               addCompanionMessage(pickRandom(emotion.followUps), 800);
-            }, turnCount >= 1 ? 5000 : 3500);
+            }, 5000);
           }
         } else {
           const generic = [
@@ -386,7 +387,7 @@ const HealingCompanion: React.FC = () => {
       if (!v && messages.length === 0) {
         setTimeout(() => addCompanionMessage(pickRandom(GREETINGS), 300), 200);
       }
-      if (!v) setStats(loadStats()); // 每次打开都刷新统计
+      if (!v) setStats(loadStats());
       return !v;
     });
     setShowBubble(false);
@@ -496,15 +497,23 @@ const HealingCompanion: React.FC = () => {
                   )}
                   <div ref={chatEndRef} />
                 </div>
-                {messages.length === 0 && (
-                  <div className="hc-quick-bar">
-                    {EMOTIONS.map((emo) => (
-                      <button key={emo.key} className="hc-quick-btn" onClick={() => handleQuickEmotion(emo)}>
-                        {emo.label}
-                      </button>
-                    ))}
-                  </div>
-                )}
+                <AnimatePresence>
+                  {messages.length > 0 && !isTyping && (
+                    <motion.div
+                      className="hc-quick-bar"
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: "auto" }}
+                      exit={{ opacity: 0, height: 0 }}
+                      transition={{ duration: 0.3 }}
+                    >
+                      {EMOTIONS.map((emo) => (
+                        <button key={emo.key} className="hc-quick-btn" onClick={() => handleQuickEmotion(emo)}>
+                          {emo.label}
+                        </button>
+                      ))}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
                 <div className="hc-input-bar">
                   <input
                     className="hc-input"

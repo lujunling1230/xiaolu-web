@@ -16,6 +16,7 @@ import RoamingGuideLayout from "./pages/toolbox/roaming-guide/RoamingGuideLayout
 import MapPage from "./pages/toolbox/roaming-guide/MapPage";
 import CitiesPage from "./pages/toolbox/roaming-guide/CitiesPage";
 import PlanPage from "./pages/toolbox/roaming-guide/PlanPage";
+import AboutPage from "./pages/toolbox/roaming-guide/AboutPage";
 import { RoamingGuideProvider } from "./pages/toolbox/roaming-guide/RoamingGuideContext";
 import SystemTuningPage from "./pages/toolbox/SystemTuningPage";
 import LifeFilmPage from "./pages/LifeFilmPage";
@@ -91,6 +92,7 @@ createRoot(document.getElementById("root")!).render(
           <Route path="map" element={<MapPage />} />
           <Route path="cities" element={<CitiesPage />} />
           <Route path="plan" element={<PlanPage />} />
+          <Route path="about" element={<AboutPage />} />
         </Route>
         <Route path="/toolbox/roaming-guide" element={
           <RoamingGuideProvider>
@@ -101,6 +103,7 @@ createRoot(document.getElementById("root")!).render(
           <Route path="map" element={<MapPage />} />
           <Route path="cities" element={<CitiesPage />} />
           <Route path="plan" element={<PlanPage />} />
+          <Route path="about" element={<AboutPage />} />
         </Route>
         {/* 系统调频：5% 微改变认知工具 */}
         <Route path="/toolbox/answer" element={<SystemTuningPage />} />

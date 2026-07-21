@@ -478,9 +478,9 @@ function speakGuide(text: string, onEnd?: () => void): SpeechSynthesisUtterance 
   const voice = getFriendlyVoice();
   if (voice) u.voice = voice;
   u.lang = "zh-CN";
-  u.rate = 0.82;  // 稍慢，更温柔
-  u.pitch = 0.92; // 略低沉，有亲和力
-  u.volume = 0.9;
+  u.rate = 0.78;  // 更慢，更舒缓自然
+  u.pitch = 0.88; // 更柔和，像耳语
+  u.volume = 0.85;
   if (onEnd) u.onend = onEnd;
   window.speechSynthesis.speak(u);
   return u;
@@ -830,13 +830,20 @@ const MeditationTimer: React.FC = () => {
       <style>{`
         /* ── 卡片容器 ── */
         .ms-card {
-          background: var(--card-bg);
-          border: 1px solid var(--border);
+          background: rgba(255,255,255,0.55);
+          backdrop-filter: blur(16px) saturate(1.4);
+          -webkit-backdrop-filter: blur(16px) saturate(1.4);
+          border: 1px solid rgba(255,255,255,0.35);
           border-radius: 16px;
-          box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+          box-shadow: 0 4px 24px rgba(0,0,0,0.08), inset 0 1px 0 rgba(255,255,255,0.4);
           padding: 28px 24px 32px;
           max-width: 480px;
           margin: 0 auto;
+        }
+        [data-theme="night"] .ms-card {
+          background: rgba(30,41,59,0.6);
+          border-color: rgba(255,255,255,0.08);
+          box-shadow: 0 4px 24px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.06);
         }
 
         /* ── 标题 ── */
@@ -853,7 +860,8 @@ const MeditationTimer: React.FC = () => {
         }
         .ms-subtitle {
           font-size: 12px;
-          color: var(--text-soft);
+          color: var(--text);
+          opacity: 0.85;
           margin: 0;
         }
 
@@ -866,7 +874,8 @@ const MeditationTimer: React.FC = () => {
         }
         .ms-section-label {
           font-size: 13px;
-          color: var(--text-soft);
+          color: var(--text);
+          opacity: 0.85;
           margin: 0;
           align-self: flex-start;
         }
@@ -915,7 +924,8 @@ const MeditationTimer: React.FC = () => {
         }
         .ms-sound-sub {
           font-size: 10px;
-          color: var(--text-soft);
+          color: var(--text);
+          opacity: 0.75;
         }
 
         /* ── 时长 pill ── */
@@ -932,7 +942,8 @@ const MeditationTimer: React.FC = () => {
           border: 1.5px solid var(--border);
           border-radius: 999px;
           background: transparent;
-          color: var(--text-soft);
+          color: var(--text);
+          opacity: 0.78;
           cursor: pointer;
           transition: all 0.2s ease;
         }
@@ -955,7 +966,8 @@ const MeditationTimer: React.FC = () => {
         }
         .ms-toggle-label {
           font-size: 13px;
-          color: var(--text-soft);
+          color: var(--text);
+          opacity: 0.88;
         }
         .ms-toggle-track {
           position: relative;
@@ -1007,7 +1019,8 @@ const MeditationTimer: React.FC = () => {
         }
         .ms-active-sound {
           font-size: 13px;
-          color: var(--text-soft);
+          color: var(--text);
+          opacity: 0.88;
         }
         .ms-progress-ring {
           position: relative;
@@ -1046,7 +1059,8 @@ const MeditationTimer: React.FC = () => {
         }
         .ms-time-label {
           font-size: 12px;
-          color: var(--text-soft);
+          color: var(--text);
+          opacity: 0.7;
         }
         .ms-end-btn {
           padding: 8px 28px;
@@ -1054,7 +1068,8 @@ const MeditationTimer: React.FC = () => {
           border: 1px solid var(--border);
           border-radius: 999px;
           background: transparent;
-          color: var(--text-soft);
+          color: var(--text);
+          opacity: 0.7;
           cursor: pointer;
         }
         .ms-end-btn:hover {
@@ -1101,7 +1116,8 @@ const MeditationTimer: React.FC = () => {
         }
         .ms-complete-duration {
           font-size: 13px;
-          color: var(--text-soft);
+          color: var(--text);
+          opacity: 0.7;
           margin: 0 0 16px;
           position: relative;
           z-index: 1;

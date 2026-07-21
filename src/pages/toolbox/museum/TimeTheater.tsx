@@ -1,12 +1,11 @@
 /**
  * 时光放映厅 · Time Theater
  *
- * 时光博物馆的怀旧放映厅 —— 复古 TCL 银灰 CRT 电视 + 白色 MP3 播放器 + 遥控器。
- * 设计理念：走进 2000 年代中国家庭客厅，电视是主角，MP3 是可爱配角。
+ * 时光博物馆的怀旧放映厅 —— 复古 TCL 银灰 CRT 电视 + 遥控器。
+ * 设计理念：走进 2000 年代中国家庭客厅，电视是绝对主角。
  *
  * 视觉元素：
  *   - TCL 品牌银灰 CRT 电视（侧面音箱格栅、底部控制面板、弧面屏幕）
- *   - 白色 MP3 播放器（圆形点按轮盘、彩色 LCD 屏幕显示歌词）
  *   - 虚拟遥控器（频道/音量/菜单按钮）
  */
 
@@ -26,15 +25,7 @@ export interface TimeTheaterProps {
     imageUrl?: string;
     musicLink?: string;
   }>;
-  bgmCards: Array<{
-    id: string;
-    year: string;
-    title: string;
-    description: string;
-    imageUrl?: string;
-    musicLink?: string;
-  }>;
-  onEdit?: (card: any, type: "tv" | "bgm") => void;
+  onEdit?: (card: any, type: "tv") => void;
 }
 
 /* ============================================================
@@ -119,16 +110,13 @@ function playClickSound(): void {
    Component
    ============================================================ */
 
-const TimeTheater: React.FC<TimeTheaterProps> = ({ tvCards, bgmCards, onEdit }) => {
+const TimeTheater: React.FC<TimeTheaterProps> = ({ tvCards, onEdit }) => {
   /* ---- state ---- */
   const [tvOn, setTvOn] = useState(true);
   const [bootPhase, setBootPhase] = useState<"off" | "warming" | "static" | "ready">("off");
   const [currentChannel, setCurrentChannel] = useState(0);
   const [isSwitching, setIsSwitching] = useState(false);
   const [switchDirection, setSwitchDirection] = useState<1 | -1>(1);
-  const [currentSong, setCurrentSong] = useState(0);
-  const [isPlaying, setIsPlaying] = useState(false);
-  const [showLyrics, setShowLyrics] = useState(false);
 
   const switchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -136,7 +124,6 @@ const TimeTheater: React.FC<TimeTheaterProps> = ({ tvCards, bgmCards, onEdit }) 
   const totalChannels = tvCards.length;
   const safeChannel = totalChannels > 0 ? currentChannel % totalChannels : 0;
   const currentCard = totalChannels > 0 ? tvCards[safeChannel] : null;
-  const currentBgm = bgmCards.length > 0 ? bgmCards[currentSong % bgmCards.length] : null;
 
   /* ---- boot-up sequence (runs once on mount) ---- */
   useEffect(() => {
@@ -182,34 +169,6 @@ const TimeTheater: React.FC<TimeTheaterProps> = ({ tvCards, bgmCards, onEdit }) 
     [tvOn, isSwitching, totalChannels]
   );
 
-  /* ---- song control ---- */
-  const prevSong = useCallback(() => {
-    setCurrentSong((prev) => {
-      const len = bgmCards.length;
-      if (len === 0) return 0;
-      return (prev - 1 + len) % len;
-    });
-  }, [bgmCards.length]);
-
-  const nextSong = useCallback(() => {
-    setCurrentSong((prev) => {
-      const len = bgmCards.length;
-      if (len === 0) return 0;
-      return (prev + 1) % len;
-    });
-  }, [bgmCards.length]);
-
-  const togglePlay = useCallback(() => {
-    if (bgmCards.length === 0) return;
-    setIsPlaying((prev) => !prev);
-    setShowLyrics(true);
-    // 如果有音乐链接且要播放，则打开
-    const song = bgmCards[currentSong % bgmCards.length];
-    if (song?.musicLink && !isPlaying) {
-      window.open(song.musicLink, "_blank", "noopener,noreferrer");
-    }
-  }, [bgmCards, currentSong, isPlaying]);
-
   /* ============================================================
      Render
      ============================================================ */
@@ -221,7 +180,7 @@ const TimeTheater: React.FC<TimeTheaterProps> = ({ tvCards, bgmCards, onEdit }) 
       {/* ======== Title ======== */}
       <h2 className="tt-title">时光放映厅</h2>
 
-      {/* ======== TV + MP3 Layout ======== */}
+      {/* ======== TV Layout ======== */}
       <div className="tt-stage">
         {/* ======== CRT TV ======== */}
         <div className={`tt-tv-shell${tvOn ? " tv-on" : ""}`}>
@@ -314,96 +273,7 @@ const TimeTheater: React.FC<TimeTheaterProps> = ({ tvCards, bgmCards, onEdit }) 
           {/* Right speaker grille */}
           <div className="tt-tv-speaker tt-tv-speaker-right" />
 
-          {/* ======== MP3 Player (overlapping bottom-right) ======== */}
-          <div className="tt-mp3">
-            {/* MP3 label */}
-            <div className="tt-mp3-label">随身听里的旋律</div>
-            {/* MP3 screen */}
-            <div className="tt-mp3-screen">
-              {currentBgm ? (
-                <>
-                  <div className="tt-mp3-song-title">{currentBgm.title}</div>
-                  <div className="tt-mp3-song-meta">{currentBgm.year}</div>
 
-                  {/* Equalizer bars */}
-                  {isPlaying && (
-                    <div className="tt-mp3-eq">
-                      <div className="tt-eq-bar" style={{ animationDelay: "0s" }} />
-                      <div className="tt-eq-bar" style={{ animationDelay: "0.15s" }} />
-                      <div className="tt-eq-bar" style={{ animationDelay: "0.3s" }} />
-                    </div>
-                  )}
-
-                  {/* Lyrics */}
-                  <AnimatePresence>
-                    {showLyrics && isPlaying && currentBgm.description && (
-                      <motion.div
-                        className="tt-mp3-lyrics"
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                      >
-                        <div className="tt-lyrics-scroll">{currentBgm.description}</div>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-
-                  {/* Progress bar */}
-                  <div className="tt-mp3-progress">
-                    <div className={`tt-mp3-progress-fill ${isPlaying ? "tt-progress-playing" : ""}`} />
-                  </div>
-                </>
-              ) : (
-                <div className="tt-mp3-no-song">暂无曲目</div>
-              )}
-            </div>
-
-            {/* Click wheel */}
-            <div className="tt-mp3-wheel">
-              {/* Top: menu */}
-              <button className="tt-wheel-zone tt-wheel-top" title="菜单" onClick={() => setShowLyrics((p) => !p)} />
-              {/* Bottom: vol placeholder */}
-              <button className="tt-wheel-zone tt-wheel-bottom" title="音量" />
-              {/* Left: prev */}
-              <button className="tt-wheel-zone tt-wheel-left" title="上一首" onClick={prevSong} />
-              {/* Right: next */}
-              <button className="tt-wheel-zone tt-wheel-right" title="下一首" onClick={nextSong} />
-              {/* Center: play/pause */}
-              <button className="tt-wheel-center" onClick={togglePlay} title={isPlaying ? "暂停" : "播放"}>
-                <svg viewBox="0 0 24 24" width="14" height="14" fill="#555">
-                  {isPlaying ? (
-                    <rect x="6" y="4" width="4" height="16" rx="1" />
-                  ) : (
-                    <polygon points="8,4 20,12 8,20" />
-                  )}
-                </svg>
-              </button>
-            </div>
-
-            {/* Earphone jack */}
-            <div className="tt-mp3-jack" />
-
-            {/* White wired earphone */}
-            <svg className="tt-mp3-earphone" width="60" height="80" viewBox="0 0 60 80" fill="none">
-              {/* Wire from jack */}
-              <path d="M10 0 C10 20, 8 35, 15 45 C22 55, 12 65, 18 75" stroke="#ddd" strokeWidth="1.5" fill="none" strokeLinecap="round" />
-              {/* Left earbud */}
-              <ellipse cx="16" cy="77" rx="3" ry="4" fill="#e8e8e8" />
-              {/* Right earbud (branching off) */}
-              <path d="M18 55 C18 60, 25 62, 30 58 C35 54, 38 60, 38 75" stroke="#ddd" strokeWidth="1.5" fill="none" strokeLinecap="round" />
-              <ellipse cx="36" cy="77" rx="3" ry="4" fill="#e8e8e8" />
-            </svg>
-
-            {/* Edit BGM button */}
-            {onEdit && currentBgm && (
-              <button
-                className="tt-mp3-edit"
-                onClick={() => onEdit(currentBgm, "bgm")}
-              >
-                编辑曲目
-              </button>
-            )}
-          </div>
         </div>
 
         {/* ======== Remote Control ======== */}
@@ -815,238 +685,6 @@ const CSS = `
   letter-spacing: 2px;
 }
 
-/* ============================================================
-   MP3 Player
-   ============================================================ */
-.tt-mp3 {
-  position: absolute;
-  bottom: -10px;
-  right: -30px;
-  width: 140px;
-  background: linear-gradient(180deg, #f8f8f8 0%, #eeeeee 100%);
-  border-radius: 12px;
-  box-shadow:
-    0 4px 16px rgba(0,0,0,0.3),
-    0 1px 3px rgba(0,0,0,0.15);
-  transform: rotate(-5deg);
-  z-index: 10;
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-}
-
-/* MP3 screen */
-.tt-mp3-screen {
-  width: 100%;
-  height: 130px;
-  background: #1a1a2e;
-  padding: 10px 10px 8px;
-  display: flex;
-  flex-direction: column;
-  position: relative;
-  overflow: hidden;
-}
-
-.tt-mp3-song-title {
-  font-family: 'Courier New', monospace;
-  font-size: 12px;
-  color: #fff;
-  text-align: center;
-  margin-bottom: 2px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.tt-mp3-song-meta {
-  font-family: 'Courier New', monospace;
-  font-size: 10px;
-  color: rgba(255,255,255,0.45);
-  text-align: center;
-  margin-bottom: 8px;
-}
-
-/* Equalizer bars */
-.tt-mp3-eq {
-  display: flex;
-  align-items: flex-end;
-  justify-content: center;
-  gap: 3px;
-  height: 20px;
-  margin-bottom: 6px;
-}
-.tt-eq-bar {
-  width: 4px;
-  height: 4px;
-  background: #33ff88;
-  border-radius: 1px;
-  animation: tt-eq-bar 0.6s ease-in-out infinite;
-}
-
-/* Lyrics */
-.tt-mp3-lyrics {
-  flex: 1;
-  overflow: hidden;
-  position: relative;
-}
-.tt-lyrics-scroll {
-  font-family: 'Courier New', monospace;
-  font-size: 12px;
-  color: rgba(255,255,255,0.85);
-  line-height: 1.5;
-  text-align: center;
-  white-space: pre-wrap;
-  word-break: break-word;
-  animation: tt-lyrics-scroll 12s linear infinite;
-}
-
-/* Progress bar */
-.tt-mp3-progress {
-  width: 100%;
-  height: 3px;
-  background: rgba(255,255,255,0.1);
-  border-radius: 2px;
-  margin-top: auto;
-  overflow: hidden;
-}
-.tt-mp3-progress-fill {
-  width: 0%;
-  height: 100%;
-  background: #3388ff;
-  border-radius: 2px;
-  transition: width 0.3s;
-}
-.tt-progress-playing {
-  animation: tt-progress-move 30s linear infinite;
-}
-
-/* No song */
-.tt-mp3-no-song {
-  font-family: 'Courier New', monospace;
-  font-size: 11px;
-  color: rgba(255,255,255,0.3);
-  text-align: center;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  height: 100%;
-}
-
-/* Click wheel */
-.tt-mp3-wheel {
-  width: 80px;
-  height: 80px;
-  margin: 12px auto 8px;
-  border-radius: 50%;
-  background: linear-gradient(180deg, #eaeaea 0%, #ddd 100%);
-  border: 2px solid #ccc;
-  box-shadow:
-    0 1px 4px rgba(0,0,0,0.15),
-    inset 0 1px 0 rgba(255,255,255,0.6);
-  position: relative;
-}
-
-/* Wheel touch zones */
-.tt-wheel-zone {
-  position: absolute;
-  background: transparent;
-  border: none;
-  cursor: pointer;
-  padding: 0;
-  outline: none;
-}
-.tt-wheel-zone:active {
-  background: rgba(0,0,0,0.05);
-  border-radius: 50%;
-}
-.tt-wheel-top {
-  top: 0;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 28px;
-  height: 20px;
-}
-.tt-wheel-bottom {
-  bottom: 0;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 28px;
-  height: 20px;
-}
-.tt-wheel-left {
-  left: 0;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 20px;
-  height: 28px;
-}
-.tt-wheel-right {
-  right: 0;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 20px;
-  height: 28px;
-}
-
-/* Wheel center button */
-.tt-wheel-center {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  background: linear-gradient(180deg, #f5f5f5 0%, #e0e0e0 100%);
-  border: 1px solid #bbb;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.15);
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0;
-  outline: none;
-  transition: box-shadow 0.15s;
-}
-.tt-wheel-center:active {
-  box-shadow: inset 0 1px 3px rgba(0,0,0,0.2);
-}
-
-/* Earphone jack */
-.tt-mp3-jack {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: #555;
-  margin: 4px auto 8px;
-  box-shadow: inset 0 1px 2px rgba(0,0,0,0.5);
-}
-
-/* MP3 label */
-.tt-mp3-label {
-  position: absolute;
-  top: -28px;
-  left: 0;
-  right: 0;
-  text-align: center;
-  font-size: 12px;
-  color: #8a7a6a;
-  font-family: 'Noto Serif SC', serif;
-  letter-spacing: 2px;
-  white-space: nowrap;
-}
-
-/* White wired earphone */
-.tt-mp3-earphone {
-  position: absolute;
-  bottom: -78px;
-  left: 8px;
-  z-index: -1;
-  opacity: 0.7;
-  animation: tt-earphone-sway 4s ease-in-out infinite;
-  transform-origin: top center;
-}
-
 /* CRT warm-up glow animation */
 .tt-screen-warming {
   position: absolute;
@@ -1059,26 +697,6 @@ const CSS = `
     transparent 60%
   );
   animation: tt-warmup 0.8s ease-out forwards;
-}
-
-/* MP3 edit button */
-.tt-mp3-edit {
-  display: block;
-  width: calc(100% - 16px);
-  margin: 0 auto 8px;
-  font-size: 10px;
-  font-family: 'Noto Serif SC', serif;
-  color: rgba(0,0,0,0.3);
-  background: rgba(0,0,0,0.04);
-  border: 1px solid rgba(0,0,0,0.08);
-  border-radius: 4px;
-  padding: 2px 0;
-  cursor: pointer;
-  text-align: center;
-  transition: color 0.2s;
-}
-.tt-mp3-edit:hover {
-  color: rgba(0,0,0,0.6);
 }
 
 /* ============================================================
@@ -1184,11 +802,6 @@ const CSS = `
   100% { transform: translateY(100%); }
 }
 
-@keyframes tt-eq-bar {
-  0%, 100% { height: 4px; }
-  50%      { height: 16px; }
-}
-
 @keyframes tt-glow {
   0%, 100% { box-shadow: inset 0 0 30px rgba(0,0,0,0.8), inset 0 0 4px rgba(255,220,150,0.15); }
   50%      { box-shadow: inset 0 0 30px rgba(0,0,0,0.8), inset 0 0 8px rgba(255,220,150,0.25); }
@@ -1199,23 +812,9 @@ const CSS = `
   50%      { opacity: 0.3; }
 }
 
-@keyframes tt-lyrics-scroll {
-  0%   { transform: translateY(100%); }
-  100% { transform: translateY(-100%); }
-}
-
-@keyframes tt-progress-move {
-  0%   { width: 0%; }
-  100% { width: 100%; }
-}
-
 @keyframes tt-warmup {
   0% { opacity: 0; transform: scale(0.3); }
   100% { opacity: 1; transform: scale(1); }
 }
 
-@keyframes tt-earphone-sway {
-  0%, 100% { transform: rotate(0deg); }
-  50% { transform: rotate(2deg); }
-}
 `;

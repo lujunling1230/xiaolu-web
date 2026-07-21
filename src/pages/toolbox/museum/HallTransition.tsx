@@ -467,8 +467,8 @@ const HallTransition: React.FC<HallTransitionProps> = ({
   if (!visible) return null;
 
   /* ---- Shared door SVG dimensions ---- */
-  const doorW = 200;
-  const doorH = 300;
+  const doorW = 360;
+  const doorH = 520;
   const doorStrokeLen = doorW * 2 + doorH * 3;
   const doorTotalLen = doorStrokeLen;
 
@@ -499,52 +499,123 @@ const HallTransition: React.FC<HallTransitionProps> = ({
           }`}
         >
           <svg
-            width={doorW + 4}
-            height={doorH + 4}
-            viewBox={`0 0 ${doorW + 4} ${doorH + 4}`}
+            width={doorW + 40}
+            height={doorH + 40}
+            viewBox={`0 0 ${doorW + 40} ${doorH + 40}`}
             className="ht-door-svg"
           >
-            {/* left edge */}
-            <line
-              x1="2"
-              y1="2"
-              x2="2"
-              y2={doorH + 2}
-              stroke="rgba(176,141,87,0.5)"
-              strokeWidth={2}
-              className="ht-door-line"
-              style={{
-                strokeDasharray: doorH,
-                strokeDashoffset: doorH,
-              }}
+            {/* Outer frame - thick border */}
+            <rect
+              x="16"
+              y="16"
+              width={doorW + 8}
+              height={doorH + 8}
+              rx="4"
+              fill="none"
+              stroke="rgba(176,141,87,0.25)"
+              strokeWidth="4"
+              className="ht-door-outer"
             />
-            {/* right edge */}
-            <line
-              x1={doorW + 2}
-              y1="2"
-              x2={doorW + 2}
-              y2={doorH + 2}
-              stroke="rgba(176,141,87,0.5)"
-              strokeWidth={2}
-              className="ht-door-line"
-              style={{
-                strokeDasharray: doorH,
-                strokeDashoffset: doorH,
-              }}
+            {/* Inner frame */}
+            <rect
+              x="22"
+              y="22"
+              width={doorW - 4}
+              height={doorH - 4}
+              rx="2"
+              fill="none"
+              stroke="rgba(176,141,87,0.4)"
+              strokeWidth="2"
+              className="ht-door-inner"
             />
-            {/* top frame */}
+            {/* Vertical dividing line (door seam) */}
             <line
-              x1="2"
-              y1="2"
-              x2={doorW + 2}
-              y2="2"
+              x1={doorW / 2 + 20}
+              y1="22"
+              x2={doorW / 2 + 20}
+              y2={doorH + 18}
+              stroke="rgba(176,141,87,0.2)"
+              strokeWidth="1"
+              className="ht-door-seam"
+            />
+            {/* Left door panel lines */}
+            <line
+              x1="32"
+              y1="60"
+              x2={doorW / 2 + 10}
+              y2="60"
+              stroke="rgba(176,141,87,0.15)"
+              strokeWidth="1"
+              className="ht-door-panel"
+            />
+            <line
+              x1="32"
+              y1={doorH - 40}
+              x2={doorW / 2 + 10}
+              y2={doorH - 40}
+              stroke="rgba(176,141,87,0.15)"
+              strokeWidth="1"
+              className="ht-door-panel"
+            />
+            {/* Right door panel lines */}
+            <line
+              x1={doorW / 2 + 30}
+              y1="60"
+              x2={doorW + 8}
+              y2="60"
+              stroke="rgba(176,141,87,0.15)"
+              strokeWidth="1"
+              className="ht-door-panel"
+            />
+            <line
+              x1={doorW / 2 + 30}
+              y1={doorH - 40}
+              x2={doorW + 8}
+              y2={doorH - 40}
+              stroke="rgba(176,141,87,0.15)"
+              strokeWidth="1"
+              className="ht-door-panel"
+            />
+            {/* Door knob */}
+            <circle
+              cx={doorW / 2 + 28}
+              cy={doorH / 2 + 10}
+              r="6"
+              fill="none"
+              stroke="rgba(176,141,87,0.35)"
+              strokeWidth="2"
+              className="ht-door-knob"
+            />
+            {/* Main animated frame lines - drawn sequentially */}
+            <line
+              x1="20"
+              y1="20"
+              x2="20"
+              y2={doorH + 20}
               stroke="rgba(176,141,87,0.5)"
-              strokeWidth={2}
+              strokeWidth="3"
               className="ht-door-line"
-              style={{
-                strokeDasharray: doorW,
-                strokeDashoffset: doorW,
-              }}
+              style={{ strokeDasharray: doorH, strokeDashoffset: doorH }}
+            />
+            <line
+              x1={doorW + 20}
+              y1="20"
+              x2={doorW + 20}
+              y2={doorH + 20}
+              stroke="rgba(176,141,87,0.5)"
+              strokeWidth="3"
+              className="ht-door-line"
+              style={{ strokeDasharray: doorH, strokeDashoffset: doorH }}
+            />
+            <line
+              x1="20"
+              y1="20"
+              x2={doorW + 20}
+              y2="20"
+              stroke="rgba(176,141,87,0.5)"
+              strokeWidth="3"
+              className="ht-door-line"
+              style={{ strokeDasharray: doorW, strokeDashoffset: doorW }}
             />
           </svg>
         </div>
@@ -839,7 +910,34 @@ const HT_CSS = `
   overflow: visible;
 }
 .ht-door-line {
-  animation: ht-door-draw 210ms ease-out forwards;
+  animation: ht-door-draw 280ms ease-out forwards;
+}
+.ht-door-line:nth-child(7) { animation-delay: 0ms; }
+.ht-door-line:nth-child(8) { animation-delay: 90ms; }
+.ht-door-line:nth-child(9) { animation-delay: 180ms; }
+.ht-door-outer {
+  animation: ht-door-fade 400ms ease-out forwards;
+  opacity: 0;
+}
+.ht-door-inner {
+  animation: ht-door-fade 400ms ease-out 100ms forwards;
+  opacity: 0;
+}
+.ht-door-seam {
+  animation: ht-door-fade 300ms ease-out 200ms forwards;
+  opacity: 0;
+}
+.ht-door-panel {
+  animation: ht-door-fade 300ms ease-out 250ms forwards;
+  opacity: 0;
+}
+.ht-door-knob {
+  animation: ht-door-fade 300ms ease-out 300ms forwards;
+  opacity: 0;
+}
+@keyframes ht-door-fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 @keyframes ht-door-draw {
   to {

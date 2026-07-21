@@ -1762,18 +1762,19 @@ const MuseumPage: React.FC = () => {
             exit={{ opacity: 0, y: 20 }}
             transition={{ duration: 1.2, ease: "easeOut" }}
             style={{
-              position: "fixed", bottom: 100, right: 28, zIndex: 2000,
-              maxWidth: 280, padding: "18px 20px",
-              background: "rgba(250,248,243,0.95)", border: "1px solid rgba(176,141,87,0.4)",
-              borderRadius: 12, boxShadow: "0 8px 32px rgba(74,58,46,0.2)",
+              position: "fixed",
+              bottom: 100,
+              right: 28,
+              maxWidth: 320,
+              padding: "16px 20px",
+              zIndex: 500,
             }}
             onClick={() => setCuratorNote(null)}
           >
-            <div style={{ fontSize: 11, color: "#8a7d72", fontFamily: "'PingFang SC', sans-serif", marginBottom: 8, letterSpacing: "1px" }}>馆长侧写</div>
             {curatorNote.loading ? (
-              <div style={{ fontSize: 13, color: "#b08d57", fontFamily: "'Noto Serif SC', serif" }}>正在撰写...</div>
+              <div style={{ fontSize: 14, color: "#b08d57", fontFamily: "'Noto Serif SC', serif", fontStyle: "italic" }}>正在撰写...</div>
             ) : (
-              <div style={{ fontSize: 14, color: "#4a3b31", fontFamily: "'Noto Serif SC', Georgia, serif", lineHeight: 2.0, fontStyle: "italic", textIndent: "2em" }}>{curatorNote.text}</div>
+              <div style={{ fontSize: 15, color: "#e8dcc8", fontFamily: "'Noto Serif SC', Georgia, serif", lineHeight: 2.0, fontStyle: "italic", textIndent: "2em", textShadow: "0 1px 8px rgba(0,0,0,0.5)" }}>{curatorNote.text}</div>
             )}
           </motion.div>
         )}

@@ -47,16 +47,7 @@ export default function CitiesPage() {
         </div>
 
         {/* ===== 添加想去城市的两种途径 ===== */}
-        <section className="rg-card-section" style={{ paddingTop: 16 }}>
-          <div
-            className="rg-card-section-head"
-            style={{ justifyContent: "space-between" }}
-          >
-            <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-              <span className="rg-stamp">✨</span>
-              <h2 className="rg-card-section-title">点亮</h2>
-            </div>
-          </div>
+        <section className="rg-card-section" style={{ marginTop: -16 }}>
           <div style={{
             display: "grid",
             gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",

@@ -4,7 +4,7 @@ import { Link } from "react-router-dom";
 
 /* ============================================================
  * ContactPage 联系方式独立页面
- * 参考 ONEAPPLE 风格：左侧装饰 + 右侧双卡片
+ * 橘色/橙色/白色暖色调
  * ============================================================ */
 
 const ContactPage: React.FC = () => {
@@ -64,16 +64,16 @@ const ContactPage: React.FC = () => {
         <div className="cp-nav-inner">
           <Link to="/" className="cp-nav-logo">
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M8 6C6 4 4 4 3 5C2 6 3 8 5 9" stroke="#3A4F3A" strokeWidth="1.4" fill="none" strokeLinecap="round" strokeLinejoin="round" />
-              <path d="M16 6C18 4 20 4 21 5C22 6 21 8 19 9" stroke="#3A4F3A" strokeWidth="1.4" fill="none" strokeLinecap="round" strokeLinejoin="round" />
-              <ellipse cx="12" cy="12" rx="5" ry="6" fill="none" stroke="#3A4F3A" strokeWidth="1.2" />
-              <ellipse cx="8" cy="9" rx="2" ry="3" fill="none" stroke="#3A4F3A" strokeWidth="1" transform="rotate(-20 8 9)" />
-              <ellipse cx="16" cy="9" rx="2" ry="3" fill="none" stroke="#3A4F3A" strokeWidth="1" transform="rotate(20 16 9)" />
-              <circle cx="10" cy="11" r="1" fill="#3A4F3A" />
-              <circle cx="14" cy="11" r="1" fill="#3A4F3A" />
-              <circle cx="12" cy="15" r="1.2" fill="#3A4F3A" opacity="0.6" />
+              <path d="M8 6C6 4 4 4 3 5C2 6 3 8 5 9" stroke="#C06A2E" strokeWidth="1.4" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+              <path d="M16 6C18 4 20 4 21 5C22 6 21 8 19 9" stroke="#C06A2E" strokeWidth="1.4" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+              <ellipse cx="12" cy="12" rx="5" ry="6" fill="rgba(192,106,46,0.08)" stroke="#C06A2E" strokeWidth="1.2" />
+              <ellipse cx="8" cy="9" rx="2" ry="3" fill="none" stroke="#C06A2E" strokeWidth="1" transform="rotate(-20 8 9)" />
+              <ellipse cx="16" cy="9" rx="2" ry="3" fill="none" stroke="#C06A2E" strokeWidth="1" transform="rotate(20 16 9)" />
+              <circle cx="10" cy="11" r="1" fill="#C06A2E" />
+              <circle cx="14" cy="11" r="1" fill="#C06A2E" />
+              <circle cx="12" cy="15" r="1.2" fill="#C06A2E" opacity="0.6" />
             </svg>
-            <span style={{ fontFamily: '"Noto Sans SC", sans-serif', fontSize: "1.2rem", fontWeight: 600, color: "#3A4F3A", letterSpacing: "0.06em" }}>luro</span>
+            <span style={{ fontFamily: '"Noto Sans SC", sans-serif', fontSize: "1.2rem", fontWeight: 600, color: "#C06A2E", letterSpacing: "0.06em" }}>luro</span>
           </Link>
           <Link to="/" className="cp-nav-back">← 返回首页</Link>
         </div>
@@ -93,9 +93,9 @@ const ContactPage: React.FC = () => {
             <h2 className="cp-call">CALL ME</h2>
             <div className="cp-deco">
               <svg width="80" height="80" viewBox="0 0 80 80" fill="none">
-                <path d="M40 10C24 14 14 26 14 42C14 58 26 70 40 70C54 70 66 58 66 42C66 26 56 14 40 10Z" stroke="#7a9a82" strokeWidth="2" fill="rgba(122,154,130,0.12)" strokeLinecap="round" strokeLinejoin="round" />
-                <line x1="40" y1="20" x2="40" y2="62" stroke="#7a9a82" strokeWidth="1.6" strokeLinecap="round" />
-                <path d="M40 30L30 35M40 30L50 35M40 42L28 48M40 42L52 48M40 54L32 58M40 54L48 58" stroke="#7a9a82" strokeWidth="1.2" strokeLinecap="round" opacity="0.5" />
+                <path d="M40 10C24 14 14 26 14 42C14 58 26 70 40 70C54 70 66 58 66 42C66 26 56 14 40 10Z" stroke="#E8853A" strokeWidth="2" fill="rgba(232,133,58,0.1)" strokeLinecap="round" strokeLinejoin="round" />
+                <line x1="40" y1="20" x2="40" y2="62" stroke="#E8853A" strokeWidth="1.6" strokeLinecap="round" />
+                <path d="M40 30L30 35M40 30L50 35M40 42L28 48M40 42L52 48M40 54L32 58M40 54L48 58" stroke="#E8853A" strokeWidth="1.2" strokeLinecap="round" opacity="0.5" />
               </svg>
             </div>
           </motion.div>
@@ -167,10 +167,10 @@ const ContactPage: React.FC = () => {
       <style>{`
         .cp-root {
           min-height: 100vh;
-          background: #f7f5f2;
+          background: #FFFAF6;
           background-image:
-            radial-gradient(130% 70% at 50% -8%, rgba(255, 255, 255, 0.7) 0%, rgba(255, 255, 255, 0) 55%),
-            url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+            radial-gradient(130% 70% at 50% -8%, rgba(255, 240, 220, 0.8) 0%, rgba(255, 250, 246, 0) 55%),
+            url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
           font-family: "Noto Sans SC", -apple-system, BlinkMacSystemFont, sans-serif;
         }
 
@@ -181,10 +181,10 @@ const ContactPage: React.FC = () => {
           left: 0;
           right: 0;
           z-index: 100;
-          background: rgba(255, 255, 255, 0.82);
-          backdrop-filter: blur(10px);
-          -webkit-backdrop-filter: blur(10px);
-          border-bottom: 1px solid rgba(255, 255, 255, 0.3);
+          background: rgba(255, 255, 255, 0.85);
+          backdrop-filter: blur(12px);
+          -webkit-backdrop-filter: blur(12px);
+          border-bottom: 1px solid rgba(232, 160, 100, 0.15);
         }
         .cp-nav-inner {
           max-width: 1100px;
@@ -203,13 +203,13 @@ const ContactPage: React.FC = () => {
         }
         .cp-nav-back {
           font-size: 14px;
-          color: #5A6B5C;
+          color: #A08060;
           text-decoration: none;
           letter-spacing: 0.04em;
           transition: color 0.25s ease;
         }
         .cp-nav-back:hover {
-          color: #3A4F3A;
+          color: #C06A2E;
         }
 
         /* 主内容 */
@@ -242,7 +242,7 @@ const ContactPage: React.FC = () => {
           font-family: "Noto Serif SC", Georgia, serif;
           font-size: clamp(48px, 7vw, 72px);
           font-weight: 300;
-          color: #4a4038;
+          color: #4a3a2e;
           margin: 0;
           line-height: 1;
         }
@@ -250,13 +250,13 @@ const ContactPage: React.FC = () => {
           font-family: "Noto Serif SC", Georgia, serif;
           font-size: clamp(26px, 3.5vw, 38px);
           font-weight: 600;
-          color: #5d8a6a;
+          color: #E8853A;
           margin: 10px 0 32px;
           line-height: 1;
           letter-spacing: 0.1em;
         }
         .cp-deco {
-          opacity: 0.5;
+          opacity: 0.6;
         }
 
         /* 右侧卡片 */
@@ -268,19 +268,19 @@ const ContactPage: React.FC = () => {
           max-width: 480px;
         }
         .cp-card {
-          background: rgba(255, 252, 245, 0.85);
+          background: rgba(255, 255, 255, 0.82);
           backdrop-filter: blur(8px);
           -webkit-backdrop-filter: blur(8px);
           border-radius: 24px;
           padding: 32px;
-          border: 1px solid rgba(232, 226, 216, 0.6);
-          box-shadow: 0 8px 32px -12px rgba(80, 76, 66, 0.12);
+          border: 1px solid rgba(232, 180, 130, 0.25);
+          box-shadow: 0 8px 32px -12px rgba(192, 120, 60, 0.1);
         }
         .cp-card-title {
           font-family: "Noto Serif SC", Georgia, serif;
           font-size: 20px;
           font-weight: 600;
-          color: #4a4038;
+          color: #4a3a2e;
           margin: 0 0 20px;
           letter-spacing: 0.06em;
         }
@@ -296,15 +296,15 @@ const ContactPage: React.FC = () => {
           align-items: center;
           gap: 14px;
           padding: 12px 16px;
-          background: rgba(255, 255, 255, 0.6);
+          background: rgba(255, 248, 240, 0.6);
           border-radius: 14px;
-          border: 1px solid rgba(200, 210, 190, 0.3);
+          border: 1px solid rgba(232, 180, 130, 0.2);
           transition: all 0.25s ease;
         }
         .cp-item:hover {
           background: rgba(255, 255, 255, 0.95);
           transform: translateX(4px);
-          border-color: rgba(122, 154, 130, 0.4);
+          border-color: rgba(232, 133, 58, 0.35);
         }
         .cp-item-icon {
           display: flex;
@@ -313,8 +313,8 @@ const ContactPage: React.FC = () => {
           width: 36px;
           height: 36px;
           border-radius: 50%;
-          background: rgba(122, 154, 130, 0.1);
-          color: #5d8a6a;
+          background: rgba(232, 133, 58, 0.1);
+          color: #E8853A;
           flex-shrink: 0;
         }
         .cp-item-body {
@@ -324,18 +324,18 @@ const ContactPage: React.FC = () => {
         }
         .cp-item-label {
           font-size: 12px;
-          color: #a8a39b;
+          color: #b8a090;
           letter-spacing: 0.04em;
         }
         .cp-item-value {
           font-size: 14px;
-          color: #4a4038;
+          color: #4a3a2e;
           text-decoration: none;
           letter-spacing: 0.02em;
           transition: color 0.2s ease;
         }
         a.cp-item-value:hover {
-          color: #5d8a6a;
+          color: #E8853A;
         }
 
         /* 留言板 */
@@ -343,12 +343,12 @@ const ContactPage: React.FC = () => {
         .cp-input {
           width: 100%;
           padding: 14px 16px;
-          border: 1px solid rgba(200, 210, 190, 0.5);
+          border: 1px solid rgba(232, 180, 130, 0.35);
           border-radius: 16px;
           background: rgba(255, 255, 255, 0.55);
           font-family: inherit;
           font-size: 14px;
-          color: #4a4038;
+          color: #4a3a2e;
           outline: none;
           transition: all 0.25s ease;
           resize: none;
@@ -363,20 +363,20 @@ const ContactPage: React.FC = () => {
         }
         .cp-textarea::placeholder,
         .cp-input::placeholder {
-          color: #a8a39b;
+          color: #b8a090;
           font-size: 13px;
         }
         .cp-textarea:focus,
         .cp-input:focus {
-          border-color: rgba(122, 154, 130, 0.5);
+          border-color: rgba(232, 133, 58, 0.5);
           background: rgba(255, 255, 255, 0.9);
-          box-shadow: 0 0 0 3px rgba(122, 154, 130, 0.08);
+          box-shadow: 0 0 0 3px rgba(232, 133, 58, 0.08);
         }
         .cp-submit {
           padding: 11px 28px;
           border: none;
           border-radius: 999px;
-          background: #4a7a5a;
+          background: #E8853A;
           color: #fff;
           font-size: 14px;
           font-weight: 500;
@@ -385,14 +385,14 @@ const ContactPage: React.FC = () => {
           letter-spacing: 0.04em;
         }
         .cp-submit:hover {
-          background: #3a6a4a;
+          background: #D4723A;
           transform: scale(1.05);
-          box-shadow: 0 8px 24px -4px rgba(74, 122, 90, 0.45);
+          box-shadow: 0 8px 24px -4px rgba(232, 133, 58, 0.45);
         }
         .cp-success {
           padding: 40px 16px;
           text-align: center;
-          color: #5d8a6a;
+          color: #E8853A;
           font-size: 15px;
           letter-spacing: 0.04em;
         }

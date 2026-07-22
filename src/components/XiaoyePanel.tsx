@@ -85,7 +85,7 @@ const XiaoyePanel: React.FC<{
         const ctrl = new AbortController();
         abortRef.current = ctrl;
 
-        const res = await fetch("/api/ask", {
+        const res = await fetch("/api/xiaoye", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ question: text }),

@@ -27,6 +27,7 @@ import BookstoreIndex from "./pages/BookstoreIndex";
 import ZhongjiPage from "./pages/ZhongjiPage";
 import ZhiyongPage from "./pages/ZhiyongPage";
 import XianqingPage from "./pages/XianqingPage";
+import ContactPage from "./pages/ContactPage";
 import "./index.css";
 
 /** 路由切换时回到页面顶部，避免新页面继承上一页的滚动位置 */
@@ -61,6 +62,8 @@ createRoot(document.getElementById("root")!).render(
         <Route path="/healing" element={<HealingRoomPage />} />
         {/* 米奇妙妙屋：Launchpad 发射台 */}
         <Route path="/mickey" element={<MickeyLaunchpad />} />
+        {/* 联系我 */}
+        <Route path="/contact" element={<ContactPage />} />
 
         {/* 第七卷胶片：独立全屏页面 */}
         <Route path="/film" element={<LifeFilmPage />} />

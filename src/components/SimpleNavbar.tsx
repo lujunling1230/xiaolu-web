@@ -3,7 +3,7 @@ import { Link } from "react-router-dom";
 
 /* ============================================================
  * SimpleNavbar 横向导航栏（全宽版）
- * 首页 / 关于我 / 作品集 / 作品说明书
+ * 首页 / 关于我 / 作品集 / 作品说明书 / 联系我
  * ============================================================ */
 
 type Section = "home" | "about" | "projects" | "mickey";
@@ -22,7 +22,7 @@ const NAV_ITEMS = [
 ] as const;
 
 /* -----------------------------------------------------------
- * BrandLogo
+ * BrandLogo — 小鹿 + luro
  * ----------------------------------------------------------- */
 const BrandLogo: React.FC<{ onClick: () => void }> = ({ onClick }) => (
   <a
@@ -31,12 +31,23 @@ const BrandLogo: React.FC<{ onClick: () => void }> = ({ onClick }) => (
     className="sn-logo"
     aria-label="返回首页"
   >
-    <svg width="22" height="22" viewBox="0 0 22 22" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <path d="M11 2C7 3.5 5 7 5 11C5 15 7 19 11 19C15 19 17 15 17 11C17 7 15 3.5 11 2Z" stroke="#5d8a6a" strokeWidth="1.3" fill="rgba(93,138,106,0.08)" strokeLinecap="round" strokeLinejoin="round" />
-      <line x1="11" y1="5" x2="11" y2="18" stroke="#5d8a6a" strokeWidth="1.1" strokeLinecap="round" />
+    {/* 小鹿 SVG */}
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+      {/* 鹿角 */}
+      <path d="M8 6C6 4 4 4 3 5C2 6 3 8 5 9" stroke="#5d8a6a" strokeWidth="1.4" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+      <path d="M16 6C18 4 20 4 21 5C22 6 21 8 19 9" stroke="#5d8a6a" strokeWidth="1.4" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+      {/* 鹿头 */}
+      <ellipse cx="12" cy="12" rx="5" ry="6" fill="rgba(93,138,106,0.1)" stroke="#5d8a6a" strokeWidth="1.2" />
+      {/* 耳朵 */}
+      <ellipse cx="8" cy="9" rx="2" ry="3" fill="rgba(93,138,106,0.08)" stroke="#5d8a6a" strokeWidth="1" transform="rotate(-20 8 9)" />
+      <ellipse cx="16" cy="9" rx="2" ry="3" fill="rgba(93,138,106,0.08)" stroke="#5d8a6a" strokeWidth="1" transform="rotate(20 16 9)" />
+      {/* 眼睛 */}
+      <circle cx="10" cy="11" r="1" fill="#5d8a6a" />
+      <circle cx="14" cy="11" r="1" fill="#5d8a6a" />
+      {/* 鼻子 */}
+      <circle cx="12" cy="15" r="1.2" fill="#5d8a6a" opacity="0.6" />
     </svg>
-    <span style={{ fontFamily: '"Noto Serif SC", serif', fontSize: "1.15rem", fontWeight: 600, color: "#3A4F3A", letterSpacing: "0.04em" }}>路</span>
-    <span style={{ fontFamily: '"Noto Serif SC", serif', fontSize: "1.15rem", fontWeight: 600, color: "#5d8a6a", letterSpacing: "0.04em" }}>俊玲</span>
+    <span className="sn-brand">luro</span>
   </a>
 );
 
@@ -54,14 +65,13 @@ const SimpleNavbar: React.FC<SimpleNavbarProps> = ({
     <>
       <nav className="sn-bar">
         <div className="sn-bar-inner">
-          {/* 左侧 Logo + 白噪音 */}
+          {/* 左侧 Logo */}
           <div className="sn-bar-left">
             <BrandLogo onClick={() => onNavigate("home")} />
-            <AmbientSound variant="navbar" />
           </div>
 
-          {/* 右侧导航项 */}
-          <div className="sn-bar-right">
+          {/* 中间导航项 */}
+          <div className="sn-bar-center">
             {fullModeItems.map((item) => (
               <NavItem
                 key={item.key}
@@ -73,6 +83,14 @@ const SimpleNavbar: React.FC<SimpleNavbarProps> = ({
                 }}
               />
             ))}
+          </div>
+
+          {/* 右侧：白噪音 + 联系我 */}
+          <div className="sn-bar-right">
+            <AmbientSound variant="navbar" />
+            <Link to="/contact" className="sn-link sn-link--contact">
+              联系我
+            </Link>
           </div>
         </div>
       </nav>
@@ -102,35 +120,55 @@ const SimpleNavbar: React.FC<SimpleNavbarProps> = ({
           padding: 0 32px;
         }
 
-        /* ---------- 左侧 ---------- */
+        /* ---------- 左侧 Logo ---------- */
         .sn-bar-left {
           display: flex;
           align-items: center;
-          gap: 14px;
           flex-shrink: 0;
+          min-width: 80px;
         }
         .sn-logo {
           display: flex;
           align-items: center;
-          gap: 6px;
+          gap: 8px;
           text-decoration: none;
           transition: opacity 0.25s ease;
         }
         .sn-logo:hover {
           opacity: 0.8;
         }
+        .sn-brand {
+          font-family: "Noto Sans SC", -apple-system, BlinkMacSystemFont, sans-serif;
+          font-size: 1.1rem;
+          font-weight: 600;
+          color: #3A4F3A;
+          letter-spacing: 0.06em;
+          line-height: 1;
+        }
 
-        /* ---------- 右侧导航项 ---------- */
+        /* ---------- 中间导航 ---------- */
+        .sn-bar-center {
+          display: flex;
+          align-items: center;
+          gap: 2px;
+          flex: 1;
+          justify-content: center;
+        }
+
+        /* ---------- 右侧 ---------- */
         .sn-bar-right {
           display: flex;
           align-items: center;
-          gap: 4px;
+          gap: 10px;
+          flex-shrink: 0;
+          min-width: 80px;
+          justify-content: flex-end;
         }
 
         /* ---------- 单条导航 ---------- */
         .sn-link {
           position: relative;
-          padding: 8px 18px;
+          padding: 8px 16px;
           font-size: 14px;
           font-weight: 400;
           color: #6a7066;
@@ -153,6 +191,17 @@ const SimpleNavbar: React.FC<SimpleNavbarProps> = ({
           background: rgba(122, 154, 130, 0.12);
           box-shadow: 0 1px 4px rgba(93, 138, 106, 0.08);
         }
+        .sn-link--contact {
+          padding: 7px 16px;
+          border: 1px solid rgba(122, 154, 130, 0.25);
+          color: #5d8a6a;
+          font-size: 13px;
+        }
+        .sn-link--contact:hover {
+          background: rgba(93, 138, 106, 0.1);
+          border-color: rgba(93, 138, 106, 0.4);
+          color: #3A4F3A;
+        }
 
         /* ---------- 响应式 ---------- */
         @media (max-width: 640px) {
@@ -160,9 +209,22 @@ const SimpleNavbar: React.FC<SimpleNavbarProps> = ({
             height: 52px;
             padding: 0 16px;
           }
+          .sn-brand {
+            font-size: 1rem;
+          }
           .sn-link {
             padding: 6px 10px;
             font-size: 12px;
+          }
+          .sn-link--contact {
+            padding: 5px 10px;
+            font-size: 11px;
+          }
+          .sn-bar-center {
+            gap: 0;
+          }
+          .sn-bar-right {
+            gap: 6px;
           }
         }
       `}</style>

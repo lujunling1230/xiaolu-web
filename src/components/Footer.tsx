@@ -174,13 +174,6 @@ const Footer: React.FC<FooterProps> = ({ isFullMode = true }) => {
             <button className="po-footer-email" onClick={copyEmail}>
               邮箱：lujunling@163.com
             </button>
-            <a
-              className="po-footer-resume"
-              href="/resume.pdf"
-              download
-            >
-              下载简历 PDF
-            </a>
           </div>
 
           {/* ====== 右栏：彩蛋 + 回顶 ====== */}
@@ -345,25 +338,7 @@ const Footer: React.FC<FooterProps> = ({ isFullMode = true }) => {
           background: rgba(141, 154, 139, 0.06);
         }
 
-        /* ===== 简历下载 ===== */
-        .po-footer-resume {
-          display: inline-block;
-          padding: 6px 16px;
-          border-radius: 999px;
-          font-size: 13px;
-          color: #3a4a2c;
-          text-decoration: none;
-          letter-spacing: 0.02em;
-          line-height: 1.6;
-          transition: all 0.25s ease;
-          border: 1px solid rgba(58, 74, 44, 0.2);
-        }
-        .po-footer-resume:hover {
-          color: #5d8a6a;
-          border-color: rgba(93, 138, 106, 0.4);
-          background: rgba(141, 154, 139, 0.06);
-          text-decoration: none;
-        }
+
 
         /* ===== 暗号彩蛋 ===== */
         .po-footer-egg {

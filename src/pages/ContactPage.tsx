@@ -36,14 +36,13 @@ const ContactPage: React.FC = () => {
     {
       icon: (
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
-          <circle cx="9" cy="7" r="4" />
-          <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
-          <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+          <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
+          <polyline points="22,6 12,13 2,6" />
         </svg>
       ),
-      label: "QQ",
-      value: "2478****554",
+      label: "QQ邮箱",
+      value: "2478****554@qq.com",
+      href: "mailto:2478554554@qq.com",
     },
     {
       icon: (
@@ -52,18 +51,9 @@ const ContactPage: React.FC = () => {
           <polyline points="22,6 12,13 2,6" />
         </svg>
       ),
-      label: "邮箱",
+      label: "网易邮箱",
       value: "lujunling@163.com",
       href: "mailto:lujunling@163.com",
-    },
-    {
-      icon: (
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" />
-        </svg>
-      ),
-      label: "微信",
-      value: "lujunling_wx",
     },
   ];
 
@@ -74,11 +64,16 @@ const ContactPage: React.FC = () => {
         <div className="cp-nav-inner">
           <Link to="/" className="cp-nav-logo">
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M12 2C7 4 4 8 4 13C4 18 8 22 12 22C16 22 20 18 20 13C20 8 17 4 12 2Z" stroke="#3A4F3A" strokeWidth="1.5" fill="none" strokeLinecap="round" strokeLinejoin="round" />
-              <line x1="12" y1="6" x2="12" y2="20" stroke="#3A4F3A" strokeWidth="1.2" strokeLinecap="round" />
+              <path d="M8 6C6 4 4 4 3 5C2 6 3 8 5 9" stroke="#3A4F3A" strokeWidth="1.4" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+              <path d="M16 6C18 4 20 4 21 5C22 6 21 8 19 9" stroke="#3A4F3A" strokeWidth="1.4" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+              <ellipse cx="12" cy="12" rx="5" ry="6" fill="none" stroke="#3A4F3A" strokeWidth="1.2" />
+              <ellipse cx="8" cy="9" rx="2" ry="3" fill="none" stroke="#3A4F3A" strokeWidth="1" transform="rotate(-20 8 9)" />
+              <ellipse cx="16" cy="9" rx="2" ry="3" fill="none" stroke="#3A4F3A" strokeWidth="1" transform="rotate(20 16 9)" />
+              <circle cx="10" cy="11" r="1" fill="#3A4F3A" />
+              <circle cx="14" cy="11" r="1" fill="#3A4F3A" />
+              <circle cx="12" cy="15" r="1.2" fill="#3A4F3A" opacity="0.6" />
             </svg>
-            <span style={{ fontFamily: '"Noto Serif SC", serif', fontSize: "1.2rem", fontWeight: 600, color: "#3A4F3A" }}>路</span>
-            <span style={{ fontFamily: '"Noto Serif SC", serif', fontSize: "1.2rem", fontWeight: 600, color: "#5d8a6a" }}>俊玲</span>
+            <span style={{ fontFamily: '"Noto Sans SC", sans-serif', fontSize: "1.2rem", fontWeight: 600, color: "#3A4F3A", letterSpacing: "0.06em" }}>luro</span>
           </Link>
           <Link to="/" className="cp-nav-back">← 返回首页</Link>
         </div>

@@ -2358,17 +2358,17 @@ const RechargePage: React.FC = () => {
           letter-spacing: 0.04em; font-weight: 500;
         }
         .me-user-stats {
-          display: flex; gap: 32px; margin-top: 8px;
+          display: flex; gap: 20px; margin-top: 6px;
         }
         .me-user-stat {
-          display: flex; flex-direction: column; align-items: center; gap: 2px;
+          display: flex; flex-direction: column; align-items: center; gap: 1px;
         }
         .me-user-stat-value {
           font-family: "Noto Serif SC", Georgia, serif;
-          font-size: 20px; font-weight: 700; color: #FFFFFF;
+          font-size: 16px; font-weight: 700; color: #FFFFFF;
         }
         .me-user-stat-label {
-          font-size: 10px; color: rgba(255,255,255,0.6); letter-spacing: 0.04em;
+          font-size: 9px; color: rgba(255,255,255,0.6); letter-spacing: 0.04em;
         }
 
         .me-section { margin-bottom: 24px; }
@@ -2612,8 +2612,8 @@ const RechargePage: React.FC = () => {
           .me-user-card { padding: 24px 16px 20px; }
           .me-user-avatar { font-size: 40px; }
           .me-user-name { font-size: 16px; }
-          .me-user-stats { gap: 24px; }
-          .me-user-stat-value { font-size: 18px; }
+          .me-user-stats { gap: 16px; }
+          .me-user-stat-value { font-size: 14px; }
         }
       `}</style>
     </div>

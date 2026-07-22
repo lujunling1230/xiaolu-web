@@ -126,12 +126,10 @@ const AppContent: React.FC = () => {
               <h1 className="po-name">路俊玲</h1>
               <p className="po-tagline">AI 产品经理 | 软件工程背景 | Digital Atelier</p>
               <p className="po-bio">
-                好的产品，是逻辑与温度的和解。我用代码构建骨架，
-                用叙事填充血肉——让每一个 AI 原型既有清晰的工程路径，
-                也能在用户手中生出柔软的触感。
-              </p>
-              <p className="po-guide-text">
-                翻阅我的作品，或召唤小叶聊聊
+                欢迎来到我的作品集。我是路俊玲，一位从软件工程转型 AI 产品经理的探索者。
+                在这里，你会看到我用代码与叙事搭建的作品——从游戏化任务系统到 AI 旅行助手，
+                每一个原型都在寻找技术逻辑与人文温度的平衡点。
+                翻阅我的作品，或召唤小叶聊聊。
               </p>
               <div className="po-hero-btns">
                 <button onClick={() => handleNavigate("about")} className="po-btn po-btn-primary">
@@ -147,7 +145,7 @@ const AppContent: React.FC = () => {
                       "你好呀～我是小叶。刚才在首页听到你唤我，很高兴遇见你。你想先聊聊俊玲的「漫游指南」，还是她的「通关清单」呢？"
                     );
                   }}
-                  className="po-btn po-btn-xiaoye"
+                  className="po-btn po-btn-ghost"
                 >
                   🍃 召唤小叶
                 </button>
@@ -326,17 +324,9 @@ const AppContent: React.FC = () => {
         }
         .po-bio {
           font-size: 14px; line-height: 1.8; color: rgba(255,255,255,0.72);
-          margin: 0 0 20px; max-width: 560px;
+          margin: 0 0 36px; max-width: 560px;
           text-shadow: 0 2px 12px rgba(0,0,0,0.35);
           letter-spacing: 0.02em;
-        }
-        .po-guide-text {
-          font-family: "Noto Serif SC", Georgia, serif;
-          font-size: 13px; line-height: 1.6;
-          color: rgba(200,220,200,0.7);
-          margin: 0 0 28px; letter-spacing: 0.05em;
-          text-shadow: 0 2px 10px rgba(0,0,0,0.3);
-          font-style: italic;
         }
         .po-hero-btns { display: flex; gap: 20px; flex-wrap: wrap; justify-content: center; position: relative; z-index: 1; }
 
@@ -368,24 +358,8 @@ const AppContent: React.FC = () => {
           background: rgba(255,255,255,0.18);
           transform: scale(1.05);
         }
-        .po-btn-xiaoye {
-          border: 1.5px solid rgba(160,210,170,0.35);
-          background: rgba(160,210,170,0.08);
-          color: rgba(220,240,220,0.88);
-          backdrop-filter: blur(6px);
-          font-family: "Noto Serif SC", Georgia, serif;
-          letter-spacing: 0.05em;
-        }
-        .po-btn-xiaoye:hover {
-          border-color: rgba(160,210,170,0.6);
-          background: rgba(160,210,170,0.18);
-          transform: translateY(-2px) scale(1.04);
-          box-shadow: 0 6px 20px -4px rgba(120,170,130,0.3);
-          color: #fff;
-        }
         @media (max-width: 600px) {
           .po-hero-btns { flex-direction: column; align-items: center; gap: 14px; }
-          .po-guide-text { margin-bottom: 20px; }
         }
 
         /* ===== 各模块通用 ===== */

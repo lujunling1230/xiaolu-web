@@ -560,6 +560,18 @@ const HealingCompanion: React.FC = () => {
           display: flex;
           flex-direction: column;
           font-family: "Noto Serif SC", Georgia, serif;
+          /* 浅色毛玻璃背景，覆盖 hl-card 的深色半透明 */
+          background: rgba(255,255,255,0.55);
+          backdrop-filter: blur(16px) saturate(1.4);
+          -webkit-backdrop-filter: blur(16px) saturate(1.4);
+          border-radius: 16px;
+          box-shadow: 0 4px 24px rgba(0,0,0,0.08), inset 0 1px 0 rgba(255,255,255,0.4);
+          /* 深色文字变量 */
+          --text: #3D4A3E;
+          --text-soft: #6B7A6E;
+          --accent: #5E8A6E;
+          --card-bg: rgba(61,74,62,0.06);
+          --border: rgba(61,74,62,0.15);
         }
 
         /* Tab */
@@ -578,17 +590,17 @@ const HealingCompanion: React.FC = () => {
           border: none;
           border-radius: 8px;
           background: transparent;
-          color: rgba(255, 255, 255, 0.5);
+          color: var(--text-soft);
           cursor: pointer;
           transition: all 0.2s;
         }
         .hc-tab:hover {
-          background: rgba(255, 255, 255, 0.06);
-          color: rgba(255, 255, 255, 0.7);
+          background: rgba(61,74,62,0.04);
+          color: var(--text-soft);
         }
         .hc-tab-active {
-          background: rgba(255, 255, 255, 0.1);
-          color: rgba(255, 255, 255, 0.95);
+          background: var(--card-bg);
+          color: var(--text);
           font-weight: 600;
         }
 
@@ -606,21 +618,21 @@ const HealingCompanion: React.FC = () => {
         .hc-msg p { margin: 0; }
         .hc-msg-companion {
           align-self: flex-start;
-          background: rgba(255, 255, 255, 0.1);
-          color: rgba(255, 255, 255, 0.9);
-          border: 1px solid rgba(255, 255, 255, 0.08);
+          background: var(--card-bg);
+          color: var(--text);
+          border: 1px solid rgba(61,74,62,0.08);
           border-radius: 12px 12px 12px 4px;
         }
         .hc-msg-user {
           align-self: flex-end;
-          background: rgba(165, 196, 160, 0.25);
-          color: rgba(255, 255, 255, 0.95);
+          background: rgba(94, 138, 110, 0.12);
+          color: var(--text);
           border-radius: 12px 12px 4px 12px;
         }
 
         .hc-typing { display: flex; gap: 4px; padding: 4px 0; }
         .hc-typing span {
-          width: 5px; height: 5px; border-radius: 50%; background: rgba(255, 255, 255, 0.7); opacity: 0.4;
+          width: 5px; height: 5px; border-radius: 50%; background: var(--text); opacity: 0.4;
           animation: hcTypingDot 1.2s ease-in-out infinite;
         }
         .hc-typing span:nth-child(2) { animation-delay: 0.2s; }
@@ -633,13 +645,13 @@ const HealingCompanion: React.FC = () => {
         .hc-quick-bar { display: flex; flex-wrap: wrap; gap: 6px; padding: 6px 20px 8px; }
         .hc-quick-btn {
           padding: 5px 12px; font-size: 12px; font-family: inherit;
-          border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 999px;
-          background: transparent; color: rgba(255, 255, 255, 0.7); cursor: pointer; transition: all 0.2s;
+          border: 1px solid var(--border); border-radius: 999px;
+          background: transparent; color: var(--text-soft); cursor: pointer; transition: all 0.2s;
         }
         .hc-quick-btn:hover {
-          background: rgba(255, 255, 255, 0.1);
-          border-color: rgba(255, 255, 255, 0.4);
-          color: rgba(255, 255, 255, 0.95);
+          background: var(--card-bg);
+          border-color: rgba(61,74,62,0.3);
+          color: var(--text);
         }
 
         .hc-input-bar {
@@ -647,22 +659,22 @@ const HealingCompanion: React.FC = () => {
         }
         .hc-input {
           flex: 1; padding: 8px 12px; font-size: 13px; font-family: inherit;
-          border: 1px solid rgba(255, 255, 255, 0.12); border-radius: 999px;
-          background: rgba(255, 255, 255, 0.06); color: rgba(255, 255, 255, 0.9); outline: none; transition: border-color 0.2s;
+          border: 1px solid var(--border); border-radius: 999px;
+          background: rgba(61,74,62,0.04); color: var(--text); outline: none; transition: border-color 0.2s;
         }
-        .hc-input:focus { border-color: rgba(255, 255, 255, 0.3); }
-        .hc-input::placeholder { color: rgba(255, 255, 255, 0.35); }
+        .hc-input:focus { border-color: rgba(61,74,62,0.2); }
+        .hc-input::placeholder { color: rgba(61,74,62,0.35); }
         .hc-send-btn {
           width: 32px; height: 32px; border: none; border-radius: 50%;
-          background: rgba(165, 196, 160, 0.5); color: rgba(255, 255, 255, 0.9); cursor: pointer;
+          background: rgba(94, 138, 110, 0.25); color: var(--text); cursor: pointer;
           display: flex; align-items: center; justify-content: center; flex-shrink: 0;
           transition: opacity 0.2s, transform 0.2s, background 0.2s;
         }
         .hc-send-btn:disabled { opacity: 0.35; cursor: default; }
-        .hc-send-btn:not(:disabled):hover { background: rgba(165, 196, 160, 0.65); transform: scale(1.06); }
+        .hc-send-btn:not(:disabled):hover { background: rgba(94, 138, 110, 0.35); transform: scale(1.06); }
 
         .hc-disclaimer {
-          font-size: 9.5px; color: rgba(255, 255, 255, 0.3);
+          font-size: 9.5px; color: rgba(61,74,62,0.3);
           text-align: center; padding: 6px 20px 10px; margin: 0; line-height: 1.4;
           flex-shrink: 0;
         }
@@ -689,8 +701,8 @@ const HealingCompanion: React.FC = () => {
           gap: 10px;
           padding: 10px 12px;
           border-radius: 10px;
-          background: rgba(255, 255, 255, 0.05);
-          border: 1px solid rgba(255, 255, 255, 0.08);
+          background: rgba(61,74,62,0.04);
+          border: 1px solid rgba(61,74,62,0.08);
         }
         .hc-stats-mod-icon {
           width: 30px;
@@ -705,20 +717,20 @@ const HealingCompanion: React.FC = () => {
         .hc-stats-mod-title {
           font-size: 12px;
           font-weight: 600;
-          color: rgba(255, 255, 255, 0.9);
+          color: var(--text);
           margin-bottom: 2px;
         }
         .hc-stats-mod-row {
           display: flex;
           gap: 10px;
           font-size: 11px;
-          color: rgba(255, 255, 255, 0.55);
+          color: var(--text-soft);
         }
 
         .hc-stats-section {}
         .hc-stats-section-title {
           font-size: 11px;
-          color: rgba(255, 255, 255, 0.4);
+          color: rgba(61,74,62,0.4);
           letter-spacing: 0.08em;
           margin-bottom: 10px;
         }
@@ -743,7 +755,7 @@ const HealingCompanion: React.FC = () => {
           width: 6px;
           height: 6px;
           border-radius: 50%;
-          background: rgba(255, 255, 255, 0.1);
+          background: var(--card-bg);
           transition: background 0.2s, box-shadow 0.2s;
         }
         .hc-dot-diary.hc-dot-active { background: #F4A6B8; box-shadow: 0 0 6px rgba(244, 166, 184, 0.6); }
@@ -751,7 +763,7 @@ const HealingCompanion: React.FC = () => {
         .hc-dot-meditation.hc-dot-active { background: #A5C4A0; box-shadow: 0 0 6px rgba(165, 196, 160, 0.6); }
         .hc-stats-day-label {
           font-size: 9px;
-          color: rgba(255, 255, 255, 0.4);
+          color: rgba(61,74,62,0.4);
         }
 
         /* 心情分布 */
@@ -773,12 +785,12 @@ const HealingCompanion: React.FC = () => {
         }
         .hc-stats-mood-name {
           font-size: 12px;
-          color: rgba(255, 255, 255, 0.85);
+          color: var(--text);
           flex: 1;
         }
         .hc-stats-mood-count {
           font-size: 11px;
-          color: rgba(255, 255, 255, 0.5);
+          color: var(--text-soft);
         }
 
         /* 累计成就 */
@@ -793,29 +805,29 @@ const HealingCompanion: React.FC = () => {
           gap: 12px;
           padding: 10px 12px;
           border-radius: 10px;
-          background: rgba(255, 255, 255, 0.04);
-          border: 1px solid rgba(255, 255, 255, 0.06);
+          background: rgba(61,74,62,0.03);
+          border: 1px solid rgba(61,74,62,0.08);
         }
         .hc-stats-ach-icon {
           width: 32px;
           height: 32px;
           border-radius: 8px;
-          background: rgba(255, 255, 255, 0.08);
+          background: rgba(61,74,62,0.05);
           display: flex;
           align-items: center;
           justify-content: center;
           font-size: 16px;
-          color: rgba(255, 255, 255, 0.85);
+          color: var(--text);
           flex-shrink: 0;
         }
         .hc-stats-ach-title {
           font-size: 13px;
           font-weight: 600;
-          color: rgba(255, 255, 255, 0.9);
+          color: var(--text);
         }
         .hc-stats-ach-desc {
           font-size: 11px;
-          color: rgba(255, 255, 255, 0.5);
+          color: var(--text-soft);
           margin-top: 1px;
         }
 

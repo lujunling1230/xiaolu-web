@@ -839,11 +839,23 @@ const MeditationTimer: React.FC = () => {
           padding: 28px 24px 32px;
           max-width: 480px;
           margin: 0 auto;
+          /* 覆盖 hl-card 的白色变量，毛玻璃是浅色背景，需要深色文字 */
+          --text: #3D4A3E;
+          --text-soft: #6B7A6E;
+          --accent: #5E8A6E;
+          --card-bg: rgba(61,74,62,0.06);
+          --border: rgba(61,74,62,0.15);
         }
         [data-theme="night"] .ms-card {
           background: rgba(30,41,59,0.6);
           border-color: rgba(255,255,255,0.08);
           box-shadow: 0 4px 24px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.06);
+          /* night 模式深色背景，恢复浅色文字 */
+          --text: rgba(255, 255, 255, 0.88);
+          --text-soft: rgba(255, 255, 255, 0.58);
+          --accent: #A5C4A0;
+          --card-bg: rgba(255,255,255,0.06);
+          --border: rgba(255,255,255,0.12);
         }
 
         /* ── 标题 ── */

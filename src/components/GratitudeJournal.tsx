@@ -1176,6 +1176,12 @@ const GratitudeJournal: React.FC = () => {
             0 5px 14px -3px rgba(120,100,50,0.10),
             0 20px 50px -14px rgba(120,100,50,0.22),
             inset 0 0 70px rgba(255,250,235,0.45);
+          /* 覆盖 hl-card 的白色变量，纸张是浅色背景，需要深色文字 */
+          --text: #3D4A3E;
+          --text-soft: #6B7A6E;
+          --accent: #5E8A6E;
+          --card-bg: rgba(61,74,62,0.06);
+          --border: rgba(61,74,62,0.15);
         }
         [data-theme="night"] .gj-page-paper {
           background-color: #232A24;
@@ -1188,6 +1194,12 @@ const GratitudeJournal: React.FC = () => {
             0 5px 14px -3px rgba(0,0,0,0.35),
             0 20px 50px -14px rgba(0,0,0,0.55),
             inset 0 0 70px rgba(0,0,0,0.2);
+          /* night 模式纸张是深色，恢复浅色文字 */
+          --text: rgba(255, 255, 255, 0.88);
+          --text-soft: rgba(255, 255, 255, 0.58);
+          --accent: #A5C4A0;
+          --card-bg: rgba(255,255,255,0.06);
+          --border: rgba(255,255,255,0.12);
         }
         /* 纸张纹理：横线 + 细腻纤维噪点（手造纸质感） */
         .gj-page-paper::before {
@@ -1360,7 +1372,7 @@ const GratitudeJournal: React.FC = () => {
           letter-spacing: 0.06em;
         }
         [data-theme="night"] .gj-page-title {
-          color: #F0E6D2;
+          color: var(--text);
         }
         .gj-page-sub {
           font-family: Georgia, serif;
@@ -1372,7 +1384,7 @@ const GratitudeJournal: React.FC = () => {
           letter-spacing: 0.04em;
         }
         [data-theme="night"] .gj-page-sub {
-          color: rgba(240, 230, 210, 0.65);
+          color: var(--text-soft);
         }
 
         .gj-grid {
@@ -1419,14 +1431,14 @@ const GratitudeJournal: React.FC = () => {
           line-height: 1;
           margin-bottom: 8px;
         }
-        [data-theme="night"] .gj-month-num { color: #F0E6D2; }
+        [data-theme="night"] .gj-month-num { color: var(--text); }
         .gj-current .gj-month-num { color: var(--accent); }
         .gj-month-theme {
           font-size: 12px;
           color: var(--text-soft);
           letter-spacing: 0.08em;
         }
-        [data-theme="night"] .gj-month-theme { color: rgba(240, 230, 210, 0.65); }
+        [data-theme="night"] .gj-month-theme { color: var(--text-soft); }
         .gj-month-dot {
           position: absolute;
           top: 9px; right: 9px;
@@ -1878,9 +1890,8 @@ const GratitudeJournal: React.FC = () => {
           transition: color 0.22s, border-color 0.22s, background 0.22s, transform 0.22s;
         }
         [data-theme="night"] .gj-close-book {
-          background: rgba(232,220,200,0.5);
-          border-color: rgba(180,160,120,0.3);
-          color: rgba(240, 230, 210, 0.75);
+          background: rgba(255,255,255,0.08);
+          border-color: rgba(140,160,140,0.25);
         }
         .gj-close-book:hover {
           color: var(--accent);

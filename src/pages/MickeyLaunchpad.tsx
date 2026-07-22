@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Link } from "react-router-dom";
 
@@ -6,10 +6,10 @@ import { Link } from "react-router-dom";
  * 作品集 · Mickey Launchpad
  *
  * 深色星空背景 + 闪烁星辰 + 金色发光圆形卡片。
- * 7 个作品，北斗七星布局，动态 SVG 连线。
+ * 7 个作品，一行三个，普通网格布局。
  */
 
-/* ===== 工具数据（严格按图） ===== */
+/* ===== 工具数据 ===== */
 interface Tool {
   name: string;
   slogan: string;
@@ -19,57 +19,38 @@ interface Tool {
   hoverHint?: string;
 }
 
-/* ===== 爱情公寓图标：八人 Q 版群像（内联 SVG，避免路径依赖） ===== */
+/* ===== 爱情公寓图标 ===== */
 const ApartmentIcon: React.FC = () => (
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width={48} height={48} style={{ borderRadius: "50%", filter: "drop-shadow(0 0 6px rgba(255,215,0,0.3))" }}>
     <defs>
       <radialGradient id="glow" cx="50%" cy="50%" r="50%">
-        <stop offset="0%" stop-color="#FFF3D6" stopOpacity={1}/>
-        <stop offset="70%" stop-color="#FFE4B5" stopOpacity={0.9}/>
-        <stop offset="100%" stop-color="#FFD700" stopOpacity={0.3}/>
+        <stop offset="0%" stopColor="#FFF3D6" stopOpacity={1}/>
+        <stop offset="70%" stopColor="#FFE4B5" stopOpacity={0.9}/>
+        <stop offset="100%" stopColor="#FFD700" stopOpacity={0.3}/>
       </radialGradient>
     </defs>
     <circle cx="24" cy="24" r="23" fill="url(#glow)"/>
     <circle cx="24" cy="24" r="23" fill="none" stroke="#FFD700" strokeWidth="0.5" opacity="0.25"/>
-    {/* 一菲 */}
     <g transform="translate(24, 10)"><circle cx="0" cy="0" r="4.2" fill="#C41E3A"/></g>
-    {/* 子乔 */}
     <g transform="translate(34, 14)"><circle cx="0" cy="0" r="4" fill="#5B4FC4"/></g>
-    {/* 美嘉 */}
     <g transform="translate(37, 24)"><circle cx="0" cy="0" r="4" fill="#9B59B6"/></g>
-    {/* 小贤 */}
     <g transform="translate(34, 34)"><circle cx="0" cy="0" r="4" fill="#4A90D9"/></g>
-    {/* 悠悠 */}
     <g transform="translate(14, 34)"><circle cx="0" cy="0" r="4" fill="#E8A838"/></g>
-    {/* 关谷 */}
     <g transform="translate(11, 24)"><circle cx="0" cy="0" r="4" fill="#8B5A2B"/></g>
-    {/* 张伟 */}
     <g transform="translate(14, 14)"><circle cx="0" cy="0" r="4" fill="#6B2D5C"/></g>
-    {/* 中心爱心 */}
     <path d="M 24,20.8 C 22,18.5 18,21 18,23.5 C 18,26.5 24,30 24,30 C 24,30 30,26.5 30,23.5 C 30,21 26,18.5 24,20.8 Z" fill="#FFD700" opacity="0.95"/>
   </svg>
 );
 
 const tools: Tool[] = [
-  { name: "回血清单", slogan: "允许一切崩塌，只做一件极小的事。", icon: "🔋", url: "/toolbox/recharge", glow: true, hoverHint: "充一会儿电" },
-  { name: "漫游指南", slogan: "走过的路，看过的云。", icon: "🗺️", url: "/toolbox/travel", glow: true, hoverHint: "出发吧" },
   { name: "森林疗愈室", slogan: "调节呼吸与情绪", icon: "🌲", url: "/healing", glow: true, hoverHint: "深呼吸" },
   { name: "爱情公寓", slogan: "3601·3602·3603 全员在线", icon: <ApartmentIcon />, url: "/toolbox/answer", glow: true, hoverHint: "聊聊呗" },
   { name: "通关清单", slogan: "把人生变成一场 RPG。", icon: "🎯", url: "/toolbox/quests", glow: true, hoverHint: "命中目标！" },
   { name: "物资管家", slogan: "库存与保质期管理", icon: "📦", url: "/toolbox/supplies", glow: true, hoverHint: "清点一下" },
   { name: "解忧杂货店", slogan: "总有一句话，能解开你的心结。", icon: "🕯️", url: "/toolbox/advice", glow: true, hoverHint: "进来坐坐？" },
+  { name: "漫游指南", slogan: "走过的路，看过的云。", icon: "🗺️", url: "/toolbox/travel", glow: true, hoverHint: "出发吧" },
+  { name: "回血清单", slogan: "允许一切崩塌，只做一件极小的事。", icon: "🔋", url: "/toolbox/recharge", glow: true, hoverHint: "充一会儿电" },
 ];
-
-/* ===== 北斗七星 Grid 定位 (column, row) ===== */
-const gridPositions: Record<number, { col: number; row: number }> = {
-  0: { col: 2, row: 4 }, // 回血清单
-  1: { col: 3, row: 3 }, // 漫游指南
-  2: { col: 1, row: 2 }, // 森林疗愈室
-  3: { col: 2, row: 2 }, // 爱情公寓
-  4: { col: 3, row: 2 }, // 通关清单
-  5: { col: 4, row: 2 }, // 物资管家
-  6: { col: 4, row: 1 }, // 解忧杂货店
-};
 
 /* ===== Web Audio 合成"叮"声 ===== */
 let audioCtx: AudioContext | null = null;
@@ -118,7 +99,7 @@ const ToolButton: React.FC<{ tool: Tool; index: number }> = ({ tool, index }) =>
       initial={{ opacity: 0, y: 24, scale: 0.9 }}
       whileInView={{ opacity: 1, y: 0, scale: 1 }}
       viewport={{ once: true, margin: "-30px" }}
-      transition={{ duration: 0.45, delay: (index % 2) * 0.07 + Math.floor(index / 2) * 0.05, ease: "easeOut" }}
+      transition={{ duration: 0.45, delay: (index % 3) * 0.07 + Math.floor(index / 3) * 0.05, ease: "easeOut" }}
     >
       <motion.button
         type="button"
@@ -181,43 +162,6 @@ const MickeyLaunchpad: React.FC = () => {
     []
   );
 
-  const gridRef = useRef<HTMLElement>(null);
-  const itemRefs = useRef<(HTMLDivElement | null)[]>([]);
-  const [linePoints, setLinePoints] = useState<{ x: number; y: number }[]>([]);
-
-  useEffect(() => {
-    const computePositions = () => {
-      const grid = gridRef.current;
-      if (!grid) return;
-      const gridRect = grid.getBoundingClientRect();
-      const points: { x: number; y: number }[] = [];
-      for (let i = 0; i < tools.length; i++) {
-        const el = itemRefs.current[i];
-        if (el) {
-          const rect = el.getBoundingClientRect();
-          points.push({
-            x: rect.left + rect.width / 2 - gridRect.left,
-            y: rect.top + rect.height / 2 - gridRect.top,
-          });
-        }
-      }
-      setLinePoints(points);
-    };
-
-    computePositions();
-    const observer = new ResizeObserver(computePositions);
-    if (gridRef.current) observer.observe(gridRef.current);
-    window.addEventListener("resize", computePositions);
-    return () => {
-      observer.disconnect();
-      window.removeEventListener("resize", computePositions);
-    };
-  }, []);
-
-  const polylinePoints = linePoints.length === tools.length
-    ? linePoints.map((p) => `${p.x},${p.y}`).join(" ")
-    : "";
-
   return (
     <div className="mickey-page">
       {/* 星空层 */}
@@ -240,7 +184,7 @@ const MickeyLaunchpad: React.FC = () => {
 
       {/* 左上角退出按钮 */}
       <Link to="/?mode=full" className="mickey-exit" aria-label="回到主站">
-        &larr; 回到主站 ✨
+        ← 回到主站 ✨
       </Link>
 
       {/* 标题区 */}
@@ -263,32 +207,11 @@ const MickeyLaunchpad: React.FC = () => {
         </motion.p>
       </section>
 
-      {/* 工具网格 — 北斗七星布局 */}
-      <section className="mickey-grid" ref={gridRef}>
-        {polylinePoints && (
-          <svg className="mickey-constellation" aria-hidden="true">
-            <polyline
-              points={polylinePoints}
-              stroke="rgba(255,255,255,0.3)"
-              strokeWidth="1.5"
-              strokeDasharray="4,4"
-              fill="none"
-            />
-          </svg>
-        )}
-        {tools.map((t, i) => {
-          const pos = gridPositions[i];
-          return (
-            <div
-              key={t.name}
-              ref={(el) => { itemRefs.current[i] = el; }}
-              className="mickey-tool-wrap"
-              style={{ gridColumn: pos.col, gridRow: pos.row }}
-            >
-              <ToolButton tool={t} index={i} />
-            </div>
-          );
-        })}
+      {/* 工具网格 — 一行三个 */}
+      <section className="mickey-grid">
+        {tools.map((t, i) => (
+          <ToolButton key={t.name} tool={t} index={i} />
+        ))}
       </section>
 
       {/* 页脚 */}
@@ -328,7 +251,7 @@ const MickeyLaunchpad: React.FC = () => {
           opacity: 0.85;
         }
 
-        /* 退出按钮 —— 魔法道具胶囊 */
+        /* 退出按钮 */
         .mickey-exit {
           position: fixed; top: 20px; left: 20px; z-index: 50;
           display: inline-flex; align-items: center; gap: 6px;
@@ -364,25 +287,14 @@ const MickeyLaunchpad: React.FC = () => {
           font-size: 16px; color: #d0daf5; margin: 0; letter-spacing: 0.06em;
         }
 
-        /* 工具网格 — 北斗七星布局，4列4行 */
+        /* 工具网格 — 一行三个 */
         .mickey-grid {
           position: relative; z-index: 2;
-          max-width: 720px; margin: 0 auto;
-          display: grid;
-          grid-template-columns: repeat(4, 1fr);
-          grid-template-rows: auto auto auto auto;
-          gap: 32px 20px;
+          max-width: 680px; margin: 0 auto;
+          display: grid; grid-template-columns: repeat(3, 1fr);
+          gap: 40px 24px;
           padding: 8px 4px 0;
           justify-items: center;
-        }
-
-        /* 星座连线 SVG */
-        .mickey-constellation {
-          position: absolute;
-          top: 0; left: 0;
-          width: 100%; height: 100%;
-          pointer-events: none;
-          z-index: 1;
         }
 
         .mickey-tool-wrap { display: flex; flex-direction: column; align-items: center; }
@@ -402,7 +314,7 @@ const MickeyLaunchpad: React.FC = () => {
           box-shadow: 0 14px 30px -8px rgba(255, 216, 107, 0.35), inset 0 0 0 1px rgba(255, 216, 107, 0.4);
         }
 
-        /* 暖光工具：暖橙光晕 */
+        /* 暖光工具 */
         .mickey-btn-glow {
           background: rgba(40, 24, 8, 0.55);
           box-shadow: 0 8px 24px -6px rgba(255, 168, 76, 0.45), 0 0 22px rgba(255, 168, 76, 0.25), inset 0 0 0 1px rgba(255, 200, 120, 0.3);
@@ -458,24 +370,11 @@ const MickeyLaunchpad: React.FC = () => {
           text-align: center; font-size: 13px; color: #8a98c0; letter-spacing: 0.08em;
         }
 
-        @media (max-width: 640px) {
-          .mickey-grid {
-            grid-template-columns: 1fr;
-            grid-template-rows: auto;
-          }
-          .mickey-tool-wrap {
-            grid-column: auto !important;
-            grid-row: auto !important;
-          }
-          .mickey-constellation {
-            display: none;
-          }
-        }
-
         @media (max-width: 480px) {
           .mickey-btn { width: 80px; height: 80px; }
           .mickey-icon { font-size: 30px; }
           .mickey-moon { width: 64px; height: 64px; top: 5%; right: 5%; }
+          .mickey-grid { grid-template-columns: repeat(3, 1fr); gap: 28px 14px; }
         }
       `}</style>
     </div>

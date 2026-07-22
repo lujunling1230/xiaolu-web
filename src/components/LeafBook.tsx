@@ -25,7 +25,7 @@ const TOTAL_PAGES = 100;
 /** 作品路由映射（按 projects 数组顺序对应，点击预览页跳转） */
 const ROUTES: string[] = [
   "/healing",             // 0 森林疗愈室
-  "/healing",             // 1 爱情公寓
+  "/toolbox/answer",      // 1 爱情公寓
   "/toolbox/quests",      // 2 通关清单
   "/toolbox/supplies",    // 3 物资管家
   "/toolbox/advice",      // 4 解忧杂货店
@@ -100,11 +100,20 @@ const pageVariants = {
   }),
 };
 
-/** 页码显示组件（正下方居中） */
+/** 页码显示组件 */
 const PageNumber: React.FC<{ current: number }> = ({ current }) => {
   if (!current) return null;
+  const isOdd = current % 2 !== 0;
   return (
-    <span className="lb-page-number">
+    <span
+      className="lb-page-number"
+      style={isOdd ? {
+        position: 'absolute',
+        bottom: 20,
+        left: '50%',
+        transform: 'translateX(-50%)',
+      } : undefined}
+    >
       {current}
     </span>
   );

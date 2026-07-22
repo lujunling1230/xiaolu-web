@@ -144,9 +144,9 @@ export default function MapContainer({ cities, selectedCity, onSelectCity }: Map
           height: 100%;
         }
 
-        /* ===== 加载 / 错误 ===== */
+        /* ===== 加载 / 错误（绝对定位覆盖层，不隐藏地图容器） ===== */
         .rg-map-loading {
-          width: 100%; height: 100%;
+          position: absolute; inset: 0; z-index: 10;
           display: flex; align-items: center; justify-content: center;
           font-family: 'Source Han Serif SC', 'Noto Serif SC', serif;
           font-size: 16px;
@@ -161,7 +161,7 @@ export default function MapContainer({ cities, selectedCity, onSelectCity }: Map
           pointer-events: none;
         }
         .rg-map-error {
-          width: 100%; height: 100%;
+          position: absolute; inset: 0; z-index: 10;
           display: flex; flex-direction: column;
           align-items: center; justify-content: center;
           gap: 8px;
@@ -470,7 +470,6 @@ export default function MapContainer({ cities, selectedCity, onSelectCity }: Map
           <div
             className="rg-map-container"
             ref={containerRef}
-            style={{ display: loading || error ? "none" : "block" }}
           />
           {/* 四角装饰图钉 */}
           <div className="rg-map-pin tl" />

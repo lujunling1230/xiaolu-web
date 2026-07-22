@@ -27,7 +27,9 @@ const TYPE_SPEED = 28; // ms per char
 const XiaoyePanel: React.FC<{
   isOpen: boolean;
   onClose: () => void;
-}> = ({ isOpen, onClose }) => {
+  autoMessage?: string | null;
+  onAutoMessageDone?: () => void;
+}> = ({ isOpen, onClose, autoMessage, onAutoMessageDone }) => {
   const [minimized, setMinimized] = useState(false);
   const [messages, setMessages] = useState<Message[]>([
     { id: 0, role: "assistant", text: WELCOME_TEXT, isTyping: true },
@@ -129,6 +131,28 @@ const XiaoyePanel: React.FC<{
       if (abortRef.current) abortRef.current.abort();
     }
   }, [isOpen]);
+
+  /* ---------- autoMessage：从首页召唤时自动发送 ---------- */
+  const autoSentRef = useRef(false);
+  useEffect(() => {
+    if (isOpen && autoMessage && !autoSentRef.current) {
+      autoSentRef.current = true;
+      // 延迟让面板动画先完成
+      const timer = setTimeout(() => {
+        const msgId = Date.now() + 1;
+        setMessages((prev) => [
+          ...prev,
+          { id: msgId, role: "assistant", text: autoMessage, isTyping: true },
+        ]);
+        startTyping(autoMessage, msgId);
+        onAutoMessageDone?.();
+      }, 600);
+      return () => clearTimeout(timer);
+    }
+    if (!isOpen) {
+      autoSentRef.current = false;
+    }
+  }, [isOpen, autoMessage, startTyping, onAutoMessageDone]);
 
   /* ---------- 渲染单条消息 ---------- */
   const renderMessage = (msg: Message) => {

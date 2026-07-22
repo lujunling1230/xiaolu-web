@@ -63,7 +63,7 @@ const Footer: React.FC<FooterProps> = ({ isFullMode = true }) => {
   }, []);
 
   const copyEmail = useCallback(() => {
-    const email = "lujunling@163.com";
+    const email = "15294705967@163.com";
     if (navigator.clipboard) {
       navigator.clipboard.writeText(email).then(() => showToast("邮箱已复制"));
     } else {
@@ -172,7 +172,7 @@ const Footer: React.FC<FooterProps> = ({ isFullMode = true }) => {
           {/* ====== 中栏：联系 ====== */}
           <div className="po-footer-col po-footer-center">
             <button className="po-footer-email" onClick={copyEmail}>
-              邮箱：lujunling@163.com
+              邮箱：15294705967@163.com
             </button>
           </div>
 

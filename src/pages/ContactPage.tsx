@@ -31,7 +31,7 @@ const ContactPage: React.FC = () => {
         </svg>
       ),
       label: "手机号",
-      value: "195****9617",
+      value: "152****5967",
     },
     {
       icon: (
@@ -41,8 +41,8 @@ const ContactPage: React.FC = () => {
         </svg>
       ),
       label: "QQ邮箱",
-      value: "2478****554@qq.com",
-      href: "mailto:2478554554@qq.com",
+      value: "2974****824@qq.com",
+      href: "mailto:2974131824@qq.com",
     },
     {
       icon: (
@@ -52,8 +52,8 @@ const ContactPage: React.FC = () => {
         </svg>
       ),
       label: "网易邮箱",
-      value: "lujunling@163.com",
-      href: "mailto:lujunling@163.com",
+      value: "152****5967@163.com",
+      href: "mailto:15294705967@163.com",
     },
   ];
 

@@ -192,12 +192,23 @@ const SimpleNavbar: React.FC<SimpleNavbarProps> = ({
           }
           .sn-brand { font-size: 1rem; }
           .sn-bar-nav {
-            margin-left: 20px;
+            margin-left: 16px;
             max-width: none;
+            flex: 1;
+            overflow-x: auto;
+            overflow-y: hidden;
+            scrollbar-width: none;
+            -ms-overflow-style: none;
+            justify-content: flex-start;
+            gap: 4px;
+            mask-image: linear-gradient(to right, black 85%, transparent 100%);
+            -webkit-mask-image: linear-gradient(to right, black 85%, transparent 100%);
           }
+          .sn-bar-nav::-webkit-scrollbar { display: none; }
           .sn-link {
-            padding: 6px 8px;
+            padding: 6px 10px;
             font-size: 12px;
+            flex-shrink: 0;
           }
         }
       `}</style>

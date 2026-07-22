@@ -20,7 +20,7 @@ interface UseAMapReturn {
 }
 
 // 安全密钥配置（JS API 2.0 必须）
-if (typeof window !== "undefined") {
+if (typeof window !== "undefined" && AMAP_SECRET) {
   (window as unknown as Record<string, unknown>)._AMapSecurityConfig = {
     securityJsCode: AMAP_SECRET,
   };
@@ -33,8 +33,11 @@ export function useAMap(options: UseAMapOptions): UseAMapReturn {
   const [error, setError] = useState<string | null>(null);
   const mapRef = useRef<AMap.Map | null>(null);
   const AMapRef = useRef<typeof AMap | null>(null);
+  const initedRef = useRef(false);
 
   useEffect(() => {
+    if (initedRef.current) return;
+
     const container = containerRef.current;
     if (!container) {
       setError("地图容器未找到");
@@ -42,71 +45,66 @@ export function useAMap(options: UseAMapOptions): UseAMapReturn {
       return;
     }
 
-    // 确保容器有尺寸
-    const rect = container.getBoundingClientRect();
-    if (rect.width === 0 || rect.height === 0) {
-      setError("地图容器尺寸为 0，请检查父元素是否有正确的高度设置");
-      setLoading(false);
-      return;
-    }
-
     if (!AMAP_KEY) {
-      setError("高德地图 API Key 未配置，请在 .env.local 中设置 VITE_AMAP_KEY");
+      setError("高德地图 API Key 未配置");
       setLoading(false);
       return;
     }
 
+    initedRef.current = true;
     let destroyed = false;
 
-    AMapLoader.load({
-      key: AMAP_KEY,
-      version: "2.0",
-      plugins: ["AMap.Scale", "AMap.ToolBar"],
-    }).then((AMapModule) => {
+    // 延迟一帧确保容器已渲染并有尺寸
+    requestAnimationFrame(() => {
       if (destroyed) return;
-      AMapRef.current = AMapModule;
 
-      try {
-        const mapInstance = new AMapModule.Map(container, {
-          center: new AMapModule.LngLat(center[0], center[1]),
-          zoom,
-          mapStyle: "amap://styles/whitesmoke",
-          viewMode: "2D",
-          resizeEnable: true,
-        });
-
-        mapRef.current = mapInstance;
-        setMap(mapInstance);
+      const rect = container.getBoundingClientRect();
+      if (rect.width === 0 || rect.height === 0) {
+        setError("地图容器尺寸为 0");
         setLoading(false);
+        return;
+      }
 
-        // 低饱和度滤镜叠加
-        const overlay = document.createElement("div");
-        overlay.style.cssText = `
-          position: absolute; inset: 0; z-index: 1;
-          pointer-events: none;
-          background: rgba(245, 240, 230, 0.08);
-          mix-blend-mode: multiply;
-        `;
-        container.style.position = "relative";
-        container.appendChild(overlay);
-      } catch (e: unknown) {
-        const msg = e instanceof Error ? e.message : "地图初始化失败";
+      AMapLoader.load({
+        key: AMAP_KEY,
+        version: "2.0",
+        plugins: [],
+      }).then((AMapModule) => {
+        if (destroyed) return;
+        AMapRef.current = AMapModule;
+
+        try {
+          const mapInstance = new AMapModule.Map(container, {
+            center: [center[0], center[1]],
+            zoom,
+            viewMode: "2D",
+            resizeEnable: true,
+          });
+
+          mapRef.current = mapInstance;
+          setMap(mapInstance);
+          setLoading(false);
+        } catch (e: unknown) {
+          const msg = e instanceof Error ? e.message : "地图初始化失败";
+          console.error("[AMap] 初始化失败:", msg);
+          setError(msg);
+          setLoading(false);
+        }
+      }).catch((e: unknown) => {
+        if (destroyed) return;
+        const msg = e instanceof Error ? e.message : "地图脚本加载失败";
+        console.error("[AMap] 加载失败:", msg);
         setError(msg);
         setLoading(false);
-      }
-    }).catch((e: unknown) => {
-      if (destroyed) return;
-      const msg = e instanceof Error ? e.message : "地图加载失败";
-      setError(msg);
-      setLoading(false);
+      });
     });
 
     return () => {
       destroyed = true;
+      initedRef.current = false;
       if (mapRef.current) {
         mapRef.current.destroy();
         mapRef.current = null;
-        setMap(null);
       }
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps

@@ -225,6 +225,10 @@ export default function RoamingGuideLayout() {
             <span className="rg-sidebar-link__icon">🗺</span>
             <span>足迹地图</span>
           </NavLink>
+          <NavLink to="cities" className="rg-sidebar-link">
+            <span className="rg-sidebar-link__icon">🏙️</span>
+            <span>城市记忆</span>
+          </NavLink>
           <NavLink to="plan" className="rg-sidebar-link">
             <span className="rg-sidebar-link__icon">🧭</span>
             <span>漫游向导</span>

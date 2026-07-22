@@ -13,11 +13,54 @@ interface Message {
   isTyping?: boolean;
 }
 
-const QUICK_QUESTIONS = [
-  "匹配度：她的经历为什么适合这个岗位？",
-  "动机：她为什么想做 AI 产品经理？",
-  "规划：入职后前三个月怎么开展工作？",
-  "潜力：她还有什么没写在简历上的亮点？",
+interface QuestionModule {
+  label: string;
+  emoji: string;
+  questions: string[];
+}
+
+const QUESTION_MODULES: QuestionModule[] = [
+  {
+    label: "我是谁",
+    emoji: "👤",
+    questions: [
+      "路俊玲是谁？她的背景是什么？",
+      "她为什么从之前的领域转做 AI 产品经理？",
+      "她有哪些核心技能？技术能力怎么样？",
+      "她觉得自己最大的优势是什么？",
+    ],
+  },
+  {
+    label: "我做了什么",
+    emoji: "🛠️",
+    questions: [
+      "漫游指南这个项目最难的技术点是什么？",
+      "通关清单是如何把游戏化思维应用到产品里的？",
+      "回血清单和普通的 To-Do List 有什么区别？",
+      "物资管家的 AI 算法逻辑是怎样的？",
+      "解忧杂货店是怎么实现情绪疏导的？",
+      "这些作品里，哪个是她最满意的？为什么？",
+    ],
+  },
+  {
+    label: "我怎么想",
+    emoji: "💭",
+    questions: [
+      "她怎么理解 AI 产品经理这个角色？",
+      "在处理用户体验和技术实现的矛盾时，她一般怎么取舍？",
+      "她对未来的 AI 产品趋势有什么看法？",
+    ],
+  },
+  {
+    label: "求职相关",
+    emoji: "💼",
+    questions: [
+      "匹配度：她的经历为什么适合这个岗位？",
+      "动机：她为什么想做 AI 产品经理？",
+      "规划：入职后前三个月怎么开展工作？",
+      "潜力：她还有什么没写在简历上的亮点？",
+    ],
+  },
 ];
 
 const WELCOME_TEXT =
@@ -38,6 +81,7 @@ const XiaoyePanel: React.FC<{
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [displayedText, setDisplayedText] = useState("");
+  const [activeModule, setActiveModule] = useState<string | null>(null);
   const msgEndRef = useRef<HTMLDivElement>(null);
   const abortRef = useRef<AbortController | null>(null);
   const typingTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -81,6 +125,7 @@ const XiaoyePanel: React.FC<{
       setMessages((prev) => [...prev, userMsg, assistantMsg]);
       setInput("");
       setLoading(true);
+      setActiveModule(null); // 收起模块
 
       try {
         const ctrl = new AbortController();
@@ -122,9 +167,6 @@ const XiaoyePanel: React.FC<{
     [loading, startTyping]
   );
 
-  /* ---------- 快捷提问 ---------- */
-  const handleQuick = (q: string) => sendMessage(q);
-
   /* ---------- 关闭时清理 ---------- */
   useEffect(() => {
     if (!isOpen) {
@@ -138,7 +180,6 @@ const XiaoyePanel: React.FC<{
   useEffect(() => {
     if (isOpen && autoMessage && !autoSentRef.current) {
       autoSentRef.current = true;
-      // 延迟让面板动画先完成
       const timer = setTimeout(() => {
         const msgId = Date.now() + 1;
         setMessages((prev) => [
@@ -177,9 +218,7 @@ const XiaoyePanel: React.FC<{
               {i < textToShow.split("\n").length - 1 && <br />}
             </span>
           ))}
-          {msg.isTyping && (
-            <span className="xy-cursor">▍</span>
-          )}
+          {msg.isTyping && <span className="xy-cursor">▍</span>}
         </div>
       </div>
     );
@@ -189,7 +228,6 @@ const XiaoyePanel: React.FC<{
     <AnimatePresence>
       {isOpen && (
         <>
-          {/* 遮罩 */}
           <motion.div
             className="xy-overlay"
             initial={{ opacity: 0 }}
@@ -198,7 +236,6 @@ const XiaoyePanel: React.FC<{
             onClick={onClose}
           />
 
-          {/* 面板 */}
           <motion.div
             className={`xy-panel ${minimized ? "xy-panel--min" : ""}`}
             initial={{ x: 400 }}
@@ -235,18 +272,51 @@ const XiaoyePanel: React.FC<{
                   <div ref={msgEndRef} />
                 </div>
 
-                {/* 快捷提问 */}
-                <div className="xy-quick">
-                  {QUICK_QUESTIONS.map((q) => (
-                    <button
-                      key={q}
-                      className="xy-quick-btn"
-                      onClick={() => handleQuick(q)}
-                      disabled={loading}
-                    >
-                      {q}
-                    </button>
-                  ))}
+                {/* 模块选择 + 子问题 */}
+                <div className="xy-modules">
+                  {/* 模块按钮行 */}
+                  <div className="xy-module-row">
+                    {QUESTION_MODULES.map((mod) => (
+                      <button
+                        key={mod.label}
+                        className={`xy-module-btn ${activeModule === mod.label ? "is-active" : ""}`}
+                        onClick={() =>
+                          setActiveModule((prev) =>
+                            prev === mod.label ? null : mod.label
+                          )
+                        }
+                        disabled={loading}
+                      >
+                        <span className="xy-module-emoji">{mod.emoji}</span>
+                        <span className="xy-module-label">{mod.label}</span>
+                      </button>
+                    ))}
+                  </div>
+
+                  {/* 展开的问题列表 */}
+                  <AnimatePresence>
+                    {activeModule && (
+                      <motion.div
+                        className="xy-question-list"
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: "auto", opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        transition={{ duration: 0.25, ease: "easeOut" }}
+                      >
+                        {QUESTION_MODULES.find((m) => m.label === activeModule)
+                          ?.questions.map((q) => (
+                            <button
+                              key={q}
+                              className="xy-question-btn"
+                              onClick={() => sendMessage(q)}
+                              disabled={loading}
+                            >
+                              {q}
+                            </button>
+                          ))}
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
                 </div>
 
                 {/* 输入区 */}
@@ -368,24 +438,61 @@ const XiaoyePanel: React.FC<{
               50% { opacity: 0; }
             }
 
-            /* Quick questions */
-            .xy-quick {
-              display: flex; flex-wrap: wrap; gap: 8px;
-              padding: 0 18px 12px; flex-shrink: 0;
+            /* 模块选择 */
+            .xy-modules {
+              flex-shrink: 0;
+              padding: 0 18px 12px;
             }
-            .xy-quick-btn {
-              padding: 6px 12px; border-radius: 999px;
-              border: 1px solid rgba(93,138,106,0.2);
-              background: rgba(93,138,106,0.06);
-              color: #5d8a6a; font-size: 12px;
+            .xy-module-row {
+              display: flex; gap: 6px;
+              justify-content: space-between;
+            }
+            .xy-module-btn {
+              flex: 1;
+              display: flex; flex-direction: column; align-items: center; gap: 4px;
+              padding: 8px 4px; border-radius: 12px;
+              border: 1px solid rgba(93,138,106,0.18);
+              background: rgba(93,138,106,0.05);
+              color: #5d8a6a; font-size: 11px;
               cursor: pointer; transition: all 0.25s ease;
-              white-space: nowrap;
+              font-family: inherit;
+              line-height: 1.2;
             }
-            .xy-quick-btn:hover {
-              background: rgba(93,138,106,0.15);
-              border-color: rgba(93,138,106,0.35);
+            .xy-module-btn:hover {
+              background: rgba(93,138,106,0.12);
+              border-color: rgba(93,138,106,0.3);
             }
-            .xy-quick-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+            .xy-module-btn.is-active {
+              background: rgba(93,138,106,0.18);
+              border-color: rgba(93,138,106,0.4);
+              color: #3A4F3A;
+              font-weight: 500;
+            }
+            .xy-module-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+            .xy-module-emoji { font-size: 16px; line-height: 1; }
+            .xy-module-label { letter-spacing: 0.02em; }
+
+            /* 问题列表 */
+            .xy-question-list {
+              overflow: hidden;
+              display: flex; flex-direction: column; gap: 6px;
+              padding-top: 10px;
+            }
+            .xy-question-btn {
+              padding: 8px 12px; border-radius: 10px;
+              border: 1px solid rgba(93,138,106,0.15);
+              background: rgba(93,138,106,0.04);
+              color: #4a6a4a; font-size: 12px;
+              text-align: left; cursor: pointer;
+              transition: all 0.2s ease;
+              font-family: inherit; line-height: 1.5;
+            }
+            .xy-question-btn:hover {
+              background: rgba(93,138,106,0.1);
+              border-color: rgba(93,138,106,0.3);
+              color: #2D5A3D;
+            }
+            .xy-question-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
             /* Input */
             .xy-input-wrap {

@@ -133,6 +133,53 @@ function getProvinceByCity(cityName: string): string | null {
   return cityToProvince[cityName] || null;
 }
 
+/* 常用城市坐标字典（自动填充，无需用户手动输入） */
+const cityCoords: Record<string, { lng: number; lat: number }> = {
+  "北京": { lng: 116.407, lat: 39.904 }, "上海": { lng: 121.473, lat: 31.230 },
+  "广州": { lng: 113.264, lat: 23.129 }, "深圳": { lng: 114.057, lat: 22.543 },
+  "杭州": { lng: 120.155, lat: 30.274 }, "南京": { lng: 118.796, lat: 32.060 },
+  "成都": { lng: 104.066, lat: 30.572 }, "重庆": { lng: 106.504, lat: 29.533 },
+  "西安": { lng: 108.939, lat: 34.341 }, "武汉": { lng: 114.305, lat: 30.592 },
+  "长沙": { lng: 112.938, lat: 28.228 }, "厦门": { lng: 118.089, lat: 24.479 },
+  "青岛": { lng: 120.382, lat: 36.067 }, "大连": { lng: 121.614, lat: 38.914 },
+  "昆明": { lng: 102.832, lat: 24.880 }, "大理": { lng: 100.229, lat: 25.589 },
+  "丽江": { lng: 100.233, lat: 26.872 }, "拉萨": { lng: 91.140, lat: 29.650 },
+  "乌鲁木齐": { lng: 87.616, lat: 43.825 }, "哈尔滨": { lng: 126.534, lat: 45.803 },
+  "沈阳": { lng: 123.431, lat: 41.796 }, "济南": { lng: 117.000, lat: 36.675 },
+  "郑州": { lng: 113.625, lat: 34.746 }, "合肥": { lng: 117.227, lat: 31.820 },
+  "南昌": { lng: 115.857, lat: 28.682 }, "福州": { lng: 119.296, lat: 26.074 },
+  "贵阳": { lng: 106.630, lat: 26.647 }, "南宁": { lng: 108.366, lat: 22.817 },
+  "海口": { lng: 110.349, lat: 20.044 }, "兰州": { lng: 103.834, lat: 36.061 },
+  "西宁": { lng: 101.778, lat: 36.617 }, "银川": { lng: 106.230, lat: 38.487 },
+  "太原": { lng: 112.548, lat: 37.870 }, "石家庄": { lng: 114.514, lat: 38.042 },
+  "长春": { lng: 125.323, lat: 43.817 }, "呼和浩特": { lng: 111.749, lat: 40.841 },
+  "苏州": { lng: 120.585, lat: 31.298 }, "宁波": { lng: 121.550, lat: 29.874 },
+  "无锡": { lng: 120.311, lat: 31.491 }, "佛山": { lng: 113.121, lat: 23.021 },
+  "东莞": { lng: 113.751, lat: 23.020 }, "珠海": { lng: 113.576, lat: 22.271 },
+  "三亚": { lng: 109.512, lat: 18.252 }, "桂林": { lng: 110.179, lat: 25.234 },
+  "张家界": { lng: 110.479, lat: 29.117 }, "黄山": { lng: 118.167, lat: 30.143 },
+  "洛阳": { lng: 112.434, lat: 34.618 }, "开封": { lng: 114.307, lat: 34.797 },
+  "扬州": { lng: 119.421, lat: 32.393 }, "镇江": { lng: 119.452, lat: 32.204 },
+  "威海": { lng: 122.120, lat: 37.513 }, "烟台": { lng: 121.447, lat: 37.463 },
+  "泉州": { lng: 118.675, lat: 24.874 }, "漳州": { lng: 117.661, lat: 24.511 },
+  "潮州": { lng: 116.632, lat: 23.656 }, "汕头": { lng: 116.708, lat: 23.353 },
+  "北海": { lng: 109.120, lat: 21.481 }, "桂林": { lng: 110.179, lat: 25.234 },
+  "西双版纳": { lng: 100.796, lat: 22.009 }, "香格里拉": { lng: 99.706, lat: 27.829 },
+  "敦煌": { lng: 94.661, lat: 40.142 }, "张掖": { lng: 100.449, lat: 38.925 },
+  "青海湖": { lng: 100.197, lat: 36.488 }, "喀纳斯": { lng: 87.034, lat: 48.514 },
+  "伊犁": { lng: 81.324, lat: 43.916 }, "呼伦贝尔": { lng: 119.765, lat: 49.215 },
+  "阿尔山": { lng: 119.943, lat: 47.177 }, "漠河": { lng: 122.538, lat: 52.972 },
+  "雪乡": { lng: 128.198, lat: 44.333 }, "长白山": { lng: 128.058, lat: 42.041 },
+  "凤凰": { lng: 109.599, lat: 27.948 }, "婺源": { lng: 117.861, lat: 29.248 },
+  "乌镇": { lng: 120.485, lat: 30.745 }, "西塘": { lng: 120.889, lat: 30.946 },
+  "平遥": { lng: 112.176, lat: 37.205 }, "宏村": { lng: 117.987, lat: 30.004 },
+  "周庄": { lng: 120.845, lat: 31.117 }, "同里": { lng: 120.716, lat: 31.159 },
+};
+
+function getCityCoord(cityName: string): { lng: number; lat: number } | undefined {
+  return cityCoords[cityName];
+}
+
 /* 空城市模板 */
 const BLANK_CITY = (): City => ({
   id: Date.now(),
@@ -261,7 +308,13 @@ export default function CityEditModal({
       return;
     }
 
-    const cleaned: City = {
+    // 自动填充坐标（如果用户没有手动输入）
+    const cityCoord = getCityCoord(c.name.trim());
+    const finalLng = c.lng ?? cityCoord?.lng ?? 116.4;
+    const finalLat = c.lat ?? cityCoord?.lat ?? 39.9;
+
+    // 构造符合 City 类型的输出（包含 coord 对象）
+    const cleaned = {
       ...c,
       name: c.name.trim(),
       province: finalProvince,
@@ -275,11 +328,12 @@ export default function CityEditModal({
       eat: c.eat
         .filter((e) => e.name.trim())
         .map((e) => ({ ...e, name: e.name.trim(), price: e.price.trim() })),
+      coord: { lng: finalLng, lat: finalLat },
     };
     if (cleaned.play.length === 0) cleaned.play = [{ name: "待补充", rating: 5 }];
     if (cleaned.eat.length === 0) cleaned.eat = [{ name: "待补充", price: "" }];
 
-    onSave(cleaned);
+    onSave(cleaned as unknown as City);
   };
 
   return (

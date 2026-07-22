@@ -20,9 +20,11 @@ interface UseAMapReturn {
 }
 
 // 安全密钥配置（JS API 2.0 必须）
-(window as unknown as Record<string, unknown>)._AMapSecurityConfig = {
-  securityJsCode: AMAP_SECRET,
-};
+if (typeof window !== "undefined") {
+  (window as unknown as Record<string, unknown>)._AMapSecurityConfig = {
+    securityJsCode: AMAP_SECRET,
+  };
+}
 
 export function useAMap(options: UseAMapOptions): UseAMapReturn {
   const { containerRef, center = [104.07, 35.44], zoom = 5 } = options;
@@ -33,7 +35,26 @@ export function useAMap(options: UseAMapOptions): UseAMapReturn {
   const AMapRef = useRef<typeof AMap | null>(null);
 
   useEffect(() => {
-    if (!containerRef.current) return;
+    const container = containerRef.current;
+    if (!container) {
+      setError("地图容器未找到");
+      setLoading(false);
+      return;
+    }
+
+    // 确保容器有尺寸
+    const rect = container.getBoundingClientRect();
+    if (rect.width === 0 || rect.height === 0) {
+      setError("地图容器尺寸为 0，请检查父元素是否有正确的高度设置");
+      setLoading(false);
+      return;
+    }
+
+    if (!AMAP_KEY) {
+      setError("高德地图 API Key 未配置，请在 .env.local 中设置 VITE_AMAP_KEY");
+      setLoading(false);
+      return;
+    }
 
     let destroyed = false;
 
@@ -45,21 +66,20 @@ export function useAMap(options: UseAMapOptions): UseAMapReturn {
       if (destroyed) return;
       AMapRef.current = AMapModule;
 
-      const mapInstance = new AMapModule.Map(containerRef.current, {
-        center: new AMapModule.LngLat(center[0], center[1]),
-        zoom,
-        mapStyle: "amap://styles/whitesmoke",
-        viewMode: "2D",
-        resizeEnable: true,
-      });
+      try {
+        const mapInstance = new AMapModule.Map(container, {
+          center: new AMapModule.LngLat(center[0], center[1]),
+          zoom,
+          mapStyle: "amap://styles/whitesmoke",
+          viewMode: "2D",
+          resizeEnable: true,
+        });
 
-      mapRef.current = mapInstance;
-      setMap(mapInstance);
-      setLoading(false);
+        mapRef.current = mapInstance;
+        setMap(mapInstance);
+        setLoading(false);
 
-      // 低饱和度滤镜叠加 —— 进一步降低现代地图的鲜艳感
-      const container = containerRef.current;
-      if (container) {
+        // 低饱和度滤镜叠加
         const overlay = document.createElement("div");
         overlay.style.cssText = `
           position: absolute; inset: 0; z-index: 1;
@@ -69,6 +89,10 @@ export function useAMap(options: UseAMapOptions): UseAMapReturn {
         `;
         container.style.position = "relative";
         container.appendChild(overlay);
+      } catch (e: unknown) {
+        const msg = e instanceof Error ? e.message : "地图初始化失败";
+        setError(msg);
+        setLoading(false);
       }
     }).catch((e: unknown) => {
       if (destroyed) return;

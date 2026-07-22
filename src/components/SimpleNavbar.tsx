@@ -11,6 +11,8 @@ interface SimpleNavbarProps {
   current: Section;
   onNavigate: (section: Section) => void;
   isFullMode: boolean;
+  xiaoyeOpen: boolean;
+  onToggleXiaoye: () => void;
 }
 
 const NAV_ITEMS = [
@@ -52,6 +54,8 @@ const SimpleNavbar: React.FC<SimpleNavbarProps> = ({
   current,
   onNavigate,
   isFullMode,
+  xiaoyeOpen,
+  onToggleXiaoye,
 }) => {
   const items = isFullMode ? NAV_ITEMS : NAV_ITEMS.filter(i => i.key === "home");
 
@@ -75,6 +79,14 @@ const SimpleNavbar: React.FC<SimpleNavbarProps> = ({
                 }}
               />
             ))}
+            {/* 小叶 AI 助手 */}
+            <button
+              className={`sn-link sn-link--xiaoye ${xiaoyeOpen ? "is-active" : ""}`}
+              onClick={onToggleXiaoye}
+              title="小叶 AI 助手"
+            >
+              {xiaoyeOpen ? "🍃" : "💬 小叶"}
+            </button>
           </div>
         </div>
       </nav>
@@ -158,6 +170,18 @@ const SimpleNavbar: React.FC<SimpleNavbarProps> = ({
           font-weight: 500;
           background: rgba(122, 154, 130, 0.12);
           box-shadow: 0 1px 4px rgba(93, 138, 106, 0.08);
+        }
+        .sn-link--xiaoye {
+          padding: 7px 14px;
+          border: 1px solid rgba(93, 138, 106, 0.2);
+          color: #5d8a6a;
+          font-size: 13px;
+          letter-spacing: 0.04em;
+        }
+        .sn-link--xiaoye:hover {
+          background: rgba(93, 138, 106, 0.1);
+          border-color: rgba(93, 138, 106, 0.35);
+          color: #3A4F3A;
         }
 
         /* ---------- 响应式 ---------- */

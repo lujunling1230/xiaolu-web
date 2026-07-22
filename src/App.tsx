@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { motion } from "framer-motion";
 import { ThemeProvider, useTheme } from "./context/ThemeContext";
 import SimpleNavbar from "./components/SimpleNavbar";
+import XiaoyePanel from "./components/XiaoyePanel";
 import LeafBook from "./components/LeafBook";
 import DynamicBackground from "./components/DynamicBackground";
 import ButterflyCursor from "./components/ButterflyCursor";
@@ -24,6 +25,7 @@ const AppContent: React.FC = () => {
   const [current, setCurrent] = useState<Section>("home");
   const [isFullMode, setIsFullMode] = useState(true);
   const [scrolled, setScrolled] = useState(false);
+  const [xiaoyeOpen, setXiaoyeOpen] = useState(false);
   const openBookRef = useRef<(() => void) | null>(null);
 
   /* 初始化站点数据 + 恢复管理员会话 + 异步拉取远程最新数据 */
@@ -98,7 +100,10 @@ const AppContent: React.FC = () => {
           current={current}
           onNavigate={handleNavigate}
           isFullMode={isFullMode}
+          xiaoyeOpen={xiaoyeOpen}
+          onToggleXiaoye={() => setXiaoyeOpen((v) => !v)}
         />
+        <XiaoyePanel isOpen={xiaoyeOpen} onClose={() => setXiaoyeOpen(false)} />
       </div>
 
       {/* ==================== 首页 Hero ==================== */}

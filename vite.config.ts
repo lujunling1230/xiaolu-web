@@ -5,6 +5,14 @@ import { VitePWA } from "vite-plugin-pwa";
 import vercelApiDevPlugin from "./vite-plugin-vercel-api.mjs";
 
 export default defineConfig({
+  server: {
+    proxy: {
+      "/api": {
+        target: "http://localhost:3001",
+        changeOrigin: true,
+      },
+    },
+  },
   plugins: [
     react(),
     tailwindcss(),

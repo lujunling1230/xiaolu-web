@@ -1103,11 +1103,18 @@ const CSS = `
   max-height: 85vh;
   border-radius: 20px;
   transform: translate(-50%, -50%) scale(0.92);
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
   box-shadow: 0 24px 60px rgba(90, 74, 58, 0.12), 0 8px 20px rgba(90, 74, 58, 0.06);
+  transition: transform 0.4s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.35s ease, visibility 0.35s ease;
 }
 
 .rg-ai-drawer--centered.rg-ai-drawer--open {
   transform: translate(-50%, -50%) scale(1);
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
 }
 
 /* 移动端 */

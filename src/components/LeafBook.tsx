@@ -108,10 +108,11 @@ const PageNumber: React.FC<{ current: number }> = ({ current }) => {
     <span
       className="lb-page-number"
       style={isOdd ? {
-        position: 'absolute',
+        position: 'fixed',
         bottom: 20,
         left: '50%',
         transform: 'translateX(-50%)',
+        zIndex: 100,
       } : undefined}
     >
       {current}

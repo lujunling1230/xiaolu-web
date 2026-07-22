@@ -213,8 +213,8 @@ export default function RoamingGuideLayout() {
       {/* ===== 侧边栏 ===== */}
       <aside className="rg-sidebar">
         <div className="rg-sidebar-top">
-          <Link to="/toolbox?mode=full" className="rg-sidebar-back">
-            ← <span>返回作品集</span>
+          <Link to="https://www.xiaoluweb.com/mickey" className="rg-sidebar-back">
+            ← <span>回到作品集</span>
           </Link>
           <h1 className="rg-sidebar-title">漫游指南</h1>
           <p className="rg-sidebar-subtitle">丙午年 · 启程</p>
@@ -224,10 +224,6 @@ export default function RoamingGuideLayout() {
           <NavLink to="map" className="rg-sidebar-link" end>
             <span className="rg-sidebar-link__icon">🗺</span>
             <span>足迹地图</span>
-          </NavLink>
-          <NavLink to="cities" className="rg-sidebar-link">
-            <span className="rg-sidebar-link__icon">🏛</span>
-            <span>城市记忆</span>
           </NavLink>
           <NavLink to="plan" className="rg-sidebar-link">
             <span className="rg-sidebar-link__icon">🧭</span>

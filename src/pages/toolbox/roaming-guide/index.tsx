@@ -153,7 +153,6 @@ export default function RoamingGuidePage() {
       }}>
         {[
           { key: "map", label: "足迹地图" },
-          { key: "cards", label: "城市记忆" },
           { key: "ai", label: "漫游向导" },
         ].map(item => (
           <button
@@ -161,8 +160,6 @@ export default function RoamingGuidePage() {
             onClick={() => {
               if (item.key === "map") {
                 document.getElementById("rg-map")?.scrollIntoView({ behavior: "smooth" });
-              } else if (item.key === "cards") {
-                document.getElementById("rg-cards")?.scrollIntoView({ behavior: "smooth" });
               } else if (item.key === "ai") {
                 // Trigger the AI panel open by dispatching a custom event
                 window.dispatchEvent(new CustomEvent("rg-open-ai"));

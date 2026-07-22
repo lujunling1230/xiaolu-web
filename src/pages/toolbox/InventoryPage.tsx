@@ -996,8 +996,10 @@ const InventoryPage: React.FC = () => {
   };
 
   const handleStartPhoto = () => {
-    setPhotoGuideOpen(false);
+    // 移动端要求 click() 必须在用户手势中同步触发，
+    // 若先 setState 导致重渲染，安全策略会阻止后续 click()
     fileInputRef.current?.click();
+    setPhotoGuideOpen(false);
   };
 
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {

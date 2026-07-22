@@ -888,8 +888,8 @@ const ShareCard: React.FC<{ totalCount: number; streak: number; onClose: () => v
     const canvas = canvasRef.current;
     if (!canvas) return;
     const dpr = window.devicePixelRatio || 1;
-    const w = 380;
-    const h = 700;
+    const w = 320;
+    const h = 580;
     canvas.width = w * dpr;
     canvas.height = h * dpr;
     const ctx = canvas.getContext("2d");
@@ -1151,7 +1151,7 @@ const ShareCard: React.FC<{ totalCount: number; streak: number; onClose: () => v
         <button className="share-close" onClick={onClose}>✕</button>
         <h3 className="share-title">分享卡片</h3>
         <div className="share-canvas-wrap">
-          <canvas ref={canvasRef} style={{ width: 380, height: 700, borderRadius: 12, display: ready ? "block" : "none" }} />
+          <canvas ref={canvasRef} style={{ width: 320, height: 580, borderRadius: 12, display: ready ? "block" : "none" }} />
           {!ready && <div className="share-canvas-placeholder">生成中...</div>}
         </div>
         <button className="share-download" onClick={handleDownload}>下载卡片</button>
@@ -2557,13 +2557,14 @@ const RechargePage: React.FC = () => {
           clear: both;
         }
         .share-canvas-wrap {
-          display: flex; justify-content: center; margin-bottom: 16px;
+          display: flex; justify-content: center; margin-bottom: 14px;
         }
         .share-canvas-wrap canvas {
           box-shadow: 0 4px 16px rgba(160,150,140,0.12);
+          max-width: 100%; height: auto;
         }
         .share-canvas-placeholder {
-          width: 360px; height: 520px; border-radius: 12px;
+          width: 320px; height: 580px; border-radius: 12px;
           background: #FFFFFF; border: 1px solid rgba(180,170,160,0.1);
           display: flex; align-items: center; justify-content: center;
           font-size: 14px; color: #b8aa9a;

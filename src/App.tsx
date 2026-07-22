@@ -248,9 +248,11 @@ const AppContent: React.FC = () => {
 
         /* 导航栏 */
         .po-nav-wrap {
-          position: fixed; top: 0; left: 0; right: 0; z-index: 100;
-          pointer-events: none;
-          transition: background 0.3s ease;
+          position: fixed;
+          top: 0;
+          left: 0;
+          right: 0;
+          z-index: 100;
         }
 
         /* ===== Hero 首屏 ===== */

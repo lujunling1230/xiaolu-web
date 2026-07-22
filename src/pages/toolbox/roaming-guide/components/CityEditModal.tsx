@@ -313,7 +313,7 @@ export default function CityEditModal({
     const finalLng = Number(c.lng) || cityCoord?.lng || 116.4;
     const finalLat = Number(c.lat) || cityCoord?.lat || 39.9;
 
-    // 构造符合 City 类型的输出（包含 coord 对象）
+    // 构造符合 City 类型的输出（包含 coord 对象 + 标记字段）
     const cleaned = {
       ...c,
       name: c.name.trim(),
@@ -329,6 +329,10 @@ export default function CityEditModal({
         .filter((e) => e.name.trim())
         .map((e) => ({ ...e, name: e.name.trim(), price: e.price.trim() })),
       coord: { lng: finalLng, lat: finalLat },
+      light_source: "manual" as const,
+      status: "visited" as const,
+      explore_count: 1,
+      days: 1,
     };
     if (cleaned.play.length === 0) cleaned.play = [{ name: "待补充", rating: 5 }];
     if (cleaned.eat.length === 0) cleaned.eat = [{ name: "待补充", price: "" }];

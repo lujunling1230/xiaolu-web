@@ -68,35 +68,5 @@
     "imageUrl": "/projects/6-recharge-list.png",
     "liveUrl": "https://xiaoluweb.com/toolbox/recharge",
     "tags": ["3D Transform", "Framer Motion", "LocalStorage", "情绪疗愈"]
-  },
-  {
-    "id": "stress-relief",
-    "title": "解压馆",
-    "tag": "交互式解压小游戏",
-    "painPoint": "允许一切失控，除了你的心跳",
-    "description": "收集三款解压小游戏：消散（三消归零）、斩断（一刀两断）、吞噬（画下的都会落下）。",
-    "imageUrl": "/projects/7-stress-relief.png",
-    "liveUrl": "https://xiaoluweb.com/toolbox/games",
-    "tags": ["Canvas", "SVG", "Web Audio", "游戏开发", "三消算法"]
-  },
-  {
-    "id": "memory-museum",
-    "title": "时光博物馆",
-    "tag": "双展厅回忆录",
-    "painPoint": "每一步都算数",
-    "description": "两个展厅，用复古胶片风格记录成长节点和怀旧藏品。",
-    "imageUrl": "/projects/8-memory-museum.png",
-    "liveUrl": "https://xiaoluweb.com/toolbox/memories",
-    "tags": ["Framer Motion", "Lightbox", "复古胶片", "叙事设计"]
-  },
-  {
-    "id": "life-slices",
-    "title": "第七卷胶片",
-    "tag": "生活切面音乐馆",
-    "painPoint": "一卷胶片，六个画面",
-    "description": "把生活切成六片：阅读、摄影、音乐、运动、冥想、追剧，用立体手绘胶卷动画展开。",
-    "imageUrl": "/projects/9-life-slices.png",
-    "liveUrl": "https://xiaoluweb.com/film",
-    "tags": ["Framer Motion", "Web Audio", "胶卷美学", "CRUD", "数据持久化"]
   }
 ]

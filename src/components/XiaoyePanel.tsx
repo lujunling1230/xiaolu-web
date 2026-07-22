@@ -14,9 +14,10 @@ interface Message {
 }
 
 const QUICK_QUESTIONS = [
-  "她最拿手的项目是什么？",
-  "漫游指南的设计思路？",
-  "她对 AI PM 的理解？",
+  "路俊玲是谁？她的背景是什么？",
+  "漫游指南最难的技术点是什么？",
+  "她怎么理解 AI 产品经理？",
+  "她为什么适合这个岗位？",
 ];
 
 const WELCOME_TEXT =

@@ -24,12 +24,12 @@ const TOTAL_PAGES = 100;
 
 /** 作品路由映射（按 projects 数组顺序对应，点击预览页跳转） */
 const ROUTES: string[] = [
-  "/forest",              // 0 森林疗愈室
-  "/toolbox/answer",      // 1 系统调频
+  "/healing",             // 0 森林疗愈室
+  "/healing",             // 1 爱情公寓
   "/toolbox/quests",      // 2 通关清单
   "/toolbox/supplies",    // 3 物资管家
   "/toolbox/advice",      // 4 解忧杂货店
-  "/toolbox/travel",      // 5 漫游指南
+  "/toolbox/travel/map",  // 5 漫游指南
   "/toolbox/recharge",    // 6 回血清单
 ];
 

@@ -73,7 +73,7 @@ export const projects: Project[] = [
     solutions: [
       "构建沉浸式森林场景，模拟真实自然环境",
       "内置 5 种白噪音，支持音量调节和音效交互",
-      "点击树叶触发掉落动画与自然音效",
+      "森林光影随时间流动，营造真实沉浸感",
     ],
     coreValue: [
       '"零门槛"的情绪释放 —— 用户无需做任何决策',
@@ -87,14 +87,14 @@ export const projects: Project[] = [
     ],
     highlights: [
       "实时流动的森林光影，随时间变化",
-      "树叶交互：点击触发掉落动画",
       "白噪音混音系统",
+      "零决策沉浸式体验",
     ],
     futurePlans: [
       "多场景切换（海边、雨林）",
       "用户自定义音效组合",
     ],
-    liveUrl: "https://xiaoluweb.com/",
+    liveUrl: "https://xiaoluweb.com/healing",
     tags: ["React", "Framer Motion", "Web Audio", "Tailwind", "沉浸式设计"],
   },
   {
@@ -156,7 +156,7 @@ export const projects: Project[] = [
       "多剧集角色库",
       "用户自定义角色创建",
     ],
-    liveUrl: "https://xiaoluweb.com/toolbox/answer",
+    liveUrl: "https://xiaoluweb.com/healing",
     tags: ["React", "TypeScript", "AI 生成", "LLM 角色扮演", "数据持久化"],
   },
   {
@@ -289,12 +289,12 @@ export const projects: Project[] = [
       ],
       highlightIntro: "但在解忧杂货店，总有一句话在等你。",
       highlight: [
-        "100+ 句治愈文案，像老朋友在耳边轻轻说；",
-        "翻牌的那一下，心跳会慢半拍，答案来的刚刚好；",
+        "提笔只为你，落笔皆温柔；",
+        "收到回信的那一刻，心跳会慢半拍，答案来的刚刚好；",
         "不用解释，不用铺垫，打开就是一句「我懂」。",
       ],
-      cta: "点开右侧，抽一张属于你的牌。",
-      ctaLabel: "抽一张牌",
+      cta: "点开右侧，写一封属于你的信。",
+      ctaLabel: "写一封信",
       closing: "总有一句话，能解开你的心结。",
     },
     painPoints: [
@@ -308,8 +308,8 @@ export const projects: Project[] = [
       "喜欢随机惊喜的人群",
     ],
     solutions: [
-      "收录 100+ 治愈句子",
-      "点击随机翻牌机制",
+      "收录治愈文案，以书信形式呈现",
+      "写信获取回信的交互机制",
       "轻量、安静、温柔的界面设计",
     ],
     coreValue: [
@@ -323,7 +323,7 @@ export const projects: Project[] = [
       "选择困难时的随机指引",
     ],
     highlights: [
-      "翻牌动画与惊喜感",
+      "书信交互与回信惊喜感",
       "治愈文案库",
       "极简交互设计",
     ],
@@ -348,7 +348,7 @@ export const projects: Project[] = [
       highlight: [
         "在地图上点亮走过的城市，像集邮一样，一块一块填满空白；",
         "每座城市都有自己的故事页，点开就是那时的风、那时的你；",
-        "手绘地图上的每个呼吸动画，都在替你说「我来过」。",
+        "地图上每一座被点亮的城市，都在替你说「我来过」。",
       ],
       cta: "点开右侧，打开你的旅行地图。",
       ctaLabel: "打开地图",
@@ -365,8 +365,8 @@ export const projects: Project[] = [
       "地理探索者",
     ],
     solutions: [
-      "手绘风格中国地图 SVG 实现",
-      "标注走过的城市，一目了然",
+      "高德地图 API 接入，基于真实地理坐标",
+      "城市点亮功能，走过的城市一目了然",
       "点击城市查看游记与照片",
     ],
     coreValue: [
@@ -380,12 +380,12 @@ export const projects: Project[] = [
       "回忆收藏",
     ],
     highlights: [
-      "手绘地图风格",
-      "SVG 路径呼吸动画",
+      "高德地图 API 接入",
+      "城市点亮功能",
       "城市详情页",
     ],
-    liveUrl: "https://xiaoluweb.com/toolbox/travel",
-    tags: ["SVG", "Framer Motion", "胶片美学", "交互地图"],
+    liveUrl: "https://xiaoluweb.com/toolbox/travel/map",
+    tags: ["高德地图 API", "React", "Framer Motion", "胶片美学", "交互地图"],
   },
   {
     id: "recharge-list",
@@ -403,7 +403,7 @@ export const projects: Project[] = [
       ],
       highlightIntro: "但在回血清单，最小的事也是力量。",
       highlight: [
-        "每个行动不超过 5 分钟，小到不会拒绝，像给自己倒杯水那么简单；",
+        "极小行动库，心情标签帮你精准定位状态；",
         "做完一个，打个勾，像给自己贴了个创可贴，疼还在，但被盖住了；",
         "回血历史在累计，原来你已经走了这么远，只是没发现。",
       ],
@@ -422,9 +422,10 @@ export const projects: Project[] = [
       "追求低能耗自我修复的 i 人",
     ],
     solutions: [
-      "收集 50+ 极小行动（不超过 5 分钟）",
-      "点击标记完成，记录回血历史",
-      "3D Transform 立体交互",
+      "极小行动库，覆盖多种情绪场景",
+      "心情标签选择，精准匹配当下状态",
+      "打卡记录追踪，量化回血进度",
+      "分享卡片生成，传递温暖与力量",
     ],
     coreValue: [
       "允许一切崩塌，只做一件极小的事",
@@ -437,11 +438,12 @@ export const projects: Project[] = [
       "能量补给站",
     ],
     highlights: [
-      "极小行动库（5 分钟内）",
-      "3D 卡片翻转交互",
-      "回血历史记录",
+      "极小行动库",
+      "心情标签选择",
+      "打卡记录追踪",
+      "分享卡片生成",
     ],
     liveUrl: "https://xiaoluweb.com/toolbox/recharge",
-    tags: ["3D Transform", "Framer Motion", "LocalStorage", "情绪疗愈"],
+    tags: ["React", "Framer Motion", "LocalStorage", "情绪疗愈", "分享卡片"],
   },
 ];

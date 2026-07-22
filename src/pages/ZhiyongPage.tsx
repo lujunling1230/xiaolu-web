@@ -29,7 +29,6 @@ const PROJECTS = [
   { name: "物资管家", path: "/toolbox/inventory", tag: "已交付", desc: "库存与保质期管理" },
   { name: "解忧杂货店", path: "/toolbox/advice", tag: "自研", desc: "治愈系问答空间" },
   { name: "通关清单", path: "/toolbox/quests", tag: "自研", desc: "游戏化 To-Do" },
-  { name: "时光博物馆", path: "/toolbox/memories", tag: "自研", desc: "双展厅回忆录" },
   { name: "解压馆", path: "/toolbox/games", tag: "自研", desc: "交互式解压游戏" },
   { name: "回血清单", path: "/toolbox/recharge", tag: "自研", desc: "i 人低能耗回血" },
   { name: "漫游指南", path: "/toolbox/travel", tag: "自研", desc: "旅行足迹与攻略" },
@@ -42,7 +41,6 @@ const TOOLS = [
   { name: "物资管家", icon: "📦", desc: "库存与保质期管理", path: "/toolbox/inventory" },
   { name: "解忧杂货店", icon: "🏮", desc: "治愈系问答空间", path: "/toolbox/advice" },
   { name: "通关清单", icon: "🎮", desc: "游戏化 To-Do", path: "/toolbox/quests" },
-  { name: "时光博物馆", icon: "🏛️", desc: "双展厅回忆录", path: "/toolbox/memories" },
   { name: "解压馆", icon: "🎯", desc: "交互式解压游戏", path: "/toolbox/games" },
   { name: "回血清单", icon: "🔋", desc: "i 人低能耗回血", path: "/toolbox/recharge" },
   { name: "漫游指南", icon: "🧳", desc: "旅行足迹与攻略", path: "/toolbox/travel" },
@@ -411,7 +409,7 @@ const ZhiyongPage: React.FC = () => {
                 margin: "0 0 20px",
                 letterSpacing: "0.02em",
               }}>
-                森林疗愈室 · 爱情公寓 · 通关清单 · 物资管家 · 解忧杂货店 · 漫游指南 · 回血清单 · 解压馆 · 时光博物馆 · 第七卷胶片
+                森林疗愈室 · 爱情公寓 · 通关清单 · 物资管家 · 解忧杂货店 · 漫游指南 · 回血清单 · 解压馆 · 第七卷胶片
               </p>
               <span style={{
                 fontFamily: SANS,

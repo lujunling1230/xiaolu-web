@@ -2241,13 +2241,6 @@ const SystemTuningPage: React.FC = () => {
                       </div>
                       {foldCh4 && (
                         <motion.div className="wx-me-chapter-body" initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.25 }}>
-                          <div className="wx-me-narrative" onClick={() => window.open("/toolbox/memories", "_self")}>
-                            <span className="wx-me-narrative-icon">🏆</span>
-                            <div className="wx-me-narrative-content">
-                              <div className="wx-me-narrative-label">时光博物馆</div>
-                              <div className="wx-me-narrative-text">每一步都算数。</div>
-                            </div>
-                          </div>
                           <div className="wx-me-narrative" onClick={() => window.open("/healing", "_self")}>
                             <span className="wx-me-narrative-icon">🌲</span>
                             <div className="wx-me-narrative-content">

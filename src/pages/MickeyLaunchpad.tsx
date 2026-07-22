@@ -91,7 +91,7 @@ const tools: Tool[] = [
   { name: "漫游指南", slogan: "走过的路，看过的云。", icon: "🗺️", url: "/toolbox/travel", glow: true, hoverHint: "出发吧" },
   { name: "回血清单", slogan: "允许一切崩塌，只做一件极小的事。", icon: "🔋", url: "/toolbox/recharge", glow: true, hoverHint: "充一会儿电" },
   { name: "解压馆", slogan: "允许一切崩塌。", icon: <MendingHeartIcon />, url: "/toolbox/games", glow: true, hoverHint: "捏碎它" },
-  { name: "时光博物馆", slogan: "每一步都算数。", icon: "🏆", url: "/toolbox/memories", glow: true, hoverHint: "珍贵藏品" },
+  
 ];
 
 /* ===== Web Audio 合成"叮"声 ===== */
@@ -338,7 +338,6 @@ const MickeyLaunchpad: React.FC = () => {
           display: grid; grid-template-columns: repeat(4, 1fr); gap: 36px 20px;
           padding: 8px 4px 0;
         }
-        /* 时光博物馆：位于解忧杂货店正下方（第三行第一列） */
         .mickey-tool-wrap:last-child {
           grid-column: 1;
         }

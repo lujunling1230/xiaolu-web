@@ -61,6 +61,7 @@ createRoot(document.getElementById("root")!).render(
         <Route path="/healing" element={<HealingRoomPage />} />
         {/* 米奇妙妙屋：Launchpad 发射台 */}
         <Route path="/mickey" element={<MickeyLaunchpad />} />
+
         {/* 第七卷胶片：独立全屏页面 */}
         <Route path="/film" element={<LifeFilmPage />} />
         <Route path="/music" element={<MusicPage />} />

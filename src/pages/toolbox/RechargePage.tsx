@@ -2539,18 +2539,22 @@ const RechargePage: React.FC = () => {
           background: rgba(245, 250, 247, 0.95);
           border: 1px solid rgba(180, 220, 190, 0.4);
           box-shadow: 0 2px 8px rgba(160, 180, 150, 0.06), 0 8px 28px rgba(0,0,0,0.03), 0 0 24px rgba(180, 220, 190, 0.12);
+          max-height: 90vh; overflow-y: auto;
         }
         .share-close {
-          position: absolute; top: 14px; right: 18px;
-          font-size: 14px; color: #9aaa9a; background: none; border: none;
-          padding: 4px 8px; cursor: pointer; transition: color 0.3s ease;
+          position: sticky; top: 0; float: right;
+          font-size: 16px; color: #9aaa9a; background: rgba(255,255,255,0.8); border: 1px solid rgba(180,170,160,0.1);
+          width: 28px; height: 28px; border-radius: 50%;
+          display: flex; align-items: center; justify-content: center;
+          cursor: pointer; transition: color 0.3s ease; z-index: 10;
           font-family: "Noto Sans SC", system-ui, sans-serif;
         }
-        .share-close:hover { color: #5a5048; }
+        .share-close:hover { color: #5a5048; background: rgba(255,255,255,1); }
         .share-title {
           font-family: "Noto Serif SC", Georgia, serif;
           font-size: 18px; font-weight: 600; color: #3a3a3a;
           margin: 0 0 16px; letter-spacing: 0.08em;
+          clear: both;
         }
         .share-canvas-wrap {
           display: flex; justify-content: center; margin-bottom: 16px;
@@ -2594,9 +2598,13 @@ const RechargePage: React.FC = () => {
           .hidden-text { font-size: 14px; }
           .hidden-close { top: 12px; right: 14px; font-size: 12px; }
           .home-mood-btn { padding: 6px 8px; min-width: 38px; }
+          .home-state-row { flex-wrap: nowrap; }
+          .home-state-options { flex-wrap: nowrap; overflow-x: auto; -webkit-overflow-scrolling: touch; }
           .home-mood-icon { font-size: 16px; }
           .home-mood-label { font-size: 9px; }
           .home-rec-card-actions { flex-direction: column; gap: 4px; }
+          .list-filter-bar { flex-wrap: nowrap; overflow-x: auto; -webkit-overflow-scrolling: touch; padding-bottom: 12px; }
+          .list-filter-btn { white-space: nowrap; flex-shrink: 0; }
           .stats-card-value { font-size: 24px; }
           .stats-chart-wrap { height: 170px; }
           .stats-badge-item { width: 64px; padding: 12px 6px; }

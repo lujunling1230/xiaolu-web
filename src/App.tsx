@@ -249,15 +249,8 @@ const AppContent: React.FC = () => {
         /* 导航栏 */
         .po-nav-wrap {
           position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+          pointer-events: none;
           transition: background 0.3s ease;
-        }
-        .po-nav-scrolled .fixed {
-          background: rgba(239, 242, 232, 0.8) !important;
-          backdrop-filter: blur(16px) !important;
-          -webkit-backdrop-filter: blur(16px) !important;
-        }
-        [data-theme="night"] .po-nav-scrolled .fixed {
-          background: rgba(28, 30, 26, 0.82) !important;
         }
 
         /* ===== Hero 首屏 ===== */

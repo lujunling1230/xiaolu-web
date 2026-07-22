@@ -1,7 +1,32 @@
 import { createContext, useContext, useCallback, type ReactNode } from "react";
+import { useNavigate } from "react-router-dom";
 import { useCityData } from "./hooks/useCityData";
 import { useAIAssistant } from "./hooks/useAIAssistant";
 import type { City, AIForwardGenerateResponse, AIReverseRecommendResponse } from "./types";
+
+/* 点亮音效：Web Audio API 合成短促悦耳的和弦 */
+function playLightUpSound() {
+  try {
+    const Ctor = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+    const ctx = new Ctor();
+    const now = ctx.currentTime;
+    // 上行旋律 C5 → E5 → G5 → C6（愉快的点亮感）
+    const notes = [523, 659, 784, 1047];
+    notes.forEach((freq, i) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = "sine";
+      osc.frequency.value = freq;
+      gain.gain.setValueAtTime(0.18, now + i * 0.08);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + i * 0.08 + 0.35);
+      osc.connect(gain); gain.connect(ctx.destination);
+      osc.start(now + i * 0.08);
+      osc.stop(now + i * 0.08 + 0.35);
+    });
+    // 自动关闭
+    setTimeout(() => ctx.close(), 2000);
+  } catch { /* 静默处理 */ }
+}
 
 interface RoamingGuideContextValue {
   /* ---- city data ---- */
@@ -47,6 +72,7 @@ const Context = createContext<RoamingGuideContextValue | null>(null);
 export function RoamingGuideProvider({ children }: { children: ReactNode }) {
   const cityData = useCityData();
   const aiData = useAIAssistant(cityData.addCity);
+  const navigate = useNavigate();
 
   const handleSavePlan = useCallback((city: City, result: AIForwardGenerateResponse) => {
     const existing = cityData.cities.find(c => c.id === city.id || c.name === city.name);
@@ -88,11 +114,18 @@ export function RoamingGuideProvider({ children }: { children: ReactNode }) {
 
   const handleSaveCity = useCallback((city: City) => {
     const existing = cityData.cities.find(c => c.id === city.id);
-    if (existing) cityData.updateCity(city);
-    else cityData.addCity(city);
+    if (existing) {
+      cityData.updateCity(city);
+    } else {
+      cityData.addCity(city);
+      // 新城市点亮：音效 + 选中 + 跳转地图
+      playLightUpSound();
+      cityData.setSelectedCity(city);
+      navigate("map", { relative: "path" });
+    }
     cityData.setEditOpen(false);
     cityData.setEditingCity(null);
-  }, [cityData.cities, cityData.addCity, cityData.updateCity]);
+  }, [cityData.cities, cityData.addCity, cityData.updateCity, navigate]);
 
   const handleAddCity = useCallback(() => {
     cityData.setEditingCity(null);

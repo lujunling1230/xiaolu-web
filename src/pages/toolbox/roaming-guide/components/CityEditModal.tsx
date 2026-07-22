@@ -310,8 +310,8 @@ export default function CityEditModal({
 
     // 自动填充坐标（如果用户没有手动输入）
     const cityCoord = getCityCoord(c.name.trim());
-    const finalLng = c.lng ?? cityCoord?.lng ?? 116.4;
-    const finalLat = c.lat ?? cityCoord?.lat ?? 39.9;
+    const finalLng = Number(c.lng) || cityCoord?.lng || 116.4;
+    const finalLat = Number(c.lat) || cityCoord?.lat || 39.9;
 
     // 构造符合 City 类型的输出（包含 coord 对象）
     const cleaned = {

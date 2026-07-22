@@ -1,8 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
-import AMapLoader from "@amap/amap-jsapi-loader";
 
 const AMAP_KEY = import.meta.env.VITE_AMAP_KEY || "";
-const AMAP_SECRET = import.meta.env.VITE_AMAP_SECRET || "";
 
 interface UseAMapOptions {
   containerRef: React.RefObject<HTMLDivElement | null>;
@@ -19,11 +17,12 @@ interface UseAMapReturn {
   getAMap: () => typeof AMap | null;
 }
 
-// 安全密钥配置（JS API 2.0 必须）
-if (typeof window !== "undefined" && AMAP_SECRET) {
-  (window as unknown as Record<string, unknown>)._AMapSecurityConfig = {
-    securityJsCode: AMAP_SECRET,
-  };
+declare global {
+  interface Window {
+    AMap: typeof AMap;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    AMapLoader: { load: (options: Record<string, unknown>) => Promise<typeof AMap> };
+  }
 }
 
 export function useAMap(options: UseAMapOptions): UseAMapReturn {
@@ -54,8 +53,7 @@ export function useAMap(options: UseAMapOptions): UseAMapReturn {
     initedRef.current = true;
     let destroyed = false;
 
-    // 延迟一帧确保容器已渲染并有尺寸
-    requestAnimationFrame(() => {
+    const initMap = () => {
       if (destroyed) return;
 
       const rect = container.getBoundingClientRect();
@@ -65,10 +63,15 @@ export function useAMap(options: UseAMapOptions): UseAMapReturn {
         return;
       }
 
-      AMapLoader.load({
+      if (!window.AMapLoader) {
+        setError("高德地图 Loader 未加载");
+        setLoading(false);
+        return;
+      }
+
+      window.AMapLoader.load({
         key: AMAP_KEY,
         version: "2.0",
-        plugins: [],
       }).then((AMapModule) => {
         if (destroyed) return;
         AMapRef.current = AMapModule;
@@ -97,7 +100,27 @@ export function useAMap(options: UseAMapOptions): UseAMapReturn {
         setError(msg);
         setLoading(false);
       });
-    });
+    };
+
+    // 等待高德地图 Loader 加载完成
+    if (window.AMapLoader) {
+      initMap();
+    } else {
+      const timer = setInterval(() => {
+        if (window.AMapLoader) {
+          clearInterval(timer);
+          initMap();
+        }
+      }, 200);
+      // 5 秒后超时
+      setTimeout(() => {
+        clearInterval(timer);
+        if (!window.AMapLoader && !destroyed) {
+          setError("高德地图 Loader 加载超时");
+          setLoading(false);
+        }
+      }, 5000);
+    }
 
     return () => {
       destroyed = true;

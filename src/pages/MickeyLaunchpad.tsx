@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Link } from "react-router-dom";
 
@@ -6,7 +6,7 @@ import { Link } from "react-router-dom";
  * 作品集 · Mickey Launchpad
  *
  * 深色星空背景 + 闪烁星辰 + 金色发光圆形卡片。
- * 9 个工具，4-4-1 布局，第 9 个（时光博物馆）位于解忧杂货店正下方。
+ * 7 个作品，北斗七星布局，动态 SVG 连线。
  */
 
 /* ===== 工具数据（严格按图） ===== */
@@ -18,38 +18,6 @@ interface Tool {
   glow?: boolean;
   hoverHint?: string;
 }
-
-/* ===== 缝合心图标：破碎之心 → 治愈修复 ===== */
-const MendingHeartIcon: React.FC = () => (
-  <svg viewBox="0 0 48 48" width="34" height="34" aria-hidden="true">
-    <path
-      d="M24 41C24 41 5 29 5 17C5 11 10 6 16.5 6C20 6 22.5 8 24 10.5C25.5 8 28 6 31.5 6C38 6 43 11 43 17C43 29 24 41 24 41Z"
-      fill="#e05563"
-    />
-    <path d="M16.5 7.5C12.5 7.5 9 10.8 9 14.8" stroke="#fff" strokeWidth="1" strokeOpacity="0.3" strokeLinecap="round" fill="none" />
-    <line x1="24" y1="8.5" x2="24" y2="34" stroke="#9c3340" strokeWidth="0.9" strokeOpacity="0.55" />
-    <g stroke="#ffd86b" strokeWidth="1.7" strokeLinecap="round" filter="url(#mending-glow)">
-      <line x1="20" y1="11" x2="28" y2="11" />
-      <line x1="19" y1="16" x2="29" y2="16" />
-      <line x1="20" y1="21" x2="28" y2="21" />
-      <line x1="19" y1="26" x2="29" y2="26" />
-      <line x1="20" y1="31" x2="28" y2="31" />
-    </g>
-    <g fill="#ffe6a0">
-      <circle cx="20" cy="11" r="0.9" /><circle cx="28" cy="11" r="0.9" />
-      <circle cx="19" cy="16" r="0.9" /><circle cx="29" cy="16" r="0.9" />
-      <circle cx="20" cy="21" r="0.9" /><circle cx="28" cy="21" r="0.9" />
-      <circle cx="19" cy="26" r="0.9" /><circle cx="29" cy="26" r="0.9" />
-      <circle cx="20" cy="31" r="0.9" /><circle cx="28" cy="31" r="0.9" />
-    </g>
-    <defs>
-      <filter id="mending-glow" x="-20%" y="-20%" width="140%" height="140%">
-        <feGaussianBlur stdDeviation="0.7" result="b" />
-        <feMerge><feMergeNode in="b" /><feMergeNode in="SourceGraphic" /></feMerge>
-      </filter>
-    </defs>
-  </svg>
-);
 
 /* ===== 爱情公寓图标：八人 Q 版群像（内联 SVG，避免路径依赖） ===== */
 const ApartmentIcon: React.FC = () => (
@@ -83,16 +51,25 @@ const ApartmentIcon: React.FC = () => (
 );
 
 const tools: Tool[] = [
+  { name: "回血清单", slogan: "允许一切崩塌，只做一件极小的事。", icon: "🔋", url: "/toolbox/recharge", glow: true, hoverHint: "充一会儿电" },
+  { name: "漫游指南", slogan: "走过的路，看过的云。", icon: "🗺️", url: "/toolbox/travel", glow: true, hoverHint: "出发吧" },
   { name: "森林疗愈室", slogan: "调节呼吸与情绪", icon: "🌲", url: "/healing", glow: true, hoverHint: "深呼吸" },
   { name: "爱情公寓", slogan: "3601·3602·3603 全员在线", icon: <ApartmentIcon />, url: "/toolbox/answer", glow: true, hoverHint: "聊聊呗" },
   { name: "通关清单", slogan: "把人生变成一场 RPG。", icon: "🎯", url: "/toolbox/quests", glow: true, hoverHint: "命中目标！" },
   { name: "物资管家", slogan: "库存与保质期管理", icon: "📦", url: "/toolbox/supplies", glow: true, hoverHint: "清点一下" },
   { name: "解忧杂货店", slogan: "总有一句话，能解开你的心结。", icon: "🕯️", url: "/toolbox/advice", glow: true, hoverHint: "进来坐坐？" },
-  { name: "漫游指南", slogan: "走过的路，看过的云。", icon: "🗺️", url: "/toolbox/travel", glow: true, hoverHint: "出发吧" },
-  { name: "回血清单", slogan: "允许一切崩塌，只做一件极小的事。", icon: "🔋", url: "/toolbox/recharge", glow: true, hoverHint: "充一会儿电" },
-  { name: "解压馆", slogan: "允许一切崩塌。", icon: <MendingHeartIcon />, url: "/toolbox/games", glow: true, hoverHint: "捏碎它" },
-  
 ];
+
+/* ===== 北斗七星 Grid 定位 (column, row) ===== */
+const gridPositions: Record<number, { col: number; row: number }> = {
+  0: { col: 2, row: 4 }, // 回血清单
+  1: { col: 3, row: 3 }, // 漫游指南
+  2: { col: 1, row: 2 }, // 森林疗愈室
+  3: { col: 2, row: 2 }, // 爱情公寓
+  4: { col: 3, row: 2 }, // 通关清单
+  5: { col: 4, row: 2 }, // 物资管家
+  6: { col: 4, row: 1 }, // 解忧杂货店
+};
 
 /* ===== Web Audio 合成"叮"声 ===== */
 let audioCtx: AudioContext | null = null;
@@ -204,6 +181,43 @@ const MickeyLaunchpad: React.FC = () => {
     []
   );
 
+  const gridRef = useRef<HTMLElement>(null);
+  const itemRefs = useRef<(HTMLDivElement | null)[]>([]);
+  const [linePoints, setLinePoints] = useState<{ x: number; y: number }[]>([]);
+
+  useEffect(() => {
+    const computePositions = () => {
+      const grid = gridRef.current;
+      if (!grid) return;
+      const gridRect = grid.getBoundingClientRect();
+      const points: { x: number; y: number }[] = [];
+      for (let i = 0; i < tools.length; i++) {
+        const el = itemRefs.current[i];
+        if (el) {
+          const rect = el.getBoundingClientRect();
+          points.push({
+            x: rect.left + rect.width / 2 - gridRect.left,
+            y: rect.top + rect.height / 2 - gridRect.top,
+          });
+        }
+      }
+      setLinePoints(points);
+    };
+
+    computePositions();
+    const observer = new ResizeObserver(computePositions);
+    if (gridRef.current) observer.observe(gridRef.current);
+    window.addEventListener("resize", computePositions);
+    return () => {
+      observer.disconnect();
+      window.removeEventListener("resize", computePositions);
+    };
+  }, []);
+
+  const polylinePoints = linePoints.length === tools.length
+    ? linePoints.map((p) => `${p.x},${p.y}`).join(" ")
+    : "";
+
   return (
     <div className="mickey-page">
       {/* 星空层 */}
@@ -226,10 +240,8 @@ const MickeyLaunchpad: React.FC = () => {
 
       {/* 左上角退出按钮 */}
       <Link to="/?mode=full" className="mickey-exit" aria-label="回到主站">
-        ← 回到主站 ✨
+        &larr; 回到主站 ✨
       </Link>
-
-      {/* 右上角小标签 */}
 
       {/* 标题区 */}
       <section className="mickey-hero">
@@ -251,11 +263,32 @@ const MickeyLaunchpad: React.FC = () => {
         </motion.p>
       </section>
 
-      {/* 工具网格 — 每排2个，最后一行居中1个 */}
-      <section className="mickey-grid">
-        {tools.map((t, i) => (
-          <ToolButton key={t.name} tool={t} index={i} />
-        ))}
+      {/* 工具网格 — 北斗七星布局 */}
+      <section className="mickey-grid" ref={gridRef}>
+        {polylinePoints && (
+          <svg className="mickey-constellation" aria-hidden="true">
+            <polyline
+              points={polylinePoints}
+              stroke="rgba(255,255,255,0.3)"
+              strokeWidth="1.5"
+              strokeDasharray="4,4"
+              fill="none"
+            />
+          </svg>
+        )}
+        {tools.map((t, i) => {
+          const pos = gridPositions[i];
+          return (
+            <div
+              key={t.name}
+              ref={(el) => { itemRefs.current[i] = el; }}
+              className="mickey-tool-wrap"
+              style={{ gridColumn: pos.col, gridRow: pos.row }}
+            >
+              <ToolButton tool={t} index={i} />
+            </div>
+          );
+        })}
       </section>
 
       {/* 页脚 */}
@@ -331,18 +364,25 @@ const MickeyLaunchpad: React.FC = () => {
           font-size: 16px; color: #d0daf5; margin: 0; letter-spacing: 0.06em;
         }
 
-        /* 工具网格 — 4-4-1 布局，每排4个，第9个落在第一列（解忧杂货店正下方） */
+        /* 工具网格 — 北斗七星布局，4列4行 */
         .mickey-grid {
           position: relative; z-index: 2;
-          max-width: 820px; margin: 0 auto;
-          display: grid; grid-template-columns: repeat(4, 1fr); gap: 36px 20px;
+          max-width: 720px; margin: 0 auto;
+          display: grid;
+          grid-template-columns: repeat(4, 1fr);
+          grid-template-rows: auto auto auto auto;
+          gap: 32px 20px;
           padding: 8px 4px 0;
+          justify-items: center;
         }
-        .mickey-tool-wrap:last-child {
-          grid-column: 1;
-        }
-        @media (min-width: 768px) {
-          .mickey-grid { max-width: 880px; gap: 44px 32px; }
+
+        /* 星座连线 SVG */
+        .mickey-constellation {
+          position: absolute;
+          top: 0; left: 0;
+          width: 100%; height: 100%;
+          pointer-events: none;
+          z-index: 1;
         }
 
         .mickey-tool-wrap { display: flex; flex-direction: column; align-items: center; }
@@ -418,12 +458,24 @@ const MickeyLaunchpad: React.FC = () => {
           text-align: center; font-size: 13px; color: #8a98c0; letter-spacing: 0.08em;
         }
 
+        @media (max-width: 640px) {
+          .mickey-grid {
+            grid-template-columns: 1fr;
+            grid-template-rows: auto;
+          }
+          .mickey-tool-wrap {
+            grid-column: auto !important;
+            grid-row: auto !important;
+          }
+          .mickey-constellation {
+            display: none;
+          }
+        }
+
         @media (max-width: 480px) {
           .mickey-btn { width: 80px; height: 80px; }
           .mickey-icon { font-size: 30px; }
           .mickey-moon { width: 64px; height: 64px; top: 5%; right: 5%; }
-          .mickey-grid { grid-template-columns: repeat(3, 1fr); gap: 28px 14px; }
-          .mickey-tool-wrap:last-child { grid-column: 3; }
         }
       `}</style>
     </div>

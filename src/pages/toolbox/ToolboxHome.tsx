@@ -18,7 +18,6 @@ const products = [
   { dimension: "游", title: "漫游指南", value: "探索与规划" },
   { dimension: "术", title: "万能百事通", value: "效率与工具" },
   { dimension: "管", title: "物资管家", value: "资源管理与反" },
-  { dimension: "感", title: "解压馆", value: "触觉发泄" },
 ];
 
 /**

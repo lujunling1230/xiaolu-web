@@ -31,7 +31,6 @@ const ROUTES: string[] = [
   "/toolbox/advice",      // 4 解忧杂货店
   "/toolbox/travel",      // 5 漫游指南
   "/toolbox/recharge",    // 6 回血清单
-  "/toolbox/games",       // 7 解压馆
   "/toolbox/memories",    // 8 时光博物馆
   "/film",                // 9 第七卷胶片
 ];

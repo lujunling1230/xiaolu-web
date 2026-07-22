@@ -2205,13 +2205,7 @@ const SystemTuningPage: React.FC = () => {
                               <div className="wx-me-narrative-text">允许一切崩塌，只做一件极小的事。</div>
                             </div>
                           </div>
-                          <div className="wx-me-narrative" onClick={() => window.open("/toolbox/games", "_self")}>
-                            <span className="wx-me-narrative-icon">❤️‍🩹</span>
-                            <div className="wx-me-narrative-content">
-                              <div className="wx-me-narrative-label">解压馆</div>
-                              <div className="wx-me-narrative-text">允许一切崩塌。</div>
-                            </div>
-                          </div>
+
                         </motion.div>
                       )}
                       {foldCh3 && getWorksByChapter("ch3").map((w) => (

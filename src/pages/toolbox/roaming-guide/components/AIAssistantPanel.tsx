@@ -1,4 +1,5 @@
 import { useState, useCallback, useEffect, useRef } from "react";
+import { track } from "../../../../utils/track";
 import {
   City,
   AIReverseRecommendRequest,
@@ -129,10 +130,39 @@ export default function AIAssistantPanel({
 
   /* 监听导航栏打开事件 */
   useEffect(() => {
-    const handler = () => setOpen(true);
+    const handler = () => {
+      track("rg_ai_open");
+      setOpen(true);
+    };
     window.addEventListener("rg-open-ai", handler);
     return () => window.removeEventListener("rg-open-ai", handler);
   }, [setOpen]);
+
+  // 打开面板时埋点
+  const handleGlobeClick = useCallback(() => {
+    track("rg_ai_open");
+    setOpen(true);
+  }, [setOpen]);
+
+  // 监听推荐结果变化，成功后埋点
+  useEffect(() => {
+    if (lastRecommendResult) {
+      track("rg_ai_recommend_result", {
+        city_count: lastRecommendResult.cities.length,
+        has_error: false,
+      });
+    }
+  }, [lastRecommendResult]);
+
+  // 监听生成结果变化，成功后埋点
+  useEffect(() => {
+    if (lastGenerateResult) {
+      track("rg_ai_generate_result", {
+        days: lastGenerateResult.plan.days,
+        has_error: false,
+      });
+    }
+  }, [lastGenerateResult]);
 
   /* Toast 系统 */
   const [toasts, setToasts] = useState<{ id: number; message: string }[]>([]);
@@ -193,6 +223,12 @@ export default function AIAssistantPanel({
       showToast("请先选择您的旅行偏好哦~");
       return;
     }
+    track("rg_ai_recommend_submit", {
+      seasons: selectedSeasons,
+      budget: selectedBudget,
+      interests: selectedInterests,
+      pace: selectedPace,
+    });
     try {
       await onReverseRecommend({
         preferences: {
@@ -209,6 +245,7 @@ export default function AIAssistantPanel({
 
   const handleForwardGenerate = async () => {
     if (!selectedCity) return;
+    track("rg_ai_generate_submit", { city_name: selectedCity, days: tripDays });
     try {
       await onForwardGenerate({
         city_name: selectedCity,
@@ -279,7 +316,7 @@ export default function AIAssistantPanel({
       {/* ===== 小地球悬浮按钮 ===== */}
       <button
         className={`rg-ai-globe${centered ? " rg-ai-globe--centered" : ""}`}
-        onClick={() => setOpen(true)}
+        onClick={handleGlobeClick}
         aria-label="打开 AI 旅行向导"
         title="AI 旅行向导"
       >

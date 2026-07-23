@@ -27,6 +27,11 @@ export default function RoamingGuidePage() {
     stats,
   } = useCityData();
 
+  // 页面进入埋点
+  useEffect(() => {
+    track("tool_enter", { tool_name: "roaming_guide" });
+  }, []);
+
   const {
     recommendLoading, generateLoading,
     lastRecommendResult, lastGenerateResult,
@@ -74,12 +79,14 @@ export default function RoamingGuidePage() {
 
   /* AI 采纳推荐 → 点亮 */
   const handleAdoptCity = useCallback((rec: AIReverseRecommendResponse["cities"][0]) => {
+    track("rg_ai_adopt_city", { city_name: rec.name, province: rec.province });
     const newCity = adoptRecommendation(rec);
     addCity(newCity);
   }, [adoptRecommendation, addCity]);
 
   /* AI 保存攻略 */
   const handleSavePlan = useCallback((city: City, result: AIForwardGenerateResponse) => {
+    track("rg_ai_save_plan", { city_name: city.name, days: result.plan.days });
     const existing = cities.find(c => c.id === city.id || c.name === city.name);
     if (existing) {
       // 更新已有城市的 AI 计划

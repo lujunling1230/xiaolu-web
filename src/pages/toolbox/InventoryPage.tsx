@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { useAdminGuard } from "../../hooks/useAdminGuard";
+import { track } from "../../utils/track";
 
 /**
  * 物资管家 · Inventory Prophet
@@ -788,6 +789,17 @@ const InventoryPage: React.FC = () => {
   const [editingItem, setEditingItem] = useState<InventoryItem | null>(null);
   const [activeTab, setActiveTab] = useState<TabKey>("inbound");
   const [searchParams] = useSearchParams();
+
+  // 页面进入埋点
+  useEffect(() => {
+    track("tool_enter", { tool_name: "inventory_manager" });
+  }, []);
+
+  // Tab 切换埋点
+  const handleTabChange = useCallback((tab: TabKey) => {
+    track("iv_tab_switch", { tab });
+    setActiveTab(tab);
+  }, []);
   const fromQuery = searchParams.get("from") === "full" ? "?from=full" : "";
 
   const [form, setForm] = useState<FormState>({

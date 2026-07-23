@@ -153,35 +153,7 @@ function startAmbientSound(soundId: SoundId): { stop: () => void } {
         lfo2.start();
         sources.push(lfo2);
 
-        // 第三层：泡沫水花（高频白噪音 + 随机脉冲）
-        const noise3 = ctx.createBufferSource();
-        noise3.buffer = noiseBuf;
-        noise3.loop = true;
-        const hpf = ctx.createBiquadFilter();
-        hpf.type = "highpass";
-        hpf.frequency.value = 2800;
-        hpf.Q.value = 0.4;
-        const foamGain = ctx.createGain();
-        foamGain.gain.value = 0;
-        noise3.connect(hpf);
-        hpf.connect(foamGain);
-        foamGain.connect(masterGain);
-        noise3.start();
-        sources.push(noise3);
-
-        // 随机泡沫脉冲 — 模拟浪花溅起
-        const foamInterval = setInterval(() => {
-          if (foamGain.gain) {
-            const now = ctx.currentTime;
-            const intensity = 0.08 + Math.random() * 0.18;
-            foamGain.gain.setValueAtTime(0, now);
-            foamGain.gain.linearRampToValueAtTime(intensity, now + 0.02);
-            foamGain.gain.exponentialRampToValueAtTime(0.001, now + 0.1 + Math.random() * 0.2);
-          }
-        }, 120 + Math.random() * 200);
-        intervals.push(foamInterval);
-
-        // 第四层：沙滩低频震感（极低频白噪音）
+        // 第三层：沙滩低频震感（极低频白噪音）
         const noise4 = ctx.createBufferSource();
         noise4.buffer = noiseBuf;
         noise4.loop = true;
@@ -517,7 +489,7 @@ const MeditationTimer: React.FC = () => {
   const [seconds, setSeconds] = useState(0);
   const [running, setRunning] = useState(false);
   const [completed, setCompleted] = useState(false);
-  const [showComingToast, setShowComingToast] = useState(false);
+
 
   // 环境音引用
   const ambientRef = useRef<{ stop: () => void } | null>(null);
@@ -675,20 +647,10 @@ const MeditationTimer: React.FC = () => {
                 </motion.button>
               ))}
 
-              {/* Coming Soon 占位卡 */}
-              <motion.button
-                className="ms-sound-card ms-sound-coming"
-                onClick={() => {
-                  setShowComingToast(true);
-                  setTimeout(() => setShowComingToast(false), 8000);
-                }}
-                whileHover={{ scale: 1.04 }}
-                whileTap={{ scale: 0.97 }}
-              >
-                <span className="ms-sound-icon">✨</span>
-                <span className="ms-sound-label">更多音频</span>
-                <span className="ms-sound-sub">Coming Soon</span>
-              </motion.button>
+              {/* 更多音频提示 */}
+              <div className="ms-sound-coming-text">
+                还在路上~
+              </div>
             </div>
 
             {/* ── 时长选择 ── */}
@@ -1208,44 +1170,18 @@ const MeditationTimer: React.FC = () => {
           }
         }
 
-        /* Coming Soon 占位卡样式 */
-        .ms-sound-coming {
-          opacity: 0.65;
-          border-style: dashed;
-          cursor: not-allowed;
-          background: rgba(235, 228, 210, 0.5);
-        }
-        .ms-sound-coming .ms-sound-label {
-          color: #8B8B7A;
-        }
-        .ms-sound-coming .ms-sound-sub {
-          color: #A8A898;
-          opacity: 1;
+        /* 更多音频提示文字 */
+        .ms-sound-coming-text {
+          grid-column: 1 / -1;
+          text-align: center;
+          font-size: 13px;
+          color: #9A8B7A;
+          padding: 8px 0;
+          letter-spacing: 1px;
         }
 
-        /* Coming Soon Toast */
-        .ms-coming-toast {
-          position: fixed;
-          bottom: 32px;
-          left: 50%;
-          transform: translateX(-50%);
-          padding: 12px 24px;
-          border-radius: 999px;
-          background: var(--text);
-          color: var(--card-bg);
-          font-size: 13px;
-          z-index: 300;
-          box-shadow: 0 8px 32px -4px rgba(0,0,0,0.2);
-        }
       `}</style>
     </motion.div>
-
-      {/* Coming Soon Toast — 简洁渲染，避免 transform 上下文问题 */}
-      {showComingToast && (
-        <div className="ms-coming-toast" data-testid="coming-toast">
-          更多精彩音频正在路上，敬请期待！
-        </div>
-      )}
     </>
   );
 };

@@ -577,19 +577,10 @@ const MeditationTimer: React.FC = () => {
     // 启动环境音
     stopAmbient();
     ambientRef.current = startAmbientSound(selectedSound);
-    // iOS 兼容：在用户手势中即刻"解锁" speechSynthesis
+    // 语音引导：必须在用户手势同步路径中直接 speak（iOS Safari 要求）
     if (voiceGuide && typeof window !== "undefined" && window.speechSynthesis) {
-      // 先预加载语音列表
-      window.speechSynthesis.getVoices();
-      // 说一个极短的静默短语来激活音频上下文
-      const unlockU = new SpeechSynthesisUtterance("");
-      unlockU.volume = 0;
-      unlockU.rate = 2;
-      window.speechSynthesis.speak(unlockU);
-      // 延迟 1.5s 后播放真正的引导语（等环境音淡入）
-      setTimeout(() => {
-        voiceRef.current = speakGuide(GUIDE_TEXTS.start);
-      }, 1500);
+      window.speechSynthesis.cancel();
+      voiceRef.current = speakGuide(GUIDE_TEXTS.start);
     }
   };
 

@@ -90,7 +90,7 @@ const XiaoyePanel: React.FC<{
 }> = ({ isOpen, onClose, autoMessage, onAutoMessageDone }) => {
   const [minimized, setMinimized] = useState(false);
   const [messages, setMessages] = useState<Message[]>([
-    { id: 0, role: "assistant", text: WELCOME_TEXT, isTyping: true },
+    { id: 0, role: "assistant", text: WELCOME_TEXT, isTyping: false },
   ]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
@@ -147,19 +147,17 @@ const XiaoyePanel: React.FC<{
       setLoading(true);
       setActiveModule(null); // 收起模块
 
-      // 先检查本地快捷回复（秒回，无需走 API）
+      // 先检查本地快捷回复（秒回，无需走 API，不显示打字机效果）
       const localReply = LOCAL_REPLIES.find((r) => r.match(text.trim()));
       if (localReply) {
-        // 模拟短暂思考时间，更自然
-        setTimeout(() => {
-          setMessages((prev) =>
-            prev.map((m) =>
-              m.id === assistantId ? { ...m, text: localReply.answer } : m
-            )
-          );
-          startTyping(localReply.answer, assistantId);
-          setLoading(false);
-        }, 600);
+        setMessages((prev) =>
+          prev.map((m) =>
+            m.id === assistantId
+              ? { ...m, text: localReply.answer, isTyping: false }
+              : m
+          )
+        );
+        setLoading(false);
         return;
       }
 

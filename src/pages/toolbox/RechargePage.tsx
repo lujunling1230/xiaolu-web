@@ -889,14 +889,17 @@ const ShareCard: React.FC<{ totalCount: number; streak: number; onClose: () => v
 
   const handleDownload = useCallback(() => {
     const dataJson = buildDataJson();
-    const html = generateShareHTML(dataJson);
-    const blob = new Blob([html], { type: "text/html;charset=utf-8" });
-    const url = URL.createObjectURL(blob);
+    const data = JSON.parse(dataJson);
+    const canvas = drawShareCard({
+      totalCount: data.totalCount,
+      streak: data.streak,
+      recentItems: data.recentItems,
+    });
+    const url = canvas.toDataURL("image/png");
     const a = document.createElement("a");
     a.href = url;
-    a.download = `我的回血日记-${new Date().toISOString().slice(0, 10)}.html`;
+    a.download = `回血日记-${new Date().toISOString().slice(0, 10)}.png`;
     a.click();
-    URL.revokeObjectURL(url);
   }, [buildDataJson]);
 
   return (
@@ -937,9 +940,213 @@ const ShareCard: React.FC<{ totalCount: number; streak: number; onClose: () => v
  * 生成带嵌入数据的分享 HTML 文件内容
  */
 function generateShareHTML(dataJson: string): string {
-  return '<!DOCTYPE html>\n<html lang="zh-CN">\n<head>\n<meta charset="UTF-8">\n<meta name="viewport" content="width=device-width, initial-scale=1.0">\n<title>我的回血日记</title>\n<script src="https://cdn.tailwindcss.com"><\/script>\n<link rel="preconnect" href="https://fonts.googleapis.com">\n<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>\n<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@300;400;600;700&family=ZCOOL+XiaoWei&family=Quicksand:wght@500;700&display=swap" rel="stylesheet">\n<style>\n:root{--bg-outer:#EDE8DC;--bg-card:#F5F1E6;--border-card:#D8CFB8;--text-deep:#5D4037;--text-mid:#7A6E62;--text-soft:#A09080;--text-tag:#B0A090;--accent-blue:#DCEEF2;--accent-pink:#F3D9D2;--note-bg:#FBF8F0;--seal-red:#C44B4B;--seal-dark:#8B3030;--font-title:\'ZCOOL XiaoWei\',\'Noto Serif SC\',serif;--font-body:\'Noto Serif SC\',Georgia,serif;--font-number:\'Quicksand\',\'PingFang SC\',system-ui,sans-serif}\n*{margin:0;padding:0;box-sizing:border-box}\nbody{background:var(--bg-outer);display:flex;align-items:center;justify-content:center;min-height:100vh;padding:20px;font-family:var(--font-body)}\n.card{width:800px;height:1000px;background:var(--bg-card);border:1px solid var(--border-card);border-radius:18px;box-shadow:0 10px 30px rgba(93,64,55,0.12);position:relative;overflow:hidden;animation:cardFadeIn .8s ease-out}\n@keyframes cardFadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}\n.card::before{content:\'\';position:absolute;inset:0;border-radius:18px;background-image:url("data:image/svg+xml,%3Csvg viewBox=\'0 0 256 256\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cfilter id=\'n\'%3E%3CfeTurbulence type=\'fractalNoise\' baseFrequency=\'0.9\' numOctaves=\'4\' stitchTiles=\'stitch\'/%3E%3C/filter%3E%3Crect width=\'100%25\' height=\'100%25\' filter=\'url(%23n)\' opacity=\'0.04\'/%3E%3C/svg%3E");background-size:256px;pointer-events:none;z-index:0}\n.card-inner{position:relative;z-index:1;width:100%;height:100%;display:flex;flex-direction:column;padding:48px 56px 40px}\n.header-title{font-family:var(--font-title);font-size:36px;color:var(--text-deep);text-align:center;letter-spacing:.06em}\n.header-sub{font-family:var(--font-body);font-size:15px;font-weight:300;color:var(--text-mid);text-align:center;letter-spacing:.15em;margin-top:8px;display:flex;align-items:center;justify-content:center;gap:16px}\n.header-line{width:50px;height:1px;background:var(--border-card);flex-shrink:0}\n.badges{display:flex;justify-content:center;gap:64px;margin-top:36px}\n.badge{display:flex;flex-direction:column;align-items:center;gap:10px;transition:transform .3s ease}\n.badge:hover{transform:scale(1.03)}\n.badge-circle{width:110px;height:110px;border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;box-shadow:0 0 0 2px rgba(93,64,55,0.12),0 0 0 4px rgba(93,64,55,0.04),0 4px 12px rgba(93,64,55,0.08)}\n.badge-circle-left{background:var(--accent-blue)}\n.badge-circle-right{background:var(--accent-pink)}\n.badge-number{font-family:var(--font-number);font-size:48px;font-weight:700;color:var(--text-deep);line-height:1}\n.badge-label{font-family:var(--font-body);font-size:13px;color:var(--text-mid);font-weight:300;letter-spacing:.08em}\n.quote{text-align:center;margin-top:36px}\n.quote-text{font-family:var(--font-title);font-size:22px;color:var(--text-deep);display:inline-flex;align-items:center;gap:12px}\n.quote-star{color:#D4A76A;font-size:14px;opacity:.7}\n.quote-leaf{margin-top:12px}\n.history{flex:1;margin-top:32px;display:flex;flex-direction:column;overflow:hidden}\n.history-title{font-family:var(--font-body);font-size:14px;font-weight:300;color:var(--text-soft);letter-spacing:.1em;margin-bottom:16px}\n.notes{display:flex;flex-direction:column;gap:16px}\n.note{background:var(--note-bg);border-radius:10px;padding:14px 18px;display:flex;align-items:center;gap:14px;box-shadow:0 2px 6px rgba(93,64,55,0.04);border:1px solid rgba(93,64,55,0.06)}\n.note:nth-child(odd){transform:rotate(-1.5deg)}\n.note:nth-child(even){transform:rotate(1deg)}\n.note-icon{width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:18px;background:rgba(93,64,55,0.04);flex-shrink:0}\n.note-body{flex:1;min-width:0}\n.note-text{font-family:var(--font-body);font-size:14px;color:var(--text-deep);font-weight:300}\n.note-date{font-family:var(--font-body);font-size:12px;color:var(--text-soft);font-weight:300;flex-shrink:0;text-align:right}\n.footer{display:flex;align-items:flex-end;justify-content:space-between;margin-top:24px;padding-top:20px;border-top:1px solid rgba(93,64,55,0.08)}\n.footer-left{font-family:var(--font-body);font-size:12px;font-weight:300;color:var(--text-tag);letter-spacing:.06em}\n.seal{width:72px;height:72px;border-radius:50%;background:radial-gradient(circle at 45% 40%,var(--seal-red),var(--seal-dark));display:flex;flex-direction:column;align-items:center;justify-content:center;color:#F5E6D0;font-family:var(--font-title);font-size:12px;line-height:1.4;box-shadow:0 0 0 3px var(--seal-dark),0 0 0 5px rgba(139,48,48,0.3),0 4px 12px rgba(139,48,48,0.2);transform:rotate(8deg);letter-spacing:.04em}\n.seal-check{font-size:16px;margin-bottom:1px}\n.tags{display:flex;gap:12px;margin-top:12px}\n.tag{font-family:var(--font-body);font-size:11px;color:var(--text-tag);font-weight:300;letter-spacing:.04em}\n.empty-state{display:flex;flex-direction:column;align-items:center;justify-content:center;flex:1;color:var(--text-tag);font-family:var(--font-body);font-size:14px;font-weight:300;gap:8px}\n.empty-state-icon{font-size:36px;opacity:.4}\n@media(max-width:840px){.card{width:100%;height:auto;aspect-ratio:4/5}.card-inner{padding:32px 28px 28px}.header-title{font-size:26px}.badge-circle{width:80px;height:80px}.badge-number{font-size:36px}.badges{gap:40px;margin-top:24px}.quote-text{font-size:18px}.badge-label{font-size:11px}}\n@media(max-width:420px){.card-inner{padding:24px 18px 20px}.header-title{font-size:22px}.header-sub{font-size:12px;gap:8px}.header-line{width:30px}.badge-circle{width:66px;height:66px}.badge-number{font-size:28px}.badges{gap:24px;margin-top:18px}.quote-text{font-size:16px}.quote{margin-top:20px}.note-text{font-size:12px}.note{padding:10px 12px;gap:8px}.seal{width:54px;height:54px;font-size:10px}}\n</style>\n</head>\n<body>\n<div class="card"><div class="card-inner">\n<div class="header"><h1 class="header-title">我的回血日记</h1><p class="header-sub"><span class="header-line"></span>每天做一件滋养自己的小事<span class="header-line"></span></p></div>\n<div class="badges"><div class="badge"><div class="badge-circle badge-circle-left"><span class="badge-number" id="tc">0</span><span class="badge-label">累计完成</span></div></div><div class="badge"><div class="badge-circle badge-circle-right"><span class="badge-number" id="sd">0</span><span class="badge-label">连续打卡</span></div></div></div>\n<div class="quote"><p class="quote-text"><span class="quote-star">&#10027;</span>今天也在好好照顾自己呢<span class="quote-star">&#10027;</span></p><div class="quote-leaf"><svg width="40" height="20" viewBox="0 0 40 20" fill="none"><path d="M20 2 C26 2 34 8 34 12 C34 16 28 18 20 18 C12 18 6 16 6 12 C6 8 14 2 20 2Z" fill="rgba(124,106,154,0.12)"/><line x1="20" y1="18" x2="20" y2="20" stroke="rgba(124,106,154,0.2)" stroke-width="0.8"/></svg></div></div>\n<div class="history"><div class="history-title">最近完成 &middot; Recent Recharge</div><div class="notes" id="nc"></div><div class="empty-state" id="es" style="display:none"><span class="empty-state-icon">&#127807;</span><span>还没有完成记录，去完成一件小事吧</span></div></div>\n<div class="footer"><div><p class="footer-left">每一件小事，都是给自己的温柔</p><div class="tags"><span class="tag">#自我关怀</span><span class="tag">#回血日记</span><span class="tag">#治愈系手帐</span></div></div><div class="seal"><span class="seal-check">&#10003;</span><span>已回血</span></div></div>\n</div></div>\n<script>\nvar EMBEDDED_DATA = ' + dataJson + ';\nfunction r(){var d=EMBEDDED_DATA;document.getElementById("tc").textContent=d.totalCount;document.getElementById("sd").textContent=d.streak;var recent=d.recentItems||[];var nc=document.getElementById("nc"),es=document.getElementById("es");if(recent.length===0){nc.innerHTML="";es.style.display="flex"}else{es.style.display="none";nc.innerHTML=recent.map(function(item){return\'<div class=note><div class=note-icon>\'+item.icon+\'</div><div class=note-body><span class=note-text>\'+item.text+\'</span></div><span class=note-date>\'+item.date+\'</span></div>\'}).join("")}}\ndocument.addEventListener("DOMContentLoaded",r);\n<\/script>\n</body></html>';
+  return '<!DOCTYPE html>\n<html lang="zh-CN">\n<head>\n<meta charset="UTF-8">\n<meta name="viewport" content="width=device-width, initial-scale=1.0">\n<title>我的回血日记</title>\n<script src="https://cdn.tailwindcss.com"><\/script>\n<link rel="preconnect" href="https://fonts.googleapis.com">\n<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>\n<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@300;400;600;700&family=ZCOOL+XiaoWei&family=Quicksand:wght@500;700&display=swap" rel="stylesheet">\n<style>\n:root{--bg-outer:#EDE8DC;--bg-card:#F5F1E6;--border-card:#D8CFB8;--text-deep:#5D4037;--text-mid:#7A6E62;--text-soft:#A09080;--text-tag:#B0A090;--accent-blue:#DCEEF2;--accent-pink:#F3D9D2;--note-bg:#FBF8F0;--seal-red:#C44B4B;--seal-dark:#8B3030;--font-title:\'ZCOOL XiaoWei\',\'Noto Serif SC\',serif;--font-body:\'Noto Serif SC\',Georgia,serif;--font-number:\'Quicksand\',\'PingFang SC\',system-ui,sans-serif}\n*{margin:0;padding:0;box-sizing:border-box}\nbody{background:var(--bg-outer);display:flex;align-items:center;justify-content:center;min-height:100vh;padding:20px;font-family:var(--font-body)}\n.card{width:800px;height:1000px;background:var(--bg-card);border:1px solid var(--border-card);border-radius:18px;box-shadow:0 10px 30px rgba(93,64,55,0.12);position:relative;overflow:hidden;animation:cardFadeIn .8s ease-out}\n@keyframes cardFadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}\n.card::before{content:\'\';position:absolute;inset:0;border-radius:18px;background-image:url("data:image/svg+xml,%3Csvg viewBox=\'0 0 256 256\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cfilter id=\'n\'%3E%3CfeTurbulence type=\'fractalNoise\' baseFrequency=\'0.9\' numOctaves=\'4\' stitchTiles=\'stitch\'/%3E%3C/filter%3E%3Crect width=\'100%25\' height=\'100%25\' filter=\'url(%23n)\' opacity=\'0.04\'/%3E%3C/svg%3E");background-size:256px;pointer-events:none;z-index:0}\n.card-inner{position:relative;z-index:1;width:100%;height:100%;display:flex;flex-direction:column;padding:48px 56px 40px}\n.header-title{font-family:var(--font-title);font-size:36px;color:var(--text-deep);text-align:center;letter-spacing:.06em}\n.header-sub{font-family:var(--font-body);font-size:15px;font-weight:300;color:var(--text-mid);text-align:center;letter-spacing:.15em;margin-top:8px;display:flex;align-items:center;justify-content:center;gap:16px}\n.header-line{width:50px;height:1px;background:var(--border-card);flex-shrink:0}\n.badges{display:flex;justify-content:center;gap:64px;margin-top:36px}\n.badge{display:flex;flex-direction:column;align-items:center;gap:10px;transition:transform .3s ease}\n.badge:hover{transform:scale(1.03)}\n.badge-circle{width:110px;height:110px;border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;box-shadow:0 0 0 2px rgba(93,64,55,0.12),0 0 0 4px rgba(93,64,55,0.04),0 4px 12px rgba(93,64,55,0.08)}\n.badge-circle-left{background:var(--accent-blue)}\n.badge-circle-right{background:var(--accent-pink)}\n.badge-number{font-family:var(--font-number);font-size:48px;font-weight:700;color:var(--text-deep);line-height:1}\n.badge-label{font-family:var(--font-body);font-size:13px;color:var(--text-mid);font-weight:300;letter-spacing:.08em}\n.quote{text-align:center;margin-top:36px}\n.quote-text{font-family:var(--font-title);font-size:22px;color:var(--text-deep);display:inline-flex;align-items:center;gap:12px}\n.quote-star{color:#D4A76A;font-size:14px;opacity:.7}\n.quote-leaf{margin-top:12px}\n.history{flex:1;margin-top:32px;display:flex;flex-direction:column;overflow:hidden}\n.history-title{font-family:var(--font-body);font-size:14px;font-weight:300;color:var(--text-soft);letter-spacing:.1em;margin-bottom:16px}\n.notes{display:flex;flex-direction:column;gap:16px}\n.note{background:var(--note-bg);border-radius:10px;padding:14px 18px;display:flex;align-items:center;gap:14px;box-shadow:0 2px 6px rgba(93,64,55,0.04);border:1px solid rgba(93,64,55,0.06)}\n.note:nth-child(odd){transform:rotate(-1.5deg)}\n.note:nth-child(even){transform:rotate(1deg)}\n.note-icon{width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:18px;background:rgba(93,64,55,0.04);flex-shrink:0}\n.note-body{flex:1;min-width:0}\n.note-text{font-family:var(--font-body);font-size:14px;color:var(--text-deep);font-weight:300}\n.note-date{font-family:var(--font-body);font-size:12px;color:var(--text-soft);font-weight:300;flex-shrink:0;text-align:right}\n.footer{display:flex;align-items:flex-end;justify-content:space-between;margin-top:24px;padding-top:20px;border-top:1px solid rgba(93,64,55,0.08)}\n.footer-left{font-family:var(--font-body);font-size:12px;font-weight:300;color:var(--text-tag);letter-spacing:.06em}\n.seal{width:72px;height:72px;border-radius:50%;background:radial-gradient(circle at 45% 40%,var(--seal-red),var(--seal-dark));display:flex;flex-direction:column;align-items:center;justify-content:center;color:#F5E6D0;font-family:var(--font-title);font-size:12px;line-height:1.4;box-shadow:0 0 0 3px var(--seal-dark),0 0 0 5px rgba(139,48,48,0.3),0 4px 12px rgba(139,48,48,0.2);transform:rotate(8deg);letter-spacing:.04em}\n.seal-check{font-size:16px;margin-bottom:1px}\n.tags{display:flex;gap:12px;margin-top:12px}\n.tag{font-family:var(--font-body);font-size:11px;color:var(--text-tag);font-weight:300;letter-spacing:.04em}\n.empty-state{display:flex;flex-direction:column;align-items:center;justify-content:center;flex:1;color:var(--text-tag);font-family:var(--font-body);font-size:14px;font-weight:300;gap:8px}\n.empty-state-icon{font-size:36px;opacity:.4}\n@media(max-width:840px){.card{width:100%;height:auto;aspect-ratio:4/5}.card-inner{padding:32px 28px 28px}.header-title{font-size:26px}.badge-circle{width:80px;height:80px}.badge-number{font-size:36px}.badges{gap:40px;margin-top:24px}.quote-text{font-size:18px}.badge-label{font-size:11px}}\n@media(max-width:420px){.card-inner{padding:24px 18px 20px}.header-title{font-size:22px}.header-sub{font-size:12px;gap:8px}.header-line{width:30px}.badge-circle{width:66px;height:66px}.badge-number{font-size:28px}.badges{gap:24px;margin-top:18px}.quote-text{font-size:16px}.quote{margin-top:20px}.note-text{font-size:12px}.note{padding:10px 12px;gap:8px}.seal{width:54px;height:54px;font-size:10px}}\n</style>\n</head>\n<body>\n<button onclick="window.close()" style="position:fixed;top:16px;left:16px;z-index:100;padding:8px 16px;border:none;border-radius:20px;background:rgba(93,64,55,0.85);color:#fff;font-size:14px;cursor:pointer;font-family:sans-serif;backdrop-filter:blur(4px);">← 返回</button>\n<div class="card"><div class="card-inner">\n<div class="header"><h1 class="header-title">我的回血日记</h1><p class="header-sub"><span class="header-line"></span>每天做一件滋养自己的小事<span class="header-line"></span></p></div>\n<div class="badges"><div class="badge"><div class="badge-circle badge-circle-left"><span class="badge-number" id="tc">0</span><span class="badge-label">累计完成</span></div></div><div class="badge"><div class="badge-circle badge-circle-right"><span class="badge-number" id="sd">0</span><span class="badge-label">连续打卡</span></div></div></div>\n<div class="quote"><p class="quote-text"><span class="quote-star">&#10027;</span>今天也在好好照顾自己呢<span class="quote-star">&#10027;</span></p><div class="quote-leaf"><svg width="40" height="20" viewBox="0 0 40 20" fill="none"><path d="M20 2 C26 2 34 8 34 12 C34 16 28 18 20 18 C12 18 6 16 6 12 C6 8 14 2 20 2Z" fill="rgba(124,106,154,0.12)"/><line x1="20" y1="18" x2="20" y2="20" stroke="rgba(124,106,154,0.2)" stroke-width="0.8"/></svg></div></div>\n<div class="history"><div class="history-title">最近完成 &middot; Recent Recharge</div><div class="notes" id="nc"></div><div class="empty-state" id="es" style="display:none"><span class="empty-state-icon">&#127807;</span><span>还没有完成记录，去完成一件小事吧</span></div></div>\n<div class="footer"><div><p class="footer-left">每一件小事，都是给自己的温柔</p><div class="tags"><span class="tag">#自我关怀</span><span class="tag">#回血日记</span><span class="tag">#治愈系手帐</span></div></div><div class="seal"><span class="seal-check">&#10003;</span><span>已回血</span></div></div>\n</div></div>\n<script>\nvar EMBEDDED_DATA = ' + dataJson + ';\nfunction r(){var d=EMBEDDED_DATA;document.getElementById("tc").textContent=d.totalCount;document.getElementById("sd").textContent=d.streak;var recent=d.recentItems||[];var nc=document.getElementById("nc"),es=document.getElementById("es");if(recent.length===0){nc.innerHTML="";es.style.display="flex"}else{es.style.display="none";nc.innerHTML=recent.map(function(item){return\'<div class=note><div class=note-icon>\'+item.icon+\'</div><div class=note-body><span class=note-text>\'+item.text+\'</span></div><span class=note-date>\'+item.date+\'</span></div>\'}).join("")}}\ndocument.addEventListener("DOMContentLoaded",r);\n<\/script>\n</body></html>';
 }
 
+function roundRectCompat(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.lineTo(x + w - r, y);
+  ctx.arcTo(x + w, y, x + w, y + r, r);
+  ctx.lineTo(x + w, y + h - r);
+  ctx.arcTo(x + w, y + h, x + w - r, y + h, r);
+  ctx.lineTo(x + r, y + h);
+  ctx.arcTo(x, y + h, x, y + h - r, r);
+  ctx.lineTo(x, y + r);
+  ctx.arcTo(x, y, x + r, y, r);
+  ctx.closePath();
+}
+
+function drawShareCard(data: {
+  totalCount: number;
+  streak: number;
+  recentItems: { icon: string; text: string; date: string }[];
+}): HTMLCanvasElement {
+  const canvas = document.createElement("canvas");
+  const width = 800;
+  const height = 1000;
+  const dpr = 2;
+  canvas.width = width * dpr;
+  canvas.height = height * dpr;
+  const ctx = canvas.getContext("2d")!;
+  ctx.scale(dpr, dpr);
+
+  // 背景
+  ctx.fillStyle = "#F5F1E6";
+  ctx.fillRect(0, 0, width, height);
+
+  // 噪点纹理（简化：用随机点模拟）
+  for (let i = 0; i < 3000; i++) {
+    ctx.fillStyle = `rgba(93,64,55,${Math.random() * 0.03})`;
+    ctx.fillRect(Math.random() * width, Math.random() * height, 1, 1);
+  }
+
+  // 标题
+  ctx.fillStyle = "#5D4037";
+  ctx.font = '600 36px "PingFang SC", "Microsoft YaHei", sans-serif';
+  ctx.textAlign = "center";
+  ctx.fillText("我的回血日记", width / 2, 80);
+
+  // 副标题
+  ctx.fillStyle = "#7A6E62";
+  ctx.font = '300 15px "PingFang SC", "Microsoft YaHei", sans-serif';
+  ctx.fillText("每天做一件滋养自己的小事", width / 2, 110);
+
+  // 左右分割线
+  ctx.strokeStyle = "#D8CFB8";
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(180, 100);
+  ctx.lineTo(260, 100);
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(540, 100);
+  ctx.lineTo(620, 100);
+  ctx.stroke();
+
+  // 两个徽章
+  const drawBadge = (x: number, count: number, label: string, color: string) => {
+    // 圆形背景
+    ctx.beginPath();
+    ctx.arc(x, 200, 55, 0, Math.PI * 2);
+    ctx.fillStyle = color;
+    ctx.fill();
+    // 数字
+    ctx.fillStyle = "#5D4037";
+    ctx.font = '700 48px "Quicksand", "PingFang SC", sans-serif';
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText(String(count), x, 190);
+    // 标签
+    ctx.fillStyle = "#7A6E62";
+    ctx.font = '300 13px "PingFang SC", "Microsoft YaHei", sans-serif';
+    ctx.fillText(label, x, 225);
+    ctx.textBaseline = "alphabetic";
+  };
+
+  drawBadge(280, data.totalCount, "累计完成", "#DCEEF2");
+  drawBadge(520, data.streak, "连续打卡", "#F3D9D2");
+
+  // 引用语
+  ctx.fillStyle = "#5D4037";
+  ctx.font = '600 22px "PingFang SC", "Microsoft YaHei", sans-serif';
+  ctx.fillText("✦ 今天也在好好照顾自己呢 ✦", width / 2, 320);
+
+  // 叶子 SVG 简化
+  ctx.fillStyle = "rgba(124,106,154,0.12)";
+  ctx.beginPath();
+  ctx.ellipse(width / 2, 360, 20, 10, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.strokeStyle = "rgba(124,106,154,0.2)";
+  ctx.lineWidth = 0.8;
+  ctx.beginPath();
+  ctx.moveTo(width / 2, 360);
+  ctx.lineTo(width / 2, 380);
+  ctx.stroke();
+
+  // 最近完成标题
+  ctx.fillStyle = "#A09080";
+  ctx.font = '300 14px "PingFang SC", "Microsoft YaHei", sans-serif';
+  ctx.textAlign = "left";
+  ctx.fillText("最近完成 · Recent Recharge", 56, 420);
+
+  // 最近完成列表
+  const recent = data.recentItems || [];
+  if (recent.length === 0) {
+    ctx.fillStyle = "#A09080";
+    ctx.font = '300 14px "PingFang SC", "Microsoft YaHei", sans-serif';
+    ctx.textAlign = "center";
+    ctx.fillText("还没有完成记录，去完成一件小事吧", width / 2, 500);
+  } else {
+    recent.forEach((item, i) => {
+      const y = 450 + i * 70;
+      // 卡片背景
+      ctx.fillStyle = "#FBF8F0";
+      if (typeof (ctx as any).roundRect === "function") {
+        (ctx as any).roundRect(56, y, width - 112, 58, 10);
+      } else {
+        roundRectCompat(ctx, 56, y, width - 112, 58, 10);
+      }
+      // 轻微阴影
+      ctx.shadowColor = "rgba(93,64,55,0.04)";
+      ctx.shadowBlur = 6;
+      ctx.shadowOffsetY = 2;
+      ctx.fill();
+      ctx.shadowColor = "transparent";
+
+      // 图标圆形背景
+      ctx.fillStyle = "rgba(93,64,55,0.04)";
+      ctx.beginPath();
+      ctx.arc(86, y + 29, 20, 0, Math.PI * 2);
+      ctx.fill();
+
+      // 图标（emoji）
+      ctx.font = '18px "Apple Color Emoji", "Segoe UI Emoji", sans-serif';
+      ctx.textAlign = "center";
+      ctx.textBaseline = "middle";
+      ctx.fillText(item.icon, 86, y + 29);
+      ctx.textBaseline = "alphabetic";
+
+      // 文本
+      ctx.fillStyle = "#5D4037";
+      ctx.font = '300 14px "PingFang SC", "Microsoft YaHei", sans-serif';
+      ctx.textAlign = "left";
+      ctx.fillText(item.text, 120, y + 33);
+
+      // 日期
+      ctx.fillStyle = "#A09080";
+      ctx.font = '300 12px "PingFang SC", "Microsoft YaHei", sans-serif';
+      ctx.textAlign = "right";
+      ctx.fillText(item.date, width - 72, y + 33);
+    });
+  }
+
+  // 底部分割线
+  const footerY = 450 + Math.max(recent.length, 1) * 70 + 20;
+  ctx.strokeStyle = "rgba(93,64,55,0.08)";
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(56, footerY);
+  ctx.lineTo(width - 56, footerY);
+  ctx.stroke();
+
+  // 底部文字
+  ctx.fillStyle = "#B0A090";
+  ctx.font = '300 12px "PingFang SC", "Microsoft YaHei", sans-serif';
+  ctx.textAlign = "left";
+  ctx.fillText("每一件小事，都是给自己的温柔", 56, footerY + 30);
+
+  // 标签
+  ctx.fillStyle = "#B0A090";
+  ctx.font = '300 11px "PingFang SC", "Microsoft YaHei", sans-serif';
+  ctx.fillText("#自我关怀    #回血日记    #治愈系手帐", 56, footerY + 52);
+
+  // 印章
+  const sealX = width - 120;
+  const sealY = footerY + 40;
+  ctx.beginPath();
+  ctx.arc(sealX, sealY, 36, 0, Math.PI * 2);
+  ctx.fillStyle = "#C44B4B";
+  ctx.fill();
+  ctx.beginPath();
+  ctx.arc(sealX, sealY, 32, 0, Math.PI * 2);
+  ctx.strokeStyle = "#8B3030";
+  ctx.lineWidth = 2;
+  ctx.stroke();
+  ctx.save();
+  ctx.translate(sealX, sealY);
+  ctx.rotate(0.14);
+  ctx.fillStyle = "#F5E6D0";
+  ctx.font = '12px "PingFang SC", "Microsoft YaHei", sans-serif';
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.fillText("✓", 0, -8);
+  ctx.fillText("已回血", 0, 8);
+  ctx.textBaseline = "alphabetic";
+  ctx.restore();
+
+  return canvas;
+}
 
 /* ============================================================
    Tab 4 — 我的

@@ -220,19 +220,8 @@ export default function RoamingGuideLayout() {
             box-shadow: 0 -4px 20px rgba(90,74,58,0.06);
           }
 
-          /* 手机端顶部区域：仅保留回到作品集链接 */
-          .rg-sidebar-top {
-            display: flex;
-            align-items: center;
-            padding: 4px 12px;
-            border-bottom: none;
-          }
-          .rg-sidebar-title,
-          .rg-sidebar-subtitle { display: none; }
-          .rg-sidebar-back {
-            font-size: 12px;
-            padding: 2px 0;
-          }
+          /* 隐藏顶部区域 */
+          .rg-sidebar-top { display: none; }
 
           /* 导航改为横向排列 */
           .rg-sidebar-nav {
@@ -247,6 +236,7 @@ export default function RoamingGuideLayout() {
           .rg-sidebar-link {
             flex-direction: column;
             align-items: center;
+            font-size: 10px;
             gap: 2px;
             padding: 6px 10px;
             border-radius: 10px;
@@ -313,6 +303,15 @@ export default function RoamingGuideLayout() {
             <span className="rg-sidebar-link__icon">☁️</span>
             <span>关于它</span>
           </NavLink>
+          <a
+            href="https://www.xiaoluweb.com/mickey"
+            className="rg-sidebar-link rg-sidebar-link--external"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            <span className="rg-sidebar-link__icon">🏠</span>
+            <span>回到作品集</span>
+          </a>
         </nav>
 
         <div className="rg-sidebar-footer">

@@ -596,6 +596,7 @@ interface AdminPanelProps {
 
 const AdminPanel: React.FC<AdminPanelProps> = ({ onClose, onLogout }) => {
   const [editingModule, setEditingModule] = useState<ModuleDef | null>(null);
+  const [showAnalytics, setShowAnalytics] = useState(false);
   const [publishStatus, setPublishStatus] = useState("");
 
   /** 发布草稿到主站 */
@@ -809,6 +810,67 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onClose, onLogout }) => {
                 </button>
               </div>
             ))}
+
+            {/* 数据分析入口 */}
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                padding: "14px 16px",
+                background: "#FAF9F6",
+                border: "1px solid #E8E6E1",
+                borderRadius: 12,
+                transition: "all 0.3s ease",
+                marginTop: 8,
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.borderColor = "rgba(232,133,58,0.4)";
+                e.currentTarget.style.boxShadow = "0 4px 12px rgba(232,133,58,0.08)";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.borderColor = "#E8E6E1";
+                e.currentTarget.style.boxShadow = "none";
+              }}
+            >
+              <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                <span style={{ fontSize: 22 }}>📊</span>
+                <div>
+                  <div style={{ fontSize: 14, fontWeight: 500, color: "#4a4038" }}>
+                    数据分析
+                  </div>
+                  <div style={{ fontSize: 11, color: "#a8a39b", marginTop: 2 }}>
+                    查看埋点事件、漏斗与趋势
+                  </div>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowAnalytics(true)}
+                style={{
+                  padding: "6px 14px",
+                  border: "1px solid #d5cfc4",
+                  borderRadius: 999,
+                  background: "transparent",
+                  color: "#7a7268",
+                  cursor: "pointer",
+                  fontSize: 12,
+                  transition: "all 0.3s ease",
+                  whiteSpace: "nowrap",
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.borderColor = "#E8853A";
+                  e.currentTarget.style.color = "#C06A2E";
+                  e.currentTarget.style.background = "rgba(232,133,58,0.08)";
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.borderColor = "#d5cfc4";
+                  e.currentTarget.style.color = "#7a7268";
+                  e.currentTarget.style.background = "transparent";
+                }}
+              >
+                查看
+              </button>
+            </div>
           </div>
         </div>
 
@@ -907,7 +969,107 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onClose, onLogout }) => {
           />
         )}
       </AnimatePresence>
+
+      {/* 数据分析看板弹窗 */}
+      <AnimatePresence>
+        {showAnalytics && (
+          <AnalyticsModal onClose={() => setShowAnalytics(false)} />
+        )}
+      </AnimatePresence>
     </>
+  );
+};
+
+/* -----------------------------------------------------------
+ * AnalyticsModal 数据分析弹窗
+ * ----------------------------------------------------------- */
+interface AnalyticsModalProps {
+  onClose: () => void;
+}
+
+const AnalyticsModal: React.FC<AnalyticsModalProps> = ({ onClose }) => {
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.25 }}
+      style={{
+        position: "fixed",
+        inset: 0,
+        zIndex: 10000,
+        background: "rgba(0,0,0,0.25)",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        padding: 20,
+      }}
+      onClick={onClose}
+    >
+      <motion.div
+        initial={{ opacity: 0, scale: 0.92, y: 20 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.92, y: 20 }}
+        transition={{ type: "spring", damping: 26, stiffness: 300 }}
+        style={{
+          width: "100%",
+          maxWidth: 900,
+          maxHeight: "85vh",
+          background: "rgba(255,253,249,0.98)",
+          borderRadius: 20,
+          boxShadow: "0 24px 60px rgba(80,76,66,0.15)",
+          overflow: "hidden",
+          display: "flex",
+          flexDirection: "column",
+        }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* 弹窗头部 */}
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            padding: "18px 24px",
+            borderBottom: "1px solid #E8E6E1",
+            flexShrink: 0,
+          }}
+        >
+          <h3
+            style={{
+              margin: 0,
+              fontFamily: '"Noto Serif SC", Georgia, serif',
+              fontSize: 16,
+              color: "#4a4038",
+              letterSpacing: "0.06em",
+            }}
+          >
+            📊 数据分析看板
+          </h3>
+          <button
+            onClick={onClose}
+            style={{
+              background: "none",
+              border: "none",
+              cursor: "pointer",
+              color: "#a8a39b",
+              fontSize: 22,
+              padding: 4,
+              lineHeight: 1,
+              transition: "color 0.25s ease",
+            }}
+            onMouseEnter={(e) => (e.currentTarget.style.color = "#8D9A8B")}
+            onMouseLeave={(e) => (e.currentTarget.style.color = "#a8a39b")}
+          >
+            ×
+          </button>
+        </div>
+        {/* 内容区 */}
+        <div style={{ flex: 1, overflow: "auto" }}>
+          <AnalyticsDashboard />
+        </div>
+      </motion.div>
+    </motion.div>
   );
 };
 

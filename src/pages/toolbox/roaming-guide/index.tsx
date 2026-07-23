@@ -1,7 +1,8 @@
-import { useCallback } from "react";
+import { useCallback, useEffect } from "react";
 import "./styles/variables.css";
 import { useCityData } from "./hooks/useCityData";
 import { useAIAssistant } from "./hooks/useAIAssistant";
+import { track } from "../../../utils/track";
 import MapContainer from "./components/MapContainer";
 import StatsBar from "./components/StatsBar";
 import CityCardGallery from "./components/CityCardGallery";

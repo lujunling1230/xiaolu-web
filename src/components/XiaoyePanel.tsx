@@ -113,6 +113,12 @@ const XiaoyePanel: React.FC<{
   const sendMessage = useCallback(
     async (text: string) => {
       if (!text.trim() || loading) return;
+      // 清空旧打字机状态和文本，防止新消息短暂显示旧文本
+      if (typingTimerRef.current) clearInterval(typingTimerRef.current);
+      setDisplayedText("");
+      // 重置所有旧消息的 isTyping，避免旧消息重新渲染时显示打字状态
+      setMessages((prev) => prev.map((m) => ({ ...m, isTyping: false })));
+
       const userMsg: Message = { id: Date.now(), role: "user", text };
       const assistantId = Date.now() + 1;
       const assistantMsg: Message = {
@@ -218,7 +224,13 @@ const XiaoyePanel: React.FC<{
               {i < textToShow.split("\n").length - 1 && <br />}
             </span>
           ))}
-          {msg.isTyping && <span className="xy-cursor">▍</span>}
+          {msg.isTyping && !textToShow && (
+            <span className="xy-thinking">
+              <span className="xy-thinking-dot" />
+              <span className="xy-thinking-dot" />
+              <span className="xy-thinking-dot" />
+            </span>
+          )}
         </div>
       </div>
     );
@@ -424,18 +436,25 @@ const XiaoyePanel: React.FC<{
               background: #2D5A3D; color: #fff;
               border-bottom-right-radius: 4px;
             }
-            .xy-cursor {
-              display: inline-block; margin-left: 2px;
-              animation: xy-blink 1s step-end infinite;
-              color: #5d8a6a;
+            .xy-thinking {
+              display: inline-flex; align-items: center; gap: 4px;
+              margin-left: 4px;
+            }
+            .xy-thinking-dot {
+              display: inline-block; width: 6px; height: 6px;
+              border-radius: 50%; background: #8AB69C;
+              animation: xy-think-bounce 1.4s ease-in-out infinite both;
+            }
+            .xy-thinking-dot:nth-child(1) { animation-delay: -0.32s; }
+            .xy-thinking-dot:nth-child(2) { animation-delay: -0.16s; }
+            .xy-thinking-dot:nth-child(3) { animation-delay: 0s; }
+            @keyframes xy-think-bounce {
+              0%, 80%, 100% { transform: scale(0.6); opacity: 0.4; }
+              40% { transform: scale(1); opacity: 1; }
             }
             @keyframes xy-pop {
               from { opacity: 0; transform: translateY(6px) scale(0.96); }
               to   { opacity: 1; transform: translateY(0) scale(1); }
-            }
-            @keyframes xy-blink {
-              0%, 100% { opacity: 1; }
-              50% { opacity: 0; }
             }
 
             /* 模块选择 */

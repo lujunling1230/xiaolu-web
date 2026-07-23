@@ -1,6 +1,7 @@
 import { StrictMode, useEffect } from "react";
 import { createRoot } from "react-dom/client";
 import { BrowserRouter, Routes, Route, useLocation, Navigate } from "react-router-dom";
+import { initPageTracking } from "./utils/track";
 import App from "./App";
 import ToolboxHome from "./pages/toolbox/ToolboxHome";
 import ToolboxDetail from "./pages/toolbox/ToolboxDetail";
@@ -38,6 +39,9 @@ const ScrollToTop = () => {
   }, [pathname]);
   return null;
 };
+
+// 初始化埋点页面追踪
+initPageTracking();
 
 // 渲染应用根节点
 createRoot(document.getElementById("root")!).render(

@@ -193,20 +193,85 @@ export default function RoamingGuideLayout() {
           z-index: 1;
         }
 
-        /* ===== 响应式 ===== */
+        /* ===== 响应式：移动端底部标签栏 ===== */
         @media (max-width: 768px) {
-          .rg-sidebar { width: 60px; }
-          .rg-sidebar-top { padding: 20px 8px; }
-          .rg-sidebar-back span,
-          .rg-sidebar-title,
-          .rg-sidebar-subtitle,
-          .rg-sidebar-link span:not(.rg-sidebar-link__icon),
+          .rg-layout {
+            flex-direction: column;
+          }
+
+          /* 侧边栏 → 底部固定标签栏 */
+          .rg-sidebar {
+            position: fixed;
+            top: auto;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            width: 100%;
+            height: 64px;
+            flex-direction: row;
+            align-items: center;
+            background: rgba(245,243,238,0.92);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border-right: none;
+            border-top: 1px solid rgba(90,74,58,0.08);
+            z-index: 100;
+            padding: 0 8px;
+            box-shadow: 0 -4px 20px rgba(90,74,58,0.06);
+          }
+
+          /* 隐藏顶部 Logo 区域 */
+          .rg-sidebar-top { display: none; }
+
+          /* 导航改为横向排列 */
+          .rg-sidebar-nav {
+            flex: 1;
+            flex-direction: row;
+            justify-content: space-around;
+            align-items: center;
+            padding: 0;
+            gap: 0;
+          }
+
+          .rg-sidebar-link {
+            flex-direction: column;
+            align-items: center;
+            gap: 2px;
+            padding: 6px 10px;
+            border-radius: 10px;
+            font-size: 10px;
+            letter-spacing: 0.5px;
+            min-width: 56px;
+          }
+
+          .rg-sidebar-link__icon {
+            font-size: 20px;
+            width: auto;
+          }
+
+          .rg-sidebar-link:hover {
+            transform: translateY(-2px);
+          }
+
+          .rg-sidebar-link.active:hover {
+            transform: translateY(0);
+          }
+
+          .rg-sidebar-link::after {
+            bottom: 2px;
+            left: 50%;
+            transform: translateX(-50%);
+          }
+
+          /* 隐藏底部 footer */
           .rg-sidebar-footer { display: none; }
-          .rg-sidebar-back { font-size: 14px; margin-bottom: 8px; }
-          .rg-sidebar-nav { padding: 16px 8px; }
-          .rg-sidebar-link { justify-content: center; padding: 10px 0; }
-          .rg-sidebar-link::after { left: 50%; transform: translateX(-50%); }
-          .rg-content { margin-left: 60px; }
+
+          /* 主内容区全宽 + 底部留白 */
+          .rg-content {
+            margin-left: 0;
+            margin-bottom: 64px;
+            padding-bottom: 16px;
+          }
         }
       `}</style>
 

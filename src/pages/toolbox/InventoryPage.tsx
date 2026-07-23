@@ -551,11 +551,12 @@ const PhotoGuideModal: React.FC<{
 const PhotoConfirmModal: React.FC<{
   photoUrl: string;
   candidates: RecognizedCandidate[];
+  recognizing: boolean;
   onClose: () => void;
   onConfirm: (items: RecognizedCandidate[]) => void;
   onRetake: () => void;
   onUpdateCandidate: (id: string, patch: Partial<RecognizedCandidate>) => void;
-}> = ({ photoUrl, candidates, onClose, onConfirm, onRetake, onUpdateCandidate }) => {
+}> = ({ photoUrl, candidates, recognizing, onClose, onConfirm, onRetake, onUpdateCandidate }) => {
   const selected = candidates.filter((c) => c.selected);
 
   const confidenceBadge = (confidence: number) => {
@@ -605,6 +606,33 @@ const PhotoConfirmModal: React.FC<{
           />
         </div>
 
+        {/* 识别中加载状态 */}
+        {recognizing && (
+          <div className="mb-4 flex flex-col items-center justify-center rounded-2xl bg-[#F0F7FF]/60 py-10 backdrop-blur-sm">
+            <div className="relative mb-4 flex h-20 w-20 items-center justify-center">
+              {/* 外层旋转环 */}
+              <div className="absolute inset-0 animate-spin rounded-full border-[3px] border-transparent border-t-[#6B9BD1] border-r-[#6B9BD1]/40" style={{ animationDuration: '1s' }} />
+              {/* 中层脉冲环 */}
+              <div className="absolute inset-1 animate-ping rounded-full border-2 border-[#B4D4EE]/40" style={{ animationDuration: '2s' }} />
+              {/* 内层图标 */}
+              <div className="relative z-10 flex h-12 w-12 items-center justify-center rounded-full bg-white/80 shadow-sm">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#6B9BD1" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                  <circle cx="12" cy="12" r="3" />
+                </svg>
+              </div>
+            </div>
+            <p className="text-sm font-medium text-[#6B9BD1]" style={{ fontFamily: '"Noto Serif SC", Georgia, serif' }}>
+              正在识别物品...
+            </p>
+            <p className="mt-1 text-xs text-[#8BB5E0]">
+              AI 正在分析照片中的物品，请稍候
+            </p>
+          </div>
+        )}
+
+        {/* 识别结果列表 */}
+        {!recognizing && (<>
         <div className="space-y-4">
           {candidates.map((c) => (
             <div
@@ -743,6 +771,7 @@ const PhotoConfirmModal: React.FC<{
             确认入库 ({selected.length})
           </button>
         </div>
+        </>)}
       </div>
     </div>
   );
@@ -1266,6 +1295,7 @@ const InventoryPage: React.FC = () => {
         <PhotoConfirmModal
           photoUrl={photoPreviewUrl}
           candidates={recognizedItems}
+          recognizing={isRecognizing}
           onClose={() => {
             setPhotoConfirmOpen(false);
             setRecognizedItems([]);

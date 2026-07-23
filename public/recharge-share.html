@@ -1,0 +1,643 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>我的回血日记</title>
+<!-- CDN: Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com"></script>
+<!-- CDN: Google Fonts -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@300;400;600;700&family=ZCOOL+XiaoWei&family=Quicksand:wght@500;700&display=swap" rel="stylesheet">
+<!-- CDN: Font Awesome -->
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+
+<style>
+  :root {
+    --bg-outer: #EDE8DC;
+    --bg-card: #F5F1E6;
+    --border-card: #D8CFB8;
+    --text-deep: #5D4037;
+    --text-mid: #7A6E62;
+    --text-soft: #A09080;
+    --text-tag: #B0A090;
+    --accent-blue: #DCEEF2;
+    --accent-pink: #F3D9D2;
+    --note-bg: #FBF8F0;
+    --seal-red: #C44B4B;
+    --seal-dark: #8B3030;
+    --shadow: 0 10px 30px rgba(93,64,55,0.12);
+    --font-title: 'ZCOOL XiaoWei', '霞鹜文楷', 'Noto Serif SC', serif;
+    --font-body: 'Noto Serif SC', Georgia, serif;
+    --font-number: 'Quicksand', 'PingFang SC', system-ui, sans-serif;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg-outer);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    padding: 20px;
+    font-family: var(--font-body);
+  }
+
+  /* 卡片容器 — 4:5 比例 */
+  .card {
+    width: 800px;
+    height: 1000px;
+    background: var(--bg-card);
+    border: 1px solid var(--border-card);
+    border-radius: 18px;
+    box-shadow: var(--shadow);
+    position: relative;
+    overflow: hidden;
+    /* 载入动画 */
+    animation: cardFadeIn 0.8s ease-out;
+  }
+
+  @keyframes cardFadeIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  /* 纸纹噪声叠加层 */
+  .card::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: 18px;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+    background-size: 256px 256px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .card-inner {
+    position: relative;
+    z-index: 1;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    padding: 48px 56px 40px;
+  }
+
+  /* ═══ 1. 顶部标题 ═══ */
+  .header {}
+  .header-title {
+    font-family: var(--font-title);
+    font-size: 36px;
+    color: var(--text-deep);
+    text-align: center;
+    letter-spacing: 0.06em;
+  }
+  /* 改文字：标题文案 */
+  .header-sub {
+    font-family: var(--font-body);
+    font-size: 15px;
+    font-weight: 300;
+    color: var(--text-mid);
+    text-align: center;
+    letter-spacing: 0.15em;
+    margin-top: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+  }
+  /* 改文字：副标题文案 */
+  .header-line {
+    width: 50px;
+    height: 1px;
+    background: var(--border-card);
+    flex-shrink: 0;
+  }
+
+  /* ═══ 2. 数据徽章区 ═══ */
+  .badges {
+    display: flex;
+    justify-content: center;
+    gap: 64px;
+    margin-top: 36px;
+  }
+  .badge {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    transition: transform 0.3s ease;
+  }
+  .badge:hover {
+    transform: scale(1.03);
+  }
+  .badge-circle {
+    width: 110px;
+    height: 110px;
+    border-radius: 50%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    /* 手绘描边感 */
+    box-shadow:
+      0 0 0 2px rgba(93,64,55,0.12),
+      0 0 0 4px rgba(93,64,55,0.04),
+      0 4px 12px rgba(93,64,55,0.08);
+    position: relative;
+  }
+  .badge-circle-left  { background: var(--accent-blue); }
+  .badge-circle-right { background: var(--accent-pink); }
+  /* 改数字：累计完成数量 */
+  .badge-number {
+    font-family: var(--font-number);
+    font-size: 48px;
+    font-weight: 700;
+    color: var(--text-deep);
+    line-height: 1;
+  }
+  .badge-label {
+    font-family: var(--font-body);
+    font-size: 13px;
+    color: var(--text-mid);
+    font-weight: 300;
+    letter-spacing: 0.08em;
+  }
+
+  /* ═══ 3. 金句区 ═══ */
+  .quote {
+    text-align: center;
+    margin-top: 36px;
+    position: relative;
+  }
+  /* 改文字：金句文案 */
+  .quote-text {
+    font-family: var(--font-title);
+    font-size: 22px;
+    color: var(--text-deep);
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .quote-star {
+    color: #D4A76A;
+    font-size: 14px;
+    opacity: 0.7;
+  }
+  .quote-leaf {
+    margin-top: 12px;
+  }
+
+  /* ═══ 4. 历史记录区 ═══ */
+  .history {
+    flex: 1;
+    margin-top: 32px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  .history-title {
+    font-family: var(--font-body);
+    font-size: 14px;
+    font-weight: 300;
+    color: var(--text-soft);
+    letter-spacing: 0.1em;
+    margin-bottom: 16px;
+  }
+
+  /* 便签纸条 */
+  .notes {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+  .note {
+    background: var(--note-bg);
+    border-radius: 10px;
+    padding: 14px 18px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    box-shadow: 0 2px 6px rgba(93,64,55,0.04);
+    border: 1px solid rgba(93,64,55,0.06);
+  }
+  .note:nth-child(odd)  { transform: rotate(-1.5deg); }
+  .note:nth-child(even) { transform: rotate(1deg); }
+  .note-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    background: rgba(93,64,55,0.04);
+    flex-shrink: 0;
+  }
+  .note-body {
+    flex: 1;
+    min-width: 0;
+  }
+  /* 改图标：每条记录的 emoji 图标 */
+  .note-text {
+    font-family: var(--font-body);
+    font-size: 14px;
+    color: var(--text-deep);
+    font-weight: 300;
+  }
+  .note-date {
+    font-family: var(--font-body);
+    font-size: 12px;
+    color: var(--text-soft);
+    font-weight: 300;
+    flex-shrink: 0;
+    text-align: right;
+  }
+
+  /* ═══ 5. 底部 ═══ */
+  .footer {
+    display: flex;
+    align-items: flex-end;
+    justify-content: space-between;
+    margin-top: 24px;
+    padding-top: 20px;
+    border-top: 1px solid rgba(93,64,55,0.08);
+  }
+  .footer-left {
+    font-family: var(--font-body);
+    font-size: 12px;
+    font-weight: 300;
+    color: var(--text-tag);
+    letter-spacing: 0.06em;
+  }
+  /* 火漆印章 */
+  .seal {
+    width: 72px;
+    height: 72px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 45% 40%, var(--seal-red), var(--seal-dark));
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    color: #F5E6D0;
+    font-family: var(--font-title);
+    font-size: 12px;
+    line-height: 1.4;
+    box-shadow:
+      0 0 0 3px var(--seal-dark),
+      0 0 0 5px rgba(139,48,48,0.3),
+      0 4px 12px rgba(139,48,48,0.2);
+    position: relative;
+    transform: rotate(8deg);
+    letter-spacing: 0.04em;
+  }
+  .seal-check {
+    font-size: 16px;
+    margin-bottom: 1px;
+  }
+
+  /* 话题标签 */
+  .tags {
+    display: flex;
+    gap: 12px;
+    margin-top: 12px;
+  }
+  .tag {
+    font-family: var(--font-body);
+    font-size: 11px;
+    color: var(--text-tag);
+    font-weight: 300;
+    letter-spacing: 0.04em;
+  }
+
+  /* 空状态 */
+  .empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    flex: 1;
+    color: var(--text-tag);
+    font-family: var(--font-body);
+    font-size: 14px;
+    font-weight: 300;
+    gap: 8px;
+  }
+  .empty-state-icon {
+    font-size: 36px;
+    opacity: 0.4;
+  }
+
+  /* 响应式 */
+  @media (max-width: 840px) {
+    .card {
+      width: 100%;
+      height: auto;
+      aspect-ratio: 4 / 5;
+    }
+    .card-inner {
+      padding: 32px 28px 28px;
+    }
+    .header-title { font-size: 26px; }
+    .badge-circle { width: 80px; height: 80px; }
+    .badge-number { font-size: 36px; }
+    .badges { gap: 40px; margin-top: 24px; }
+    .quote-text { font-size: 18px; }
+    .badge-label { font-size: 11px; }
+  }
+
+  @media (max-width: 420px) {
+    .card-inner { padding: 24px 18px 20px; }
+    .header-title { font-size: 22px; }
+    .header-sub { font-size: 12px; gap: 8px; }
+    .header-line { width: 30px; }
+    .badge-circle { width: 66px; height: 66px; }
+    .badge-number { font-size: 28px; }
+    .badges { gap: 24px; margin-top: 18px; }
+    .quote-text { font-size: 16px; }
+    .quote { margin-top: 20px; }
+    .note-text { font-size: 12px; }
+    .note { padding: 10px 12px; gap: 8px; }
+    .seal { width: 54px; height: 54px; font-size: 10px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="card">
+  <div class="card-inner">
+
+    <!-- ═══ 1. 顶部标题 ═══ -->
+    <!-- 改文字：标题 -->
+    <div class="header">
+      <h1 class="header-title">我的回血日记</h1>
+      <!-- 改文字：副标题 -->
+      <p class="header-sub">
+        <span class="header-line"></span>
+        每天做一件滋养自己的小事
+        <span class="header-line"></span>
+      </p>
+    </div>
+
+    <!-- ═══ 2. 数据徽章 ═══ -->
+    <div class="badges">
+      <!-- 改数字：累计完成数量 -->
+      <div class="badge">
+        <div class="badge-circle badge-circle-left">
+          <span class="badge-number" id="totalCount">0</span>
+          <span class="badge-label">累计完成</span>
+        </div>
+      </div>
+      <!-- 改数字：连续打卡天数 -->
+      <div class="badge">
+        <div class="badge-circle badge-circle-right">
+          <span class="badge-number" id="streakDays">0</span>
+          <span class="badge-label">连续打卡</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ 3. 金句区 ═══ -->
+    <!-- 改文字：金句 -->
+    <div class="quote">
+      <p class="quote-text">
+        <span class="quote-star">&#10027;</span>
+        今天也在好好照顾自己呢
+        <span class="quote-star">&#10027;</span>
+      </p>
+      <!-- 手绘叶子 SVG -->
+      <div class="quote-leaf">
+        <svg width="40" height="20" viewBox="0 0 40 20" fill="none">
+          <path d="M20 2 C26 2 34 8 34 12 C34 16 28 18 20 18 C12 18 6 16 6 12 C6 8 14 2 20 2Z" fill="rgba(124,106,154,0.12)"/>
+          <line x1="20" y1="18" x2="20" y2="20" stroke="rgba(124,106,154,0.2)" stroke-width="0.8"/>
+        </svg>
+      </div>
+    </div>
+
+    <!-- ═══ 4. 历史记录 ═══ -->
+    <div class="history">
+      <div class="history-title">最近完成 &middot; Recent Recharge</div>
+
+      <div class="notes" id="notesContainer">
+        <!-- 改图标 / 改文字 / 改日期：每条便签的 emoji、文案、日期 -->
+        <!-- JS 动态填充 -->
+      </div>
+
+      <!-- 无数据时的空状态 -->
+      <div class="empty-state" id="emptyState" style="display:none;">
+        <span class="empty-state-icon">&#127807;</span>
+        <span>还没有完成记录，去完成一件小事吧</span>
+      </div>
+    </div>
+
+    <!-- ═══ 5. 底部 ═══ -->
+    <div class="footer">
+      <div>
+        <p class="footer-left">长按保存这份回血能量</p>
+        <div class="tags">
+          <!-- 改文字：话题标签 -->
+          <span class="tag">#自我关怀</span>
+          <span class="tag">#回血日记</span>
+          <span class="tag">#治愈系手帐</span>
+        </div>
+      </div>
+      <!-- 火漆印章 -->
+      <div class="seal">
+        <span class="seal-check">&#10003;</span>
+        <span>已回血</span>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+/**
+ * 我的回血日记 — 数据加载脚本
+ *
+ * 从 localStorage 读取回血清单数据并渲染卡片。
+ * 如果从非同一域名打开（如直接双击 HTML 文件），
+ * 则使用下方 MOCK_DATA 作为默认数据展示。
+ */
+
+/* ═══════════════════════════════════
+   改数据：修改此处的 mock 数据
+   ═══════════════════════════════════ */
+
+/* 改文字：每条记录的图标(emoji)、文案、日期 */
+var MOCK_DATA = {
+  totalCount: 3,
+  streak: 0,
+  records: [
+    { icon: '&#128099;', text: '做一次足疗，让双脚彻底放松', date: '7/21' },
+    { icon: '&#128722;', text: '逛超市买了新鲜的草莓和酸奶', date: '7/20' },
+    { icon: '&#128295;', text: '做手工：刻了一枚橡皮章', date: '7/18' }
+  ]
+};
+
+/* ═══════════════════════════════════
+   数据读取逻辑
+   ═══════════════════════════════════ */
+
+/* 改文字：每件小事的名称与图标映射表 */
+var NODE_ICONS = {
+  /* 足疗 */ 1: '&#128099;', /* 逛超市 */ 4: '&#128722;',
+  /* 做手工 */ 8: '&#128295;', /* 泡澡 */ 3: '&#128705;',
+  /* 散步 */ 5: '&#128694;', /* 看书 */ 11: '&#128214;',
+  /* 听音乐 */ 12: '&#127926;', /* 喝咖啡 */ 17: '&#9749;',
+  /* 瑜伽 */ 6: '&#129496;', /* 写日记 */ 14: '&#128221;',
+  /* 打电话 */ 7: '&#128222;', /* 看电影 */ 9: '&#127909;',
+  /* 做饭 */ 13: '&#127858;', /* 整理 */ 10: '&#128230;',
+  /* 拍照 */ 2: '&#128248;', /* 画画 */ 15: '&#127912;',
+  /* 种花 */ 16: '&#127800;', /* 睡觉 */ 18: '&#128164;',
+  /* 甜品 */ 19: '&#127856;', /* 按摩 */ 20: '&#128134;',
+  /* 骑车 */ 21: '&#128690;', /* 游泳 */ 22: '&#127946;',
+  /* 游戏 */ 23: '&#127918;', /* 看剧 */ 24: '&#128250;'
+};
+
+var NODE_TEXTS = {
+  1: '做一次足疗，让双脚彻底放松',
+  4: '逛超市买了新鲜的草莓和酸奶',
+  8: '做手工：刻了一枚橡皮章',
+  3: '泡一个热水澡，什么都不想',
+  5: '出门散步二十分钟',
+  11: '窝在沙发里看一本好书',
+  12: '戴上耳机听最喜欢的专辑',
+  17: '去咖啡馆坐一下午',
+  6: '做一组舒缓的瑜伽拉伸',
+  14: '写一篇日记，把心事倒出来',
+  7: '给好朋友打个电话聊聊天',
+  9: '看一部期待已久的电影',
+  13: '给自己做一顿好吃的饭',
+  10: '整理房间，把杂物清出去',
+  2: '穿上喜欢的衣服拍张照',
+  15: '随手画一幅小画',
+  16: '给阳台的花浇浇水',
+  18: '睡一个没有闹钟的午觉',
+  19: '尝一口新口味的甜品',
+  20: '做个肩颈按摩放松一下',
+  21: '骑着单车去兜风',
+  22: '去游泳馆游几圈',
+  23: '打一局喜欢的游戏',
+  24: '追一集最近在看的剧'
+};
+
+function getIcon(id) {
+  return NODE_ICONS[id] || '&#127807;';
+}
+
+function getText(id) {
+  return NODE_TEXTS[id] || '完成了一件回血小事';
+}
+
+function formatDate(ts) {
+  var d = new Date(ts);
+  return (d.getMonth() + 1) + '/' + d.getDate();
+}
+
+function getStreakDays(ids, history) {
+  if (!ids || ids.length === 0) return 0;
+  var today = new Date();
+  today.setHours(0, 0, 0, 0);
+  var streak = 0;
+  for (var i = 0; i < 365; i++) {
+    var d = new Date(today);
+    d.setDate(today.getDate() - i);
+    var dayStart = d.getTime();
+    var dayEnd = dayStart + 86400000;
+    var hasRecord = history.some(function(r) {
+      return r.timestamp >= dayStart && r.timestamp < dayEnd;
+    });
+    if (hasRecord) {
+      streak++;
+    } else if (i === 0) {
+      continue; // 今天还没完成不算断
+    } else {
+      break;
+    }
+  }
+  return streak;
+}
+
+function loadData() {
+  try {
+    var doneIds = JSON.parse(localStorage.getItem('recharge_done_ids') || '[]');
+    var history = JSON.parse(localStorage.getItem('recharge_history') || '[]');
+
+    if (!doneIds.length && !history.length) {
+      return MOCK_DATA;
+    }
+
+    var totalCount = doneIds.length;
+
+    // 按 id 去重，每件小事只取最新一次
+    var seen = {};
+    var unique = [];
+    for (var i = history.length - 1; i >= 0; i--) {
+      var r = history[i];
+      if (!seen[r.id]) {
+        seen[r.id] = true;
+        unique.push(r);
+      }
+    }
+
+    // 取最近 3 条
+    var recent3 = unique.slice(0, 3).map(function(r) {
+      return {
+        icon: getIcon(r.id),
+        text: getText(r.id),
+        date: formatDate(r.timestamp)
+      };
+    });
+
+    var streak = getStreakDays(doneIds, history);
+
+    return {
+      totalCount: totalCount,
+      streak: streak,
+      records: recent3
+    };
+  } catch (e) {
+    return MOCK_DATA;
+  }
+}
+
+/* ═══════════════════════════════════
+   渲染
+   ═══════════════════════════════════ */
+function render() {
+  var data = loadData();
+
+  document.getElementById('totalCount').textContent = data.totalCount;
+  document.getElementById('streakDays').textContent = data.streak;
+
+  var container = document.getElementById('notesContainer');
+  var emptyState = document.getElementById('emptyState');
+
+  if (data.records.length === 0) {
+    container.innerHTML = '';
+    emptyState.style.display = 'flex';
+  } else {
+    emptyState.style.display = 'none';
+    container.innerHTML = data.records.map(function(rec) {
+      return '' +
+        '<div class="note">' +
+          '<div class="note-icon">' + rec.icon + '</div>' +
+          '<div class="note-body">' +
+            '<span class="note-text">' + rec.text + '</span>' +
+          '</div>' +
+          '<span class="note-date">' + rec.date + '</span>' +
+        '</div>';
+    }).join('');
+  }
+}
+
+document.addEventListener('DOMContentLoaded', render);
+</script>
+
+</body>
+</html>

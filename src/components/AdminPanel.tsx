@@ -1,6 +1,7 @@
 import { useState, useCallback, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { logoutAdmin, siteLoad, legacySave, publishDrafts, getSeedData, pushSiteData } from "../utils/siteData";
+import AnalyticsDashboard from "./AnalyticsDashboard";
 
 /* ============================================================
  * AdminPanel 组件

@@ -7,20 +7,54 @@ import { Link } from "react-router-dom";
  * 橘色/橙色/白色暖色调
  * ============================================================ */
 
+/** Formspree 表单链接 —— 请替换为你自己的链接 */
+const FORMSPREE_URL = ""; // 示例: "https://formspree.io/f/xayz1234"
+
 const ContactPage: React.FC = () => {
   const [message, setMessage] = useState("");
   const [contactInfo, setContactInfo] = useState("");
   const [submitted, setSubmitted] = useState(false);
+  const [sending, setSending] = useState(false);
 
-  const handleSubmit = useCallback(() => {
+  const handleSubmit = useCallback(async () => {
     if (!message.trim()) return;
+    setSending(true);
+
+    // 优先尝试 Formspree（配置了才走）
+    if (FORMSPREE_URL) {
+      try {
+        const res = await fetch(FORMSPREE_URL, {
+          method: "POST",
+          headers: { "Accept": "application/json", "Content-Type": "application/json" },
+          body: JSON.stringify({
+            message,
+            contact: contactInfo || "未填写",
+            _subject: "【luro.site】新留言提醒",
+            _replyto: contactInfo.includes("@") ? contactInfo : undefined,
+          }),
+        });
+        if (res.ok) {
+          setSubmitted(true);
+          setMessage("");
+          setContactInfo("");
+          setTimeout(() => setSubmitted(false), 4000);
+          setSending(false);
+          return;
+        }
+      } catch {
+        /* Formspree 失败则降级到本地存储 */
+      }
+    }
+
+    // 降级：本地存储（未配置 Formspree 或网络失败时）
     const entry = { message, contactInfo, time: Date.now() };
     const existing = JSON.parse(localStorage.getItem("guestbook") || "[]");
     localStorage.setItem("guestbook", JSON.stringify([entry, ...existing]));
     setSubmitted(true);
     setMessage("");
     setContactInfo("");
-    setTimeout(() => setSubmitted(false), 3000);
+    setTimeout(() => setSubmitted(false), 4000);
+    setSending(false);
   }, [message, contactInfo]);
 
   const contactList = [
@@ -154,8 +188,13 @@ const ContactPage: React.FC = () => {
                     value={contactInfo}
                     onChange={(e) => setContactInfo(e.target.value)}
                   />
-                  <button className="cp-submit" onClick={handleSubmit}>
-                    发送留言
+                  <button
+                    className="cp-submit"
+                    onClick={handleSubmit}
+                    disabled={sending}
+                    style={{ opacity: sending ? 0.7 : 1, cursor: sending ? "wait" : "pointer" }}
+                  >
+                    {sending ? "发送中…" : "发送留言"}
                   </button>
                 </>
               )}

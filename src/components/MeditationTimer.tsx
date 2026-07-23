@@ -253,110 +253,98 @@ function startAmbientSound(soundId: SoundId): { stop: () => void } {
 
       /* ===== 篝火 ===== */
       case "fire": {
-        // 第一层：火焰"呼呼"声（带通白噪音 + LFO 扫频模拟风动）
+        // 第一层：低频闷燃烧（低沉持续）—— 极低通滤波白噪音
         const noise1 = ctx.createBufferSource();
         noise1.buffer = noiseBuf;
         noise1.loop = true;
-        const bpf1 = ctx.createBiquadFilter();
-        bpf1.type = "bandpass";
-        bpf1.frequency.value = 300;
-        bpf1.Q.value = 0.5;
-        const fireGain = ctx.createGain();
-        fireGain.gain.value = 0.6;
-        noise1.connect(bpf1);
-        bpf1.connect(fireGain);
-        fireGain.connect(masterGain);
+        const lpf1 = ctx.createBiquadFilter();
+        lpf1.type = "lowpass";
+        lpf1.frequency.value = 80;
+        lpf1.Q.value = 0.4;
+        const emberGain = ctx.createGain();
+        emberGain.gain.value = 0.5;
+        noise1.connect(lpf1);
+        lpf1.connect(emberGain);
+        emberGain.connect(masterGain);
         noise1.start();
         sources.push(noise1);
 
-        // LFO 模拟火焰跳动
-        const lfo = ctx.createOscillator();
-        lfo.type = "sine";
-        lfo.frequency.value = 0.4;
-        const lfoGain = ctx.createGain();
-        lfoGain.gain.value = 0.3;
-        lfo.connect(lfoGain);
-        lfoGain.connect(fireGain.gain);
-        lfo.start();
-        sources.push(lfo);
-
-        // 第二层：中频噼啪声（更频繁、更响亮）
+        // 第二层：中低频火焰呼呼声（带通 200-600Hz）—— 无 LFO，避免海浪感
         const noise2 = ctx.createBufferSource();
         noise2.buffer = noiseBuf;
         noise2.loop = true;
         const bpf2 = ctx.createBiquadFilter();
         bpf2.type = "bandpass";
-        bpf2.frequency.value = 1500;
-        bpf2.Q.value = 2.5;
-        const crackleGain = ctx.createGain();
-        crackleGain.gain.value = 0;
+        bpf2.frequency.value = 350;
+        bpf2.Q.value = 0.6;
+        const whooshGain = ctx.createGain();
+        whooshGain.gain.value = 0.35;
         noise2.connect(bpf2);
-        bpf2.connect(crackleGain);
-        crackleGain.connect(masterGain);
+        bpf2.connect(whooshGain);
+        whooshGain.connect(masterGain);
         noise2.start();
         sources.push(noise2);
 
-        // 随机噼啪脉冲 — 更密集、更大声
-        const crackleInterval = setInterval(() => {
-          if (crackleGain.gain) {
-            const now = ctx.currentTime;
-            const val = 0.12 + Math.random() * 0.35;
-            crackleGain.gain.setValueAtTime(0, now);
-            crackleGain.gain.linearRampToValueAtTime(val, now + 0.003);
-            crackleGain.gain.exponentialRampToValueAtTime(0.001, now + 0.04 + Math.random() * 0.08);
-          }
-        }, 50 + Math.random() * 120);
-        intervals.push(crackleInterval);
-
-        // 第三层：高频爆裂尖刺（木柴爆裂瞬间）
+        // 第三层：密集噼啪声（中频带通 + 高频随机脉冲）
         const noise3 = ctx.createBufferSource();
         noise3.buffer = noiseBuf;
         noise3.loop = true;
-        const hpf3 = ctx.createBiquadFilter();
-        hpf3.type = "highpass";
-        hpf3.frequency.value = 4500;
-        const snapGain = ctx.createGain();
-        snapGain.gain.value = 0;
-        noise3.connect(hpf3);
-        hpf3.connect(snapGain);
-        snapGain.connect(masterGain);
+        const bpf3 = ctx.createBiquadFilter();
+        bpf3.type = "bandpass";
+        bpf3.frequency.value = 2200;
+        bpf3.Q.value = 3.5;
+        const crackleGain = ctx.createGain();
+        crackleGain.gain.value = 0;
+        noise3.connect(bpf3);
+        bpf3.connect(crackleGain);
+        crackleGain.connect(masterGain);
         noise3.start();
         sources.push(noise3);
 
-        // 稀疏爆裂脉冲
-        const snapInterval = setInterval(() => {
-          if (snapGain.gain) {
+        // 密集不规则噼啪脉冲
+        const crackleInterval = setInterval(() => {
+          if (crackleGain.gain) {
             const now = ctx.currentTime;
-            const val = 0.06 + Math.random() * 0.25;
-            snapGain.gain.setValueAtTime(0, now);
-            snapGain.gain.linearRampToValueAtTime(val, now + 0.001);
-            snapGain.gain.exponentialRampToValueAtTime(0.001, now + 0.03 + Math.random() * 0.05);
+            const val = 0.08 + Math.random() * 0.4;
+            crackleGain.gain.setValueAtTime(0, now);
+            crackleGain.gain.linearRampToValueAtTime(val, now + 0.002);
+            crackleGain.gain.exponentialRampToValueAtTime(0.001, now + 0.025 + Math.random() * 0.06);
           }
-        }, 300 + Math.random() * 500);
-        intervals.push(snapInterval);
+        }, 30 + Math.random() * 80);
+        intervals.push(crackleInterval);
 
-        // 第四层：低频底噪（木柴闷烧感）
+        // 第四层：高频爆裂尖刺（木柴迸裂瞬间）
         const noise4 = ctx.createBufferSource();
         noise4.buffer = noiseBuf;
         noise4.loop = true;
-        const lpf4 = ctx.createBiquadFilter();
-        lpf4.type = "lowpass";
-        lpf4.frequency.value = 100;
-        lpf4.Q.value = 0.5;
-        const emberGain = ctx.createGain();
-        emberGain.gain.value = 0.4;
-        noise4.connect(lpf4);
-        lpf4.connect(emberGain);
-        emberGain.connect(masterGain);
+        const hpf4 = ctx.createBiquadFilter();
+        hpf4.type = "highpass";
+        hpf4.frequency.value = 5000;
+        const snapGain = ctx.createGain();
+        snapGain.gain.value = 0;
+        noise4.connect(hpf4);
+        hpf4.connect(snapGain);
+        snapGain.connect(masterGain);
         noise4.start();
         sources.push(noise4);
 
-        // 低频温暖嗡鸣
+        const snapInterval = setInterval(() => {
+          if (snapGain.gain) {
+            const now = ctx.currentTime;
+            const val = 0.05 + Math.random() * 0.3;
+            snapGain.gain.setValueAtTime(0, now);
+            snapGain.gain.linearRampToValueAtTime(val, now + 0.001);
+            snapGain.gain.exponentialRampToValueAtTime(0.001, now + 0.02 + Math.random() * 0.04);
+          }
+        }, 250 + Math.random() * 600);
+        intervals.push(snapInterval);
+
+        // 第五层：温暖低频嗡鸣（模拟篝火热量感）
         const hum = ctx.createOscillator();
-        hum.type = "sine";
+        hum.type = "triangle";
         hum.frequency.value = 55;
         const humGain = ctx.createGain();
-        humGain.gain.value = 0.12;
+        humGain.gain.value = 0.1;
         hum.connect(humGain);
         humGain.connect(masterGain);
         hum.start();
@@ -366,65 +354,69 @@ function startAmbientSound(soundId: SoundId): { stop: () => void } {
 
       /* ===== 鸟鸣 ===== */
       case "birds": {
-        // 轻微环境底噪（非常低音量的带通）
+        // 轻微环境底噪（模拟树叶沙沙声）
         const noise1 = ctx.createBufferSource();
         noise1.buffer = noiseBuf;
         noise1.loop = true;
         const bpf = ctx.createBiquadFilter();
         bpf.type = "bandpass";
-        bpf.frequency.value = 300;
-        bpf.Q.value = 0.3;
+        bpf.frequency.value = 2000;
+        bpf.Q.value = 0.2;
         const ambGain = ctx.createGain();
-        ambGain.gain.value = 0.08;
+        ambGain.gain.value = 0.06;
         noise1.connect(bpf);
         bpf.connect(ambGain);
         ambGain.connect(masterGain);
         noise1.start();
         sources.push(noise1);
 
-        // 随机鸟鸣（正弦波啁啾）
+        // 鸟鸣类型库：不同鸟的叫声参数
+        const birdTypes = [
+          { baseFreq: 2200, freqRange: 600, duration: 0.08, notes: 3, interval: 0.04, wave: "triangle" as OscillatorType },
+          { baseFreq: 2800, freqRange: 400, duration: 0.12, notes: 2, interval: 0.06, wave: "sine" as OscillatorType },
+          { baseFreq: 1600, freqRange: 800, duration: 0.06, notes: 4, interval: 0.03, wave: "triangle" as OscillatorType },
+          { baseFreq: 3200, freqRange: 300, duration: 0.15, notes: 2, interval: 0.08, wave: "sine" as OscillatorType },
+          { baseFreq: 1800, freqRange: 500, duration: 0.1, notes: 3, interval: 0.05, wave: "triangle" as OscillatorType },
+        ];
+
         function chirp() {
+          const bird = birdTypes[Math.floor(Math.random() * birdTypes.length)];
           const osc = ctx.createOscillator();
           const g = ctx.createGain();
           const now = ctx.currentTime;
 
-          const baseFreq = 1800 + Math.random() * 2400;
-          const chirpLen = 0.06 + Math.random() * 0.12;
-          const numNotes = 2 + Math.floor(Math.random() * 4);
-
-          osc.type = "sine";
+          osc.type = bird.wave;
           g.gain.setValueAtTime(0, now);
 
-          for (let i = 0; i < numNotes; i++) {
-            const t = now + i * (chirpLen + 0.02 + Math.random() * 0.06);
-            const freq = baseFreq + (Math.random() - 0.5) * 800;
+          for (let i = 0; i < bird.notes; i++) {
+            const t = now + i * (bird.duration + bird.interval + Math.random() * 0.04);
+            const freq = bird.baseFreq + (Math.random() - 0.5) * bird.freqRange;
             osc.frequency.setValueAtTime(freq, t);
+            // 每个音符向上或向下滑音
             osc.frequency.linearRampToValueAtTime(
-              freq + (Math.random() > 0.5 ? 1 : -1) * (200 + Math.random() * 600),
-              t + chirpLen * 0.6
+              freq + (Math.random() > 0.5 ? 1 : -1) * (100 + Math.random() * 400),
+              t + bird.duration * 0.7
             );
-            g.gain.setValueAtTime(0.1 + Math.random() * 0.15, t);
-            g.gain.exponentialRampToValueAtTime(0.001, t + chirpLen);
+            g.gain.setValueAtTime(0.06 + Math.random() * 0.12, t);
+            g.gain.exponentialRampToValueAtTime(0.001, t + bird.duration);
           }
 
           osc.connect(g);
           g.connect(masterGain);
           osc.start(now);
-          osc.stop(now + numNotes * (chirpLen + 0.1) + 0.1);
+          osc.stop(now + bird.notes * (bird.duration + bird.interval) + 0.1);
           sources.push(osc);
         }
 
-        // 调度下一次鸟叫
         function scheduleNext() {
-          const delay = 500 + Math.random() * 2500;
+          const delay = 600 + Math.random() * 3000;
           const id = setTimeout(() => {
             chirp();
-            // 偶尔连叫两三声
-            if (Math.random() > 0.5) {
-              const id2 = setTimeout(() => chirp(), 80 + Math.random() * 150);
+            if (Math.random() > 0.4) {
+              const id2 = setTimeout(() => chirp(), 100 + Math.random() * 200);
               timeouts.push(id2);
-              if (Math.random() > 0.6) {
-                const id3 = setTimeout(() => chirp(), 200 + Math.random() * 200);
+              if (Math.random() > 0.5) {
+                const id3 = setTimeout(() => chirp(), 300 + Math.random() * 300);
                 timeouts.push(id3);
               }
             }
@@ -470,16 +462,40 @@ function getFriendlyVoice(): SpeechSynthesisVoice | undefined {
   return prefer || zh[0] || voices[0];
 }
 
+/** 预加载语音列表（解决 getVoices() 异步加载问题） */
+let voicesLoaded = false;
+function ensureVoicesLoaded(): Promise<void> {
+  return new Promise((resolve) => {
+    if (typeof window === "undefined" || !window.speechSynthesis) {
+      resolve();
+      return;
+    }
+    const voices = window.speechSynthesis.getVoices();
+    if (voices.length > 0) {
+      voicesLoaded = true;
+      resolve();
+      return;
+    }
+    window.speechSynthesis.onvoiceschanged = () => {
+      voicesLoaded = true;
+      resolve();
+    };
+    // 超时兜底 3 秒
+    setTimeout(() => { voicesLoaded = true; resolve(); }, 3000);
+  });
+}
+
 /** 播放语音引导 */
-function speakGuide(text: string, onEnd?: () => void): SpeechSynthesisUtterance | null {
+async function speakGuide(text: string, onEnd?: () => void): Promise<SpeechSynthesisUtterance | null> {
   if (typeof window === "undefined" || !window.speechSynthesis) return null;
-  window.speechSynthesis.cancel(); // 先停止之前的
+  window.speechSynthesis.cancel();
+  if (!voicesLoaded) await ensureVoicesLoaded();
   const u = new SpeechSynthesisUtterance(text);
   const voice = getFriendlyVoice();
   if (voice) u.voice = voice;
   u.lang = "zh-CN";
-  u.rate = 0.78;  // 更慢，更舒缓自然
-  u.pitch = 0.88; // 更柔和，像耳语
+  u.rate = 0.78;
+  u.pitch = 0.88;
   u.volume = 0.85;
   if (onEnd) u.onend = onEnd;
   window.speechSynthesis.speak(u);
@@ -795,6 +811,23 @@ const MeditationTimer: React.FC = () => {
             exit={{ opacity: 0, scale: 0.85 }}
             transition={{ duration: 0.5, ease: "easeOut" }}
           >
+            {/* 右上角关闭按钮 */}
+            <button
+              className="ms-close-btn"
+              onClick={() => {
+                setCompleted(false);
+                setRunning(false);
+                setNext(0);
+                setTick(0);
+                stopAmbient();
+                if (typeof window !== "undefined" && window.speechSynthesis) {
+                  window.speechSynthesis.cancel();
+                }
+              }}
+              title="退出"
+            >
+              ×
+            </button>
             {/* 涟漪动画 */}
             {[0, 1, 2].map((i) => (
               <motion.div
@@ -1100,6 +1133,28 @@ const MeditationTimer: React.FC = () => {
           position: relative;
           padding: 30px 0 10px;
         }
+        .ms-close-btn {
+          position: absolute;
+          top: -8px;
+          right: -4px;
+          width: 32px;
+          height: 32px;
+          border-radius: 50%;
+          border: 1px solid rgba(61,74,62,0.15);
+          background: rgba(255,255,255,0.6);
+          color: #6B7A6E;
+          font-size: 16px;
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          z-index: 10;
+          transition: all 0.2s;
+        }
+        .ms-close-btn:hover {
+          background: rgba(61,74,62,0.1);
+          color: #3D4A3E;
+        }
         .ms-ripple {
           position: absolute;
           width: 80px;
@@ -1155,10 +1210,16 @@ const MeditationTimer: React.FC = () => {
 
         /* Coming Soon 占位卡样式 */
         .ms-sound-coming {
+          opacity: 0.65;
           border-style: dashed;
-          opacity: 0.78;
+          cursor: not-allowed;
+          background: rgba(235, 228, 210, 0.5);
         }
-        .ms-sound-coming:hover {
+        .ms-sound-coming .ms-sound-label {
+          color: #8B8B7A;
+        }
+        .ms-sound-coming .ms-sound-sub {
+          color: #A8A898;
           opacity: 1;
         }
 

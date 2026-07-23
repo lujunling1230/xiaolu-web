@@ -840,325 +840,98 @@ const StatsPage: React.FC = () => {
 };
 
 /* ============================================================
-   分享卡片
+   分享卡片 — 生成独立 HTML 文件
    ============================================================ */
 const ShareCard: React.FC<{ totalCount: number; streak: number; onClose: () => void }> = ({ totalCount, streak, onClose }) => {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-  const [ready, setReady] = useState(false);
+  const [copySuccess, setCopySuccess] = useState(false);
 
-  const healingLines = [
-    "今天也在好好照顾自己呢",
-    "哪怕一点点，也是在发光",
-    "你已经做得很好了",
-    "温柔地对待自己，就是最好的回血",
-    "不必完美，只要真实",
-    "慢慢来，不着急",
-    "你值得被温柔以待",
-    "今天也辛苦了，好好休息吧",
-  ];
-  const line = useMemo(() => healingLines[Math.floor(Math.random() * healingLines.length)], []);
-
-  const cardData = useMemo(() => {
-    const history = loadHistory();
-    // 按 id 去重，每件小事只取最新一次
-    const seen = new Set<number>();
-    const unique = history.slice().reverse().filter(r => {
-      if (seen.has(r.id)) return false;
-      seen.add(r.id);
-      return true;
-    });
-    // 取最近3件完成的小事名称 + 日期
-    const recent3 = unique.slice(0, 3).map(r => {
-      const node = TAGGED_NODES.find(n => n.id === r.id);
-      const d = new Date(r.timestamp);
-      const dateStr = `${d.getMonth() + 1}/${d.getDate()}`;
-      return node ? { text: node.text, date: dateStr } : null;
-    }).filter(Boolean) as { text: string; date: string }[];
-
-    // 最近解锁的徽章
-    const sd = getStreakDays();
-    const tc = getTodayCount();
-    const badges = getBadges(history, sd, tc);
-    const unlockedBadges = badges.filter(b => b.unlocked).map(b => b.label);
-
-    return { recent3, unlockedBadges };
+  const handleOpenShare = useCallback(() => {
+    window.open("/recharge-share.html", "_blank");
   }, []);
 
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const dpr = window.devicePixelRatio || 1;
-    const w = 320;
-    const h = 580;
-    canvas.width = w * dpr;
-    canvas.height = h * dpr;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return;
-    ctx.scale(dpr, dpr);
+  const handleCopyLink = useCallback(() => {
+    const url = `${window.location.origin}/recharge-share.html`;
+    navigator.clipboard.writeText(url).then(() => {
+      setCopySuccess(true);
+      setTimeout(() => setCopySuccess(false), 2000);
+    }).catch(() => {
+      const textarea = document.createElement("textarea");
+      textarea.value = url;
+      document.body.appendChild(textarea);
+      textarea.select();
+      document.execCommand("copy");
+      document.body.removeChild(textarea);
+      setCopySuccess(true);
+      setTimeout(() => setCopySuccess(false), 2000);
+    });
+  }, []);
 
-    // 暖色渐变背景
-    const bgGrad = ctx.createLinearGradient(0, 0, 0, h);
-    bgGrad.addColorStop(0, "#FDFBF7");
-    bgGrad.addColorStop(1, "#F8F4EF");
-    ctx.fillStyle = bgGrad;
-    ctx.fillRect(0, 0, w, h);
+  const handleDownload = useCallback(() => {
+    const doneIds = JSON.parse(localStorage.getItem("recharge_done_ids") || "[]");
+    const history = JSON.parse(localStorage.getItem("recharge_history") || "[]");
 
-    // 顶部装饰 - 小叶子
-    ctx.fillStyle = "rgba(124,106,154,0.08)";
-    ctx.beginPath();
-    ctx.ellipse(w - 60, 35, 40, 20, -0.3, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.fillStyle = "rgba(124,106,154,0.05)";
-    ctx.beginPath();
-    ctx.ellipse(50, 55, 30, 15, 0.4, 0, Math.PI * 2);
-    ctx.fill();
+    const dataJson = JSON.stringify({
+      totalCount: doneIds.length,
+      streak,
+      doneIds,
+      history,
+      generatedAt: new Date().toISOString(),
+    });
 
-    // 顶部双线装饰
-    ctx.strokeStyle = "#7C6A9A";
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    ctx.moveTo(30, 55);
-    ctx.lineTo(w - 30, 55);
-    ctx.stroke();
-    ctx.strokeStyle = "rgba(124,106,154,0.3)";
-    ctx.lineWidth = 0.5;
-    ctx.beginPath();
-    ctx.moveTo(50, 62);
-    ctx.lineTo(w - 50, 62);
-    ctx.stroke();
-
-    // 标题
-    ctx.fillStyle = "#3a3a3a";
-    ctx.font = '700 24px "Noto Serif SC", Georgia, serif';
-    ctx.textAlign = "center";
-    ctx.fillText("我的回血日记", w / 2, 105);
-
-    // 副标题
-    ctx.fillStyle = "#9a8a7e";
-    ctx.font = '13px "Noto Sans SC", system-ui, sans-serif';
-    ctx.fillText("每天做一件滋养自己的小事", w / 2, 132);
-
-    // 数据区域 - 圆角卡片
-    const cardY = 165;
-    const cardH = 120;
-    ctx.fillStyle = "#FFFFFF";
-    ctx.beginPath();
-    ctx.roundRect(30, cardY, w - 60, cardH, 16);
-    ctx.fill();
-    ctx.strokeStyle = "rgba(180,170,160,0.1)";
-    ctx.lineWidth = 1;
-    ctx.stroke();
-
-    // 左侧 - 累计完成
-    ctx.fillStyle = "#7C6A9A";
-    ctx.font = '700 42px "Noto Serif SC", Georgia, serif';
-    ctx.textAlign = "center";
-    ctx.fillText(String(totalCount), 95, cardY + 68);
-    ctx.fillStyle = "#9a8a7e";
-    ctx.font = '12px "Noto Sans SC", system-ui, sans-serif';
-    ctx.fillText("累计完成", 95, cardY + 92);
-
-    // 中间分隔
-    ctx.strokeStyle = "rgba(180,170,160,0.15)";
-    ctx.lineWidth = 1;
-    ctx.beginPath();
-    ctx.moveTo(w / 2, cardY + 20);
-    ctx.lineTo(w / 2, cardY + cardH - 20);
-    ctx.stroke();
-
-    // 右侧 - 连续天数
-    ctx.fillStyle = "#FF8FA3";
-    ctx.font = '700 42px "Noto Serif SC", Georgia, serif';
-    ctx.fillText(String(streak), w - 95, cardY + 68);
-    ctx.fillStyle = "#9a8a7e";
-    ctx.font = '12px "Noto Sans SC", system-ui, sans-serif';
-    ctx.fillText("连续打卡", w - 95, cardY + 92);
-
-    // 治愈文案区
-    const quoteY = cardY + cardH + 30;
-    ctx.fillStyle = "rgba(124,106,154,0.06)";
-    ctx.beginPath();
-    ctx.roundRect(40, quoteY, w - 80, 80, 12);
-    ctx.fill();
-
-    ctx.fillStyle = "#6b5e50";
-    ctx.font = '15px "Noto Serif SC", Georgia, serif';
-    ctx.textAlign = "center";
-    // 左引号
-    ctx.fillStyle = "rgba(124,106,154,0.2)";
-    ctx.font = '28px Georgia, serif';
-    ctx.fillText("\u201C", 58, quoteY + 50);
-    // 右引号
-    ctx.fillText("\u201D", w - 58, quoteY + 80);
-
-    ctx.fillStyle = "#6b5e50";
-    ctx.font = '14px "Noto Serif SC", Georgia, serif';
-    const maxWidth = w - 120;
-    const chars = line.split("");
-    let currentLn = "";
-    const lns: string[] = [];
-    for (const c of chars) {
-      const test = currentLn + c;
-      if (ctx.measureText(test).width > maxWidth && currentLn.length > 0) {
-        lns.push(currentLn);
-        currentLn = c;
-      } else {
-        currentLn = test;
-      }
-    }
-    lns.push(currentLn);
-    let ty = quoteY + 45;
-    for (const l of lns) {
-      ctx.fillText(l, w / 2, ty);
-      ty += 22;
-    }
-
-    // 最近完成的小事 — 圆角卡片背景
-    if (cardData.recent3.length > 0) {
-      let curY = quoteY + 105;
-      const recentCardTop = curY - 18;
-      const recentCardPad = 14;
-
-      // 先计算总高度（确保字体先设置）
-      ctx.font = '12px "Noto Sans SC", system-ui, sans-serif';
-      let totalH = 20;
-      for (const item of cardData.recent3) {
-        const nameMaxW = w - 130;
-        const nameChars = item.text.split("");
-        let nameLine = "";
-        let lineCount = 1;
-        for (const ch of nameChars) {
-          const test = nameLine + ch;
-          if (ctx.measureText(test).width > nameMaxW && nameLine.length > 0) {
-            lineCount++;
-            nameLine = ch;
-          } else {
-            nameLine = test;
-          }
-        }
-        totalH += lineCount * 18 + 6;
-      }
-      if (cardData.unlockedBadges.length > 0) {
-        totalH += 18 + Math.min(cardData.unlockedBadges.length, 2) * 28 + 6;
-      }
-
-      // 绘制背景卡片
-      ctx.fillStyle = "rgba(124,106,154,0.04)";
-      ctx.beginPath();
-      ctx.roundRect(30, recentCardTop, w - 60, totalH + recentCardPad, 14);
-      ctx.fill();
-
-      ctx.fillStyle = "#b0a090";
-      ctx.font = '11px "Noto Sans SC", system-ui, sans-serif';
-      ctx.textAlign = "left";
-      ctx.fillText("最近完成", 44, curY);
-      curY += 22;
-
-      for (const item of cardData.recent3) {
-        // 自动换行计算名称
-        const nameMaxW = w - 130;
-        const nameChars = item.text.split("");
-        let nameLine = "";
-        const nameLines: string[] = [];
-        for (const ch of nameChars) {
-          const test = nameLine + ch;
-          if (ctx.measureText(test).width > nameMaxW && nameLine.length > 0) {
-            nameLines.push(nameLine);
-            nameLine = ch;
-          } else {
-            nameLine = test;
-          }
-        }
-        nameLines.push(nameLine);
-
-        // 绘制日期（第一行右侧）
-        ctx.fillStyle = "#c0b0a0";
-        ctx.font = '10px "Noto Sans SC", system-ui, sans-serif';
-        ctx.textAlign = "right";
-        ctx.fillText(item.date, w - 40, curY);
-
-        // 绘制名称行
-        ctx.textAlign = "left";
-        ctx.fillStyle = "#7a6e62";
-        ctx.font = '12px "Noto Sans SC", system-ui, sans-serif';
-        for (const nl of nameLines) {
-          ctx.fillText(nl, 50, curY);
-          curY += 18;
-        }
-        curY += 6; // item 间距
-      }
-
-      // 最近解锁徽章
-      if (cardData.unlockedBadges.length > 0) {
-        ctx.fillStyle = "#c0b0a0";
-        ctx.font = '11px "Noto Sans SC", system-ui, sans-serif';
-        ctx.textAlign = "left";
-        ctx.fillText("最近解锁", 40, curY);
-        curY += 18;
-
-        const latestBadges = cardData.unlockedBadges.slice(-2);
-        for (const badgeLabel of latestBadges) {
-          ctx.fillStyle = "rgba(124,106,154,0.1)";
-          const badgeText = `🏅 ${badgeLabel}`;
-          const badgeW = ctx.measureText(badgeText).width + 16;
-          ctx.beginPath();
-          ctx.roundRect(50, curY - 12, badgeW, 22, 11);
-          ctx.fill();
-          ctx.fillStyle = "#7C6A9A";
-          ctx.font = '11px "Noto Sans SC", system-ui, sans-serif';
-          ctx.fillText(badgeText, 58, curY + 2);
-          curY += 28;
-        }
-      }
-    }
-
-    // 底部装饰线
-    const bottomY = h - 48;
-    ctx.strokeStyle = "rgba(124,106,154,0.15)";
-    ctx.lineWidth = 1;
-    ctx.beginPath();
-    ctx.moveTo(90, bottomY);
-    ctx.lineTo(w - 90, bottomY);
-    ctx.stroke();
-
-    ctx.fillStyle = "#c0b0a0";
-    ctx.font = '10px "Noto Sans SC", system-ui, sans-serif';
-    ctx.textAlign = "center";
-    ctx.fillText("回血清单 · Recharge Station", w / 2, bottomY + 22);
-
-    // 右下角小装饰
-    ctx.fillStyle = "rgba(255,143,163,0.12)";
-    ctx.beginPath();
-    ctx.arc(w - 42, bottomY - 10, 14, 0, Math.PI * 2);
-    ctx.fill();
-
-    setReady(true);
-  }, [totalCount, streak, line, cardData]);
-
-  const handleDownload = () => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const url = canvas.toDataURL("image/png");
+    const html = generateShareHTML(dataJson);
+    const blob = new Blob([html], { type: "text/html;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = `我的回血日记-${new Date().toISOString().slice(0, 10)}.png`;
+    a.download = `我的回血日记-${new Date().toISOString().slice(0, 10)}.html`;
     a.click();
-  };
+    URL.revokeObjectURL(url);
+  }, [totalCount, streak]);
 
   return (
     <motion.div className="share-overlay" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={onClose}>
       <motion.div className="share-popup" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 20 }} onClick={e => e.stopPropagation()}>
-        <button className="share-close" onClick={onClose}>✕</button>
-        <h3 className="share-title">分享卡片</h3>
-        <div className="share-canvas-wrap">
-          <canvas ref={canvasRef} style={{ width: 320, height: 580, borderRadius: 12, display: ready ? "block" : "none" }} />
-          {!ready && <div className="share-canvas-placeholder">生成中...</div>}
+        <button className="share-close" onClick={onClose}>x</button>
+        <h3 className="share-title">分享我的回血日记</h3>
+
+        <div className="share-info">
+          <div className="share-stats">
+            <div className="share-stat">
+              <span className="share-stat-value">{totalCount}</span>
+              <span className="share-stat-label">累计完成</span>
+            </div>
+            <div className="share-stat-divider" />
+            <div className="share-stat">
+              <span className="share-stat-value">{streak}</span>
+              <span className="share-stat-label">连续打卡</span>
+            </div>
+          </div>
+          <p className="share-hint">生成一张日系手帐风格的分享卡片，适合发朋友圈/小红书</p>
         </div>
-        <button className="share-download" onClick={handleDownload}>下载卡片</button>
+
+        <div className="share-actions">
+          <button className="share-btn share-btn-primary" onClick={handleOpenShare}>
+            预览卡片
+          </button>
+          <button className="share-btn share-btn-secondary" onClick={handleDownload}>
+            下载 HTML
+          </button>
+          <button className="share-btn share-btn-outline" onClick={handleCopyLink}>
+            {copySuccess ? "已复制链接" : "复制链接"}
+          </button>
+        </div>
       </motion.div>
     </motion.div>
   );
 };
+
+/**
+ * 生成带嵌入数据的分享 HTML 文件内容
+ */
+function generateShareHTML(dataJson: string): string {
+  return '<!DOCTYPE html>\n<html lang="zh-CN">\n<head>\n<meta charset="UTF-8">\n<meta name="viewport" content="width=device-width, initial-scale=1.0">\n<title>我的回血日记</title>\n<script src="https://cdn.tailwindcss.com"><\/script>\n<link rel="preconnect" href="https://fonts.googleapis.com">\n<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>\n<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@300;400;600;700&family=ZCOOL+XiaoWei&family=Quicksand:wght@500;700&display=swap" rel="stylesheet">\n<style>\n:root{--bg-outer:#EDE8DC;--bg-card:#F5F1E6;--border-card:#D8CFB8;--text-deep:#5D4037;--text-mid:#7A6E62;--text-soft:#A09080;--text-tag:#B0A090;--accent-blue:#DCEEF2;--accent-pink:#F3D9D2;--note-bg:#FBF8F0;--seal-red:#C44B4B;--seal-dark:#8B3030;--font-title:\'ZCOOL XiaoWei\',\'Noto Serif SC\',serif;--font-body:\'Noto Serif SC\',Georgia,serif;--font-number:\'Quicksand\',\'PingFang SC\',system-ui,sans-serif}\n*{margin:0;padding:0;box-sizing:border-box}\nbody{background:var(--bg-outer);display:flex;align-items:center;justify-content:center;min-height:100vh;padding:20px;font-family:var(--font-body)}\n.card{width:800px;height:1000px;background:var(--bg-card);border:1px solid var(--border-card);border-radius:18px;box-shadow:0 10px 30px rgba(93,64,55,0.12);position:relative;overflow:hidden;animation:cardFadeIn .8s ease-out}\n@keyframes cardFadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}\n.card::before{content:\'\';position:absolute;inset:0;border-radius:18px;background-image:url("data:image/svg+xml,%3Csvg viewBox=\'0 0 256 256\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cfilter id=\'n\'%3E%3CfeTurbulence type=\'fractalNoise\' baseFrequency=\'0.9\' numOctaves=\'4\' stitchTiles=\'stitch\'/%3E%3C/filter%3E%3Crect width=\'100%25\' height=\'100%25\' filter=\'url(%23n)\' opacity=\'0.04\'/%3E%3C/svg%3E");background-size:256px;pointer-events:none;z-index:0}\n.card-inner{position:relative;z-index:1;width:100%;height:100%;display:flex;flex-direction:column;padding:48px 56px 40px}\n.header-title{font-family:var(--font-title);font-size:36px;color:var(--text-deep);text-align:center;letter-spacing:.06em}\n.header-sub{font-family:var(--font-body);font-size:15px;font-weight:300;color:var(--text-mid);text-align:center;letter-spacing:.15em;margin-top:8px;display:flex;align-items:center;justify-content:center;gap:16px}\n.header-line{width:50px;height:1px;background:var(--border-card);flex-shrink:0}\n.badges{display:flex;justify-content:center;gap:64px;margin-top:36px}\n.badge{display:flex;flex-direction:column;align-items:center;gap:10px;transition:transform .3s ease}\n.badge:hover{transform:scale(1.03)}\n.badge-circle{width:110px;height:110px;border-radius:50%;display:flex;flex-direction:column;align-items:center;justify-content:center;box-shadow:0 0 0 2px rgba(93,64,55,0.12),0 0 0 4px rgba(93,64,55,0.04),0 4px 12px rgba(93,64,55,0.08)}\n.badge-circle-left{background:var(--accent-blue)}\n.badge-circle-right{background:var(--accent-pink)}\n.badge-number{font-family:var(--font-number);font-size:48px;font-weight:700;color:var(--text-deep);line-height:1}\n.badge-label{font-family:var(--font-body);font-size:13px;color:var(--text-mid);font-weight:300;letter-spacing:.08em}\n.quote{text-align:center;margin-top:36px}\n.quote-text{font-family:var(--font-title);font-size:22px;color:var(--text-deep);display:inline-flex;align-items:center;gap:12px}\n.quote-star{color:#D4A76A;font-size:14px;opacity:.7}\n.quote-leaf{margin-top:12px}\n.history{flex:1;margin-top:32px;display:flex;flex-direction:column;overflow:hidden}\n.history-title{font-family:var(--font-body);font-size:14px;font-weight:300;color:var(--text-soft);letter-spacing:.1em;margin-bottom:16px}\n.notes{display:flex;flex-direction:column;gap:16px}\n.note{background:var(--note-bg);border-radius:10px;padding:14px 18px;display:flex;align-items:center;gap:14px;box-shadow:0 2px 6px rgba(93,64,55,0.04);border:1px solid rgba(93,64,55,0.06)}\n.note:nth-child(odd){transform:rotate(-1.5deg)}\n.note:nth-child(even){transform:rotate(1deg)}\n.note-icon{width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:18px;background:rgba(93,64,55,0.04);flex-shrink:0}\n.note-body{flex:1;min-width:0}\n.note-text{font-family:var(--font-body);font-size:14px;color:var(--text-deep);font-weight:300}\n.note-date{font-family:var(--font-body);font-size:12px;color:var(--text-soft);font-weight:300;flex-shrink:0;text-align:right}\n.footer{display:flex;align-items:flex-end;justify-content:space-between;margin-top:24px;padding-top:20px;border-top:1px solid rgba(93,64,55,0.08)}\n.footer-left{font-family:var(--font-body);font-size:12px;font-weight:300;color:var(--text-tag);letter-spacing:.06em}\n.seal{width:72px;height:72px;border-radius:50%;background:radial-gradient(circle at 45% 40%,var(--seal-red),var(--seal-dark));display:flex;flex-direction:column;align-items:center;justify-content:center;color:#F5E6D0;font-family:var(--font-title);font-size:12px;line-height:1.4;box-shadow:0 0 0 3px var(--seal-dark),0 0 0 5px rgba(139,48,48,0.3),0 4px 12px rgba(139,48,48,0.2);transform:rotate(8deg);letter-spacing:.04em}\n.seal-check{font-size:16px;margin-bottom:1px}\n.tags{display:flex;gap:12px;margin-top:12px}\n.tag{font-family:var(--font-body);font-size:11px;color:var(--text-tag);font-weight:300;letter-spacing:.04em}\n.empty-state{display:flex;flex-direction:column;align-items:center;justify-content:center;flex:1;color:var(--text-tag);font-family:var(--font-body);font-size:14px;font-weight:300;gap:8px}\n.empty-state-icon{font-size:36px;opacity:.4}\n@media(max-width:840px){.card{width:100%;height:auto;aspect-ratio:4/5}.card-inner{padding:32px 28px 28px}.header-title{font-size:26px}.badge-circle{width:80px;height:80px}.badge-number{font-size:36px}.badges{gap:40px;margin-top:24px}.quote-text{font-size:18px}.badge-label{font-size:11px}}\n@media(max-width:420px){.card-inner{padding:24px 18px 20px}.header-title{font-size:22px}.header-sub{font-size:12px;gap:8px}.header-line{width:30px}.badge-circle{width:66px;height:66px}.badge-number{font-size:28px}.badges{gap:24px;margin-top:18px}.quote-text{font-size:16px}.quote{margin-top:20px}.note-text{font-size:12px}.note{padding:10px 12px;gap:8px}.seal{width:54px;height:54px;font-size:10px}}\n</style>\n</head>\n<body>\n<div class="card"><div class="card-inner">\n<div class="header"><h1 class="header-title">我的回血日记</h1><p class="header-sub"><span class="header-line"></span>每天做一件滋养自己的小事<span class="header-line"></span></p></div>\n<div class="badges"><div class="badge"><div class="badge-circle badge-circle-left"><span class="badge-number" id="tc">0</span><span class="badge-label">累计完成</span></div></div><div class="badge"><div class="badge-circle badge-circle-right"><span class="badge-number" id="sd">0</span><span class="badge-label">连续打卡</span></div></div></div>\n<div class="quote"><p class="quote-text"><span class="quote-star">&#10027;</span>今天也在好好照顾自己呢<span class="quote-star">&#10027;</span></p><div class="quote-leaf"><svg width="40" height="20" viewBox="0 0 40 20" fill="none"><path d="M20 2 C26 2 34 8 34 12 C34 16 28 18 20 18 C12 18 6 16 6 12 C6 8 14 2 20 2Z" fill="rgba(124,106,154,0.12)"/><line x1="20" y1="18" x2="20" y2="20" stroke="rgba(124,106,154,0.2)" stroke-width="0.8"/></svg></div></div>\n<div class="history"><div class="history-title">最近完成 &middot; Recent Recharge</div><div class="notes" id="nc"></div><div class="empty-state" id="es" style="display:none"><span class="empty-state-icon">&#127807;</span><span>还没有完成记录，去完成一件小事吧</span></div></div>\n<div class="footer"><div><p class="footer-left">长按保存这份回血能量</p><div class="tags"><span class="tag">#自我关怀</span><span class="tag">#回血日记</span><span class="tag">#治愈系手帐</span></div></div><div class="seal"><span class="seal-check">&#10003;</span><span>已回血</span></div></div>\n</div></div>\n<script>\nvar EMBEDDED_DATA = ' + dataJson + ';\nvar NI={1:"&#128099;",4:"&#128722;",8:"&#128295;",3:"&#128705;",5:"&#128694;",11:"&#128214;",12:"&#127926;",17:"&#9749;",6:"&#129496;",14:"&#128221;",7:"&#128222;",9:"&#127909;",13:"&#127858;",10:"&#128230;",2:"&#128248;",15:"&#127912;",16:"&#127800;",18:"&#128164;",19:"&#127856;",20:"&#128134;",21:"&#128690;",22:"&#127946;",23:"&#127918;",24:"&#128250;"};\nvar NT={1:"做一次足疗，让双脚彻底放松",4:"逛超市买了新鲜的草莓和酸奶",8:"做手工：刻了一枚橡皮章",3:"泡一个热水澡，什么都不想",5:"出门散步二十分钟",11:"窝在沙发里看一本好书",12:"戴上耳机听最喜欢的专辑",17:"去咖啡馆坐一下午",6:"做一组舒缓的瑜伽拉伸",14:"写一篇日记，把心事倒出来",7:"给好朋友打个电话聊聊天",9:"看一部期待已久的电影",13:"给自己做一顿好吃的饭",10:"整理房间，把杂物清出去",2:"穿上喜欢的衣服拍张照",15:"随手画一幅小画",16:"给阳台的花浇浇水",18:"睡一个没有闹钟的午觉",19:"尝一口新口味的甜品",20:"做个肩颈按摩放松一下",21:"骑着单车去兜风",22:"去游泳馆游几圈",23:"打一局喜欢的游戏",24:"追一集最近在看的剧"};\nfunction r(){var d=EMBEDDED_DATA;document.getElementById("tc").textContent=d.totalCount;document.getElementById("sd").textContent=d.streak;var seen={},unique=[],h=d.history||[];for(var i=h.length-1;i>=0;i--){var r=h[i];if(!seen[r.id]){seen[r.id]=true;unique.push(r)}}var recent=unique.slice(0,3).map(function(r){return{icon:NI[r.id]||"&#127807;",text:NT[r.id]||"完成了一件回血小事",date:new Date(r.timestamp).getMonth()+1+"/"+new Date(r.timestamp).getDate()}});var nc=document.getElementById("nc"),es=document.getElementById("es");if(recent.length===0){nc.innerHTML="";es.style.display="flex"}else{es.style.display="none";nc.innerHTML=recent.map(function(r){return\'<div class=note><div class=note-icon>\'+r.icon+\'</div><div class=note-body><span class=note-text>\'+r.text+\'</span></div><span class=note-date>\'+r.date+\'</span></div>\'}).join("")}}\ndocument.addEventListener("DOMContentLoaded",r);\n<\/script>\n</body></html>';
+}
+
 
 /* ============================================================
    Tab 4 — 我的
@@ -2556,31 +2329,67 @@ const RechargePage: React.FC = () => {
           margin: 0 0 16px; letter-spacing: 0.08em;
           clear: both;
         }
-        .share-canvas-wrap {
-          display: flex; justify-content: center; margin-bottom: 14px;
+        .share-info {
+          padding: 16px 0;
         }
-        .share-canvas-wrap canvas {
-          box-shadow: 0 4px 16px rgba(160,150,140,0.12);
-          max-width: 100%; height: auto;
+        .share-stats {
+          display: flex; align-items: center; justify-content: center; gap: 28px;
+          margin-bottom: 10px;
         }
-        .share-canvas-placeholder {
-          width: 320px; height: 580px; border-radius: 12px;
-          background: #FFFFFF; border: 1px solid rgba(180,170,160,0.1);
-          display: flex; align-items: center; justify-content: center;
-          font-size: 14px; color: #b8aa9a;
+        .share-stat {
+          display: flex; flex-direction: column; align-items: center;
         }
-        .share-download {
-          padding: 10px 32px; border: none; border-radius: 12px;
-          background: linear-gradient(135deg, #7C6A9A, #B8A9D9);
+        .share-stat-value {
+          font-family: "Quicksand", "PingFang SC", system-ui, sans-serif;
+          font-size: 32px; font-weight: 700; color: #5D4037;
+          line-height: 1.2;
+        }
+        .share-stat-label {
+          font-size: 12px; color: #A09080; font-weight: 300;
+          letter-spacing: 0.06em;
+        }
+        .share-stat-divider {
+          width: 1px; height: 40px; background: rgba(93,64,55,0.1);
+        }
+        .share-hint {
+          font-size: 12px; color: #B0A090; font-weight: 300;
+          letter-spacing: 0.04em; margin: 0;
+        }
+        .share-actions {
+          display: flex; flex-direction: column; gap: 8px; margin-top: 16px;
+        }
+        .share-btn {
+          width: 100%; padding: 10px 0; border: none; border-radius: 12px;
           font-family: "Noto Serif SC", Georgia, serif;
-          font-size: 14px; font-weight: 600; color: #FFFFFF;
-          letter-spacing: 0.06em; cursor: pointer;
-          transition: all 0.3s ease;
+          font-size: 14px; font-weight: 500; cursor: pointer;
+          letter-spacing: 0.06em; transition: all 0.3s ease;
+        }
+        .share-btn-primary {
+          background: linear-gradient(135deg, #7C6A9A, #B8A9D9);
+          color: #FFFFFF;
           box-shadow: 0 4px 16px rgba(124,106,154,0.2);
         }
-        .share-download:hover {
+        .share-btn-primary:hover {
           box-shadow: 0 6px 20px rgba(124,106,154,0.3);
           transform: translateY(-1px);
+        }
+        .share-btn-secondary {
+          background: rgba(124,106,154,0.08);
+          color: #5D4037;
+          border: 1px solid rgba(124,106,154,0.15);
+        }
+        .share-btn-secondary:hover {
+          background: rgba(124,106,154,0.14);
+        }
+        .share-btn-outline {
+          background: transparent;
+          color: #A09080;
+          border: 1px solid rgba(93,64,55,0.12);
+          font-size: 13px;
+        }
+        .share-btn-outline:hover {
+          background: rgba(93,64,55,0.04);
+          color: #5D4037;
         }
 
         /* ===== 移动端 ===== */

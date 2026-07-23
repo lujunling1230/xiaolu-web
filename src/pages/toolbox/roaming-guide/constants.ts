@@ -10,8 +10,9 @@ export const DEFAULT_CITIES: City[] = [
     province: "云南",
     coord: { lng: 100.23, lat: 25.59 },
     slogan: "风花雪月的慢生活",
-    imageUrl:
+    images: [
       "https://images.unsplash.com/photo-1531219573917-2ca59e96bc0e?w=800&h=600&fit=crop",
+    ],
     days: 5,
     play: [
       { name: "洱海骑行", rating: 5 },
@@ -41,8 +42,9 @@ export const DEFAULT_CITIES: City[] = [
     province: "四川",
     coord: { lng: 104.06, lat: 30.67 },
     slogan: "一座来了就不想走的城",
-    imageUrl:
+    images: [
       "https://images.unsplash.com/photo-1593696954577-ab3d39317b97?w=800&h=600&fit=crop",
+    ],
     days: 4,
     play: [
       { name: "大熊猫繁育基地", rating: 5 },
@@ -72,8 +74,9 @@ export const DEFAULT_CITIES: City[] = [
     province: "江苏",
     coord: { lng: 120.62, lat: 31.30 },
     slogan: "小桥流水人家的江南梦",
-    imageUrl:
+    images: [
       "https://images.unsplash.com/photo-1599779019475-d5c9e7c2c1f0?w=800&h=600&fit=crop",
+    ],
     days: 3,
     play: [
       { name: "拙政园", rating: 5 },
@@ -103,8 +106,9 @@ export const DEFAULT_CITIES: City[] = [
     province: "福建",
     coord: { lng: 118.10, lat: 24.46 },
     slogan: "海风里藏着文艺的味道",
-    imageUrl:
+    images: [
       "https://images.unsplash.com/photo-1528219089975-1c5b2c2c3c1f?w=800&h=600&fit=crop",
+    ],
     days: 4,
     play: [
       { name: "鼓浪屿", rating: 5 },
@@ -134,8 +138,9 @@ export const DEFAULT_CITIES: City[] = [
     province: "陕西",
     coord: { lng: 108.94, lat: 34.26 },
     slogan: "一眼千年，长安如故",
-    imageUrl:
+    images: [
       "https://images.unsplash.com/photo-1591851658485-c5f6c6b7e0e8?w=800&h=600&fit=crop",
+    ],
     days: 5,
     play: [
       { name: "秦始皇兵马俑", rating: 5 },
@@ -165,8 +170,9 @@ export const DEFAULT_CITIES: City[] = [
     province: "浙江",
     coord: { lng: 120.15, lat: 30.28 },
     slogan: "山寺月中寻桂子",
-    imageUrl:
+    images: [
       "https://images.unsplash.com/photo-1591868050309-7d2b1e2f6c1a?w=800&h=600&fit=crop",
+    ],
     days: 4,
     play: [
       { name: "西湖泛舟", rating: 5 },

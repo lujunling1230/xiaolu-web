@@ -275,7 +275,7 @@ export default function AIAssistantPanel({
         province: "未知",
         coord: { lng: 0, lat: 0 },
         slogan: lastGenerateResult.plan.summary?.slice(0, 20) || "AI 推荐攻略",
-        imageUrl: "",
+        images: [],
         days: lastGenerateResult.plan.days || 3,
         play: [],
         eat: [],

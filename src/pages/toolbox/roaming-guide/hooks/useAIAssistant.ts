@@ -183,7 +183,7 @@ export function useAIAssistant(
       province: rec.province,
       coord: rec.coord,
       slogan: rec.reason.length > 20 ? rec.reason.slice(0, 20) + "..." : rec.reason,
-      imageUrl: "",
+      images: [],
       days: 3,
       play: rec.highlights.map(h => ({ name: h, rating: 4 })),
       eat: (rec.food || []).map(f => ({ name: f, price: "", signature: "" })),

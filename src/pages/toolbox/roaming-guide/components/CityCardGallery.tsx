@@ -17,7 +17,7 @@ interface City {
   name: string;
   province: string;
   slogan: string;
-  imageUrl: string;
+  images: string[];
   days: number;
   play: Spot[];
   eat: Eat[];
@@ -91,7 +91,7 @@ export default function CityCardGallery({
                   <div className="rg-card-img-wrap">
                     <img
                       src={
-                        c.imageUrl ||
+                        (c.images?.[0]) ||
                         "https://images.unsplash.com/photo-1506744038136-46273834b3fb?w=800&h=600&fit=crop"
                       }
                       alt={c.name}

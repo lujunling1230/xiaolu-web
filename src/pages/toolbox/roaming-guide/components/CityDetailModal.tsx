@@ -1,4 +1,5 @@
 import { motion, AnimatePresence } from "framer-motion";
+import { useState } from "react";
 
 /* ============================================================
    数据类型（与主页面保持一致）
@@ -17,7 +18,7 @@ interface City {
   name: string;
   province: string;
   slogan: string;
-  imageUrl: string;
+  images: string[];
   days: number;
   play: Spot[];
   eat: Eat[];
@@ -64,6 +65,7 @@ export default function CityDetailModal({
   onEdit,
   onDelete,
 }: CityDetailModalProps) {
+  const [carouselIndex, setCarouselIndex] = useState(0);
   if (!city) return null;
 
   return (
@@ -110,20 +112,26 @@ export default function CityDetailModal({
               </button>
             </div>
 
-            {/* 封面图 */}
-            <div className="rg-detail-cover">
-              <img
-                src={
-                  city.imageUrl ||
-                  "https://images.unsplash.com/photo-1506744038136-46273834b3fb?w=800&h=600&fit=crop"
-                }
-                alt={city.name}
-              />
-              <div className="rg-detail-cover-tint" />
-              <div className="rg-detail-cover-text">
-                <h3 className="rg-detail-name">{city.name}</h3>
-                <p className="rg-detail-slogan">{city.slogan}</p>
+            {/* 轮播图 */}
+            <div className="rg-detail-carousel">
+              <div className="rg-detail-carousel-track" style={{ transform: `translateX(-${carouselIndex * 100}%)` }}>
+                {(city.images?.length ? city.images : ["https://images.unsplash.com/photo-1506744038136-46273834b3fb?w=800&h=600&fit=crop"]).map((img, i) => (
+                  <div key={i} className="rg-detail-carousel-slide">
+                    <img src={img} alt={`${city.name} ${i + 1}`} />
+                  </div>
+                ))}
               </div>
+              {((city.images?.length || 0) > 1) && (
+                <>
+                  <button className="rg-detail-carousel-prev" onClick={() => setCarouselIndex((p) => (p - 1 + (city.images!.length || 1)) % (city.images!.length || 1))}>‹</button>
+                  <button className="rg-detail-carousel-next" onClick={() => setCarouselIndex((p) => (p + 1) % (city.images!.length || 1))}>›</button>
+                  <div className="rg-detail-carousel-dots">
+                    {(city.images || []).map((_, i) => (
+                      <span key={i} className={`rg-dot${i === carouselIndex ? ' is-active' : ''}`} onClick={() => setCarouselIndex(i)} />
+                    ))}
+                  </div>
+                </>
+              )}
             </div>
 
             {/* 正文区域 */}
@@ -567,6 +575,18 @@ export default function CityDetailModal({
       .rg-detail-tips .rg-detail-text {
         font-size: 13px;
       }
+
+      /* 轮播图 */
+      .rg-detail-carousel { position: relative; width: 100%; height: 220px; border-radius: 16px; overflow: hidden; margin-bottom: 20px; }
+      .rg-detail-carousel-track { display: flex; height: 100%; transition: transform 0.4s ease; }
+      .rg-detail-carousel-slide { flex: 0 0 100%; height: 100%; }
+      .rg-detail-carousel-slide img { width: 100%; height: 100%; object-fit: cover; }
+      .rg-detail-carousel-prev, .rg-detail-carousel-next { position: absolute; top: 50%; transform: translateY(-50%); width: 32px; height: 32px; border-radius: 50%; background: rgba(255,255,255,0.8); border: none; color: #5A4A3A; font-size: 18px; cursor: pointer; display: flex; align-items: center; justify-content: center; backdrop-filter: blur(4px); }
+      .rg-detail-carousel-prev { left: 10px; }
+      .rg-detail-carousel-next { right: 10px; }
+      .rg-detail-carousel-dots { position: absolute; bottom: 10px; left: 50%; transform: translateX(-50%); display: flex; gap: 6px; }
+      .rg-dot { width: 6px; height: 6px; border-radius: 50%; background: rgba(255,255,255,0.5); cursor: pointer; transition: all 0.25s; }
+      .rg-dot.is-active { background: #F4D35E; width: 18px; border-radius: 3px; }
 
       @media (max-width: 640px) {
         .rg-detail-overlay {

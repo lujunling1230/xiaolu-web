@@ -60,7 +60,7 @@ export interface City {
   province: string;
   coord: Coord;
   slogan: string;
-  imageUrl: string;
+  images: string[];
   days: number;
   play: Spot[];
   eat: Eat[];

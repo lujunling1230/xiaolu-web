@@ -658,6 +658,10 @@ const AdvicePage: React.FC = () => {
         .advice-bg {
           position: fixed;
           top: 0; left: 0; right: 0; bottom: 0;
+          width: 100%;
+          height: 100%;
+          /* 使用 dvh 确保 iOS Safari 地址栏变化时正确覆盖 */
+          height: 100dvh;
           background-image: url('/advice-shop-bg-v2.jpg?v=1');
           background-repeat: no-repeat;
           background-position: center center;

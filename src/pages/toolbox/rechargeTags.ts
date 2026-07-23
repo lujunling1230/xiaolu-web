@@ -372,6 +372,8 @@ const MOOD_TAG_WEIGHTS: Record<MoodType, Record<EnergyTag, number>> = {
   tired:   { rest: 4, calm: 3, boost: 1, create: 1 },
   anxious: { calm: 4, rest: 2, create: 2, boost: 0 },
   low:     { boost: 3, rest: 3, calm: 2, create: 1 },
+  angry:   { calm: 4, rest: 3, boost: 1, create: 2 },
+  calm:    { create: 3, calm: 2, boost: 2, rest: 2 },
 };
 
 /**

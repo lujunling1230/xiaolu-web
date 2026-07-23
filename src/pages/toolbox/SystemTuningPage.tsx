@@ -899,7 +899,7 @@ const SystemTuningPage: React.FC = () => {
 
   /* ===== "我"页面折叠状态 ===== */
   const [foldFav, setFoldFav] = useState(false);
-  const [foldMoments, setFoldMoments] = useState(false);
+  const [foldMoments, setFoldMoments] = useState(true);
   const [foldWorks, setFoldWorks] = useState(false);
   const [foldCh1, setFoldCh1] = useState(false);
   const [foldCh2, setFoldCh2] = useState(false);

@@ -220,8 +220,19 @@ export default function RoamingGuideLayout() {
             box-shadow: 0 -4px 20px rgba(90,74,58,0.06);
           }
 
-          /* 隐藏顶部 Logo 区域 */
-          .rg-sidebar-top { display: none; }
+          /* 手机端顶部区域：仅保留回到作品集链接 */
+          .rg-sidebar-top {
+            display: flex;
+            align-items: center;
+            padding: 4px 12px;
+            border-bottom: none;
+          }
+          .rg-sidebar-title,
+          .rg-sidebar-subtitle { display: none; }
+          .rg-sidebar-back {
+            font-size: 12px;
+            padding: 2px 0;
+          }
 
           /* 导航改为横向排列 */
           .rg-sidebar-nav {
@@ -278,9 +289,9 @@ export default function RoamingGuideLayout() {
       {/* ===== 侧边栏 ===== */}
       <aside className="rg-sidebar">
         <div className="rg-sidebar-top">
-          <Link to="https://www.xiaoluweb.com/mickey" className="rg-sidebar-back">
+          <a href="https://www.xiaoluweb.com/mickey" className="rg-sidebar-back">
             ← <span>回到作品集</span>
-          </Link>
+          </a>
           <h1 className="rg-sidebar-title">漫游指南</h1>
           <p className="rg-sidebar-subtitle">丙午年 · 启程</p>
         </div>

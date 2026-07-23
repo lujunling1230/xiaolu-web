@@ -458,10 +458,9 @@ function ensureVoicesLoaded(): Promise<void> {
 }
 
 /** 播放语音引导 */
-async function speakGuide(text: string, onEnd?: () => void): Promise<SpeechSynthesisUtterance | null> {
+function speakGuide(text: string, onEnd?: () => void): SpeechSynthesisUtterance | null {
   if (typeof window === "undefined" || !window.speechSynthesis) return null;
   window.speechSynthesis.cancel();
-  if (!voicesLoaded) await ensureVoicesLoaded();
   const u = new SpeechSynthesisUtterance(text);
   const voice = getFriendlyVoice();
   if (voice) u.voice = voice;
@@ -470,6 +469,10 @@ async function speakGuide(text: string, onEnd?: () => void): Promise<SpeechSynth
   u.pitch = 0.88;
   u.volume = 0.85;
   if (onEnd) u.onend = onEnd;
+  // iOS 兼容：在 speak 前先 resume 确保音频上下文激活
+  if (window.speechSynthesis.paused) {
+    window.speechSynthesis.resume();
+  }
   window.speechSynthesis.speak(u);
   return u;
 }
@@ -574,8 +577,16 @@ const MeditationTimer: React.FC = () => {
     // 启动环境音
     stopAmbient();
     ambientRef.current = startAmbientSound(selectedSound);
-    // 播放初始语音引导（延迟 1.5s，等环境音淡入后再开始）
-    if (voiceGuide) {
+    // iOS 兼容：在用户手势中即刻"解锁" speechSynthesis
+    if (voiceGuide && typeof window !== "undefined" && window.speechSynthesis) {
+      // 先预加载语音列表
+      window.speechSynthesis.getVoices();
+      // 说一个极短的静默短语来激活音频上下文
+      const unlockU = new SpeechSynthesisUtterance("");
+      unlockU.volume = 0;
+      unlockU.rate = 2;
+      window.speechSynthesis.speak(unlockU);
+      // 延迟 1.5s 后播放真正的引导语（等环境音淡入）
       setTimeout(() => {
         voiceRef.current = speakGuide(GUIDE_TEXTS.start);
       }, 1500);
@@ -810,8 +821,7 @@ const MeditationTimer: React.FC = () => {
               onClick={() => {
                 setCompleted(false);
                 setRunning(false);
-                setNext(0);
-                setTick(0);
+                setSeconds(0);
                 stopAmbient();
                 if (typeof window !== "undefined" && window.speechSynthesis) {
                   window.speechSynthesis.cancel();

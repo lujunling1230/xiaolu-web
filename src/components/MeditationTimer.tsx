@@ -489,6 +489,8 @@ const MeditationTimer: React.FC = () => {
   const [seconds, setSeconds] = useState(0);
   const [running, setRunning] = useState(false);
   const [completed, setCompleted] = useState(false);
+  const [showToast, setShowToast] = useState(false);
+  const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
 
   // 环境音引用
@@ -594,6 +596,13 @@ const MeditationTimer: React.FC = () => {
     setSeconds(0);
   };
 
+  // 显示"更多音频"提示 toast
+  const showMoreSoundToast = () => {
+    if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+    setShowToast(true);
+    toastTimerRef.current = setTimeout(() => setShowToast(false), 2000);
+  };
+
   const progress =
     running && seconds > 0
       ? 1 - seconds / (duration * 60)
@@ -616,6 +625,21 @@ const MeditationTimer: React.FC = () => {
         <h3 className="ms-title">冥想空间</h3>
         <p className="ms-subtitle">聆听自然，放空思绪</p>
       </div>
+
+      {/* ===== Toast 提示 ===== */}
+      <AnimatePresence>
+        {showToast && (
+          <motion.div
+            className="ms-toast"
+            initial={{ opacity: 0, y: -10, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -10, scale: 0.95 }}
+            transition={{ duration: 0.25, ease: "easeOut" }}
+          >
+            更多精彩还在路上~
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       <AnimatePresence mode="wait">
         {/* ===== 设置阶段 ===== */}
@@ -647,10 +671,17 @@ const MeditationTimer: React.FC = () => {
                 </motion.button>
               ))}
 
-              {/* 更多音频提示 */}
-              <div className="ms-sound-coming-text">
-                还在路上~
-              </div>
+              {/* 更多音频卡片 */}
+              <motion.button
+                className="ms-sound-card ms-sound-more"
+                onClick={showMoreSoundToast}
+                whileHover={{ scale: 1.04 }}
+                whileTap={{ scale: 0.97 }}
+              >
+                <span className="ms-sound-icon">✨</span>
+                <span className="ms-sound-label">更多音频</span>
+                <span className="ms-sound-sub">More</span>
+              </motion.button>
             </div>
 
             {/* ── 时长选择 ── */}
@@ -834,6 +865,7 @@ const MeditationTimer: React.FC = () => {
           padding: 28px 24px 32px;
           max-width: 480px;
           margin: 0 auto;
+          position: relative;
           /* 覆盖 hl-card 的白色变量，毛玻璃是浅色背景，需要深色文字 */
           --text: #3D4A3E;
           --text-soft: #6B7A6E;
@@ -933,6 +965,14 @@ const MeditationTimer: React.FC = () => {
           font-size: 10px;
           color: var(--text);
           opacity: 0.75;
+        }
+        .ms-sound-more {
+          opacity: 0.7;
+          border-style: dashed !important;
+        }
+        .ms-sound-more:hover {
+          opacity: 1;
+          border-color: var(--accent);
         }
 
         /* ── 时长 pill ── */
@@ -1170,14 +1210,25 @@ const MeditationTimer: React.FC = () => {
           }
         }
 
-        /* 更多音频提示文字 */
-        .ms-sound-coming-text {
-          grid-column: 1 / -1;
-          text-align: center;
+        /* ── Toast 提示 ── */
+        .ms-toast {
+          position: absolute;
+          top: 16px;
+          left: 50%;
+          transform: translateX(-50%);
+          padding: 8px 18px;
+          border-radius: 999px;
+          background: rgba(61, 74, 62, 0.9);
+          color: #fff;
           font-size: 13px;
-          color: #9A8B7A;
-          padding: 8px 0;
-          letter-spacing: 1px;
+          white-space: nowrap;
+          z-index: 20;
+          box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+          letter-spacing: 0.04em;
+        }
+        [data-theme="night"] .ms-toast {
+          background: rgba(165, 196, 160, 0.95);
+          color: #1a2e1f;
         }
 
       `}</style>

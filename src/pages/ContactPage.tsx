@@ -1,6 +1,7 @@
 import { useState, useCallback } from "react";
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
+import { track } from "../utils/track";
 
 /* ============================================================
  * ContactPage 联系方式独立页面
@@ -34,6 +35,11 @@ const ContactPage: React.FC = () => {
           }),
         });
         if (res.ok) {
+          track("contact_submit", {
+            message_length: message.length,
+            has_contact_info: !!contactInfo.trim(),
+            via_formspree: true,
+          });
           setSubmitted(true);
           setMessage("");
           setContactInfo("");
@@ -50,6 +56,11 @@ const ContactPage: React.FC = () => {
     const entry = { message, contactInfo, time: Date.now() };
     const existing = JSON.parse(localStorage.getItem("guestbook") || "[]");
     localStorage.setItem("guestbook", JSON.stringify([entry, ...existing]));
+    track("contact_submit", {
+      message_length: message.length,
+      has_contact_info: !!contactInfo.trim(),
+      via_formspree: !!FORMSPREE_URL,
+    });
     setSubmitted(true);
     setMessage("");
     setContactInfo("");

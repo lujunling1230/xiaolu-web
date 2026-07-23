@@ -408,16 +408,44 @@ export default function CityEditModal({
                 />
               </label>
 
-              {/* 图片 + 天数 */}
+              {/* 图片上传 + 天数 */}
               <div className="rg-edit-row rg-two-col">
-                <label className="rg-edit-field">
-                  <span>图片链接</span>
-                  <input
-                    type="text"
-                    value={form.imageUrl}
-                    onChange={(e) => updateField("imageUrl", e.target.value)}
-                    placeholder="https://..."
-                  />
+                <label className="rg-edit-field rg-image-field">
+                  <span>城市照片</span>
+                  <div className="rg-image-upload-wrap">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      id="city-image-upload"
+                      style={{ display: "none" }}
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (!file) return;
+                        const reader = new FileReader();
+                        reader.onload = (ev) => {
+                          updateField("imageUrl", ev.target?.result as string);
+                        };
+                        reader.readAsDataURL(file);
+                      }}
+                    />
+                    {form.imageUrl ? (
+                      <div
+                        className="rg-image-preview"
+                        onClick={() => document.getElementById("city-image-upload")?.click()}
+                      >
+                        <img src={form.imageUrl} alt="城市预览" />
+                        <span className="rg-image-replace">点击更换</span>
+                      </div>
+                    ) : (
+                      <div
+                        className="rg-image-placeholder"
+                        onClick={() => document.getElementById("city-image-upload")?.click()}
+                      >
+                        <span style={{ fontSize: 24, opacity: 0.4 }}>📷</span>
+                        <span style={{ fontSize: 12, color: "#aaa", marginTop: 4 }}>点击上传照片</span>
+                      </div>
+                    )}
+                  </div>
                 </label>
                 <label className="rg-edit-field">
                   <span>停留天数</span>
@@ -429,34 +457,6 @@ export default function CityEditModal({
                     onChange={(e) =>
                       updateField("days", Math.max(1, parseInt(e.target.value || "1", 10)))
                     }
-                  />
-                </label>
-              </div>
-
-              {/* 坐标（经度/纬度） */}
-              <div className="rg-edit-row rg-two-col">
-                <label className="rg-edit-field">
-                  <span>经度 (lng)</span>
-                  <input
-                    type="number"
-                    step="0.01"
-                    value={form.lng ?? ""}
-                    onChange={(e) =>
-                      updateField("lng", e.target.value ? parseFloat(e.target.value) : undefined)
-                    }
-                    placeholder="如：100.23"
-                  />
-                </label>
-                <label className="rg-edit-field">
-                  <span>纬度 (lat)</span>
-                  <input
-                    type="number"
-                    step="0.01"
-                    value={form.lat ?? ""}
-                    onChange={(e) =>
-                      updateField("lat", e.target.value ? parseFloat(e.target.value) : undefined)
-                    }
-                    placeholder="如：25.59"
                   />
                 </label>
               </div>
@@ -724,6 +724,59 @@ export default function CityEditModal({
         border-style: solid;
         border-color: #7a9e7e;
         background: #fff;
+      }
+
+      /* 图片上传 */
+      .rg-image-upload-wrap {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+      .rg-image-placeholder {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        height: 90px;
+        border: 2px dashed rgba(90,74,58,0.15);
+        border-radius: 10px;
+        cursor: pointer;
+        transition: all 0.25s ease;
+        background: rgba(245,243,238,0.5);
+      }
+      .rg-image-placeholder:hover {
+        border-color: rgba(123,168,158,0.4);
+        background: rgba(123,168,158,0.04);
+      }
+      .rg-image-preview {
+        position: relative;
+        height: 90px;
+        border-radius: 10px;
+        overflow: hidden;
+        cursor: pointer;
+        border: 1px solid rgba(90,74,58,0.08);
+      }
+      .rg-image-preview img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        display: block;
+      }
+      .rg-image-replace {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: rgba(0,0,0,0.35);
+        color: #fff;
+        font-size: 12px;
+        letter-spacing: 1px;
+        opacity: 0;
+        transition: opacity 0.25s ease;
+      }
+      .rg-image-preview:hover .rg-image-replace {
+        opacity: 1;
       }
 
       /* 列表行编辑（玩/吃） */

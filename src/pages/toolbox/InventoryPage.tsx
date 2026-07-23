@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { useAdminGuard } from "../../hooks/useAdminGuard";
 import { track } from "../../utils/track";
@@ -999,6 +999,11 @@ const InventoryPage: React.FC = () => {
       expiryDate: form.expiryDate,
       location: form.location,
     };
+    track("iv_item_add", {
+      location: newItem.location,
+      has_expiry: !!newItem.expiryDate,
+      unit: newItem.unit,
+    });
     setItems((prev) => [newItem, ...prev]);
     // 仅清空名称，保留数量/单位/位置便于连续入库
     setForm((f) => ({ ...f, name: "" }));
@@ -1235,10 +1240,12 @@ const InventoryPage: React.FC = () => {
 
   const askAI = async (q: string) => {
     if (!q.trim()) return;
+    track("iv_ai_ask", { question_length: q.length });
     setChatHistory((prev) => [...prev, { role: "user", text: q }]);
     setChatInput("");
 
     // 尝试调用 API，失败则回退到本地规则
+    let apiFailed = false;
     try {
       const inventoryData = items.map((it) => ({
         name: it.name,
@@ -1258,16 +1265,34 @@ const InventoryPage: React.FC = () => {
       if (res.ok) {
         const data = await res.json();
         if (data.reply) {
+          track("iv_ai_answer", { answer_type: "api", question_length: q.length });
           setChatHistory((prev) => [...prev, { role: "ai", text: data.reply }]);
           return;
         }
       }
+      apiFailed = true;
     } catch {
-      /* API 不可用，回退本地 */
+      apiFailed = true;
+    }
+
+    if (apiFailed) {
+      track("iv_ai_api_fail");
     }
 
     // 本地规则兜底
     const answer = getAnswer(q);
+    const answerType = /有什[么吗]|哪些|[有存]货|库存/.test(q) && !/在哪|位置|过期|到期/.test(q)
+      ? "inventory"
+      : /在哪|位置|放[在到哪]|存放/.test(q)
+      ? "location"
+      : /过期|到期|多久|剩[余下几]/.test(q)
+      ? "expiry"
+      : /快过期|临期|要到期|即将/.test(q)
+      ? "expiring"
+      : /已过期|过期.*[了没]|坏.*[了掉]/.test(q)
+      ? "expired"
+      : "fallback";
+    track("iv_ai_answer", { answer_type: answerType, source: "local", question_length: q.length });
     setTimeout(() => {
       setChatHistory((prev) => [...prev, { role: "ai", text: answer }]);
     }, 400);
@@ -1950,7 +1975,7 @@ const InventoryPage: React.FC = () => {
               <button
                 key={tab}
                 type="button"
-                onClick={() => setActiveTab(tab)}
+                onClick={() => handleTabChange(tab)}
                 className="flex flex-1 flex-col items-center gap-1 py-2 transition-all active:scale-95"
               >
                 {/* 图标区 */}

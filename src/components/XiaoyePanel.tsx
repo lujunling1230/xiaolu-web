@@ -68,6 +68,20 @@ const WELCOME_TEXT =
 
 const TYPE_SPEED = 28; // ms per char
 
+/* ---------- 本地快捷回复（常见问题秒回，无需走 API） ---------- */
+const LOCAL_REPLIES: { match: (q: string) => boolean; answer: string }[] = [
+  {
+    match: (q) => /还有别的|还有其他|还有什么项目|还有什么作品|其他项目|其他作品/.test(q),
+    answer:
+      '当然啦～俊玲一共做了七个作品，除了「漫游指南」和「通关清单」，还有：\n\n🌲 森林疗愈室 — 呼吸引导、冥想空间、感恩日记，给情绪一个落脚的地方\n🏠 爱情公寓 — 用 AI 帮你看见亲密关系里的相处模式\n📦 物资管家 — 拍照识别物品，智能管理家里的每一件小东西\n💌 解忧杂货店 — 把烦恼投进去，换一个温柔的视角回来\n💊 回血清单 — 把待办变成游戏关卡，打怪升级式回血\n\n想深入了解哪个，随时告诉我呀～',
+  },
+  {
+    match: (q) => /七个作品|所有作品|全部作品|有哪些作品|有什么作品|做了哪些/.test(q),
+    answer:
+      '俊玲一共做了七个作品哦 🌿\n\n🗺️ 漫游指南 — 把旅行变成一场有温度的城市漫游\n📋 通关清单 — 用游戏化思维把人生目标变成关卡\n🌲 森林疗愈室 — 呼吸引导、冥想空间、感恩日记\n🏠 爱情公寓 — AI 视角下的亲密关系探索\n📦 物资管家 — 拍照识别，智能管理家中物品\n💌 解忧杂货店 — 把烦恼变成治愈的答案\n💊 回血清单 — 待办也能像打游戏一样有成就感\n\n想从哪个开始聊起呢？',
+  },
+];
+
 const XiaoyePanel: React.FC<{
   isOpen: boolean;
   onClose: () => void;
@@ -132,6 +146,22 @@ const XiaoyePanel: React.FC<{
       setInput("");
       setLoading(true);
       setActiveModule(null); // 收起模块
+
+      // 先检查本地快捷回复（秒回，无需走 API）
+      const localReply = LOCAL_REPLIES.find((r) => r.match(text.trim()));
+      if (localReply) {
+        // 模拟短暂思考时间，更自然
+        setTimeout(() => {
+          setMessages((prev) =>
+            prev.map((m) =>
+              m.id === assistantId ? { ...m, text: localReply.answer } : m
+            )
+          );
+          startTyping(localReply.answer, assistantId);
+          setLoading(false);
+        }, 600);
+        return;
+      }
 
       try {
         const ctrl = new AbortController();

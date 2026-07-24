@@ -113,21 +113,80 @@ const PageNumber: React.FC<{ current: number }> = ({ current }) => {
 /* ============================================================
    Page 1 · 封皮
    ============================================================ */
+/* ===== 蝴蝶 SVG ===== */
+const ButterflyIcon = ({ size = 20, style }: { size?: number; style?: React.CSSProperties }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" style={style}>
+    <path d="M12 3c-1.5 3-4 5-7 5 0 3 2 6 5 7-1.5 1-2.5 3-2.5 5 0 2 2 3 4 2.5C13 21.5 15 20 15 18c0-1.5-.5-3-2-4 3-1 5-4 5-7-3 0-5.5-2-7-5z" fill="rgba(122,154,130,0.35)" />
+    <path d="M12 21c1.5-3 4-5 7-5" stroke="rgba(122,154,130,0.2)" strokeWidth="0.5" />
+  </svg>
+);
+
+/* ===== 星星 SVG ===== */
+const StarIcon = ({ size = 12, style }: { size?: number; style?: React.CSSProperties }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" style={style}>
+    <path d="M12 2l1.5 4.5h4.5l-3.5 2.5 1.5 4.5-4-3-4 3 1.5-4.5-3.5-2.5h4.5z" fill="rgba(200,180,100,0.4)" />
+  </svg>
+);
+
 const CoverPage: React.FC = () => (
   <div className="lb-page-content lb-cover">
+    {/* 水彩渐变背景层 */}
+    <div className="lb-cover-bg" />
     <div className="lb-cover-vein" />
-    <div className="lb-cover-frame" />
+
+    {/* 蝴蝶装饰 */}
+    <div className="lb-cover-deco-butterfly b1"><ButterflyIcon size={28} /></div>
+    <div className="lb-cover-deco-butterfly b2"><ButterflyIcon size={18} /></div>
+    <div className="lb-cover-deco-butterfly b3"><ButterflyIcon size={22} /></div>
+    <div className="lb-cover-deco-butterfly b4"><ButterflyIcon size={14} /></div>
+
+    {/* 星星装饰 */}
+    <div className="lb-cover-deco-star s1"><StarIcon size={10} /></div>
+    <div className="lb-cover-deco-star s2"><StarIcon size={8} /></div>
+    <div className="lb-cover-deco-star s3"><StarIcon size={12} /></div>
+    <div className="lb-cover-deco-star s4"><StarIcon size={6} /></div>
+    <div className="lb-cover-deco-star s5"><StarIcon size={9} /></div>
+
+    {/* 书脊 */}
     <div className="lb-cover-spine" />
+
+    {/* 内框装饰线 */}
+    <div className="lb-cover-frame" />
+
+    {/* 内容区 */}
     <div className="lb-cover-inner">
+      {/* 顶部斜向大字装饰 */}
+      <div className="lb-cover-slogan">
+        <span className="lb-cover-slogan-line1">一切经历</span>
+        <span className="lb-cover-slogan-line2">皆为馈赠</span>
+      </div>
+
+      {/* 小英文装饰 */}
+      <p className="lb-cover-en-deco">Seek joy · spread kindness</p>
+
+      {/* 叶子图标 */}
       <div className="lb-cover-leaf-wrap">
         <div className="lb-cover-leaf">
-          <LeafIcon size={48} />
+          <LeafIcon size={42} />
         </div>
       </div>
+
+      {/* 原有标题 */}
       <h1 className="lb-cover-title">LeafBook</h1>
       <p className="lb-cover-subtitle">路俊玲 · AI 产品实践集</p>
+
+      {/* 底部波浪装饰带 */}
+      <div className="lb-cover-wave">
+        <svg viewBox="0 0 400 60" preserveAspectRatio="none" className="lb-cover-wave-svg">
+          <path d="M0,30 Q50,5 100,30 T200,30 T300,30 T400,30 L400,60 L0,60 Z" fill="rgba(122,154,130,0.12)" />
+          <path d="M0,40 Q50,20 100,40 T200,40 T300,40 T400,40 L400,60 L0,60 Z" fill="rgba(122,154,130,0.08)" />
+        </svg>
+        <div className="lb-cover-wave-text">Follow the Light</div>
+      </div>
+
       <p className="lb-cover-year">2026</p>
     </div>
+
     <p className="lb-cover-hint">轻触封面 · 翻开</p>
   </div>
 );
@@ -1102,32 +1161,38 @@ const LeafBook: React.FC<LeafBookProps> = ({ registerOpenBook, flipTriggerRef, a
           margin: 0 1px;
         }
 
-        /* ===== 封皮（立体书籍感） ===== */
+        /* ===== 封皮（水彩笔记本风格） ===== */
         .lb-cover {
           display: flex;
           align-items: center;
           justify-content: center;
-          background: var(--lb-page-bg, #F5F0E4);
           border-radius: 2px 6px 6px 2px;
           padding: 60px 40px;
           position: relative;
-          /* 立体透视：微微倾斜，斜靠桌面 */
+          overflow: hidden;
           transform: perspective(1200px) rotateX(1.5deg) rotateY(-2deg);
           transform-origin: left center;
           transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1),
                       box-shadow 0.5s cubic-bezier(0.4, 0, 0.2, 1);
-          /* 多层阴影：书本阴影 + 环境光 */
-          box-shadow:
-            0 20px 40px rgba(0,0,0,0.12),
-            0 0 60px rgba(0,0,0,0.04),
-            2px 2px 8px rgba(0,0,0,0.06);
-          /* 微弱的纸张凹陷感 */
           box-shadow:
             inset 0 0 30px rgba(0,0,0,0.02),
             0 20px 40px rgba(0,0,0,0.12),
             0 0 60px rgba(0,0,0,0.04);
         }
-        /* 悬停：阴影加深，旋转微调 */
+        /* 水彩渐变背景 */
+        .lb-cover-bg {
+          position: absolute;
+          inset: 0;
+          background:
+            radial-gradient(ellipse 80% 60% at 20% 30%, rgba(186,220,200,0.35) 0%, transparent 60%),
+            radial-gradient(ellipse 70% 70% at 80% 70%, rgba(200,220,240,0.25) 0%, transparent 55%),
+            radial-gradient(ellipse 60% 50% at 50% 50%, rgba(210,230,210,0.2) 0%, transparent 50%),
+            linear-gradient(160deg, #e8f0e8 0%, #e0ece8 30%, #d8e8e0 60%, #e0e8d8 100%);
+          z-index: 0;
+          border-radius: inherit;
+          pointer-events: none;
+        }
+        /* 悬停 */
         .lb-cover:hover {
           transform: perspective(1200px) rotateX(0.5deg) rotateY(-0.5deg);
           box-shadow:
@@ -1138,12 +1203,15 @@ const LeafBook: React.FC<LeafBookProps> = ({ registerOpenBook, flipTriggerRef, a
         :root[data-theme="night"] .lb-cover {
           background: var(--lb-page-bg);
         }
-        /* 叶脉纹理（极淡） */
+        :root[data-theme="night"] .lb-cover-bg {
+          opacity: 0.3;
+        }
+        /* 叶脉纹理 */
         .lb-cover-vein {
           position: absolute;
           inset: 0;
           background-image: url("${LEAF_VEIN_TEXTURE}");
-          opacity: 0.06;
+          opacity: 0.04;
           z-index: 0;
           border-radius: inherit;
           pointer-events: none;
@@ -1151,20 +1219,20 @@ const LeafBook: React.FC<LeafBookProps> = ({ registerOpenBook, flipTriggerRef, a
         /* 内框装饰线 */
         .lb-cover-frame {
           position: absolute;
-          inset: 20px;
-          border: 1px solid rgba(120, 130, 100, 0.12);
-          border-radius: 4px;
+          inset: 18px;
+          border: 1px solid rgba(120, 150, 120, 0.15);
+          border-radius: 6px;
           pointer-events: none;
           z-index: 1;
         }
-        /* 书脊效果（左侧深色渐变） */
+        /* 书脊 */
         .lb-cover-spine {
           position: absolute;
           left: 0; top: 0; bottom: 0;
           width: 14px;
           background: linear-gradient(to right,
-            rgba(60, 50, 35, 0.10) 0%,
-            rgba(60, 50, 35, 0.04) 40%,
+            rgba(80, 100, 80, 0.12) 0%,
+            rgba(80, 100, 80, 0.05) 40%,
             transparent 100%
           );
           z-index: 1;
@@ -1181,66 +1249,151 @@ const LeafBook: React.FC<LeafBookProps> = ({ registerOpenBook, flipTriggerRef, a
           flex-direction: column;
           align-items: center;
         }
-        /* 叶子图标容器 */
+
+        /* ===== 斜向大字装饰 ===== */
+        .lb-cover-slogan {
+          margin: 0 0 8px;
+          transform: rotate(-8deg);
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+        }
+        .lb-cover-slogan-line1,
+        .lb-cover-slogan-line2 {
+          font-family: "Noto Serif SC", Georgia, "STKaiti", "KaiTi", serif;
+          font-size: 26px;
+          font-weight: 600;
+          color: rgba(80, 130, 100, 0.75);
+          letter-spacing: 0.15em;
+          line-height: 1.4;
+          text-shadow: 0 1px 3px rgba(255,255,255,0.6);
+        }
+        .lb-cover-slogan-line2 {
+          margin-left: 24px;
+        }
+
+        /* ===== 小英文装饰 ===== */
+        .lb-cover-en-deco {
+          font-size: 10px;
+          font-weight: 300;
+          color: rgba(100, 130, 110, 0.5);
+          letter-spacing: 0.12em;
+          margin: 0 0 16px;
+          font-style: italic;
+        }
+
+        /* ===== 蝴蝶装饰 ===== */
+        .lb-cover-deco-butterfly {
+          position: absolute;
+          z-index: 1;
+          pointer-events: none;
+          animation: lb-butterfly-float 4s ease-in-out infinite;
+        }
+        .lb-cover-deco-butterfly.b1 { top: 12%; left: 18%; animation-delay: 0s; }
+        .lb-cover-deco-butterfly.b2 { top: 22%; right: 16%; animation-delay: 1.2s; opacity: 0.7; }
+        .lb-cover-deco-butterfly.b3 { top: 55%; left: 10%; animation-delay: 0.6s; opacity: 0.6; }
+        .lb-cover-deco-butterfly.b4 { top: 48%; right: 12%; animation-delay: 1.8s; opacity: 0.5; }
+        @keyframes lb-butterfly-float {
+          0%, 100% { transform: translateY(0) rotate(0deg); }
+          33% { transform: translateY(-5px) rotate(3deg); }
+          66% { transform: translateY(-2px) rotate(-2deg); }
+        }
+
+        /* ===== 星星装饰 ===== */
+        .lb-cover-deco-star {
+          position: absolute;
+          z-index: 1;
+          pointer-events: none;
+          animation: lb-star-twinkle 2.5s ease-in-out infinite;
+        }
+        .lb-cover-deco-star.s1 { top: 8%; left: 45%; animation-delay: 0s; }
+        .lb-cover-deco-star.s2 { top: 35%; left: 28%; animation-delay: 0.7s; }
+        .lb-cover-deco-star.s3 { top: 18%; right: 30%; animation-delay: 1.3s; }
+        .lb-cover-deco-star.s4 { top: 42%; right: 22%; animation-delay: 0.4s; opacity: 0.7; }
+        .lb-cover-deco-star.s5 { top: 30%; left: 15%; animation-delay: 1.9s; opacity: 0.6; }
+        @keyframes lb-star-twinkle {
+          0%, 100% { opacity: 0.3; transform: scale(0.9); }
+          50% { opacity: 0.9; transform: scale(1.1); }
+        }
+
+        /* ===== 叶子图标 ===== */
         .lb-cover-leaf-wrap {
-          margin-bottom: 24px;
+          margin-bottom: 16px;
         }
         .lb-cover-leaf {
           display: flex;
           justify-content: center;
-          color: #2E4037;
-          opacity: 0.75;
+          color: #4a7a5a;
+          opacity: 0.65;
           animation: lb-cover-leaf-float 3.5s ease-in-out infinite;
-          filter: drop-shadow(0 2px 4px rgba(46, 64, 55, 0.15));
-        }
-        :root[data-theme="night"] .lb-cover-leaf {
-          color: #6a8a6a;
-          filter: drop-shadow(0 2px 4px rgba(106, 138, 106, 0.15));
+          filter: drop-shadow(0 2px 4px rgba(74, 122, 90, 0.15));
         }
         @keyframes lb-cover-leaf-float {
           0%, 100% { transform: translateY(0); }
           50% { transform: translateY(-4px); }
         }
-        /* 主标题 */
+
+        /* ===== 主标题 ===== */
         .lb-cover-title {
           font-family: "Noto Serif SC", Georgia, serif;
-          font-size: 52px;
+          font-size: 48px;
           font-weight: 700;
-          color: #2d3436;
-          margin: 0 0 12px;
+          color: #3a5a4a;
+          margin: 0 0 10px;
           letter-spacing: 1px;
           line-height: 1.1;
-          text-shadow: 0 1px 2px rgba(0,0,0,0.04);
+          text-shadow: 0 1px 3px rgba(255,255,255,0.6);
         }
-        :root[data-theme="night"] .lb-cover-title {
-          color: #e8e8e8;
-          text-shadow: none;
-        }
-        /* 副标题 */
+        /* ===== 副标题 ===== */
         .lb-cover-subtitle {
-          font-size: 16px;
+          font-size: 15px;
           font-weight: 400;
-          color: #5A6B5C;
-          margin: 0 0 36px;
+          color: #5a7a6a;
+          margin: 0 0 24px;
           letter-spacing: 0.06em;
           line-height: 1.5;
         }
-        :root[data-theme="night"] .lb-cover-subtitle {
-          color: #8a9a7c;
+
+        /* ===== 底部波浪装饰带 ===== */
+        .lb-cover-wave {
+          position: relative;
+          width: 100%;
+          height: 50px;
+          margin: 8px 0 16px;
+          overflow: hidden;
         }
-        /* 年份（右下角藏书章风格） */
+        .lb-cover-wave-svg {
+          position: absolute;
+          bottom: 0;
+          left: 0;
+          width: 100%;
+          height: 100%;
+        }
+        .lb-cover-wave-text {
+          position: absolute;
+          bottom: 6px;
+          left: 50%;
+          transform: translateX(-50%);
+          font-family: "Noto Serif SC", Georgia, serif;
+          font-size: 13px;
+          font-style: italic;
+          color: rgba(80, 120, 90, 0.6);
+          letter-spacing: 0.08em;
+          white-space: nowrap;
+        }
+
+        /* ===== 年份 ===== */
         .lb-cover-year {
           font-size: 12px;
           font-weight: 300;
-          color: #999;
+          color: #8a9a8a;
           letter-spacing: 0.1em;
           align-self: flex-end;
           margin-top: auto;
           font-family: "Noto Serif SC", Georgia, serif;
         }
-        :root[data-theme="night"] .lb-cover-year {
-          color: #555;
-        }
+
+        /* ===== 提示文字 ===== */
         .lb-cover-hint {
           position: absolute;
           bottom: 40px;

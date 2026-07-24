@@ -80,11 +80,16 @@ async function readAllEvents() {
     if (blobs.length === 0) return [];
     const blob = blobs.find((b) => b.pathname === BLOB_KEY);
     if (!blob) return [];
-    /* private store 使用 downloadUrl（带签名），public store 使用 url */
+    /* private store: downloadUrl 带签名；public store: url 可直接访问 */
     const downloadUrl = blob.downloadUrl || blob.url;
     const res = await fetch(downloadUrl);
-    if (!res.ok) return [];
-    return await res.json();
+    if (!res.ok) {
+      console.error("[analytics] fetch blob failed:", res.status, res.statusText);
+      return [];
+    }
+    const text = await res.text();
+    if (!text) return [];
+    return JSON.parse(text);
   } catch (err) {
     console.error("[analytics] readAllEvents error:", err.message);
     return [];
@@ -94,6 +99,7 @@ async function readAllEvents() {
 async function writeAllEvents(events) {
   const json = JSON.stringify(events);
   const result = await put(BLOB_KEY, json, {
+    access: "private",
     contentType: "application/json",
     addRandomSuffix: false,
   });

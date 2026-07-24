@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Link } from "react-router-dom";
 import { track } from "../../utils/track";
@@ -497,12 +497,23 @@ const QuestLogPage: React.FC = () => {
     legacySave(XP_KEY, String(xp));
   }, [xp]);
 
+  /* 等级变化追踪 */
+  const prevLevelRef = useRef(Math.floor(xp / XP_PER_LEVEL) + 1);
+  useEffect(() => {
+    const newLevel = Math.floor(xp / XP_PER_LEVEL) + 1;
+    if (newLevel > prevLevelRef.current) {
+      track("quest_level", { level: newLevel });
+      prevLevelRef.current = newLevel;
+    }
+  }, [xp]);
+
   // 完成回调
   const handleComplete = (id: string) => {
     setQuests((prev) => {
       const target = prev.find((q) => q.id === id);
       if (target && !target.completed) {
         setXp((x) => x + XP_REWARD[target.difficulty]);
+        track("quest_complete", { difficulty: target.difficulty });
       }
       return prev.filter((q) => q.id !== id);
     });

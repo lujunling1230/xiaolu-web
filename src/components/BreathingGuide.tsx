@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from "react";
+import { track } from "../utils/track";
 
 /**
  * BreathingGuide 呼吸引导 — 森林疗愈室核心模块
@@ -288,6 +289,7 @@ const BreathingGuide: React.FC = () => {
     if (running && cycleCount > 0) {
       // 暂停时记录（只要完成过至少一轮）
       recordBreathing(cycleCount, mode.id);
+      track("healing_breath", { mode: mode.id, cycles: cycleCount });
     }
     if (!running) setHasStarted(true);
     setRunning((r) => !r);

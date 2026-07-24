@@ -652,6 +652,7 @@ const SystemTuningPage: React.FC = () => {
       isMine: true,
     };
     saveMoments([newMoment, ...moments]);
+    track("apartment_post");
     setPublishText("");
     setPublishImages([]);
     setPublishTags([]);
@@ -1099,6 +1100,7 @@ const SystemTuningPage: React.FC = () => {
     setInputText("");
     setIsLoading(true);
     scrollToBottom();
+    track("apartment_chat", { view });
 
     // 检测是否触发群聊（仅在从群聊页面发送时检测）
     const groupResult = (view === "groupchat") ? resolveGroupChat(text) : null;

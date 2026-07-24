@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { track } from "../utils/track";
 
 /**
  * GratitudeJournal — 森林疗愈室 · 感恩日记
@@ -982,6 +983,8 @@ const GratitudeJournal: React.FC = () => {
     setEntries(updated);
     saveEntries(updated);
     clearDraft(selectedMonth);
+
+    track("healing_journal", { month: selectedMonth + 1 });
 
     // 保存后清空输入框，准备写下一条新的
     setContent("");

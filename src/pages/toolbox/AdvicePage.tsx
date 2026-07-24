@@ -237,6 +237,7 @@ const AdvicePage: React.FC = () => {
     saveLetters(updated);
     setLetters(updated);
     setReply(null);
+    track("advice_letter");
 
     /* === 阶段1: 信纸飞入牛奶箱 === */
     setPhase("inserting");
@@ -296,6 +297,7 @@ const AdvicePage: React.FC = () => {
 
   const afterReplyReady = (text: string) => {
     setPhase("reply-arrived");
+    track("advice_reply");
     setReplyFlyingIn(true);
     (async () => {
       await wait(500);

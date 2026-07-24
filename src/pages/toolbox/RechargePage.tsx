@@ -1486,6 +1486,8 @@ const RechargePage: React.FC = () => {
 
     doCompleteCore(id);
 
+    track("recharge_action");
+
     setCompletionModal(null);
     setCompletionNote("");
     setCompletionImg(null);

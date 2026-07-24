@@ -102,6 +102,7 @@ async function writeAllEvents(events) {
     access: "private",
     contentType: "application/json",
     addRandomSuffix: false,
+    allowOverwrite: true,
   });
   return result;
 }
@@ -186,9 +187,27 @@ export default async function handler(req, res) {
     if (req.method === "GET") {
       const { hours, debug } = req.query || {};
 
-      /* 调试模式：查看 Blob 存储状态 */
+      /* 调试模式：查看 Blob 存储状态 + 尝试读取内容 */
       if (debug === "1") {
         const { blobs } = await list({ prefix: "luro-analytics/" });
+        const blob = blobs.find((b) => b.pathname === BLOB_KEY);
+        let readDebug = null;
+        if (blob) {
+          try {
+            const downloadUrl = blob.downloadUrl || blob.url;
+            const fetchRes = await fetch(downloadUrl);
+            const text = await fetchRes.text();
+            readDebug = {
+              fetchStatus: fetchRes.status,
+              fetchOk: fetchRes.ok,
+              contentLength: text.length,
+              contentPreview: text.slice(0, 300),
+              isJson: text.startsWith("[") || text.startsWith("{"),
+            };
+          } catch (err) {
+            readDebug = { error: err.message };
+          }
+        }
         return res.status(200).json({
           blobCount: blobs.length,
           blobs: blobs.map((b) => ({
@@ -197,6 +216,7 @@ export default async function handler(req, res) {
             hasUrl: !!b.url,
             size: b.size,
           })),
+          readDebug,
         });
       }
 

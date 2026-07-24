@@ -47,7 +47,7 @@ export default function CitiesPage() {
         </div>
 
         {/* ===== 添加想去城市的两种途径 ===== */}
-        <section className="rg-card-section" style={{ marginTop: -16 }}>
+        <section className="rg-card-section" style={{ marginTop: -32 }}>
           <div style={{
             display: "grid",
             gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",

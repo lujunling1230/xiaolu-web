@@ -1,5 +1,5 @@
 /*
- * Analytics API v2
+ * Analytics API v3
  * POST /api/analytics          -> 写入埋点事件（支持 ?batch=1 批量）
  * GET  /api/analytics          -> 读取全部埋点事件
  * GET  /api/analytics?hours=24 -> 读取最近 N 小时的事件
@@ -83,7 +83,6 @@ function getClientIp(req) {
 }
 
 /* ---- 数据读写 ---- */
-/* Private store 的 URL 需要 token 认证才能读取 */
 const BLOB_TOKEN = process.env.BLOB_READ_WRITE_TOKEN;
 
 async function readAllEvents() {
@@ -93,11 +92,11 @@ async function readAllEvents() {
     const blob = blobs.find((b) => b.pathname === BLOB_KEY);
     if (!blob) return [];
     const downloadUrl = blob.downloadUrl || blob.url;
-    /* private store 需要携带 Authorization header */
     const res = await fetch(downloadUrl, {
       headers: BLOB_TOKEN
         ? { Authorization: `Bearer ${BLOB_TOKEN}` }
         : {},
+      cache: "no-store",
     });
     if (!res.ok) {
       console.error("[analytics] fetch blob failed:", res.status, res.statusText);
@@ -105,21 +104,48 @@ async function readAllEvents() {
     }
     const text = await res.text();
     if (!text || text === "Forbidden") return [];
-    return JSON.parse(text);
+    const parsed = JSON.parse(text);
+    return Array.isArray(parsed) ? parsed : [];
   } catch (err) {
     console.error("[analytics] readAllEvents error:", err.message);
     return [];
   }
 }
 
+/**
+ * 写入事件到 Vercel Blob
+ * 自动尝试 public 和 private 两种 access 模式，
+ * 因为 store 的 access 类型在运行时不确定。
+ */
 async function writeAllEvents(events) {
   const json = JSON.stringify(events);
-  const result = await put(BLOB_KEY, json, {
+  const options = {
     contentType: "application/json",
     addRandomSuffix: false,
     allowOverwrite: true,
-  });
-  return result;
+  };
+
+  // 尝试 access: 'public'（默认）
+  try {
+    const result = await put(BLOB_KEY, json, {
+      ...options,
+      access: "public",
+    });
+    return result;
+  } catch (err) {
+    console.error("[analytics] put with access=public failed:", err.message);
+    // 回退到 access: 'private'
+    try {
+      const result = await put(BLOB_KEY, json, {
+        ...options,
+        access: "private",
+      });
+      return result;
+    } catch (err2) {
+      console.error("[analytics] put with access=private also failed:", err2.message);
+      throw new Error(`Blob write failed (public: ${err.message}, private: ${err2.message})`);
+    }
+  }
 }
 
 /* ---- 清洗单条事件 ---- */
@@ -184,17 +210,20 @@ export default async function handler(req, res) {
         return res.status(200).json({ ok: true, accepted: 0 });
       }
 
+      // 读取已有事件
       const all = await readAllEvents();
       all.push(...validEvents);
       if (all.length > MAX_EVENTS) {
         all.splice(0, all.length - MAX_EVENTS);
       }
+
+      // 写入（自动尝试 public/private）
       const writeResult = await writeAllEvents(all);
 
       return res.status(200).json({
         ok: true,
         accepted: validEvents.length,
-        writeUrl: writeResult?.url?.slice(0, 60),
+        total: all.length,
       });
     }
 
@@ -214,6 +243,7 @@ export default async function handler(req, res) {
               headers: BLOB_TOKEN
                 ? { Authorization: `Bearer ${BLOB_TOKEN}` }
                 : {},
+              cache: "no-store",
             });
             const text = await fetchRes.text();
             readDebug = {
@@ -267,6 +297,7 @@ export default async function handler(req, res) {
 
     return res.status(405).json({ error: "Method Not Allowed" });
   } catch (err) {
+    console.error("[analytics] handler error:", err.message, err.stack);
     return res.status(500).json({ error: err.message || "服务器错误" });
   }
 }

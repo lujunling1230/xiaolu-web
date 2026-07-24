@@ -49,21 +49,22 @@ const ToolboxHome: React.FC = () => {
   const handleOpen = (title: string) => {
     track("tool_enter", { tool_name: title });
 
-    // 森林疗愈室：跳转独立疗愈室页面
-    if (title === "森林疗愈室") {
-      navigate(`/healing${fromQuery}`);
+    // 各工具独立路由映射
+    const routeMap: Record<string, string> = {
+      "森林疗愈室": "/healing",
+      "物资管家": "/toolbox/inventory",
+      "万能百事通": "/toolbox/advice",
+      "漫游指南": "/toolbox/travel",
+      "通关清单": "/toolbox/quests",
+      "系统调频 + 回血清单": "/toolbox/answer",
+    };
+
+    const route = routeMap[title];
+    if (route) {
+      navigate(`${route}${fromQuery}`);
       return;
     }
-    // 物资管家：进入独立的库存管理应用
-    if (title === "物资管家") {
-      navigate(`/toolbox/inventory${fromQuery}`);
-      return;
-    }
-    // 万能百事通：进入解忧杂货店（已替换原"万能百事通"）
-    if (title === "万能百事通") {
-      navigate(`/toolbox/advice${fromQuery}`);
-      return;
-    }
+
     // 其余：中文标题经编码后写入 URL，浏览器地址栏仍显示中文；react-router 会自动解码
     navigate(`/toolbox/${encodeURIComponent(title)}${fromQuery}`);
   };

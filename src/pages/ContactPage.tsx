@@ -157,33 +157,6 @@ const ContactPage: React.FC = () => {
             </svg>
           </div>
 
-          {/* 绿色苹果 */}
-          <div className="cp-apple">
-            <svg width="80" height="90" viewBox="0 0 80 90" fill="none">
-              <defs>
-                <radialGradient id="appleGrad" cx="40%" cy="35%">
-                  <stop offset="0%" stopColor="#C8E6C9" />
-                  <stop offset="40%" stopColor="#81C784" />
-                  <stop offset="100%" stopColor="#4CAF50" />
-                </radialGradient>
-                <radialGradient id="appleShine" cx="35%" cy="28%">
-                  <stop offset="0%" stopColor="rgba(255,255,255,0.5)" />
-                  <stop offset="100%" stopColor="rgba(255,255,255,0)" />
-                </radialGradient>
-              </defs>
-              <ellipse cx="40" cy="48" rx="28" ry="30" fill="url(#appleGrad)" opacity="0.9" />
-              <ellipse cx="40" cy="48" rx="28" ry="30" fill="url(#appleShine)" />
-              <path d="M40 18 C38 14 42 10 43 6" stroke="#6D4C41" strokeWidth="2.5" fill="none" strokeLinecap="round" />
-              <path d="M36 12 C40 10 44 12 40 16" fill="#66BB6A" opacity="0.7" />
-              <path d="M38 7 C40 5 42 6 40 10" fill="#66BB6A" opacity="0.6" />
-              <path d="M35 38 C30 44 28 52 40 56 C52 52 50 44 45 38" stroke="none" fill="rgba(255,255,255,0.15)" />
-              {/* 蝴蝶结 */}
-              <path d="M43 3 C48 1 50 4 43 7" fill="#388E3C" opacity="0.7" />
-              <path d="M43 3 C38 1 36 4 43 7" fill="#388E3C" opacity="0.7" />
-              <circle cx="43" cy="5" r="2" fill="#2E7D32" opacity="0.8" />
-            </svg>
-          </div>
-
           {/* 蝴蝶结装饰 */}
           <div className="cp-bow" style={{ top: '25%', left: '12%' }}>
             <svg width="24" height="18" viewBox="0 0 24 18" fill="none">
@@ -258,43 +231,6 @@ const ContactPage: React.FC = () => {
               </div>
             </div>
 
-            {/* 活页圈 - 6孔银环 */}
-            <div className="cp-binder-rings">
-              <svg className="cp-binder-ring" viewBox="0 0 22 30" fill="none" aria-hidden="true">
-                <defs>
-                  <linearGradient id="cpRingGrad" x1="0" y1="0" x2="22" y2="30">
-                    <stop offset="0%" stopColor="#BDBDBD" />
-                    <stop offset="30%" stopColor="#E0E0E0" />
-                    <stop offset="50%" stopColor="#F5F5F5" />
-                    <stop offset="70%" stopColor="#E0E0E0" />
-                    <stop offset="100%" stopColor="#9E9E9E" />
-                  </linearGradient>
-                </defs>
-                <ellipse cx="11" cy="15" rx="8" ry="12.5" stroke="url(#cpRingGrad)" strokeWidth="4" fill="none" strokeLinecap="round"/>
-                <ellipse cx="11" cy="15" rx="7" ry="11.5" stroke="rgba(255,255,255,0.5)" strokeWidth="1" fill="none" strokeLinecap="round"/>
-              </svg>
-              <svg className="cp-binder-ring" viewBox="0 0 22 30" fill="none" aria-hidden="true">
-                <ellipse cx="11" cy="15" rx="8" ry="12.5" stroke="url(#cpRingGrad)" strokeWidth="4" fill="none" strokeLinecap="round"/>
-                <ellipse cx="11" cy="15" rx="7" ry="11.5" stroke="rgba(255,255,255,0.5)" strokeWidth="1" fill="none" strokeLinecap="round"/>
-              </svg>
-              <svg className="cp-binder-ring" viewBox="0 0 22 30" fill="none" aria-hidden="true">
-                <ellipse cx="11" cy="15" rx="8" ry="12.5" stroke="url(#cpRingGrad)" strokeWidth="4" fill="none" strokeLinecap="round"/>
-                <ellipse cx="11" cy="15" rx="7" ry="11.5" stroke="rgba(255,255,255,0.5)" strokeWidth="1" fill="none" strokeLinecap="round"/>
-              </svg>
-              <svg className="cp-binder-ring" viewBox="0 0 22 30" fill="none" aria-hidden="true">
-                <ellipse cx="11" cy="15" rx="8" ry="12.5" stroke="url(#cpRingGrad)" strokeWidth="4" fill="none" strokeLinecap="round"/>
-                <ellipse cx="11" cy="15" rx="7" ry="11.5" stroke="rgba(255,255,255,0.5)" strokeWidth="1" fill="none" strokeLinecap="round"/>
-              </svg>
-              <svg className="cp-binder-ring" viewBox="0 0 22 30" fill="none" aria-hidden="true">
-                <ellipse cx="11" cy="15" rx="8" ry="12.5" stroke="url(#cpRingGrad)" strokeWidth="4" fill="none" strokeLinecap="round"/>
-                <ellipse cx="11" cy="15" rx="7" ry="11.5" stroke="rgba(255,255,255,0.5)" strokeWidth="1" fill="none" strokeLinecap="round"/>
-              </svg>
-              <svg className="cp-binder-ring" viewBox="0 0 22 30" fill="none" aria-hidden="true">
-                <ellipse cx="11" cy="15" rx="8" ry="12.5" stroke="url(#cpRingGrad)" strokeWidth="4" fill="none" strokeLinecap="round"/>
-                <ellipse cx="11" cy="15" rx="7" ry="11.5" stroke="rgba(255,255,255,0.5)" strokeWidth="1" fill="none" strokeLinecap="round"/>
-              </svg>
-            </div>
-
             {/* 留言板卡片 */}
             <div className="cp-card cp-card-right">
               <h3 className="cp-card-title">留言板</h3>
@@ -343,20 +279,23 @@ const ContactPage: React.FC = () => {
          * ============================================ */
         .cp-root {
           min-height: 100vh;
-          background: #F5FBF2;
+          background: #F4FAF0;
           background-image:
-            /* 水彩晕染大块 */
-            radial-gradient(ellipse 80% 50% at 20% 60%, rgba(200, 230, 190, 0.35) 0%, transparent 60%),
-            radial-gradient(ellipse 60% 40% at 75% 30%, rgba(180, 220, 170, 0.25) 0%, transparent 55%),
-            radial-gradient(ellipse 70% 50% at 50% 80%, rgba(210, 235, 200, 0.3) 0%, transparent 60%),
-            radial-gradient(ellipse 50% 30% at 15% 15%, rgba(190, 225, 180, 0.2) 0%, transparent 50%),
-            /* 水彩肌理 */
-            radial-gradient(circle at 10% 20%, rgba(200, 230, 180, 0.15) 0%, transparent 40%),
-            radial-gradient(circle at 85% 70%, rgba(180, 220, 170, 0.12) 0%, transparent 35%),
-            /* 网格图案 */
-            url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='40'%3E%3Crect width='40' height='40' fill='none'/%3E%3Crect x='0' y='0' width='40' height='40' fill='none' stroke='rgba(139,195,74,0.06)' stroke-width='0.5'/%3E%3C/svg%3E"),
-            /* 噪点纹理 */
-            url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.025'/%3E%3C/svg%3E");
+            /* 大面积水彩晕染 */
+            radial-gradient(ellipse 90% 55% at 25% 65%, rgba(195, 225, 185, 0.38) 0%, transparent 62%),
+            radial-gradient(ellipse 65% 45% at 78% 28%, rgba(175, 215, 165, 0.28) 0%, transparent 58%),
+            radial-gradient(ellipse 75% 50% at 48% 82%, rgba(205, 232, 195, 0.32) 0%, transparent 62%),
+            radial-gradient(ellipse 55% 35% at 12% 12%, rgba(185, 222, 175, 0.22) 0%, transparent 52%),
+            radial-gradient(ellipse 45% 30% at 88% 72%, rgba(195, 225, 180, 0.18) 0%, transparent 48%),
+            /* 小面积水彩肌理 */
+            radial-gradient(circle 120px at 8% 22%, rgba(200, 230, 180, 0.16) 0%, transparent 100%),
+            radial-gradient(circle 90px at 82% 68%, rgba(178, 218, 168, 0.14) 0%, transparent 100%),
+            radial-gradient(circle 100px at 45% 15%, rgba(210, 235, 190, 0.12) 0%, transparent 100%),
+            radial-gradient(circle 80px at 18% 78%, rgba(190, 225, 175, 0.13) 0%, transparent 100%),
+            /* 淡色网格 */
+            url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='48' height='48'%3E%3Crect width='48' height='48' fill='none'/%3E%3Crect x='0' y='0' width='48' height='48' fill='none' stroke='rgba(139,195,74,0.05)' stroke-width='0.5'/%3E%3C/svg%3E"),
+            /* 细微噪点 */
+            url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.7' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.022'/%3E%3C/svg%3E");
           font-family: "Noto Sans SC", -apple-system, BlinkMacSystemFont, sans-serif;
           position: relative;
           overflow: hidden;
@@ -389,11 +328,10 @@ const ContactPage: React.FC = () => {
         .cp-sparkle {
           position: absolute;
         }
-        .cp-apple {
+        .cp-dashed-arc {
           position: absolute;
-          right: 6%;
-          bottom: 8%;
-          filter: drop-shadow(2px 4px 8px rgba(76, 175, 80, 0.2));
+          right: 3%;
+          bottom: 5%;
         }
         .cp-bow {
           position: absolute;
@@ -505,18 +443,19 @@ const ContactPage: React.FC = () => {
           max-width: 680px;
         }
         .cp-card {
-          background: #FAFCF7;
+          background: #FAFDF7;
           background-image:
-            radial-gradient(ellipse 60% 40% at 30% 20%, rgba(210, 235, 200, 0.2) 0%, transparent 70%),
-            radial-gradient(ellipse 50% 30% at 70% 80%, rgba(190, 225, 180, 0.15) 0%, transparent 70%),
-            url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.02'/%3E%3C/svg%3E");
+            radial-gradient(ellipse 65% 42% at 28% 18%, rgba(210, 238, 200, 0.22) 0%, transparent 72%),
+            radial-gradient(ellipse 55% 35% at 72% 82%, rgba(185, 225, 175, 0.16) 0%, transparent 72%),
+            radial-gradient(ellipse 45% 28% at 50% 50%, rgba(255, 255, 255, 0.5) 0%, transparent 100%),
+            url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.6' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.018'/%3E%3C/svg%3E");
           border-radius: 24px;
           padding: 32px;
-          border: 2px solid rgba(139, 195, 74, 0.15);
+          border: 2px solid rgba(139, 195, 74, 0.14);
           box-shadow:
-            0 2px 16px -2px rgba(104, 159, 56, 0.06),
-            0 8px 40px -8px rgba(104, 159, 56, 0.08),
-            inset 0 1px 0 rgba(255,255,255,0.8),
+            0 3px 20px -4px rgba(104, 159, 56, 0.07),
+            0 10px 44px -10px rgba(104, 159, 56, 0.09),
+            inset 0 1px 0 rgba(255,255,255,0.85),
             inset 0 0 0 1px rgba(255,255,255,0.5);
           position: relative;
         }
@@ -539,67 +478,20 @@ const ContactPage: React.FC = () => {
         }
 
         .cp-card-left {
-          border-radius: 24px 4px 4px 24px;
+          border-radius: 24px;
           flex: 1;
           position: relative;
           padding-right: 32px;
         }
-        .cp-card-left::after {
-          content: '';
-          position: absolute;
-          top: 0;
-          right: 10px;
-          width: 16px;
-          height: 100%;
-          background:
-            radial-gradient(ellipse 6px 10px at 50% 10%, rgba(80,100,70,0.12) 0%, rgba(80,100,70,0.12) 30%, rgba(255,255,255,0.2) 38%, transparent 50%),
-            radial-gradient(ellipse 6px 10px at 50% 26%, rgba(80,100,70,0.12) 0%, rgba(80,100,70,0.12) 30%, rgba(255,255,255,0.2) 38%, transparent 50%),
-            radial-gradient(ellipse 6px 10px at 50% 42%, rgba(80,100,70,0.12) 0%, rgba(80,100,70,0.12) 30%, rgba(255,255,255,0.2) 38%, transparent 50%),
-            radial-gradient(ellipse 6px 10px at 50% 58%, rgba(80,100,70,0.12) 0%, rgba(80,100,70,0.12) 30%, rgba(255,255,255,0.2) 38%, transparent 50%),
-            radial-gradient(ellipse 6px 10px at 50% 74%, rgba(80,100,70,0.12) 0%, rgba(80,100,70,0.12) 30%, rgba(255,255,255,0.2) 38%, transparent 50%),
-            radial-gradient(ellipse 6px 10px at 50% 90%, rgba(80,100,70,0.12) 0%, rgba(80,100,70,0.12) 30%, rgba(255,255,255,0.2) 38%, transparent 50%);
-          pointer-events: none;
-          z-index: 2;
-        }
         .cp-card-right {
-          border-radius: 4px 24px 24px 4px;
+          border-radius: 24px;
           flex: 1;
           position: relative;
           padding-left: 32px;
         }
-        .cp-card-right::after {
-          content: '';
-          position: absolute;
-          top: 0;
-          left: 10px;
-          width: 16px;
-          height: 100%;
-          background:
-            radial-gradient(ellipse 6px 10px at 50% 10%, rgba(80,100,70,0.12) 0%, rgba(80,100,70,0.12) 30%, rgba(255,255,255,0.2) 38%, transparent 50%),
-            radial-gradient(ellipse 6px 10px at 50% 26%, rgba(80,100,70,0.12) 0%, rgba(80,100,70,0.12) 30%, rgba(255,255,255,0.2) 38%, transparent 50%),
-            radial-gradient(ellipse 6px 10px at 50% 42%, rgba(80,100,70,0.12) 0%, rgba(80,100,70,0.12) 30%, rgba(255,255,255,0.2) 38%, transparent 50%),
-            radial-gradient(ellipse 6px 10px at 50% 58%, rgba(80,100,70,0.12) 0%, rgba(80,100,70,0.12) 30%, rgba(255,255,255,0.2) 38%, transparent 50%),
-            radial-gradient(ellipse 6px 10px at 50% 74%, rgba(80,100,70,0.12) 0%, rgba(80,100,70,0.12) 30%, rgba(255,255,255,0.2) 38%, transparent 50%),
-            radial-gradient(ellipse 6px 10px at 50% 90%, rgba(80,100,70,0.12) 0%, rgba(80,100,70,0.12) 30%, rgba(255,255,255,0.2) 38%, transparent 50%);
-          pointer-events: none;
-          z-index: 2;
-        }
-
-        /* 活页圈 - 银环 */
-        .cp-binder-rings {
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          justify-content: space-evenly;
+        /* 两侧卡片间距（去掉活页圈后的紧凑感） */
+        .cp-right {
           gap: 0;
-          padding: 14px 3px;
-          z-index: 3;
-        }
-        .cp-binder-ring {
-          width: 24px;
-          height: 32px;
-          flex-shrink: 0;
-          filter: drop-shadow(0 1px 2px rgba(0,0,0,0.2)) drop-shadow(0 0 1px rgba(0,0,0,0.1));
         }
 
         .cp-card-title {

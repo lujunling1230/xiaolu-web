@@ -115,7 +115,6 @@ async function readAllEvents() {
 async function writeAllEvents(events) {
   const json = JSON.stringify(events);
   const result = await put(BLOB_KEY, json, {
-    access: "public",
     contentType: "application/json",
     addRandomSuffix: false,
     allowOverwrite: true,

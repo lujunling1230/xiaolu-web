@@ -221,20 +221,23 @@ const XiaoyePanel: React.FC<{
 
   /* ---------- 面板打开时播放欢迎语打字机效果 ---------- */
   const welcomeStartedRef = useRef(false);
+  const autoMessageRef = useRef<string | null>(null);
   useEffect(() => {
     if (isOpen && !welcomeStartedRef.current) {
       welcomeStartedRef.current = true;
       track("xiaoye_open");
       // 如果有 autoMessage，替换欢迎语为 autoMessage 内容
       if (autoMessage) {
+        autoMessageRef.current = autoMessage;
         setMessages([
           { id: 0, role: "assistant", text: autoMessage, isTyping: true },
         ]);
         setDisplayedText("");
         const timer = setTimeout(() => {
-          startTyping(autoMessage, 0);
+          startTyping(autoMessageRef.current ?? "", 0);
+          // 打字开始后再通知父组件清除 autoMessage（不影响当前打字）
+          onAutoMessageDone?.();
         }, 400);
-        onAutoMessageDone?.();
         return () => clearTimeout(timer);
       }
       const timer = setTimeout(() => {
@@ -244,6 +247,7 @@ const XiaoyePanel: React.FC<{
     }
     if (!isOpen) {
       welcomeStartedRef.current = false;
+      autoMessageRef.current = null;
     }
   }, [isOpen, startTyping, autoMessage, onAutoMessageDone]);
 

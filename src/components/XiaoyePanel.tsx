@@ -225,12 +225,17 @@ const XiaoyePanel: React.FC<{
     if (isOpen && !welcomeStartedRef.current) {
       welcomeStartedRef.current = true;
       track("xiaoye_open");
-      // 如果有 autoMessage，跳过欢迎语，让 autoMessage 接管
+      // 如果有 autoMessage，替换欢迎语为 autoMessage 内容
       if (autoMessage) {
-        setMessages((prev) =>
-          prev.map((m) => (m.id === 0 ? { ...m, isTyping: false } : m))
-        );
-        return;
+        setMessages([
+          { id: 0, role: "assistant", text: autoMessage, isTyping: true },
+        ]);
+        setDisplayedText("");
+        const timer = setTimeout(() => {
+          startTyping(autoMessage, 0);
+        }, 400);
+        onAutoMessageDone?.();
+        return () => clearTimeout(timer);
       }
       const timer = setTimeout(() => {
         startTyping(WELCOME_TEXT, 0);
@@ -240,28 +245,11 @@ const XiaoyePanel: React.FC<{
     if (!isOpen) {
       welcomeStartedRef.current = false;
     }
-  }, [isOpen, startTyping, autoMessage]);
+  }, [isOpen, startTyping, autoMessage, onAutoMessageDone]);
 
-  /* ---------- autoMessage：从首页召唤时自动发送 ---------- */
-  const autoSentRef = useRef(false);
-  useEffect(() => {
-    if (isOpen && autoMessage && !autoSentRef.current) {
-      autoSentRef.current = true;
-      const timer = setTimeout(() => {
-        const msgId = Date.now() + 1;
-        setMessages((prev) => [
-          ...prev,
-          { id: msgId, role: "assistant", text: autoMessage, isTyping: true },
-        ]);
-        startTyping(autoMessage, msgId);
-        onAutoMessageDone?.();
-      }, 600);
-      return () => clearTimeout(timer);
-    }
-    if (!isOpen) {
-      autoSentRef.current = false;
-    }
-  }, [isOpen, autoMessage, startTyping, onAutoMessageDone]);
+  /* ---------- autoMessage done 回调（由 welcomeStartedRef effect 触发，此处仅做清理） ---------- */
+  // autoMessage 的打字机效果已在 welcomeStartedRef effect 中处理
+  // 此处保留 ref 重置逻辑
 
   /* ---------- 渲染单条消息 ---------- */
   const renderMessage = (msg: Message) => {

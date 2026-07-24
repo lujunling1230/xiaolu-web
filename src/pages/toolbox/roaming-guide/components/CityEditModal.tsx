@@ -419,6 +419,7 @@ export default function CityEditModal({
   }, [city]);
 
   const [form, setForm] = useState<City>(BLANK_CITY);
+  const [uploadMode, setUploadMode] = useState<"single" | "multi">("multi");
 
   useEffect(() => {
     if (city) {
@@ -627,6 +628,18 @@ export default function CityEditModal({
               <div className="rg-edit-row rg-two-col">
                 <label className="rg-edit-field rg-image-field">
                   <span>城市照片</span>
+                  <div className="rg-image-upload-mode">
+                    <button
+                      type="button"
+                      className={`rg-upload-mode-btn ${uploadMode === "single" ? "active" : ""}`}
+                      onClick={() => setUploadMode("single")}
+                    >单张上传</button>
+                    <button
+                      type="button"
+                      className={`rg-upload-mode-btn ${uploadMode === "multi" ? "active" : ""}`}
+                      onClick={() => setUploadMode("multi")}
+                    >多张上传</button>
+                  </div>
                   <div className="rg-image-grid">
                     {(form.images || []).map((img, idx) => (
                       <div key={idx} className="rg-image-thumb">
@@ -653,28 +666,34 @@ export default function CityEditModal({
                     <input
                       type="file"
                       accept="image/*"
-                      multiple
+                      multiple={uploadMode === "multi"}
                       id="city-image-upload"
                       style={{ display: "none" }}
-                      onChange={(e) => {
+                      onChange={async (e) => {
                         const files = Array.from(e.target.files || []);
                         if (files.length === 0) return;
                         const remainingSlots = 6 - (form.images || []).length;
                         const toProcess = files.slice(0, remainingSlots);
-                        let processed = 0;
-                        const newImages: string[] = [];
-                        toProcess.forEach((file) => {
-                          const reader = new FileReader();
-                          reader.onload = (ev) => {
-                            newImages.push(ev.target?.result as string);
-                            processed++;
-                            if (processed === toProcess.length) {
-                              updateField("images", [...(form.images || []), ...newImages]);
-                            }
-                          };
-                          reader.readAsDataURL(file);
-                        });
-                        e.target.value = "";
+                        try {
+                          const newImages = await Promise.all(
+                            toProcess.map(
+                              (file) =>
+                                new Promise<string>((resolve, reject) => {
+                                  const reader = new FileReader();
+                                  reader.onload = (ev) => resolve(ev.target?.result as string);
+                                  reader.onerror = () => reject(reader.error);
+                                  reader.readAsDataURL(file);
+                                })
+                            )
+                          );
+                          updateField("images", [...(form.images || []), ...newImages]);
+                        } catch (err) {
+                          console.error("图片读取失败:", err);
+                        }
+                        // 延迟清空，避免 iOS Safari 首次上传闪退
+                        setTimeout(() => {
+                          e.target.value = "";
+                        }, 100);
                       }}
                     />
                   </div>
@@ -1012,6 +1031,22 @@ export default function CityEditModal({
       }
 
       /* 图片缩略图网格 — 胶片风格 */
+      .rg-image-upload-mode { display: flex; gap: 6px; margin-bottom: 8px; }
+      .rg-upload-mode-btn {
+        padding: 4px 10px;
+        font-size: 11px;
+        border: 1px solid rgba(90,74,58,0.15);
+        border-radius: 4px;
+        background: transparent;
+        color: #8a7a6a;
+        cursor: pointer;
+        transition: all 0.2s;
+      }
+      .rg-upload-mode-btn.active {
+        background: rgba(90,74,58,0.08);
+        color: #5A4A3A;
+        border-color: rgba(90,74,58,0.3);
+      }
       .rg-image-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
       .rg-image-thumb {
         position: relative;

@@ -116,8 +116,12 @@ export default function CityDetailModal({
             <div className="rg-detail-carousel">
               <div className="rg-detail-carousel-track" style={{ transform: `translateX(-${carouselIndex * 100}%)` }}>
                 {(city.images?.length ? city.images : ["https://images.unsplash.com/photo-1506744038136-46273834b3fb?w=800&h=600&fit=crop"]).map((img, i) => (
-                  <div key={i} className="rg-detail-carousel-slide">
-                    <img src={img} alt={`${city.name} ${i + 1}`} />
+                  <div key={i} className="rg-detail-carousel-slide rg-film-slide">
+                    <div className="rg-film-frame">
+                      <div className="rg-film-holes rg-film-holes--top" />
+                      <img src={img} alt={`${city.name} ${i + 1}`} />
+                      <div className="rg-film-holes rg-film-holes--bottom" />
+                    </div>
                   </div>
                 ))}
               </div>
@@ -577,11 +581,48 @@ export default function CityDetailModal({
       }
 
       /* 轮播图 */
-      .rg-detail-carousel { position: relative; width: 100%; height: 220px; border-radius: 16px; overflow: hidden; margin-bottom: 20px; }
+      .rg-detail-carousel { position: relative; width: 100%; height: 260px; border-radius: 8px; overflow: hidden; margin-bottom: 20px; }
       .rg-detail-carousel-track { display: flex; height: 100%; transition: transform 0.4s ease; }
-      .rg-detail-carousel-slide { flex: 0 0 100%; height: 100%; }
-      .rg-detail-carousel-slide img { width: 100%; height: 100%; object-fit: cover; }
-      .rg-detail-carousel-prev, .rg-detail-carousel-next { position: absolute; top: 50%; transform: translateY(-50%); width: 32px; height: 32px; border-radius: 50%; background: rgba(255,255,255,0.8); border: none; color: #5A4A3A; font-size: 18px; cursor: pointer; display: flex; align-items: center; justify-content: center; backdrop-filter: blur(4px); }
+      .rg-detail-carousel-slide { flex: 0 0 100%; height: 100%; display: flex; align-items: center; }
+
+      /* 胶片外框 */
+      .rg-film-slide { padding: 0; }
+      .rg-film-frame {
+        width: 100%;
+        height: 100%;
+        background: #1a1a1a;
+        display: flex;
+        flex-direction: column;
+        padding: 10px 14px;
+        box-sizing: border-box;
+        position: relative;
+      }
+      .rg-film-frame img {
+        flex: 1;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        border-radius: 2px;
+        min-height: 0;
+      }
+      .rg-film-holes {
+        height: 8px;
+        flex-shrink: 0;
+        background: repeating-linear-gradient(
+          to right,
+          transparent 0px,
+          transparent 5px,
+          #f5f0e6 5px,
+          #f5f0e6 9px,
+          transparent 9px,
+          transparent 14px
+        );
+        border-radius: 2px;
+      }
+      .rg-film-holes--top { margin-bottom: 8px; }
+      .rg-film-holes--bottom { margin-top: 8px; }
+
+      .rg-detail-carousel-prev, .rg-detail-carousel-next { position: absolute; top: 50%; transform: translateY(-50%); width: 32px; height: 32px; border-radius: 50%; background: rgba(255,255,255,0.8); border: none; color: #5A4A3A; font-size: 18px; cursor: pointer; display: flex; align-items: center; justify-content: center; z-index: 5; }
       .rg-detail-carousel-prev { left: 10px; }
       .rg-detail-carousel-next { right: 10px; }
       .rg-detail-carousel-dots { position: absolute; bottom: 10px; left: 50%; transform: translateX(-50%); display: flex; gap: 6px; }

@@ -588,10 +588,23 @@ const PhotoConfirmModal: React.FC<{
       onClick={onClose}
     >
       <div
-        className="w-full max-w-md max-h-[90vh] overflow-y-auto rounded-3xl border border-[#B4D4EE]/40 bg-white/80 p-6 shadow-2xl shadow-pink-100/20 backdrop-blur-xl"
+        className="w-full max-w-md max-h-[90vh] overflow-y-auto rounded-3xl border border-[#B4D4EE]/40 bg-white/80 p-6 shadow-2xl shadow-pink-100/20 backdrop-blur-xl relative"
         onClick={(e) => e.stopPropagation()}
         style={{ boxShadow: "inset 0 1px 0 rgba(255,255,255,0.8), 0 20px 40px rgba(0,0,0,0.1)" }}
       >
+        {/* 右上角关闭按钮 */}
+        <button
+          onClick={onClose}
+          className="absolute right-4 top-4 z-10 flex h-8 w-8 items-center justify-center rounded-full bg-white/80 text-gray-400 shadow-sm transition-all hover:bg-gray-100 hover:text-gray-600 active:scale-90"
+          aria-label="关闭"
+          type="button"
+        >
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18" />
+            <line x1="6" y1="6" x2="18" y2="18" />
+          </svg>
+        </button>
+
         <h3
           className="mb-4 text-lg font-semibold text-gray-800"
           style={{ fontFamily: '"Noto Serif SC", Georgia, serif' }}
@@ -1118,6 +1131,8 @@ const InventoryPage: React.FC = () => {
 
     if (newItems.length > 0) {
       setItems((prev) => [...newItems, ...prev]);
+      playDing();
+      showToast(`✅ ${newItems.length} 件物品入库成功！`);
     }
 
     setPhotoConfirmOpen(false);

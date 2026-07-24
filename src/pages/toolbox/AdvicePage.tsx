@@ -883,10 +883,10 @@ const AdvicePage: React.FC = () => {
         }
         @keyframes mailbox-shake {
           0%, 100% { transform: rotate(0deg); }
-          20% { transform: rotate(-5deg); }
-          40% { transform: rotate(5deg); }
-          60% { transform: rotate(-3deg); }
-          80% { transform: rotate(3deg); }
+          20% { transform: rotate(-2deg); }
+          40% { transform: rotate(2deg); }
+          60% { transform: rotate(-1.5deg); }
+          80% { transform: rotate(1.5deg); }
         }
 
         /* 回信飞入 */

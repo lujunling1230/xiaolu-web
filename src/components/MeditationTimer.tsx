@@ -460,7 +460,8 @@ function ensureVoicesLoaded(): Promise<void> {
 /** 播放语音引导 */
 function speakGuide(text: string, onEnd?: () => void): SpeechSynthesisUtterance | null {
   if (typeof window === "undefined" || !window.speechSynthesis) return null;
-  window.speechSynthesis.cancel();
+  // iOS 修复：不调用 cancel()，直接创建新的 utterance
+  // cancel() 会导致后续 speak() 在某些 iOS 版本上被静默忽略
   const u = new SpeechSynthesisUtterance(text);
   const voice = getFriendlyVoice();
   if (voice) u.voice = voice;
@@ -469,10 +470,9 @@ function speakGuide(text: string, onEnd?: () => void): SpeechSynthesisUtterance 
   u.pitch = 0.88;
   u.volume = 0.85;
   if (onEnd) u.onend = onEnd;
-  // iOS 兼容：在 speak 前先 resume 确保音频上下文激活
-  if (window.speechSynthesis.paused) {
-    window.speechSynthesis.resume();
-  }
+  u.onerror = (e) => {
+    console.warn("[Meditation] speechSynthesis error:", e.error);
+  };
   window.speechSynthesis.speak(u);
   return u;
 }
@@ -579,7 +579,6 @@ const MeditationTimer: React.FC = () => {
     ambientRef.current = startAmbientSound(selectedSound);
     // 语音引导：必须在用户手势同步路径中直接 speak（iOS Safari 要求）
     if (voiceGuide && typeof window !== "undefined" && window.speechSynthesis) {
-      window.speechSynthesis.cancel();
       voiceRef.current = speakGuide(GUIDE_TEXTS.start);
     }
   };

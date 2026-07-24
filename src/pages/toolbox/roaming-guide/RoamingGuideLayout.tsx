@@ -207,17 +207,15 @@ export default function RoamingGuideLayout() {
             left: 0;
             right: 0;
             width: 100%;
-            height: 64px;
+            height: 56px;
             flex-direction: row;
             align-items: center;
-            background: rgba(245,243,238,0.92);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
+            background: rgba(245,243,238,0.95);
             border-right: none;
             border-top: 1px solid rgba(90,74,58,0.08);
             z-index: 100;
-            padding: 0 8px;
-            box-shadow: 0 -4px 20px rgba(90,74,58,0.06);
+            padding: 0 4px;
+            box-shadow: 0 -2px 12px rgba(90,74,58,0.06);
           }
 
           /* 隐藏顶部区域 */
@@ -231,22 +229,24 @@ export default function RoamingGuideLayout() {
             align-items: center;
             padding: 0;
             gap: 0;
+            overflow-x: auto;
           }
 
           .rg-sidebar-link {
             flex-direction: column;
             align-items: center;
-            font-size: 10px;
-            gap: 2px;
-            padding: 6px 10px;
-            border-radius: 10px;
-            font-size: 10px;
-            letter-spacing: 0.5px;
-            min-width: 56px;
+            font-size: 9px;
+            gap: 1px;
+            padding: 4px 6px;
+            border-radius: 8px;
+            letter-spacing: 0;
+            min-width: 0;
+            flex: 1;
+            max-width: 72px;
           }
 
           .rg-sidebar-link__icon {
-            font-size: 20px;
+            font-size: 18px;
             width: auto;
           }
 

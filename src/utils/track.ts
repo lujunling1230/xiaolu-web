@@ -111,13 +111,27 @@ function flushBatch() {
   }
   const batch = batchQueue.splice(0, BATCH_SIZE);
   const payload = JSON.stringify(batch);
+
+  /* sendBeacon 需要 Blob 才能设置正确的 Content-Type，
+     否则默认 text/plain 不会被 Vercel 解析为 JSON */
   if (navigator.sendBeacon) {
-    navigator.sendBeacon(`${API_BASE}?batch=1`, payload);
+    const blob = new Blob([payload], { type: "application/json" });
+    const ok = navigator.sendBeacon(`${API_BASE}?batch=1`, blob);
+    /* sendBeacon 失败时回退到 fetch */
+    if (!ok) {
+      fetch(`${API_BASE}?batch=1`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: payload,
+        keepalive: true,
+      }).catch(() => {});
+    }
   } else {
-    fetch(API_BASE, {
+    fetch(`${API_BASE}?batch=1`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: payload,
+      keepalive: true,
     }).catch(() => {});
   }
   if (batchQueue.length >= BATCH_SIZE) {

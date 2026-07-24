@@ -134,7 +134,15 @@ export default async function handler(req, res) {
       }
 
       const isBatch = req.query?.batch === "1";
-      let rawEvents = isBatch ? req.body : [req.body];
+
+      /* Vercel 对 text/plain 的 body 不会自动解析为 JSON，
+         手动解析以确保 sendBeacon 等场景也能正确处理 */
+      let body = req.body;
+      if (typeof body === "string") {
+        try { body = JSON.parse(body); } catch { body = null; }
+      }
+
+      let rawEvents = isBatch ? body : [body];
 
       if (!Array.isArray(rawEvents)) {
         return res.status(400).json({ error: "请求体格式错误" });

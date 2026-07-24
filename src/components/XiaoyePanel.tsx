@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { track } from "../utils/track";
 
 /* ============================================================
  * XiaoyePanel — 小叶 AI 助手面板
@@ -127,6 +128,8 @@ const XiaoyePanel: React.FC<{
   const sendMessage = useCallback(
     async (text: string) => {
       if (!text.trim() || loading) return;
+
+      track("xiaoye_chat", { msg_len: text.trim().length });
       // 清空旧打字机状态和文本，防止新消息短暂显示旧文本
       if (typingTimerRef.current) clearInterval(typingTimerRef.current);
       setDisplayedText("");
@@ -206,6 +209,8 @@ const XiaoyePanel: React.FC<{
     if (!isOpen) {
       if (typingTimerRef.current) clearInterval(typingTimerRef.current);
       if (abortRef.current) abortRef.current.abort();
+    } else {
+      track("xiaoye_open");
     }
   }, [isOpen]);
 

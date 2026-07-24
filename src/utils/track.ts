@@ -1,6 +1,9 @@
 /* ============================================================
- * Analytics / Track 埋点系统
- * 双写：localStorage（离线兜底）+ Vercel Blob API（跨设备累计）
+ * Analytics / Track 埋点系统 v2
+ * - P0 事件白名单 + Props 轻量校验
+ * - 匿名访客 ID (anon_id) 用于 UV 统计
+ * - 批量上报（队列满 10 条或 5 秒 flush，sendBeacon 兜底）
+ * - 双写：localStorage（离线兜底）+ Vercel Blob API（跨设备）
  * ============================================================ */
 
 export interface TrackEvent {
@@ -9,20 +12,75 @@ export interface TrackEvent {
   props?: Record<string, unknown>;
   ts: number;
   session: string;
+  anon_id: string;
   path: string;
 }
 
-const STORAGE_KEY = "luro_analytics_events";
-const SESSION_KEY = "luro_analytics_session";
-const MAX_LOCAL_EVENTS = 2000;
-const API_BASE = "/api/analytics";
+/* ---- P0 事件白名单 ---- */
+const ALLOWED_EVENTS = [
+  "page_view",
+  "nav_click",
+  "tool_enter",
+  "contact_submit",
+  "rg_ai_open",
+  "rg_ai_recommend_submit",
+  "rg_ai_recommend_result",
+  "rg_ai_adopt_city",
+  "rg_ai_generate_submit",
+  "rg_ai_generate_result",
+  "rg_ai_save_plan",
+  "iv_tab_switch",
+  "iv_item_add",
+  "iv_ai_ask",
+  "iv_ai_answer",
+  "iv_ai_api_fail",
+  "xiaoye_open",
+  "xiaoye_chat",
+] as const;
 
-/** 检测是否部署在 Vercel（有 API 可用） */
-function isCloudAvailable(): boolean {
-  return typeof window !== "undefined" && window.location.hostname !== "localhost" && window.location.hostname !== "127.0.0.1";
+const EVENT_SET = new Set<string>(ALLOWED_EVENTS);
+
+/* ---- 轻量 Props 校验（仅校验关键字段，不过度设计） ---- */
+function validateProps(name: string, p: Record<string, unknown>): boolean {
+  switch (name) {
+    case "nav_click":  return typeof p.nav_item === "string" && p.nav_item.length <= 50;
+    case "tool_enter": return typeof p.tool_name === "string" && p.tool_name.length <= 50;
+    default:           return true;
+  }
 }
 
-/** 生成会话 ID */
+/* ---- 常量 ---- */
+const STORAGE_KEY = "luro_analytics_events";
+const SESSION_KEY = "luro_analytics_session";
+const ANON_KEY = "luro_anon_id";
+const MAX_LOCAL_EVENTS = 2000;
+const API_BASE = "/api/analytics";
+const BATCH_SIZE = 10;
+const FLUSH_INTERVAL = 5000;
+
+/* ---- 环境检测 ---- */
+function isCloudAvailable(): boolean {
+  return (
+    typeof window !== "undefined" &&
+    window.location.hostname !== "localhost" &&
+    window.location.hostname !== "127.0.0.1"
+  );
+}
+
+/* ---- 匿名访客 ID（持久化，用于 UV 去重） ---- */
+function getAnonId(): string {
+  try {
+    let id = localStorage.getItem(ANON_KEY);
+    if (id) return id;
+    id = `anon_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
+    localStorage.setItem(ANON_KEY, id);
+    return id;
+  } catch {
+    return `anon_${Date.now()}`;
+  }
+}
+
+/* ---- 会话 ID（标签页级别） ---- */
 function getSessionId(): string {
   const existing = sessionStorage.getItem(SESSION_KEY);
   if (existing) return existing;
@@ -31,8 +89,49 @@ function getSessionId(): string {
   return sid;
 }
 
-/* ---- localStorage 读写 ---- */
+/* ============================================================
+ * 批量上报队列
+ * 满 10 条立即发送，否则每 5 秒 flush
+ * 页面卸载时 sendBeacon 兜底
+ * ============================================================ */
+let batchQueue: TrackEvent[] = [];
+let flushTimer: ReturnType<typeof setInterval> | null = null;
 
+function startFlushTimer() {
+  if (flushTimer) return;
+  flushTimer = setInterval(flushBatch, FLUSH_INTERVAL);
+}
+
+function flushBatch() {
+  if (batchQueue.length === 0) return;
+  if (!isCloudAvailable()) {
+    batchQueue = [];
+    return;
+  }
+  const batch = batchQueue.splice(0, BATCH_SIZE);
+  const payload = JSON.stringify(batch);
+  if (navigator.sendBeacon) {
+    navigator.sendBeacon(`${API_BASE}?batch=1`, payload);
+  } else {
+    fetch(API_BASE, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: payload,
+    }).catch(() => {});
+  }
+  if (batchQueue.length >= BATCH_SIZE) {
+    setTimeout(flushBatch, 0);
+  }
+}
+
+function enqueueEvent(evt: TrackEvent) {
+  batchQueue.push(evt);
+  if (batchQueue.length >= BATCH_SIZE) {
+    flushBatch();
+  }
+}
+
+/* ---- localStorage 读写 ---- */
 function readLocalEvents(): TrackEvent[] {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
@@ -47,70 +146,37 @@ function readLocalEvents(): TrackEvent[] {
 
 function saveLocalEvents(events: TrackEvent[]) {
   try {
-    const trimmed = events.length > MAX_LOCAL_EVENTS ? events.slice(-MAX_LOCAL_EVENTS) : events;
+    const trimmed =
+      events.length > MAX_LOCAL_EVENTS ? events.slice(-MAX_LOCAL_EVENTS) : events;
     localStorage.setItem(STORAGE_KEY, JSON.stringify(trimmed));
   } catch {
-    // localStorage 满了则静默失败
+    /* localStorage 满了则静默失败 */
   }
 }
 
-/* ---- 云端同步 ---- */
-
-/** 批量上报本地积压事件到云端（页面卸载或定期触发） */
-async function syncToCloud() {
-  if (!isCloudAvailable()) return;
-  try {
-    const local = readLocalEvents();
-    if (local.length === 0) return;
-    // 检查哪些还没同步过
-    const synced = new Set(JSON.parse(localStorage.getItem("luro_analytics_synced") || "[]"));
-    const pending = local.filter((e) => !synced.has(e.id));
-    if (pending.length === 0) return;
-    // 逐条发送（轻量，不怕失败）
-    for (const evt of pending) {
-      try {
-        await fetch(API_BASE, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(evt),
-        });
-        synced.add(evt.id);
-      } catch {
-        break; // 网络断了就停
-      }
-    }
-    localStorage.setItem("luro_analytics_synced", JSON.stringify([...synced]));
-  } catch {
-    // 静默失败
-  }
-}
-
-/** 立即发送单条事件到云端（不经过本地积压） */
-function sendToCloud(evt: TrackEvent) {
-  if (!isCloudAvailable()) return;
-  // 用 sendBeacon 保证页面关闭时也能发
-  const payload = JSON.stringify(evt);
-  if (navigator.sendBeacon) {
-    navigator.sendBeacon(API_BASE, payload);
-  } else {
-    fetch(API_BASE, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: payload,
-    }).catch(() => {});
-  }
-}
-
-/* ---- 核心 track ---- */
-
-/** 核心 track 函数 */
+/* ============================================================
+ * 核心 track 函数
+ * ============================================================ */
 export function track(eventName: string, props?: Record<string, unknown>) {
+  /* 白名单校验 */
+  if (!EVENT_SET.has(eventName)) {
+    if (import.meta.env.DEV) console.warn("[Track] 未注册的事件:", eventName);
+    return;
+  }
+
+  /* Props 校验 */
+  if (props && !validateProps(eventName, props)) {
+    if (import.meta.env.DEV) console.warn("[Track] Props 校验失败:", eventName, props);
+    return;
+  }
+
   const evt: TrackEvent = {
     id: `${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
     name: eventName,
     props,
     ts: Date.now(),
     session: getSessionId(),
+    anon_id: getAnonId(),
     path: window.location.pathname + window.location.search,
   };
 
@@ -119,26 +185,18 @@ export function track(eventName: string, props?: Record<string, unknown>) {
   all.push(evt);
   saveLocalEvents(all);
 
-  // 2. 云端环境直接发送
-  sendToCloud(evt);
+  // 2. 入队批量上报
+  enqueueEvent(evt);
 
-  // 3. 同步到 Google Analytics 4（如果已加载）
+  // 3. GA4 回传（如果已加载）
   if (typeof window !== "undefined" && (window as any).gtag) {
     (window as any).gtag("event", eventName, props);
   }
-
-  // 4. 同步到 Mixpanel（如果已加载）
-  if (typeof window !== "undefined" && (window as any).mixpanel) {
-    (window as any).mixpanel.track(eventName, props);
-  }
-
-  // 调试用
-  if (import.meta.env.DEV) {
-    console.log("[Track]", eventName, props);
-  }
 }
 
-/* ---- 数据读取（看板用） ---- */
+/* ============================================================
+ * 数据读取（看板用）
+ * ============================================================ */
 
 /** 从云端拉取事件 */
 export async function fetchCloudEvents(hours?: number): Promise<TrackEvent[]> {
@@ -154,7 +212,7 @@ export async function fetchCloudEvents(hours?: number): Promise<TrackEvent[]> {
   }
 }
 
-/** 获取全部事件（本地优先，云端补充） */
+/** 获取全部本地事件 */
 export function getAllEvents(): TrackEvent[] {
   return readLocalEvents();
 }
@@ -175,25 +233,70 @@ export function getEventsLastHours(hours: number, events?: TrackEvent[]): TrackE
 /** 统计某事件的总次数 */
 export function countEvent(name: string, hours?: number, events?: TrackEvent[]): number {
   const src = events
-    ? (hours ? getEventsLastHours(hours, events) : events)
-    : (hours ? getEventsLastHours(hours) : getAllEvents());
+    ? hours
+      ? getEventsLastHours(hours, events)
+      : events
+    : hours
+      ? getEventsLastHours(hours)
+      : getAllEvents();
   return src.filter((e) => e.name === name).length;
 }
 
-/** 统计独立会话数 */
+/* ---- PV / UV 核心指标 ---- */
+
+/** PV: page_view 事件总数 */
+export function countPV(hours?: number, events?: TrackEvent[]): number {
+  return countEvent("page_view", hours, events);
+}
+
+/** 今日 PV（按服务器当前日期的 00:00 起） */
+export function countTodayPV(events?: TrackEvent[]): number {
+  const src = events || getAllEvents();
+  const todayStart = new Date();
+  todayStart.setHours(0, 0, 0, 0);
+  return src.filter(
+    (e) => e.name === "page_view" && e.ts >= todayStart.getTime()
+  ).length;
+}
+
+/** UV: 独立访客数（基于 anon_id 去重，旧数据兼容 session） */
+export function countUV(hours?: number, events?: TrackEvent[]): number {
+  const src = hours ? getEventsLastHours(hours, events) : events || getAllEvents();
+  return new Set(src.map((e) => e.anon_id || e.session)).size;
+}
+
+/** 人均浏览页数 (PV / UV) */
+export function pagesPerVisitor(hours?: number, events?: TrackEvent[]): number {
+  const uv = countUV(hours, events);
+  if (uv === 0) return 0;
+  const pv = countPV(hours, events);
+  return Math.round((pv / uv) * 10) / 10;
+}
+
+/** 统计独立会话数（兼容旧指标） */
 export function uniqueSessions(hours?: number, events?: TrackEvent[]): number {
   const src = events
-    ? (hours ? getEventsLastHours(hours, events) : events)
-    : (hours ? getEventsLastHours(hours) : getAllEvents());
+    ? hours
+      ? getEventsLastHours(hours, events)
+      : events
+    : hours
+      ? getEventsLastHours(hours)
+      : getAllEvents();
   return new Set(src.map((e) => e.session)).size;
 }
 
-/** 统计独立页面访问 */
+/** 统计独立页面访问数 */
 export function uniquePageViews(hours?: number, events?: TrackEvent[]): number {
   const src = events
-    ? (hours ? getEventsLastHours(hours, events) : events)
-    : (hours ? getEventsLastHours(hours) : getAllEvents());
-  return new Set(src.filter((e) => e.name === "page_view").map((e) => e.session)).size;
+    ? hours
+      ? getEventsLastHours(hours, events)
+      : events
+    : hours
+      ? getEventsLastHours(hours)
+      : getAllEvents();
+  return new Set(
+    src.filter((e) => e.name === "page_view").map((e) => e.session)
+  ).size;
 }
 
 /** 漏斗分析 */
@@ -203,8 +306,12 @@ export function funnel(
   events?: TrackEvent[]
 ): { step: string; count: number; rate: number }[] {
   const src = events
-    ? (hours ? getEventsLastHours(hours, events) : events)
-    : (hours ? getEventsLastHours(hours) : getAllEvents());
+    ? hours
+      ? getEventsLastHours(hours, events)
+      : events
+    : hours
+      ? getEventsLastHours(hours)
+      : getAllEvents();
   const sessions = new Set(src.map((e) => e.session));
   let prevCount = sessions.size;
 
@@ -220,10 +327,18 @@ export function funnel(
 }
 
 /** 获取最常触发的事件 TOP N */
-export function topEvents(n = 10, hours?: number, events?: TrackEvent[]): { name: string; count: number }[] {
+export function topEvents(
+  n = 10,
+  hours?: number,
+  events?: TrackEvent[]
+): { name: string; count: number }[] {
   const src = events
-    ? (hours ? getEventsLastHours(hours, events) : events)
-    : (hours ? getEventsLastHours(hours) : getAllEvents());
+    ? hours
+      ? getEventsLastHours(hours, events)
+      : events
+    : hours
+      ? getEventsLastHours(hours)
+      : getAllEvents();
   const map = new Map<string, number>();
   src.forEach((e) => {
     map.set(e.name, (map.get(e.name) || 0) + 1);
@@ -235,7 +350,10 @@ export function topEvents(n = 10, hours?: number, events?: TrackEvent[]): { name
 }
 
 /** 按天统计事件趋势 */
-export function dailyTrend(days = 7, events?: TrackEvent[]): { date: string; count: number }[] {
+export function dailyTrend(
+  days = 7,
+  events?: TrackEvent[]
+): { date: string; count: number }[] {
   const src = events || getAllEvents();
   const result: { date: string; count: number }[] = [];
   const now = new Date();
@@ -274,18 +392,22 @@ export async function clearCloudAnalytics(password: string): Promise<boolean> {
 /** 导出为 CSV */
 export function exportCSV(events?: TrackEvent[]): string {
   const src = events || getAllEvents();
-  const headers = ["time", "event", "path", "session", "props"];
+  const headers = ["time", "event", "path", "session", "anon_id", "props"];
   const rows = src.map((e) => [
     new Date(e.ts).toLocaleString("zh-CN"),
     e.name,
     e.path,
     e.session.slice(0, 12),
+    e.anon_id?.slice(0, 16) || "",
     JSON.stringify(e.props ?? {}),
   ]);
-  return [headers.join(","), ...rows.map((r) => r.join(","))].join("\n");
+  return [
+    headers.join(","),
+    ...rows.map((r) => r.map((c) => `"${c}"`).join(",")),
+  ].join("\n");
 }
 
-/** 自动追踪页面访问 */
+/** 自动追踪页面访问 + 启动批量上报 */
 export function initPageTracking() {
   const trackPage = () => {
     track("page_view", {
@@ -293,19 +415,24 @@ export function initPageTracking() {
       title: document.title,
     });
   };
+
   trackPage();
+  startFlushTimer();
+
   const origPush = history.pushState;
   history.pushState = function (...args) {
     origPush.apply(this, args);
     setTimeout(trackPage, 100);
   };
+
+  const origReplace = history.replaceState;
+  history.replaceState = function (...args) {
+    origReplace.apply(this, args);
+    setTimeout(trackPage, 100);
+  };
+
   window.addEventListener("popstate", trackPage);
-
-  // 页面关闭前同步积压数据
   window.addEventListener("beforeunload", () => {
-    syncToCloud();
+    flushBatch();
   });
-
-  // 每 30 秒同步一次积压数据
-  setInterval(syncToCloud, 30000);
 }

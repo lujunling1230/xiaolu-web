@@ -133,11 +133,8 @@ const XianqingPage: React.FC = () => {
     }
   };
 
-  const handleFrameClick = (e: React.MouseEvent, moduleId: string) => {
-    /* 如果拖拽距离很小才跳转 */
-    if (!isDragging.current) {
-      window.location.href = `/film?module=${moduleId}`;
-    }
+  const handleFrameClick = (_e: React.MouseEvent, _moduleId: string) => {
+    /* 模块已下线，点击不再跳转 */
   };
 
   return (

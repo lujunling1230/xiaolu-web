@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
+import { track } from "../utils/track";
 import GratitudeJournal from "../components/GratitudeJournal";
 import BreathingGuide from "../components/BreathingGuide";
 import MeditationTimer from "../components/MeditationTimer";
@@ -67,6 +68,8 @@ const WelcomeCard = () => (
 const HealingRoomPage: React.FC = () => {
   const [active, setActive] = useState<ModuleId>("welcome");
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
+
+  useEffect(() => { track("tool_enter", { tool_name: "森林疗愈室" }); }, []);
 
   const renderModule = () => {
     switch (active) {

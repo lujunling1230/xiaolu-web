@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Link } from "react-router-dom";
+import { track } from "../../utils/track";
 import {
   type UserState,
   type Recommendation,
@@ -1421,6 +1422,8 @@ const CompletionModal: React.FC<{
 const RechargePage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<TabKey>("home");
   const [doneIds, setDoneIds] = useState<Set<number>>(loadDoneIds);
+
+  useEffect(() => { track("tool_enter", { tool_name: "系统调频 + 回血清单" }); }, []);
   const [hiddenFound, setHiddenFound] = useState(false);
   const [catState, setCatState] = useState<"sleep" | "stare" | "yawn">("sleep");
   const [newBadge, setNewBadge] = useState<Badge | null>(null);

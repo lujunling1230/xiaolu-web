@@ -20,7 +20,7 @@ import PlanPage from "./pages/toolbox/roaming-guide/PlanPage";
 import AboutPage from "./pages/toolbox/roaming-guide/AboutPage";
 import { RoamingGuideProvider } from "./pages/toolbox/roaming-guide/RoamingGuideContext";
 import SystemTuningPage from "./pages/toolbox/SystemTuningPage";
-import LifeFilmPage from "./pages/LifeFilmPage";
+// LifeFilmPage removed - module deleted
 import HealingRoomPage from "./pages/HealingRoomPage";
 import MusicPage from "./pages/toolbox/MusicPage";
 import MickeyLaunchpad from "./pages/MickeyLaunchpad";
@@ -69,8 +69,7 @@ createRoot(document.getElementById("root")!).render(
         {/* 联系我 */}
         <Route path="/contact" element={<ContactPage />} />
 
-        {/* 第七卷胶片：独立全屏页面 */}
-        <Route path="/film" element={<LifeFilmPage />} />
+        {/* /film route removed - LifeFilm module deleted */}
         <Route path="/music" element={<MusicPage />} />
         {/* 作品集首页：9 维度作品 3×3 网格 */}
         <Route path="/toolbox" element={<ToolboxHome />} />
@@ -82,8 +81,7 @@ createRoot(document.getElementById("root")!).render(
         <Route path="/toolbox/advice" element={<AdvicePage />} />
         {/* 通关清单：游戏化 To-Do */}
         <Route path="/toolbox/quests" element={<QuestLogPage />} />
-        {/* 时光博物馆：双展厅回忆录 */}
-        <Route path="/toolbox/memories" element={<MuseumPage />} />
+        {/* /toolbox/memories route removed - Museum module deleted */}
         {/* 解压馆：交互式解压游戏集合 */}
         <Route path="/toolbox/games" element={<StressReliefPage />} />
         {/* 徽章墙：各游戏徽章收集展示 */}

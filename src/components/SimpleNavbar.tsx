@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import { track } from "../utils/track";
 
 /* ============================================================
  * SimpleNavbar 横向导航栏（全宽版）
@@ -226,18 +227,24 @@ interface NavItemProps {
 }
 
 const NavItem: React.FC<NavItemProps> = ({ item, active, onClick }) => {
+  const handleClick = () => {
+    track("nav_click", { nav_item: item.key });
+    onClick();
+  };
+
   if (item.href) {
     return (
       <Link
         to={item.href}
         className={`sn-link ${active ? "is-active" : ""}`}
+        onClick={() => track("nav_click", { nav_item: item.key })}
       >
         {item.label}
       </Link>
     );
   }
   return (
-    <button onClick={onClick} className={`sn-link ${active ? "is-active" : ""}`}>
+    <button onClick={handleClick} className={`sn-link ${active ? "is-active" : ""}`}>
       {item.label}
     </button>
   );

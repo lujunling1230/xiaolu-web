@@ -1,6 +1,7 @@
 import { useMemo, useRef, useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Link } from "react-router-dom";
+import { track } from "../../utils/track";
 import { callAI } from "../../utils/aiClient";
 
 /**
@@ -153,6 +154,8 @@ const AdviceMiao: React.FC<{
 const AdvicePage: React.FC = () => {
   const [question, setQuestion] = useState("");
   const [reply, setReply] = useState<string | null>(null);
+
+  useEffect(() => { track("tool_enter", { tool_name: "万能百事通" }); }, []);
   const [phase, setPhase] = useState<Phase>("idle");
   const [loading, setLoading] = useState(false);
 

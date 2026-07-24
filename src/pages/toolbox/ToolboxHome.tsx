@@ -1,5 +1,6 @@
 import { motion } from "framer-motion";
 import { useNavigate, useSearchParams, Link } from "react-router-dom";
+import { track } from "../../utils/track";
 
 /**
  * 作品集 · 首页
@@ -46,6 +47,8 @@ const ToolboxHome: React.FC = () => {
   const fromQuery = isFromFull ? "?from=full" : "";
 
   const handleOpen = (title: string) => {
+    track("tool_enter", { tool_name: title });
+
     // 森林疗愈室：跳转独立疗愈室页面
     if (title === "森林疗愈室") {
       navigate(`/healing${fromQuery}`);

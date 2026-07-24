@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Link } from "react-router-dom";
+import { track } from "../../utils/track";
 import { legacyLoad, legacySave } from "../../utils/siteData";
 import { useAdminGuard } from "../../hooks/useAdminGuard";
 
@@ -478,6 +479,8 @@ const BreakdownModal: React.FC<{
 const QuestLogPage: React.FC = () => {
   const { isAdmin: adminMode, verifyAdmin, AdminGuardUI } = useAdminGuard();
   const [quests, setQuests] = useState<Quest[]>(() => loadQuests());
+
+  useEffect(() => { track("tool_enter", { tool_name: "通关清单" }); }, []);
   const [xp, setXp] = useState<number>(() => loadXP());
   const [input, setInput] = useState("");
   // 智能拆解：待处理的新任务文本

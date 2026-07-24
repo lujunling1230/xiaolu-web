@@ -490,7 +490,15 @@ const SystemTuningPage: React.FC = () => {
   const [moments, setMoments] = useState<MomentItem[]>(() => {
     try {
       const raw = JSON.parse(localStorage.getItem("wx_moments") || "[]");
-      return raw;
+      return (Array.isArray(raw) ? raw : []).map((m: any) => ({
+        ...m,
+        images: Array.isArray(m.images) ? m.images : [],
+        tags: Array.isArray(m.tags) ? m.tags : [],
+        comments: Array.isArray(m.comments) ? m.comments : [],
+        likedBy: Array.isArray(m.likedBy) ? m.likedBy : [],
+        likes: typeof m.likes === "number" ? m.likes : 0,
+        likedByMe: !!m.likedByMe,
+      }));
     } catch { return []; }
   });
 
@@ -500,8 +508,17 @@ const SystemTuningPage: React.FC = () => {
       .then(r => r.json())
       .then(remote => {
         if (Array.isArray(remote) && remote.length > 0) {
-          setMoments(remote);
-          localStorage.setItem("wx_moments", JSON.stringify(remote));
+          const sanitized = remote.map((m: any) => ({
+            ...m,
+            images: Array.isArray(m.images) ? m.images : [],
+            tags: Array.isArray(m.tags) ? m.tags : [],
+            comments: Array.isArray(m.comments) ? m.comments : [],
+            likedBy: Array.isArray(m.likedBy) ? m.likedBy : [],
+            likes: typeof m.likes === "number" ? m.likes : 0,
+            likedByMe: !!m.likedByMe,
+          }));
+          setMoments(sanitized);
+          localStorage.setItem("wx_moments", JSON.stringify(sanitized));
         }
       })
       .catch(() => {});

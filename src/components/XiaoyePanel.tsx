@@ -91,7 +91,7 @@ const XiaoyePanel: React.FC<{
 }> = ({ isOpen, onClose, autoMessage, onAutoMessageDone }) => {
   const [minimized, setMinimized] = useState(false);
   const [messages, setMessages] = useState<Message[]>([
-    { id: 0, role: "assistant", text: WELCOME_TEXT, isTyping: false },
+    { id: 0, role: "assistant", text: WELCOME_TEXT, isTyping: true },
   ]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
@@ -209,10 +209,38 @@ const XiaoyePanel: React.FC<{
     if (!isOpen) {
       if (typingTimerRef.current) clearInterval(typingTimerRef.current);
       if (abortRef.current) abortRef.current.abort();
-    } else {
-      track("xiaoye_open");
+      // 重置欢迎语，下次打开重新打字
+      setMessages([
+        { id: 0, role: "assistant", text: WELCOME_TEXT, isTyping: true },
+      ]);
+      setDisplayedText("");
+      setInput("");
+      setActiveModule(null);
     }
   }, [isOpen]);
+
+  /* ---------- 面板打开时播放欢迎语打字机效果 ---------- */
+  const welcomeStartedRef = useRef(false);
+  useEffect(() => {
+    if (isOpen && !welcomeStartedRef.current) {
+      welcomeStartedRef.current = true;
+      track("xiaoye_open");
+      // 如果有 autoMessage，跳过欢迎语，让 autoMessage 接管
+      if (autoMessage) {
+        setMessages((prev) =>
+          prev.map((m) => (m.id === 0 ? { ...m, isTyping: false } : m))
+        );
+        return;
+      }
+      const timer = setTimeout(() => {
+        startTyping(WELCOME_TEXT, 0);
+      }, 400);
+      return () => clearTimeout(timer);
+    }
+    if (!isOpen) {
+      welcomeStartedRef.current = false;
+    }
+  }, [isOpen, startTyping, autoMessage]);
 
   /* ---------- autoMessage：从首页召唤时自动发送 ---------- */
   const autoSentRef = useRef(false);

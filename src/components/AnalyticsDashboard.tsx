@@ -52,6 +52,7 @@ const EVENT_NAME_MAP: Record<string, string> = {
   nav_click: "导航点击",
   tool_enter: "工具使用",
   contact_submit: "留言提交",
+  /* 漫游指南 */
   rg_ai_open: "AI 向导打开",
   rg_ai_recommend_submit: "AI 推荐提交",
   rg_ai_recommend_result: "AI 推荐结果",
@@ -59,13 +60,29 @@ const EVENT_NAME_MAP: Record<string, string> = {
   rg_ai_generate_submit: "攻略生成提交",
   rg_ai_generate_result: "攻略生成结果",
   rg_ai_save_plan: "保存攻略",
+  /* 物资管家 */
   iv_tab_switch: "Tab 切换",
   iv_item_add: "物资入库",
   iv_ai_ask: "AI 管家提问",
   iv_ai_answer: "AI 管家回复",
   iv_ai_api_fail: "AI 接口失败",
+  /* 小叶 */
   xiaoye_open: "小叶打开",
   xiaoye_chat: "小叶对话",
+  /* 森林疗愈室 */
+  healing_breath: "呼吸练习",
+  healing_journal: "感恩日记",
+  /* 爱情公寓 */
+  apartment_chat: "AI 聊天",
+  apartment_post: "发布动态",
+  /* 通关清单 */
+  quest_complete: "任务完成",
+  quest_level: "等级提升",
+  /* 解忧杂货店 */
+  advice_letter: "写信",
+  advice_reply: "收到回信",
+  /* 回血清单 */
+  recharge_action: "回血行动",
 };
 
 export default function AnalyticsDashboard() {
@@ -118,12 +135,29 @@ export default function AnalyticsDashboard() {
       /* 业务事件 */
       toolEnters: countEvent("tool_enter", hours, events),
       contactSubmits: countEvent("contact_submit", hours, events),
+      /* 漫游指南 */
       rgAiOpens: countEvent("rg_ai_open", hours, events),
       rgAiAdopts: countEvent("rg_ai_adopt_city", hours, events),
+      /* 物资管家 */
       ivItemAdds: countEvent("iv_item_add", hours, events),
       ivAiAsks: countEvent("iv_ai_ask", hours, events),
+      /* 小叶 */
       xiaoyeOpens: countEvent("xiaoye_open", hours, events),
       xiaoyeChats: countEvent("xiaoye_chat", hours, events),
+      /* 森林疗愈室 */
+      healingBreath: countEvent("healing_breath", hours, events),
+      healingJournal: countEvent("healing_journal", hours, events),
+      /* 爱情公寓 */
+      apartmentChat: countEvent("apartment_chat", hours, events),
+      apartmentPost: countEvent("apartment_post", hours, events),
+      /* 通关清单 */
+      questComplete: countEvent("quest_complete", hours, events),
+      questLevel: countEvent("quest_level", hours, events),
+      /* 解忧杂货店 */
+      adviceLetter: countEvent("advice_letter", hours, events),
+      adviceReply: countEvent("advice_reply", hours, events),
+      /* 回血清单 */
+      rechargeAction: countEvent("recharge_action", hours, events),
       /* 汇总 */
       totalEvents: filtered.length,
       totalAllTime: allEvents.length,
@@ -276,7 +310,50 @@ export default function AnalyticsDashboard() {
         <StatCard label="人均浏览" value={stats.pagesPerVisitor} sub="页/人" color="#C06A2E" />
       </div>
 
-      {/* 业务事件卡片 */}
+      {/* 各作品事件卡片 */}
+      <div style={{ marginBottom: 24 }}>
+        <h3 style={{ margin: "0 0 12px", fontSize: 14, fontWeight: 600, color: "#4a4038" }}>
+          各作品事件
+        </h3>
+        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+          {/* 森林疗愈室 */}
+          <WorkStatRow label="森林疗愈室" color="#5d8a6a">
+            <StatCard label="呼吸练习" value={stats.healingBreath} color="#5d8a6a" compact />
+            <StatCard label="感恩日记" value={stats.healingJournal} color="#7BA89E" compact />
+          </WorkStatRow>
+          {/* 爱情公寓 */}
+          <WorkStatRow label="爱情公寓" color="#b06a6a">
+            <StatCard label="AI 聊天" value={stats.apartmentChat} color="#b06a6a" compact />
+            <StatCard label="发布动态" value={stats.apartmentPost} color="#E8853A" compact />
+          </WorkStatRow>
+          {/* 通关清单 */}
+          <WorkStatRow label="通关清单" color="#a8814a">
+            <StatCard label="任务完成" value={stats.questComplete} color="#a8814a" compact />
+            <StatCard label="等级提升" value={stats.questLevel} color="#E8853A" compact />
+          </WorkStatRow>
+          {/* 物资管家 */}
+          <WorkStatRow label="物资管家" color="#9a7d4a">
+            <StatCard label="物资入库" value={stats.ivItemAdds} color="#8D9A8B" compact />
+            <StatCard label="AI 管家" value={stats.ivAiAsks} color="#C06A2E" compact />
+          </WorkStatRow>
+          {/* 解忧杂货店 */}
+          <WorkStatRow label="解忧杂货店" color="#4d8a82">
+            <StatCard label="写信" value={stats.adviceLetter} color="#4d8a82" compact />
+            <StatCard label="收到回信" value={stats.adviceReply} color="#7BA89E" compact />
+          </WorkStatRow>
+          {/* 漫游指南 */}
+          <WorkStatRow label="漫游指南" color="#5f76a0">
+            <StatCard label="AI 向导" value={stats.rgAiOpens} color="#7BA89E" compact />
+            <StatCard label="采纳城市" value={stats.rgAiAdopts} color="#E8853A" compact />
+          </WorkStatRow>
+          {/* 回血清单 */}
+          <WorkStatRow label="回血清单" color="#8a5f8a">
+            <StatCard label="回血行动" value={stats.rechargeAction} color="#8a5f8a" compact />
+          </WorkStatRow>
+        </div>
+      </div>
+
+      {/* 通用事件卡片 */}
       <div
         style={{
           display: "grid",
@@ -286,10 +363,6 @@ export default function AnalyticsDashboard() {
         }}
       >
         <StatCard label="工具使用" value={stats.toolEnters} color="#5a8a6a" />
-        <StatCard label="AI 向导" value={stats.rgAiOpens} color="#7BA89E" />
-        <StatCard label="采纳城市" value={stats.rgAiAdopts} color="#E8853A" />
-        <StatCard label="物资入库" value={stats.ivItemAdds} color="#8D9A8B" />
-        <StatCard label="AI 管家" value={stats.ivAiAsks} color="#C06A2E" />
         <StatCard label="小叶打开" value={stats.xiaoyeOpens} color="#5d8a6a" />
         <StatCard label="小叶对话" value={stats.xiaoyeChats} color="#E8853A" />
         <StatCard label="留言提交" value={stats.contactSubmits} color="#7BA89E" />
@@ -520,12 +593,39 @@ export default function AnalyticsDashboard() {
 
 /* ---------- 子组件 ---------- */
 
-function StatCard({ label, value, sub, color }: { label: string; value: number; sub?: string; color: string }) {
+function StatCard({ label, value, sub, color, compact }: { label: string; value: number; sub?: string; color: string; compact?: boolean }) {
+  if (compact) {
+    return (
+      <div style={{ background: "#FAF9F6", borderRadius: 10, padding: "10px 14px", border: "1px solid #E8E6E1", flex: 1, minWidth: 0 }}>
+        <div style={{ display: "flex", alignItems: "baseline", gap: 8 }}>
+          <span style={{ fontSize: 11, color: "#a8a39b", whiteSpace: "nowrap" }}>{label}</span>
+          <span style={{ fontSize: 20, fontWeight: 700, color, lineHeight: 1 }}>{value}</span>
+        </div>
+      </div>
+    );
+  }
   return (
     <div style={{ background: "#FAF9F6", borderRadius: 14, padding: "16px 18px", border: "1px solid #E8E6E1" }}>
       <div style={{ fontSize: 11, color: "#a8a39b", marginBottom: 6, letterSpacing: "0.04em" }}>{label}</div>
       <div style={{ fontSize: 28, fontWeight: 700, color, lineHeight: 1 }}>{value}</div>
       {sub && <div style={{ fontSize: 11, color: "#a8a39b", marginTop: 4 }}>{sub}</div>}
+    </div>
+  );
+}
+
+function WorkStatRow({ label, color, children }: { label: string; color: string; children: React.ReactNode }) {
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+      <div style={{
+        width: 80, flexShrink: 0,
+        fontSize: 12, fontWeight: 500, color: "#4a4038",
+        overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+      }}>
+        {label}
+      </div>
+      <div style={{ display: "flex", gap: 10, flex: 1, minWidth: 0 }}>
+        {children}
+      </div>
     </div>
   );
 }

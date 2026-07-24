@@ -22,6 +22,7 @@ const ALLOWED_EVENTS = [
   "nav_click",
   "tool_enter",
   "contact_submit",
+  /* 漫游指南 */
   "rg_ai_open",
   "rg_ai_recommend_submit",
   "rg_ai_recommend_result",
@@ -29,13 +30,29 @@ const ALLOWED_EVENTS = [
   "rg_ai_generate_submit",
   "rg_ai_generate_result",
   "rg_ai_save_plan",
+  /* 物资管家 */
   "iv_tab_switch",
   "iv_item_add",
   "iv_ai_ask",
   "iv_ai_answer",
   "iv_ai_api_fail",
+  /* 小叶 */
   "xiaoye_open",
   "xiaoye_chat",
+  /* 森林疗愈室 */
+  "healing_breath",
+  "healing_journal",
+  /* 爱情公寓 */
+  "apartment_chat",
+  "apartment_post",
+  /* 通关清单 */
+  "quest_complete",
+  "quest_level",
+  /* 解忧杂货店 */
+  "advice_letter",
+  "advice_reply",
+  /* 回血清单 */
+  "recharge_action",
 ] as const;
 
 const EVENT_SET = new Set<string>(ALLOWED_EVENTS);

@@ -38,6 +38,15 @@ const ALLOWED_EVENTS = new Set([
   "iv_ai_api_fail",
   "xiaoye_open",
   "xiaoye_chat",
+  "healing_breath",
+  "healing_journal",
+  "apartment_chat",
+  "apartment_post",
+  "quest_complete",
+  "quest_level",
+  "advice_letter",
+  "advice_reply",
+  "recharge_action",
 ]);
 
 /* ---- Bot / Crawler 检测 ---- */

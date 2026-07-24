@@ -8,9 +8,6 @@ import { track } from "../utils/track";
  * 联系我卡片 + 留言板卡片
  * ============================================================ */
 
-/** Formspree 表单链接 —— 请替换为你自己的链接 */
-const FORMSPREE_URL = ""; // 示例: "https://formspree.io/f/xayz1234"
-
 const ContactSection: React.FC = () => {
   const [message, setMessage] = useState("");
   const [contactInfo, setContactInfo] = useState("");
@@ -21,45 +18,40 @@ const ContactSection: React.FC = () => {
     if (!message.trim()) return;
     setSending(true);
 
-    // 优先尝试 Formspree（配置了才走）
-    if (FORMSPREE_URL) {
-      try {
-        const res = await fetch(FORMSPREE_URL, {
-          method: "POST",
-          headers: { "Accept": "application/json", "Content-Type": "application/json" },
-          body: JSON.stringify({
-            message,
-            contact: contactInfo || "未填写",
-            _subject: "【luro.site】新留言提醒",
-            _replyto: contactInfo.includes("@") ? contactInfo : undefined,
-          }),
+    // 优先调用 Vercel 云函数发送邮件到 QQ 邮箱
+    try {
+      const res = await fetch("/api/send-message", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ message, contactInfo }),
+      });
+      if (res.ok) {
+        track("contact_submit", {
+          message_length: message.length,
+          has_contact_info: !!contactInfo.trim(),
+          via_email: true,
         });
-        if (res.ok) {
-          track("contact_submit", {
-            message_length: message.length,
-            has_contact_info: !!contactInfo.trim(),
-            via_formspree: true,
-          });
-          setSubmitted(true);
-          setMessage("");
-          setContactInfo("");
-          setTimeout(() => setSubmitted(false), 4000);
-          setSending(false);
-          return;
-        }
-      } catch {
-        /* Formspree 失败则降级到本地存储 */
+        setSubmitted(true);
+        setMessage("");
+        setContactInfo("");
+        setTimeout(() => setSubmitted(false), 4000);
+        setSending(false);
+        return;
       }
+      console.warn("[contact] 邮件发送失败，降级到本地存储");
+    } catch {
+      /* 网络错误则降级到本地存储 */
+      console.warn("[contact] 网络错误，降级到本地存储");
     }
 
-    // 降级：本地存储（未配置 Formspree 或网络失败时）
+    // 降级：本地存储（云函数未配置或网络失败时）
     const entry = { message, contactInfo, time: Date.now() };
     const existing = JSON.parse(localStorage.getItem("guestbook") || "[]");
     localStorage.setItem("guestbook", JSON.stringify([entry, ...existing]));
     track("contact_submit", {
       message_length: message.length,
       has_contact_info: !!contactInfo.trim(),
-      via_formspree: !!FORMSPREE_URL,
+      via_email: false,
     });
     setSubmitted(true);
     setMessage("");

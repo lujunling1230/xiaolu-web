@@ -80,21 +80,24 @@ async function readAllEvents() {
     if (blobs.length === 0) return [];
     const blob = blobs.find((b) => b.pathname === BLOB_KEY);
     if (!blob) return [];
-    const res = await fetch(blob.downloadUrl);
+    /* private store 使用 downloadUrl（带签名），public store 使用 url */
+    const downloadUrl = blob.downloadUrl || blob.url;
+    const res = await fetch(downloadUrl);
     if (!res.ok) return [];
     return await res.json();
-  } catch {
+  } catch (err) {
+    console.error("[analytics] readAllEvents error:", err.message);
     return [];
   }
 }
 
 async function writeAllEvents(events) {
   const json = JSON.stringify(events);
-  await put(BLOB_KEY, json, {
-    access: "private",
+  const result = await put(BLOB_KEY, json, {
     contentType: "application/json",
     addRandomSuffix: false,
   });
+  return result;
 }
 
 /* ---- 清洗单条事件 ---- */
@@ -164,14 +167,33 @@ export default async function handler(req, res) {
       if (all.length > MAX_EVENTS) {
         all.splice(0, all.length - MAX_EVENTS);
       }
-      await writeAllEvents(all);
+      const writeResult = await writeAllEvents(all);
 
-      return res.status(200).json({ ok: true, accepted: validEvents.length });
+      return res.status(200).json({
+        ok: true,
+        accepted: validEvents.length,
+        writeUrl: writeResult?.url?.slice(0, 60),
+      });
     }
 
     /* ---- GET: 读取事件 ---- */
     if (req.method === "GET") {
-      const { hours } = req.query || {};
+      const { hours, debug } = req.query || {};
+
+      /* 调试模式：查看 Blob 存储状态 */
+      if (debug === "1") {
+        const { blobs } = await list({ prefix: "luro-analytics/" });
+        return res.status(200).json({
+          blobCount: blobs.length,
+          blobs: blobs.map((b) => ({
+            pathname: b.pathname,
+            hasDownloadUrl: !!b.downloadUrl,
+            hasUrl: !!b.url,
+            size: b.size,
+          })),
+        });
+      }
+
       const all = await readAllEvents();
       if (hours) {
         const cutoff = Date.now() - Number(hours) * 3600_000;

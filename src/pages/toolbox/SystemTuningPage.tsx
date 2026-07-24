@@ -409,7 +409,7 @@ const SystemTuningPage: React.FC = () => {
   const [selectedCharId, setSelectedCharId] = useState<string | null>(null);
   const [selectedProfileId, setSelectedProfileId] = useState<string | null>(null);
 
-  useEffect(() => { track("tool_enter", { tool_name: "系统调频 + 回血清单" }); }, []);
+  useEffect(() => { track("tool_enter", { tool_name: "爱情公寓" }); }, []);
 
   /* ===== 收藏/点赞系统 ===== */
   interface FavItem {

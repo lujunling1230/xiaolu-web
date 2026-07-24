@@ -29,7 +29,7 @@ export default function RoamingGuidePage() {
 
   // 页面进入埋点
   useEffect(() => {
-    track("tool_enter", { tool_name: "roaming_guide" });
+    track("tool_enter", { tool_name: "漫游指南" });
   }, []);
 
   const {

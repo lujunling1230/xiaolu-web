@@ -805,7 +805,7 @@ const InventoryPage: React.FC = () => {
 
   // 页面进入埋点
   useEffect(() => {
-    track("tool_enter", { tool_name: "inventory_manager" });
+    track("tool_enter", { tool_name: "物资管家" });
   }, []);
 
   // Tab 切换埋点

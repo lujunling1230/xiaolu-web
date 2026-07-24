@@ -11,6 +11,7 @@ import {
   pagesPerVisitor,
   funnel,
   topEvents,
+  topToolEnters,
   dailyTrend,
   exportCSV,
   clearAnalytics,
@@ -128,6 +129,7 @@ export default function AnalyticsDashboard() {
       totalAllTime: allEvents.length,
       /* 排行 + 趋势 + 漏斗 */
       top: topEvents(10, hours, events),
+      toolRanking: topToolEnters(hours, events),
       trend: dailyTrend(7, events),
       recommendFunnel: funnel(
         ["rg_ai_open", "rg_ai_recommend_submit", "rg_ai_recommend_result", "rg_ai_adopt_city"],
@@ -293,11 +295,11 @@ export default function AnalyticsDashboard() {
         <StatCard label="留言提交" value={stats.contactSubmits} color="#7BA89E" />
       </div>
 
-      {/* 双栏布局 */}
+      {/* 三栏布局 */}
       <div
         style={{
           display: "grid",
-          gridTemplateColumns: "1fr 1fr",
+          gridTemplateColumns: "1fr 1fr 1fr",
           gap: 16,
           marginBottom: 24,
         }}
@@ -351,6 +353,73 @@ export default function AnalyticsDashboard() {
                     >
                       <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                         {EVENT_NAME_MAP[item.name] || item.name}
+                      </span>
+                      <span style={{ fontWeight: 600, marginLeft: 8, flexShrink: 0 }}>{item.count}</span>
+                    </div>
+                    <div style={{ height: 5, borderRadius: 3, background: "#E8E6E1", overflow: "hidden" }}>
+                      <motion.div
+                        initial={{ width: 0 }}
+                        animate={{ width: `${pct}%` }}
+                        transition={{ duration: 0.6, ease: "easeOut" }}
+                        style={{
+                          height: "100%",
+                          borderRadius: 3,
+                          background:
+                            idx === 0
+                              ? "#E8853A"
+                              : idx === 1
+                                ? "#7BA89E"
+                                : idx === 2
+                                  ? "#C06A2E"
+                                  : "#8D9A8B",
+                        }}
+                      />
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        <div style={{ background: "#FAF9F6", borderRadius: 14, padding: 20, border: "1px solid #E8E6E1" }}>
+          <h3 style={{ margin: "0 0 16px", fontSize: 14, fontWeight: 600, color: "#4a4038" }}>
+            各作品使用排行
+          </h3>
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            {stats.toolRanking.length === 0 && (
+              <p style={{ color: "#a8a39b", fontSize: 13, textAlign: "center", padding: 20 }}>
+                暂无数据
+              </p>
+            )}
+            {stats.toolRanking.map((item, idx) => {
+              const max = stats.toolRanking[0]?.count || 1;
+              const pct = Math.round((item.count / max) * 100);
+              return (
+                <div key={item.tool_name} style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                  <span
+                    style={{
+                      width: 20,
+                      fontSize: 11,
+                      fontWeight: 700,
+                      color: idx < 3 ? "#E8853A" : "#a8a39b",
+                      textAlign: "center",
+                    }}
+                  >
+                    {idx + 1}
+                  </span>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div
+                      style={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        fontSize: 12,
+                        color: "#4a4038",
+                        marginBottom: 3,
+                      }}
+                    >
+                      <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                        {item.tool_name}
                       </span>
                       <span style={{ fontWeight: 600, marginLeft: 8, flexShrink: 0 }}>{item.count}</span>
                     </div>

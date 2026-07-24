@@ -54,7 +54,8 @@ const STORAGE_KEY = "luro_analytics_events";
 const SESSION_KEY = "luro_analytics_session";
 const ANON_KEY = "luro_anon_id";
 const MAX_LOCAL_EVENTS = 2000;
-const API_BASE = "/api/analytics";
+/* 使用绝对路径确保裸域 / 局域网访问时 API 也能正确到达 */
+const API_BASE = "https://www.xiaoluweb.com/api/analytics";
 const BATCH_SIZE = 10;
 const FLUSH_INTERVAL = 5000;
 
@@ -347,6 +348,28 @@ export function topEvents(
     .sort((a, b) => b[1] - a[1])
     .slice(0, n)
     .map(([name, count]) => ({ name, count }));
+}
+
+/** 各作品使用排行（按 tool_name 分组统计 tool_enter） */
+export function topToolEnters(
+  hours?: number,
+  events?: TrackEvent[]
+): { tool_name: string; count: number }[] {
+  const src = events
+    ? hours
+      ? getEventsLastHours(hours, events)
+      : events
+    : hours
+      ? getEventsLastHours(hours)
+      : getAllEvents();
+  const map = new Map<string, number>();
+  src.filter((e) => e.name === "tool_enter").forEach((e) => {
+    const name = (e.props?.tool_name as string) || "未命名工具";
+    map.set(name, (map.get(name) || 0) + 1);
+  });
+  return Array.from(map.entries())
+    .sort((a, b) => b[1] - a[1])
+    .map(([tool_name, count]) => ({ tool_name, count }));
 }
 
 /** 按天统计事件趋势 */

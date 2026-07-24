@@ -328,11 +328,6 @@ const ContactPage: React.FC = () => {
         .cp-sparkle {
           position: absolute;
         }
-        .cp-dashed-arc {
-          position: absolute;
-          right: 3%;
-          bottom: 5%;
-        }
         .cp-bow {
           position: absolute;
         }
@@ -645,13 +640,6 @@ const ContactPage: React.FC = () => {
           .cp-card-left,
           .cp-card-right {
             border-radius: 24px;
-          }
-          .cp-binder-rings {
-            display: none;
-          }
-          .cp-card-left::after,
-          .cp-card-right::after {
-            display: none;
           }
         }
       `}</style>

@@ -140,36 +140,6 @@ const ContactSection: React.FC = () => {
             </div>
           </div>
 
-          {/* 活页圈 */}
-          <div className="po-contact-binder-rings">
-            <svg className="po-contact-binder-ring" viewBox="0 0 20 26" fill="none" aria-hidden="true">
-              <defs>
-                <linearGradient id="poRingGrad" x1="0" y1="0" x2="20" y2="26">
-                  <stop offset="0%" stopColor="#7a9a82" />
-                  <stop offset="100%" stopColor="#4a6b52" />
-                </linearGradient>
-              </defs>
-              <ellipse cx="10" cy="13" rx="6" ry="10" stroke="url(#poRingGrad)" strokeWidth="3.5" fill="none" strokeLinecap="round"/>
-              <ellipse cx="10" cy="13" rx="6" ry="10" stroke="rgba(255,255,255,0.35)" strokeWidth="1" fill="none" strokeLinecap="round" transform="translate(-0.5,-0.5)"/>
-            </svg>
-            <svg className="po-contact-binder-ring" viewBox="0 0 20 26" fill="none" aria-hidden="true">
-              <ellipse cx="10" cy="13" rx="6" ry="10" stroke="url(#poRingGrad)" strokeWidth="3.5" fill="none" strokeLinecap="round"/>
-              <ellipse cx="10" cy="13" rx="6" ry="10" stroke="rgba(255,255,255,0.35)" strokeWidth="1" fill="none" strokeLinecap="round" transform="translate(-0.5,-0.5)"/>
-            </svg>
-            <svg className="po-contact-binder-ring" viewBox="0 0 20 26" fill="none" aria-hidden="true">
-              <ellipse cx="10" cy="13" rx="6" ry="10" stroke="url(#poRingGrad)" strokeWidth="3.5" fill="none" strokeLinecap="round"/>
-              <ellipse cx="10" cy="13" rx="6" ry="10" stroke="rgba(255,255,255,0.35)" strokeWidth="1" fill="none" strokeLinecap="round" transform="translate(-0.5,-0.5)"/>
-            </svg>
-            <svg className="po-contact-binder-ring" viewBox="0 0 20 26" fill="none" aria-hidden="true">
-              <ellipse cx="10" cy="13" rx="6" ry="10" stroke="url(#poRingGrad)" strokeWidth="3.5" fill="none" strokeLinecap="round"/>
-              <ellipse cx="10" cy="13" rx="6" ry="10" stroke="rgba(255,255,255,0.35)" strokeWidth="1" fill="none" strokeLinecap="round" transform="translate(-0.5,-0.5)"/>
-            </svg>
-            <svg className="po-contact-binder-ring" viewBox="0 0 20 26" fill="none" aria-hidden="true">
-              <ellipse cx="10" cy="13" rx="6" ry="10" stroke="url(#poRingGrad)" strokeWidth="3.5" fill="none" strokeLinecap="round"/>
-              <ellipse cx="10" cy="13" rx="6" ry="10" stroke="rgba(255,255,255,0.35)" strokeWidth="1" fill="none" strokeLinecap="round" transform="translate(-0.5,-0.5)"/>
-            </svg>
-          </div>
-
           {/* 留言板卡片 */}
           <div className="po-contact-card po-contact-card-right">
             <h4 className="po-contact-card-title">留言板</h4>
@@ -274,61 +244,16 @@ const ContactSection: React.FC = () => {
           box-shadow: 0 8px 32px -12px rgba(80, 76, 66, 0.12);
         }
         .po-contact-card-left {
-          border-radius: 24px 4px 4px 24px;
+          border-radius: 24px;
           flex: 1;
           position: relative;
           padding-right: 28px;
         }
-        .po-contact-card-left::after {
-          content: '';
-          position: absolute;
-          top: 0;
-          right: 8px;
-          width: 14px;
-          height: 100%;
-          background:
-            radial-gradient(ellipse 5px 9px at 50% 18%, rgba(90,120,100,0.18) 0%, rgba(90,120,100,0.18) 35%, rgba(255,255,255,0.25) 42%, transparent 52%),
-            radial-gradient(ellipse 5px 9px at 50% 34%, rgba(90,120,100,0.18) 0%, rgba(90,120,100,0.18) 35%, rgba(255,255,255,0.25) 42%, transparent 52%),
-            radial-gradient(ellipse 5px 9px at 50% 50%, rgba(90,120,100,0.18) 0%, rgba(90,120,100,0.18) 35%, rgba(255,255,255,0.25) 42%, transparent 52%),
-            radial-gradient(ellipse 5px 9px at 50% 66%, rgba(90,120,100,0.18) 0%, rgba(90,120,100,0.18) 35%, rgba(255,255,255,0.25) 42%, transparent 52%),
-            radial-gradient(ellipse 5px 9px at 50% 82%, rgba(90,120,100,0.18) 0%, rgba(90,120,100,0.18) 35%, rgba(255,255,255,0.25) 42%, transparent 52%);
-          pointer-events: none;
-        }
         .po-contact-card-right {
-          border-radius: 4px 24px 24px 4px;
+          border-radius: 24px;
           flex: 1;
           position: relative;
           padding-left: 28px;
-        }
-        .po-contact-card-right::after {
-          content: '';
-          position: absolute;
-          top: 0;
-          left: 8px;
-          width: 14px;
-          height: 100%;
-          background:
-            radial-gradient(ellipse 5px 9px at 50% 18%, rgba(90,120,100,0.18) 0%, rgba(90,120,100,0.18) 35%, rgba(255,255,255,0.25) 42%, transparent 52%),
-            radial-gradient(ellipse 5px 9px at 50% 34%, rgba(90,120,100,0.18) 0%, rgba(90,120,100,0.18) 35%, rgba(255,255,255,0.25) 42%, transparent 52%),
-            radial-gradient(ellipse 5px 9px at 50% 50%, rgba(90,120,100,0.18) 0%, rgba(90,120,100,0.18) 35%, rgba(255,255,255,0.25) 42%, transparent 52%),
-            radial-gradient(ellipse 5px 9px at 50% 66%, rgba(90,120,100,0.18) 0%, rgba(90,120,100,0.18) 35%, rgba(255,255,255,0.25) 42%, transparent 52%),
-            radial-gradient(ellipse 5px 9px at 50% 82%, rgba(90,120,100,0.18) 0%, rgba(90,120,100,0.18) 35%, rgba(255,255,255,0.25) 42%, transparent 52%);
-          pointer-events: none;
-        }
-        .po-contact-binder-rings {
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          justify-content: space-evenly;
-          gap: 0;
-          padding: 16px 4px;
-          z-index: 2;
-        }
-        .po-contact-binder-ring {
-          width: 22px;
-          height: 28px;
-          flex-shrink: 0;
-          filter: drop-shadow(1px 2px 3px rgba(74, 107, 82, 0.3));
         }
         .po-contact-card-title {
           font-family: "Noto Serif SC", Georgia, serif;
@@ -467,9 +392,6 @@ const ContactSection: React.FC = () => {
           .po-contact-card-left,
           .po-contact-card-right {
             border-radius: 24px;
-          }
-          .po-contact-binder-rings {
-            display: none;
           }
         }
       `}</style>

@@ -74,21 +74,28 @@ function getClientIp(req) {
 }
 
 /* ---- 数据读写 ---- */
+/* Private store 的 URL 需要 token 认证才能读取 */
+const BLOB_TOKEN = process.env.BLOB_READ_WRITE_TOKEN;
+
 async function readAllEvents() {
   try {
     const { blobs } = await list({ prefix: "luro-analytics/" });
     if (blobs.length === 0) return [];
     const blob = blobs.find((b) => b.pathname === BLOB_KEY);
     if (!blob) return [];
-    /* private store: downloadUrl 带签名；public store: url 可直接访问 */
     const downloadUrl = blob.downloadUrl || blob.url;
-    const res = await fetch(downloadUrl);
+    /* private store 需要携带 Authorization header */
+    const res = await fetch(downloadUrl, {
+      headers: BLOB_TOKEN
+        ? { Authorization: `Bearer ${BLOB_TOKEN}` }
+        : {},
+    });
     if (!res.ok) {
       console.error("[analytics] fetch blob failed:", res.status, res.statusText);
       return [];
     }
     const text = await res.text();
-    if (!text) return [];
+    if (!text || text === "Forbidden") return [];
     return JSON.parse(text);
   } catch (err) {
     console.error("[analytics] readAllEvents error:", err.message);
@@ -99,7 +106,7 @@ async function readAllEvents() {
 async function writeAllEvents(events) {
   const json = JSON.stringify(events);
   const result = await put(BLOB_KEY, json, {
-    access: "private",
+    access: "public",
     contentType: "application/json",
     addRandomSuffix: false,
     allowOverwrite: true,
@@ -195,7 +202,11 @@ export default async function handler(req, res) {
         if (blob) {
           try {
             const downloadUrl = blob.downloadUrl || blob.url;
-            const fetchRes = await fetch(downloadUrl);
+            const fetchRes = await fetch(downloadUrl, {
+              headers: BLOB_TOKEN
+                ? { Authorization: `Bearer ${BLOB_TOKEN}` }
+                : {},
+            });
             const text = await fetchRes.text();
             readDebug = {
               fetchStatus: fetchRes.status,

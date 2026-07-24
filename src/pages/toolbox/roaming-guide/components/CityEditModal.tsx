@@ -1011,12 +1011,56 @@ export default function CityEditModal({
         opacity: 1;
       }
 
-      /* 图片缩略图网格 */
+      /* 图片缩略图网格 — 胶片风格 */
       .rg-image-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
-      .rg-image-thumb { position: relative; aspect-ratio: 1; border-radius: 8px; overflow: hidden; }
-      .rg-image-thumb img { width: 100%; height: 100%; object-fit: cover; }
-      .rg-image-del { position: absolute; top: 2px; right: 2px; width: 20px; height: 20px; border-radius: 50%; background: rgba(0,0,0,0.5); color: #fff; border: none; font-size: 12px; cursor: pointer; display: flex; align-items: center; justify-content: center; }
-      .rg-image-upload-btn { aspect-ratio: 1; border: 2px dashed rgba(90,74,58,0.15); border-radius: 8px; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; background: rgba(245,243,238,0.5); }
+      .rg-image-thumb {
+        position: relative;
+        aspect-ratio: 1;
+        border-radius: 4px;
+        overflow: hidden;
+        background: #1a1a1a;
+        padding: 6px 6px 20px 6px;
+        box-sizing: border-box;
+      }
+      .rg-image-thumb img {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        border-radius: 2px;
+      }
+      /* 胶片齿孔 */
+      .rg-image-thumb::before,
+      .rg-image-thumb::after {
+        content: '';
+        position: absolute;
+        left: 6px;
+        right: 6px;
+        height: 6px;
+        background: repeating-linear-gradient(
+          to right,
+          transparent 0px,
+          transparent 4px,
+          #1a1a1a 4px,
+          #1a1a1a 6px,
+          transparent 6px,
+          transparent 10px
+        );
+        z-index: 1;
+      }
+      .rg-image-thumb::before { top: 1px; }
+      .rg-image-thumb::after { bottom: 1px; height: 6px; background: repeating-linear-gradient(to right, transparent 0px, transparent 4px, #1a1a1a 4px, #1a1a1a 6px, transparent 6px, transparent 10px); }
+      .rg-image-del { position: absolute; top: 8px; right: 8px; width: 20px; height: 20px; border-radius: 50%; background: rgba(0,0,0,0.5); color: #fff; border: none; font-size: 12px; cursor: pointer; display: flex; align-items: center; justify-content: center; z-index: 2; }
+      .rg-image-upload-btn {
+        aspect-ratio: 1;
+        border: 2px dashed rgba(90,74,58,0.15);
+        border-radius: 4px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        background: rgba(245,243,238,0.5);
+      }
 
       /* 列表行编辑（玩/吃） */
       .rg-edit-section {

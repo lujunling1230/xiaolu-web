@@ -103,18 +103,8 @@ const pageVariants = {
 /** 页码显示组件 */
 const PageNumber: React.FC<{ current: number }> = ({ current }) => {
   if (!current) return null;
-  const isOdd = current % 2 !== 0;
   return (
-    <span
-      className="lb-page-number"
-      style={isOdd ? {
-        position: 'fixed',
-        bottom: 20,
-        left: '50%',
-        transform: 'translateX(-50%)',
-        zIndex: 100,
-      } : undefined}
-    >
+    <span className="lb-page-number">
       {current}
     </span>
   );

@@ -508,9 +508,15 @@ const MeditationTimer: React.FC = () => {
   const voiceRef = useRef<SpeechSynthesisUtterance | null>(null);
   // 记录已播报的引导阶段（避免重复）
   const guideStageRef = useRef<Set<string>>(new Set());
+  // 开场语音引导延迟定时器（点击后 2 秒再播报，让环境音先淡入）
+  const startGuideTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  // 清理环境音 + 语音
+  // 清理环境音 + 语音 + 开场定时器
   const stopAmbient = useCallback(() => {
+    if (startGuideTimerRef.current) {
+      clearTimeout(startGuideTimerRef.current);
+      startGuideTimerRef.current = null;
+    }
     if (ambientRef.current) {
       ambientRef.current.stop();
       ambientRef.current = null;
@@ -596,9 +602,16 @@ const MeditationTimer: React.FC = () => {
       ambientRef.current = null;
     }
     ambientRef.current = startAmbientSound(selectedSound);
-    // 语音引导：必须在用户手势同步路径中直接 speak（iOS Safari 要求）
+    // 语音引导：延迟 2 秒后开始（让环境音先淡入，用户进入状态后再引导）
     if (voiceGuide && typeof window !== "undefined" && window.speechSynthesis) {
-      voiceRef.current = speakGuide(GUIDE_TEXTS.start);
+      // 同步解锁语音引擎（iOS Safari 首次需在用户手势内触发）
+      try { window.speechSynthesis.resume(); } catch { /* ignore */ }
+      // 清掉旧的开场定时器
+      if (startGuideTimerRef.current) clearTimeout(startGuideTimerRef.current);
+      startGuideTimerRef.current = setTimeout(() => {
+        startGuideTimerRef.current = null;
+        voiceRef.current = speakGuide(GUIDE_TEXTS.start);
+      }, 2000);
     }
   };
 

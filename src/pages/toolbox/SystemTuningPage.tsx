@@ -656,8 +656,8 @@ const SystemTuningPage: React.FC = () => {
 
       // 点赞（延迟 1~4 秒，错开时间）
       if (willLike) {
-        const likeDelay = 1000 + Math.random() * 3000 + idx * 500;
-        setTimeout(() => {
+        const likeDelay = 800 + Math.random() * 2500 + idx * 400;
+        const doLike = () => {
           try {
             setMoments(prev => {
               const updated = prev.map(m => {
@@ -668,25 +668,49 @@ const SystemTuningPage: React.FC = () => {
               localStorage.setItem("wx_moments", JSON.stringify(updated));
               return updated;
             });
+            // 清除 pending 标记
+            try {
+              const p = JSON.parse(localStorage.getItem("wx_pending_reactions") || "{}");
+              if (p[momentId]) { delete p[momentId]; localStorage.setItem("wx_pending_reactions", JSON.stringify(p)); }
+            } catch { /* ignore */ }
           } catch (e) { console.warn("[moments] 点赞更新失败:", e); }
-        }, likeDelay);
+        };
+        // 使用 visibilitychange 监听确保在后台恢复时仍能执行
+        if (document.hidden) {
+          const onVisible = () => {
+            if (!document.hidden) { document.removeEventListener("visibilitychange", onVisible); doLike(); }
+          };
+          document.addEventListener("visibilitychange", onVisible);
+        } else {
+          setTimeout(doLike, likeDelay);
+        }
       }
 
       // 评论（延迟 3~8 秒，让点赞先到）
       if (willComment) {
-        const commentDelay = 3000 + Math.random() * 5000 + idx * 800;
-        setTimeout(async () => {
+        const commentDelay = 2000 + Math.random() * 4000 + idx * 600;
+        const doComment = async () => {
           try {
             const replyContent = await callAI(
               `${char.systemPrompt}\n\n你是爱情公寓的室友，看到室友发了条朋友圈，请用你的角色语气评论一句。评论要简短（20字以内），自然、有趣，符合你的性格。可以调侃、安慰、吐槽、附和。\n\n${getRealTimeContext()}`,
               [{ role: "user", content: `室友发了一条朋友圈：「${content.slice(0, 80)}」，你怎么评论？只输出评论内容，不要加引号或前缀。` }],
               { maxTokens: 60, temperature: 0.9 }
             );
-            const trimmedReply = (replyContent || "").replace(/^["'「]|["'」]$/g, "").trim().slice(0, 40);
+            let trimmedReply = (replyContent || "").replace(/^["'「]|["'」]$/g, "").trim().slice(0, 40);
+            // AI 失败时使用角色口头禅作为兜底评论
             if (!trimmedReply || trimmedReply.includes("信号受到干扰")) {
-              console.warn(`[moments] ${char.name} 评论失败，AI 返回空或兜底文案`);
-              return;
+              console.warn(`[moments] ${char.name} 评论失败，使用口头禅兜底`);
+              const fallbacks = [
+                `${char.emoji} 哈哈哈，太真实了`,
+                `${char.emoji} 这条必须赞`,
+                `${char.emoji} 3601 的人表示同意`,
+                `${char.emoji} 楼下听到了`,
+                `${char.emoji} 美滋滋~`,
+                `${char.emoji} 这波可以的`,
+              ];
+              trimmedReply = fallbacks[Math.floor(Math.random() * fallbacks.length)];
             }
+            if (!trimmedReply) return;
             setMoments(prev => {
               const updated = prev.map(m => {
                 if (m.id !== momentId) return m;
@@ -704,8 +728,18 @@ const SystemTuningPage: React.FC = () => {
               localStorage.setItem("wx_moments", JSON.stringify(updated));
               return updated;
             });
-          } catch { /* AI 调用失败静默处理 */ }
-        }, commentDelay);
+          } catch (e) {
+            console.warn(`[moments] ${char.name} 评论异常:`, e);
+          }
+        };
+        if (document.hidden) {
+          const onVisible = () => {
+            if (!document.hidden) { document.removeEventListener("visibilitychange", onVisible); doComment(); }
+          };
+          document.addEventListener("visibilitychange", onVisible);
+        } else {
+          setTimeout(doComment, commentDelay);
+        }
       }
     });
   };

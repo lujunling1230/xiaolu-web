@@ -94,9 +94,9 @@ const HealingRoomPage: React.FC = () => {
 
         {/* ===== 左侧导航 ===== */}
       <aside className="hl-sidebar">
-        {/* 回到主站 */}
-        <Link to="/" className="hl-back">
-          ← 回到主站
+        {/* 回到作品集 */}
+        <Link to="/mickey" className="hl-back">
+          ← 回到作品集
         </Link>
 
         {/* 标题 */}
@@ -169,7 +169,7 @@ const HealingRoomPage: React.FC = () => {
 
       {/* ===== 移动端顶部导航 ===== */}
       <div className="hl-mobile-header">
-        <Link to="/" className="hl-mobile-back">← 主站</Link>
+        <Link to="/mickey" className="hl-mobile-back">← 回到作品集</Link>
         <span className="hl-mobile-title">疗愈室</span>
         <button className="hl-mobile-menu-btn" onClick={() => setMobileNavOpen(!mobileNavOpen)}>
           {mobileNavOpen ? "×" : "☰"}

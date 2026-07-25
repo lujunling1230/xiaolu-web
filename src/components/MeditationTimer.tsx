@@ -436,8 +436,6 @@ function getFriendlyVoice(): SpeechSynthesisVoice | undefined {
 }
 
 /** 预加载语音列表（解决 getVoices() 异步加载问题） */
-let voicesReady = false;
-let warmedUp = false;
 function ensureVoicesLoaded(): Promise<void> {
   return new Promise((resolve) => {
     if (typeof window === "undefined" || !window.speechSynthesis) {
@@ -446,40 +444,33 @@ function ensureVoicesLoaded(): Promise<void> {
     }
     const voices = window.speechSynthesis.getVoices();
     if (voices.length > 0) {
-      voicesReady = true;
       resolve();
       return;
     }
     window.speechSynthesis.onvoiceschanged = () => {
-      voicesReady = true;
       resolve();
     };
     // 超时兜底 3 秒
-    setTimeout(() => { voicesReady = true; resolve(); }, 3000);
+    setTimeout(() => { resolve(); }, 3000);
   });
-}
-
-/** 唤醒语音引擎（部分浏览器首次 speak 静默失败，需先空播一次解锁） */
-function warmupSpeech(): void {
-  if (warmedUp || typeof window === "undefined" || !window.speechSynthesis) return;
-  try {
-    const probe = new SpeechSynthesisUtterance("");
-    probe.volume = 0;
-    window.speechSynthesis.speak(probe);
-    warmedUp = true;
-  } catch {
-    /* ignore */
-  }
 }
 
 /** 播放语音引导 */
 function speakGuide(text: string, onEnd?: () => void): SpeechSynthesisUtterance | null {
   if (typeof window === "undefined" || !window.speechSynthesis) return null;
-  // 唤醒语音引擎
-  warmupSpeech();
+  // Chrome 长时间运行后 speechSynthesis 会自动暂停，需 resume 恢复
+  try {
+    if (window.speechSynthesis.paused) {
+      window.speechSynthesis.resume();
+    }
+  } catch {
+    /* ignore */
+  }
   const u = new SpeechSynthesisUtterance(text);
   const voice = getFriendlyVoice();
-  if (voice) u.voice = voice;
+  if (voice) {
+    u.voice = voice;
+  }
   u.lang = "zh-CN";
   u.rate = 0.78;
   u.pitch = 0.88;
@@ -545,6 +536,10 @@ const MeditationTimer: React.FC = () => {
     if (!running) return;
     const total = duration * 60;
     const interval = setInterval(() => {
+      // Chrome 安卓端 bug：speechSynthesis 运行 15 秒后会自动暂停，需定期 resume
+      if (voiceGuide && typeof window !== "undefined" && window.speechSynthesis) {
+        try { window.speechSynthesis.resume(); } catch { /* ignore */ }
+      }
       setSeconds((prev) => {
         const next = prev - 1;
         const elapsed = total - next;

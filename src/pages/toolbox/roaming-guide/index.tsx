@@ -87,6 +87,7 @@ export default function RoamingGuidePage() {
   /* AI 保存攻略 */
   const handleSavePlan = useCallback((city: City, result: AIForwardGenerateResponse) => {
     track("rg_ai_save_plan", { city_name: city.name, days: result.plan.days });
+    track("rg_ai_adopt_city", { city_name: city.name, province: city.province });
     const existing = cities.find(c => c.id === city.id || c.name === city.name);
     if (existing) {
       // 更新已有城市的 AI 计划

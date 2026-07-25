@@ -77,6 +77,7 @@ export function RoamingGuideProvider({ children }: { children: ReactNode }) {
 
   const handleSavePlan = useCallback((city: City, result: AIForwardGenerateResponse) => {
     track("rg_ai_save_plan", { city_name: city.name, days: result.plan.days });
+    track("rg_ai_adopt_city", { city_name: city.name, province: city.province });
     const existing = cityData.cities.find(c => c.id === city.id || c.name === city.name);
     if (existing) {
       cityData.updateCity({

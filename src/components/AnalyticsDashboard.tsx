@@ -12,6 +12,7 @@ import {
   bounceRate,
   pageDistribution,
   funnel,
+  eventsByToolSessions,
   topToolEnters,
   dailyTrend,
   exportCSV,
@@ -55,6 +56,7 @@ export default function AnalyticsDashboard() {
   const [loading, setLoading] = useState(false);
   const [clearingCloud, setClearingCloud] = useState(false);
   const [spinning, setSpinning] = useState(false);
+  const [funnelTab, setFunnelTab] = useState<string>("漫游指南");
 
   const hours = RANGE_HOURS[range];
   const useCloud = isCloudEnv();
@@ -104,6 +106,7 @@ export default function AnalyticsDashboard() {
       /* 森林疗愈室 */
       healingBreath: countEvent("healing_breath", hours, events),
       healingJournal: countEvent("healing_journal", hours, events),
+      healingMeditation: countEvent("healing_meditation", hours, events),
       /* 爱情公寓 */
       apartmentChat: countEvent("apartment_chat", hours, events),
       apartmentPost: countEvent("apartment_post", hours, events),
@@ -136,6 +139,37 @@ export default function AnalyticsDashboard() {
         ["rg_ai_open", "rg_ai_generate_submit", "rg_ai_generate_result", "rg_ai_save_plan"],
         hours,
         events
+      ),
+      /* 各作品漏斗（基于进入该工具的会话） */
+      adviceFunnel: funnel(
+        ["tool_enter", "advice_letter", "advice_reply"],
+        hours,
+        eventsByToolSessions("解忧杂货店", events)
+      ),
+      inventoryFunnel: funnel(
+        ["tool_enter", "iv_item_add", "iv_ai_ask"],
+        hours,
+        eventsByToolSessions("物资管家", events)
+      ),
+      apartmentFunnel: funnel(
+        ["tool_enter", "apartment_chat", "apartment_post"],
+        hours,
+        eventsByToolSessions("爱情公寓", events)
+      ),
+      questFunnel: funnel(
+        ["tool_enter", "quest_complete", "quest_level"],
+        hours,
+        eventsByToolSessions("通关清单", events)
+      ),
+      healingFunnel: funnel(
+        ["tool_enter", "healing_breath", "healing_journal"],
+        hours,
+        eventsByToolSessions("森林疗愈室", events)
+      ),
+      rechargeFunnel: funnel(
+        ["tool_enter", "recharge_action"],
+        hours,
+        eventsByToolSessions("回血清单", events)
       ),
     };
   }, [hours, events, allEvents]);
@@ -283,6 +317,7 @@ export default function AnalyticsDashboard() {
           <WorkStatRow label="森林疗愈室">
             <StatCard label="呼吸练习" value={stats.healingBreath} color="#5d8a6a" compact />
             <StatCard label="感恩日记" value={stats.healingJournal} color="#7BA89E" compact />
+            <StatCard label="冥想空间" value={stats.healingMeditation} color="#C06A2E" compact />
           </WorkStatRow>
           {/* 爱情公寓 */}
           <WorkStatRow label="爱情公寓">
@@ -334,16 +369,79 @@ export default function AnalyticsDashboard() {
           marginBottom: 24,
         }}
       >
-        {/* 左栏：漏斗 */}
+        {/* 左栏：漏斗（标签切换） */}
         <div style={{ background: "#FAF9F6", borderRadius: 14, padding: 20, border: "1px solid #E8E6E1" }}>
-          <h3 style={{ margin: "0 0 16px", fontSize: 14, fontWeight: 600, color: "#4a4038" }}>
-            AI 推荐漏斗
+          <h3 style={{ margin: "0 0 12px", fontSize: 14, fontWeight: 600, color: "#4a4038" }}>
+            转化漏斗
           </h3>
-          <FunnelBars data={stats.recommendFunnel} />
-          <h3 style={{ margin: "20px 0 16px", fontSize: 14, fontWeight: 600, color: "#4a4038" }}>
-            攻略生成漏斗
-          </h3>
-          <FunnelBars data={stats.generateFunnel} />
+          {/* 标签栏 */}
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 16 }}>
+            {["漫游指南", "解忧杂货店", "物资管家", "爱情公寓", "通关清单", "森林疗愈室", "回血清单"].map((tab) => (
+              <button
+                key={tab}
+                onClick={() => setFunnelTab(tab)}
+                style={{
+                  padding: "4px 10px",
+                  borderRadius: 999,
+                  border: "1px solid",
+                  borderColor: funnelTab === tab ? "#8D9A8B" : "#E8E6E1",
+                  background: funnelTab === tab ? "#8D9A8B" : "transparent",
+                  color: funnelTab === tab ? "#fff" : "#7a7268",
+                  fontSize: 11,
+                  cursor: "pointer",
+                  transition: "all 0.2s ease",
+                  whiteSpace: "nowrap",
+                }}
+              >
+                {tab}
+              </button>
+            ))}
+          </div>
+          {/* 漏斗内容 */}
+          {funnelTab === "漫游指南" && (
+            <>
+              <div style={{ fontSize: 12, color: "#a8a39b", marginBottom: 8 }}>AI 推荐</div>
+              <FunnelBars data={stats.recommendFunnel} />
+              <div style={{ fontSize: 12, color: "#a8a39b", margin: "20px 0 8px" }}>攻略生成</div>
+              <FunnelBars data={stats.generateFunnel} />
+            </>
+          )}
+          {funnelTab === "解忧杂货店" && (
+            <>
+              <div style={{ fontSize: 12, color: "#a8a39b", marginBottom: 8 }}>写信 → 收到回信</div>
+              <FunnelBars data={stats.adviceFunnel} />
+            </>
+          )}
+          {funnelTab === "物资管家" && (
+            <>
+              <div style={{ fontSize: 12, color: "#a8a39b", marginBottom: 8 }}>入库 → 问 AI 管家</div>
+              <FunnelBars data={stats.inventoryFunnel} />
+            </>
+          )}
+          {funnelTab === "爱情公寓" && (
+            <>
+              <div style={{ fontSize: 12, color: "#a8a39b", marginBottom: 8 }}>AI 聊天 → 发布动态</div>
+              <FunnelBars data={stats.apartmentFunnel} />
+            </>
+          )}
+          {funnelTab === "通关清单" && (
+            <>
+              <div style={{ fontSize: 12, color: "#a8a39b", marginBottom: 8 }}>完成任务 → 等级提升</div>
+              <FunnelBars data={stats.questFunnel} />
+            </>
+          )}
+          {funnelTab === "森林疗愈室" && (
+            <>
+              <div style={{ fontSize: 12, color: "#a8a39b", marginBottom: 8 }}>呼吸练习 → 感恩日记</div>
+              <FunnelBars data={stats.healingFunnel} />
+            </>
+          )}
+          {funnelTab === "回血清单" && (
+            <>
+              <div style={{ fontSize: 12, color: "#a8a39b", marginBottom: 8 }}>完成回血行动</div>
+              <FunnelBars data={stats.rechargeFunnel} />
+            </>
+          )}
         </div>
 
         {/* 中栏：页面 PV 分布 */}
@@ -636,6 +734,15 @@ function formatStepName(step: string): string {
     rg_ai_generate_submit: "点击生成攻略",
     rg_ai_generate_result: "收到攻略结果",
     rg_ai_save_plan: "保存攻略",
+    tool_enter: "进入工具",
+    advice_letter: "写信",
+    advice_reply: "收到回信",
+    iv_item_add: "物资入库",
+    iv_ai_ask: "问 AI 管家",
+    apartment_chat: "AI 聊天",
+    apartment_post: "发布动态",
+    quest_complete: "完成任务",
+    quest_level: "等级提升",
   };
   return map[step] || step;
 }

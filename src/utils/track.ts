@@ -42,6 +42,7 @@ const ALLOWED_EVENTS = [
   /* 森林疗愈室 */
   "healing_breath",
   "healing_journal",
+  "healing_meditation",
   /* 爱情公寓 */
   "apartment_chat",
   "apartment_post",
@@ -390,6 +391,22 @@ export function funnel(
     prevCount = count;
     return { step, count, rate };
   });
+}
+
+/** 筛选进入过指定工具的会话的所有事件（用于按作品计算漏斗） */
+export function eventsByToolSessions(
+  toolName: string,
+  events?: TrackEvent[]
+): TrackEvent[] {
+  const src = events || getAllEvents();
+  const toolSessions = new Set(
+    src
+      .filter(
+        (e) => e.name === "tool_enter" && (e.props?.tool_name as string) === toolName
+      )
+      .map((e) => e.session)
+  );
+  return src.filter((e) => toolSessions.has(e.session));
 }
 
 /** 获取最常触发的事件 TOP N */

@@ -216,6 +216,8 @@ const XiaoyePanel: React.FC<{
       setDisplayedText("");
       setInput("");
       setActiveModule(null);
+      // 重置首次打开标记，确保下次打开重新触发 xiaoye_open 埋点
+      welcomeStartedRef.current = false;
     }
   }, [isOpen]);
 

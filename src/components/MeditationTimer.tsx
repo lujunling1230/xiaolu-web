@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { track } from "../utils/track";
 
 /**
  * MeditationTimer 冥想空间
@@ -570,6 +571,7 @@ const MeditationTimer: React.FC = () => {
   }, [running, duration, stopAmbient, voiceGuide]);
 
   const handleStart = () => {
+    track("healing_meditation", { duration, sound: selectedSound, voice_guide: voiceGuide });
     setCompleted(false);
     setSeconds(duration * 60);
     setRunning(true);

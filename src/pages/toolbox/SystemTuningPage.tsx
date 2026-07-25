@@ -642,6 +642,13 @@ const SystemTuningPage: React.FC = () => {
     const shuffled = [...CHARACTERS].sort(() => Math.random() - 0.5);
     const reactors = shuffled.slice(0, 2 + Math.floor(Math.random() * 3));
 
+    // 先标记此 moment 需要反应（防止刷新丢失）
+    try {
+      const pending = JSON.parse(localStorage.getItem("wx_pending_reactions") || "{}");
+      pending[momentId] = true;
+      localStorage.setItem("wx_pending_reactions", JSON.stringify(pending));
+    } catch { /* ignore */ }
+
     // 分配：部分点赞，部分评论，部分两者都做
     reactors.forEach((char, idx) => {
       const willLike = Math.random() > 0.15; // 85% 概率点赞
@@ -651,15 +658,17 @@ const SystemTuningPage: React.FC = () => {
       if (willLike) {
         const likeDelay = 1000 + Math.random() * 3000 + idx * 500;
         setTimeout(() => {
-          setMoments(prev => {
-            const updated = prev.map(m => {
-              if (m.id !== momentId) return m;
-              if (m.likedBy.some(l => l.name === char.name)) return m;
-              return { ...m, likes: m.likes + 1, likedBy: [...m.likedBy, { name: char.name, avatar: char.emoji }] };
+          try {
+            setMoments(prev => {
+              const updated = prev.map(m => {
+                if (m.id !== momentId) return m;
+                if (m.likedBy.some(l => l.name === char.name)) return m;
+                return { ...m, likes: m.likes + 1, likedBy: [...m.likedBy, { name: char.name, avatar: char.emoji }] };
+              });
+              localStorage.setItem("wx_moments", JSON.stringify(updated));
+              return updated;
             });
-            localStorage.setItem("wx_moments", JSON.stringify(updated));
-            return updated;
-          });
+          } catch (e) { console.warn("[moments] 点赞更新失败:", e); }
         }, likeDelay);
       }
 
@@ -674,7 +683,10 @@ const SystemTuningPage: React.FC = () => {
               { maxTokens: 60, temperature: 0.9 }
             );
             const trimmedReply = (replyContent || "").replace(/^["'「]|["'」]$/g, "").trim().slice(0, 40);
-            if (!trimmedReply) return;
+            if (!trimmedReply || trimmedReply.includes("信号受到干扰")) {
+              console.warn(`[moments] ${char.name} 评论失败，AI 返回空或兜底文案`);
+              return;
+            }
             setMoments(prev => {
               const updated = prev.map(m => {
                 if (m.id !== momentId) return m;
@@ -697,6 +709,32 @@ const SystemTuningPage: React.FC = () => {
       }
     });
   };
+
+  // 页面加载时恢复 pending 的 AI 反应（防止刷新丢失）
+  useEffect(() => {
+    try {
+      const pending = JSON.parse(localStorage.getItem("wx_pending_reactions") || "{}");
+      const pendingIds = Object.keys(pending);
+      if (pendingIds.length === 0) return;
+
+      const currentMoments = moments;
+      let delay = 500;
+      pendingIds.forEach(momentId => {
+        const target = currentMoments.find(m => m.id === momentId);
+        if (!target || target.likedBy.length > 0 || target.comments.length > 0) {
+          delete pending[momentId];
+          try { localStorage.setItem("wx_pending_reactions", JSON.stringify(pending)); } catch { /* ignore */ }
+          return;
+        }
+        setTimeout(() => {
+          triggerAIMomentReactions(momentId, target.content);
+        }, delay);
+        delay += 2000;
+      });
+    } catch { /* ignore */ }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const handleLikeMoment = (momentId: string) => {
     const list = moments.map((m) => {
       if (m.id !== momentId) return m;

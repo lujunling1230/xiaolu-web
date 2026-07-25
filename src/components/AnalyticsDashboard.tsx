@@ -9,8 +9,9 @@ import {
   countTodayPV,
   countUV,
   pagesPerVisitor,
+  bounceRate,
+  pageDistribution,
   funnel,
-  topEvents,
   topToolEnters,
   dailyTrend,
   exportCSV,
@@ -45,45 +46,6 @@ const RANGE_LABELS: Record<TimeRange, string> = {
 function isCloudEnv(): boolean {
   return window.location.hostname !== "localhost" && window.location.hostname !== "127.0.0.1";
 }
-
-/* ---- 事件中文名映射 ---- */
-const EVENT_NAME_MAP: Record<string, string> = {
-  page_view: "页面浏览",
-  nav_click: "导航点击",
-  tool_enter: "工具使用",
-  contact_submit: "留言提交",
-  /* 漫游指南 */
-  rg_ai_open: "AI 向导打开",
-  rg_ai_recommend_submit: "AI 推荐提交",
-  rg_ai_recommend_result: "AI 推荐结果",
-  rg_ai_adopt_city: "采纳城市",
-  rg_ai_generate_submit: "攻略生成提交",
-  rg_ai_generate_result: "攻略生成结果",
-  rg_ai_save_plan: "保存攻略",
-  /* 物资管家 */
-  iv_tab_switch: "Tab 切换",
-  iv_item_add: "物资入库",
-  iv_ai_ask: "AI 管家提问",
-  iv_ai_answer: "AI 管家回复",
-  iv_ai_api_fail: "AI 接口失败",
-  /* 小叶 */
-  xiaoye_open: "小叶打开",
-  xiaoye_chat: "小叶对话",
-  /* 森林疗愈室 */
-  healing_breath: "呼吸练习",
-  healing_journal: "感恩日记",
-  /* 爱情公寓 */
-  apartment_chat: "AI 聊天",
-  apartment_post: "发布动态",
-  /* 通关清单 */
-  quest_complete: "任务完成",
-  quest_level: "等级提升",
-  /* 解忧杂货店 */
-  advice_letter: "写信",
-  advice_reply: "收到回信",
-  /* 回血清单 */
-  recharge_action: "回血行动",
-};
 
 export default function AnalyticsDashboard() {
   const [range, setRange] = useState<TimeRange>("7d");
@@ -132,18 +94,13 @@ export default function AnalyticsDashboard() {
       uv: countUV(hours, events),
       todayPV: countTodayPV(allEvents),
       pagesPerVisitor: pagesPerVisitor(hours, events),
-      /* 业务事件 */
-      toolEnters: countEvent("tool_enter", hours, events),
-      contactSubmits: countEvent("contact_submit", hours, events),
+      bounceRate: bounceRate(hours, events),
       /* 漫游指南 */
       rgAiOpens: countEvent("rg_ai_open", hours, events),
       rgAiAdopts: countEvent("rg_ai_adopt_city", hours, events),
       /* 物资管家 */
       ivItemAdds: countEvent("iv_item_add", hours, events),
       ivAiAsks: countEvent("iv_ai_ask", hours, events),
-      /* 小叶 */
-      xiaoyeOpens: countEvent("xiaoye_open", hours, events),
-      xiaoyeChats: countEvent("xiaoye_chat", hours, events),
       /* 森林疗愈室 */
       healingBreath: countEvent("healing_breath", hours, events),
       healingJournal: countEvent("healing_journal", hours, events),
@@ -158,12 +115,17 @@ export default function AnalyticsDashboard() {
       adviceReply: countEvent("advice_reply", hours, events),
       /* 回血清单 */
       rechargeAction: countEvent("recharge_action", hours, events),
+      /* 小叶 */
+      xiaoyeOpens: countEvent("xiaoye_open", hours, events),
+      xiaoyeChats: countEvent("xiaoye_chat", hours, events),
+      /* 留言 */
+      contactSubmits: countEvent("contact_submit", hours, events),
       /* 汇总 */
       totalEvents: filtered.length,
       totalAllTime: allEvents.length,
       /* 排行 + 趋势 + 漏斗 */
-      top: topEvents(10, hours, events),
       toolRanking: topToolEnters(hours, events),
+      pageDist: pageDistribution(8, hours, events),
       trend: dailyTrend(7, events),
       recommendFunnel: funnel(
         ["rg_ai_open", "rg_ai_recommend_submit", "rg_ai_recommend_result", "rg_ai_adopt_city"],
@@ -295,11 +257,11 @@ export default function AnalyticsDashboard() {
         </div>
       </div>
 
-      {/* 流量概览卡片 - PV / UV / 今日PV / 人均浏览 */}
+      {/* 流量概览卡片 - 5 格 */}
       <div
         style={{
           display: "grid",
-          gridTemplateColumns: "repeat(4, 1fr)",
+          gridTemplateColumns: "repeat(5, 1fr)",
           gap: 14,
           marginBottom: 20,
         }}
@@ -308,64 +270,59 @@ export default function AnalyticsDashboard() {
         <StatCard label="UV (访客数)" value={stats.uv} color="#E8853A" />
         <StatCard label="今日 PV" value={stats.todayPV} color="#7BA89E" />
         <StatCard label="人均浏览" value={stats.pagesPerVisitor} sub="页/人" color="#C06A2E" />
+        <StatCard label="跳出率" value={stats.bounceRate} sub="%" color="#b06a6a" />
       </div>
 
-      {/* 各作品事件卡片 */}
+      {/* 作品活跃度矩阵 */}
       <div style={{ marginBottom: 24 }}>
         <h3 style={{ margin: "0 0 12px", fontSize: 14, fontWeight: 600, color: "#4a4038" }}>
-          各作品事件
+          作品活跃度
         </h3>
         <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
           {/* 森林疗愈室 */}
-          <WorkStatRow label="森林疗愈室" color="#5d8a6a">
+          <WorkStatRow label="森林疗愈室">
             <StatCard label="呼吸练习" value={stats.healingBreath} color="#5d8a6a" compact />
             <StatCard label="感恩日记" value={stats.healingJournal} color="#7BA89E" compact />
           </WorkStatRow>
           {/* 爱情公寓 */}
-          <WorkStatRow label="爱情公寓" color="#b06a6a">
+          <WorkStatRow label="爱情公寓">
             <StatCard label="AI 聊天" value={stats.apartmentChat} color="#b06a6a" compact />
             <StatCard label="发布动态" value={stats.apartmentPost} color="#E8853A" compact />
           </WorkStatRow>
           {/* 通关清单 */}
-          <WorkStatRow label="通关清单" color="#a8814a">
+          <WorkStatRow label="通关清单">
             <StatCard label="任务完成" value={stats.questComplete} color="#a8814a" compact />
             <StatCard label="等级提升" value={stats.questLevel} color="#E8853A" compact />
           </WorkStatRow>
           {/* 物资管家 */}
-          <WorkStatRow label="物资管家" color="#9a7d4a">
+          <WorkStatRow label="物资管家">
             <StatCard label="物资入库" value={stats.ivItemAdds} color="#8D9A8B" compact />
             <StatCard label="AI 管家" value={stats.ivAiAsks} color="#C06A2E" compact />
           </WorkStatRow>
           {/* 解忧杂货店 */}
-          <WorkStatRow label="解忧杂货店" color="#4d8a82">
+          <WorkStatRow label="解忧杂货店">
             <StatCard label="写信" value={stats.adviceLetter} color="#4d8a82" compact />
             <StatCard label="收到回信" value={stats.adviceReply} color="#7BA89E" compact />
           </WorkStatRow>
           {/* 漫游指南 */}
-          <WorkStatRow label="漫游指南" color="#5f76a0">
+          <WorkStatRow label="漫游指南">
             <StatCard label="AI 向导" value={stats.rgAiOpens} color="#7BA89E" compact />
             <StatCard label="采纳城市" value={stats.rgAiAdopts} color="#E8853A" compact />
           </WorkStatRow>
           {/* 回血清单 */}
-          <WorkStatRow label="回血清单" color="#8a5f8a">
+          <WorkStatRow label="回血清单">
             <StatCard label="回血行动" value={stats.rechargeAction} color="#8a5f8a" compact />
           </WorkStatRow>
+          {/* 小叶 */}
+          <WorkStatRow label="小叶">
+            <StatCard label="打开" value={stats.xiaoyeOpens} color="#5d8a6a" compact />
+            <StatCard label="对话" value={stats.xiaoyeChats} color="#7BA89E" compact />
+          </WorkStatRow>
+          {/* 留言 */}
+          <WorkStatRow label="联系留言">
+            <StatCard label="留言提交" value={stats.contactSubmits} color="#7BA89E" compact />
+          </WorkStatRow>
         </div>
-      </div>
-
-      {/* 通用事件卡片 */}
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fill, minmax(140px, 1fr))",
-          gap: 14,
-          marginBottom: 24,
-        }}
-      >
-        <StatCard label="工具使用" value={stats.toolEnters} color="#5a8a6a" />
-        <StatCard label="小叶打开" value={stats.xiaoyeOpens} color="#5d8a6a" />
-        <StatCard label="小叶对话" value={stats.xiaoyeChats} color="#E8853A" />
-        <StatCard label="留言提交" value={stats.contactSubmits} color="#7BA89E" />
       </div>
 
       {/* 三栏布局 */}
@@ -377,32 +334,34 @@ export default function AnalyticsDashboard() {
           marginBottom: 24,
         }}
       >
+        {/* 左栏：漏斗 */}
         <div style={{ background: "#FAF9F6", borderRadius: 14, padding: 20, border: "1px solid #E8E6E1" }}>
           <h3 style={{ margin: "0 0 16px", fontSize: 14, fontWeight: 600, color: "#4a4038" }}>
-            AI 推荐转化漏斗
+            AI 推荐漏斗
           </h3>
           <FunnelBars data={stats.recommendFunnel} />
           <h3 style={{ margin: "20px 0 16px", fontSize: 14, fontWeight: 600, color: "#4a4038" }}>
-            攻略生成转化漏斗
+            攻略生成漏斗
           </h3>
           <FunnelBars data={stats.generateFunnel} />
         </div>
 
+        {/* 中栏：页面 PV 分布 */}
         <div style={{ background: "#FAF9F6", borderRadius: 14, padding: 20, border: "1px solid #E8E6E1" }}>
           <h3 style={{ margin: "0 0 16px", fontSize: 14, fontWeight: 600, color: "#4a4038" }}>
-            热门事件 TOP 10
+            页面 PV 分布
           </h3>
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-            {stats.top.length === 0 && (
+            {stats.pageDist.length === 0 && (
               <p style={{ color: "#a8a39b", fontSize: 13, textAlign: "center", padding: 20 }}>
                 暂无数据
               </p>
             )}
-            {stats.top.map((item, idx) => {
-              const max = stats.top[0]?.count || 1;
+            {stats.pageDist.map((item, idx) => {
+              const max = stats.pageDist[0]?.count || 1;
               const pct = Math.round((item.count / max) * 100);
               return (
-                <div key={item.name} style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                <div key={item.path} style={{ display: "flex", alignItems: "center", gap: 10 }}>
                   <span
                     style={{
                       width: 20,
@@ -425,7 +384,7 @@ export default function AnalyticsDashboard() {
                       }}
                     >
                       <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                        {EVENT_NAME_MAP[item.name] || item.name}
+                        {formatPagePath(item.path)}
                       </span>
                       <span style={{ fontWeight: 600, marginLeft: 8, flexShrink: 0 }}>{item.count}</span>
                     </div>
@@ -439,12 +398,12 @@ export default function AnalyticsDashboard() {
                           borderRadius: 3,
                           background:
                             idx === 0
-                              ? "#E8853A"
+                              ? "#8D9A8B"
                               : idx === 1
                                 ? "#7BA89E"
                                 : idx === 2
                                   ? "#C06A2E"
-                                  : "#8D9A8B",
+                                  : "#a8a39b",
                         }}
                       />
                     </div>
@@ -455,6 +414,7 @@ export default function AnalyticsDashboard() {
           </div>
         </div>
 
+        {/* 右栏：各作品使用排行 */}
         <div style={{ background: "#FAF9F6", borderRadius: 14, padding: 20, border: "1px solid #E8E6E1" }}>
           <h3 style={{ margin: "0 0 16px", fontSize: 14, fontWeight: 600, color: "#4a4038" }}>
             各作品使用排行
@@ -613,7 +573,7 @@ function StatCard({ label, value, sub, color, compact }: { label: string; value:
   );
 }
 
-function WorkStatRow({ label, color, children }: { label: string; color: string; children: React.ReactNode }) {
+function WorkStatRow({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
       <div style={{
@@ -678,6 +638,41 @@ function formatStepName(step: string): string {
     rg_ai_save_plan: "保存攻略",
   };
   return map[step] || step;
+}
+
+/** 把路径简写成可读的中文标签 */
+function formatPagePath(path: string): string {
+  const map: Record<string, string> = {
+    "/": "首页",
+    "/zhiyong": "致用",
+    "/toolbox": "工具箱",
+    "/toolbox/healing": "森林疗愈室",
+    "/toolbox/apartment": "爱情公寓",
+    "/toolbox/quests": "通关清单",
+    "/toolbox/inventory": "物资管家",
+    "/toolbox/advice": "解忧杂货店",
+    "/toolbox/travel": "漫游指南",
+    "/toolbox/recharge": "回血清单",
+    "/toolbox/answer": "系统调频",
+    "/contact": "联系页",
+  };
+  /* 精确匹配 */
+  if (map[path]) return map[path];
+  /* 前缀匹配（如 /toolbox/travel/plan → 漫游指南/攻略） */
+  const prefix = Object.keys(map)
+    .filter((k) => k !== "/" && path.startsWith(k + "/"))
+    .sort((a, b) => b.length - a.length)[0];
+  if (prefix) {
+    const sub = path.slice(prefix.length + 1).split("/")[0] || "";
+    const subMap: Record<string, string> = {
+      plan: "攻略",
+      map: "地图",
+      cities: "城市",
+    };
+    return map[prefix] + (subMap[sub] ? "/" + subMap[sub] : "");
+  }
+  /* 兜底显示路径 */
+  return path.replace(/^\//, "") || "/";
 }
 
 function TrendChart({ data }: { data: { date: string; count: number }[] }) {

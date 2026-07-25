@@ -317,6 +317,40 @@ export function uniqueSessions(hours?: number, events?: TrackEvent[]): number {
   return new Set(src.map((e) => e.session)).size;
 }
 
+/** 跳出率：只有 1 次 page_view 的会话数 / 总会话数（百分比） */
+export function bounceRate(hours?: number, events?: TrackEvent[]): number {
+  const src = hours ? getEventsLastHours(hours, events) : events || getAllEvents();
+  const sessionMap = new Map<string, number>();
+  src.forEach((e) => {
+    if (e.name === "page_view") {
+      sessionMap.set(e.session, (sessionMap.get(e.session) || 0) + 1);
+    }
+  });
+  if (sessionMap.size === 0) return 0;
+  const bounced = Array.from(sessionMap.values()).filter((c) => c === 1).length;
+  return Math.round((bounced / sessionMap.size) * 1000) / 10;
+}
+
+/** 页面 PV 分布：按 path 聚合 page_view，返回 TOP N */
+export function pageDistribution(
+  n = 10,
+  hours?: number,
+  events?: TrackEvent[]
+): { path: string; count: number }[] {
+  const src = hours ? getEventsLastHours(hours, events) : events || getAllEvents();
+  const map = new Map<string, number>();
+  src
+    .filter((e) => e.name === "page_view")
+    .forEach((e) => {
+      const p = e.path || (e.props?.path as string) || "/";
+      map.set(p, (map.get(p) || 0) + 1);
+    });
+  return Array.from(map.entries())
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, n)
+    .map(([path, count]) => ({ path, count }));
+}
+
 /** 统计独立页面访问数 */
 export function uniquePageViews(hours?: number, events?: TrackEvent[]): number {
   const src = events

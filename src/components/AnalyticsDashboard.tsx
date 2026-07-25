@@ -76,16 +76,22 @@ export default function AnalyticsDashboard() {
     setLoading(true);
     fetchCloudEvents(hours)
       .then((events) => {
-        setCloudEvents(events);
+        /* 云端返回空数组时（如 Blob Store blocked），回退到 localStorage */
+        if (events.length === 0) {
+          setCloudEvents(null);
+        } else {
+          setCloudEvents(events);
+        }
         fetchCloudEvents().then((all) => setCloudTotal(all.length)).catch(() => {});
       })
       .catch(() => setCloudEvents(null))
       .finally(() => setLoading(false));
   }, [hours, refreshTick, useCloud]);
 
-  /* 数据源 */
-  const events = useCloud && cloudEvents ? cloudEvents : getAllEvents();
-  const allEvents = useCloud && cloudEvents ? cloudEvents : getAllEvents();
+  /* 数据源：云端有数据用云端，否则用 localStorage */
+  const localEvents = getAllEvents();
+  const events = useCloud && cloudEvents && cloudEvents.length > 0 ? cloudEvents : localEvents;
+  const allEvents = useCloud && cloudEvents && cloudEvents.length > 0 ? cloudEvents : localEvents;
 
   const stats = useMemo(() => {
     const filtered = hours ? getEventsLastHours(hours, events) : events;
@@ -228,9 +234,11 @@ export default function AnalyticsDashboard() {
             数据分析
           </h2>
           <p style={{ margin: "4px 0 0", fontSize: 12, color: "#a8a39b" }}>
-            {useCloud
+            {useCloud && cloudEvents && cloudEvents.length > 0
               ? `全站数据（云端）${loading ? " · 加载中..." : ` · 累计 ${cloudTotal} 条`}`
-              : "本地数据（仅当前设备）"}
+              : useCloud
+                ? "云端暂不可用，显示本地数据（仅当前设备）"
+                : "本地数据（仅当前设备）"}
           </p>
         </div>
         <div

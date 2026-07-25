@@ -40,6 +40,7 @@ const ALLOWED_EVENTS = new Set([
   "xiaoye_chat",
   "healing_breath",
   "healing_journal",
+  "healing_meditation",
   "apartment_chat",
   "apartment_post",
   "quest_complete",

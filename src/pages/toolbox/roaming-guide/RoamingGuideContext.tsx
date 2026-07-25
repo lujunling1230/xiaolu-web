@@ -2,6 +2,7 @@ import { createContext, useContext, useCallback, type ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
 import { useCityData } from "./hooks/useCityData";
 import { useAIAssistant } from "./hooks/useAIAssistant";
+import { track } from "../../../utils/track";
 import type { City, AIForwardGenerateResponse, AIReverseRecommendResponse } from "./types";
 
 /* 点亮音效：Web Audio API 合成短促悦耳的和弦 */
@@ -75,6 +76,7 @@ export function RoamingGuideProvider({ children }: { children: ReactNode }) {
   const navigate = useNavigate();
 
   const handleSavePlan = useCallback((city: City, result: AIForwardGenerateResponse) => {
+    track("rg_ai_save_plan", { city_name: city.name, days: result.plan.days });
     const existing = cityData.cities.find(c => c.id === city.id || c.name === city.name);
     if (existing) {
       cityData.updateCity({
@@ -85,12 +87,14 @@ export function RoamingGuideProvider({ children }: { children: ReactNode }) {
     } else {
       cityData.addCity({
         ...city,
+        status: city.status || "want_to_go",
         ai_plan: result.plan,
       } as Omit<City, "id" | "created_at" | "updated_at">);
     }
   }, [cityData.cities, cityData.addCity, cityData.updateCity]);
 
   const handleAdoptCity = useCallback((rec: AIReverseRecommendResponse["cities"][0]) => {
+    track("rg_ai_adopt_city", { city_name: rec.name, province: rec.province });
     const newCity = aiData.adoptRecommendation(rec);
     cityData.addCity(newCity);
   }, [aiData.adoptRecommendation, cityData.addCity]);

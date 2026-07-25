@@ -58,6 +58,7 @@ export function useCityData(): UseCityDataReturn {
       const newCity: City = {
         ...partial,
         id: maxId + 1,
+        status: partial.status || "want_to_go",
         created_at: now,
         updated_at: now,
       };

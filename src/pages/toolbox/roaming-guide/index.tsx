@@ -99,6 +99,7 @@ export default function RoamingGuidePage() {
       // 新城市，自动添加
       addCity({
         ...city,
+        status: city.status || "want_to_go",
         ai_plan: result.plan,
       } as Omit<City, "id" | "created_at" | "updated_at">);
     }

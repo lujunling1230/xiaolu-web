@@ -192,6 +192,20 @@ const AdvicePage: React.FC = () => {
     return () => window.removeEventListener('resize', setVH);
   }, []);
 
+  /* 移动端：监听 visualViewport 变化，动态调整写信卡片定位 */
+  useEffect(() => {
+    const vv = window.visualViewport;
+    if (!vv) return;
+    const onResize = () => {
+      const root = document.documentElement;
+      root.style.setProperty('--vv-height', `${vv.height}px`);
+      root.style.setProperty('--vv-top', `${vv.offsetTop}px`);
+    };
+    onResize();
+    vv.addEventListener('resize', onResize);
+    return () => vv.removeEventListener('resize', onResize);
+  }, []);
+
   /* 开场动画结束后提示 */
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -1584,10 +1598,13 @@ const AdvicePage: React.FC = () => {
           /* 背景图：底部对齐，确保牛奶箱和公告板可见 */
           .advice-bg { background-position: center bottom; }
 
-          /* 写信便签 */
+          /* 写信便签：移动端使用 visualViewport 适配键盘弹出 */
           .advice-letter {
-            left: 12%;
-            bottom: 35%;
+            left: 50%;
+            bottom: auto;
+            top: calc(var(--vv-top, 0px) + 10px);
+            max-height: calc(var(--vv-height, 100vh) - 20px);
+            overflow-y: auto;
             transform: translateX(-50%) rotate(-1deg);
             width: 85vw;
             max-width: 340px;

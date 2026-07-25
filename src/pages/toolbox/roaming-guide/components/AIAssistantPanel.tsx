@@ -286,6 +286,7 @@ export default function AIAssistantPanel({
         manual_guide: "",
         ai_plan: lastGenerateResult.plan,
         weather_tags: [],
+        status: "want_to_go",
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       };

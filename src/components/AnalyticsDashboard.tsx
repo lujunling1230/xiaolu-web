@@ -756,10 +756,13 @@ function formatStepName(step: string): string {
 }
 
 /** 把路径简写成可读的中文标签 */
-function formatPagePath(path: string): string {
+function formatPagePath(rawPath: string): string {
+  /* 先剥离 query string（如 ?mode=full），避免 /?mode=full 被当成独立路径 */
+  const path = rawPath.split("?")[0];
   const map: Record<string, string> = {
     "/": "首页",
     "/zhiyong": "致用",
+    "/mickey": "作品集页",
     "/toolbox": "工具箱",
     "/toolbox/healing": "森林疗愈室",
     "/toolbox/apartment": "爱情公寓",
@@ -768,7 +771,7 @@ function formatPagePath(path: string): string {
     "/toolbox/advice": "解忧杂货店",
     "/toolbox/travel": "漫游指南",
     "/toolbox/recharge": "回血清单",
-    "/toolbox/answer": "系统调频",
+    "/toolbox/answer": "爱情公寓",
     "/contact": "联系页",
   };
   /* 精确匹配 */

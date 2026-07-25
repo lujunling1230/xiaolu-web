@@ -502,27 +502,7 @@ const SystemTuningPage: React.FC = () => {
     } catch { return []; }
   });
 
-  // 启动时静默拉取远程最新朋友圈数据
-  useEffect(() => {
-    fetch("/api/moments")
-      .then(r => r.json())
-      .then(remote => {
-        if (Array.isArray(remote) && remote.length > 0) {
-          const sanitized = remote.map((m: any) => ({
-            ...m,
-            images: Array.isArray(m.images) ? m.images : [],
-            tags: Array.isArray(m.tags) ? m.tags : [],
-            comments: Array.isArray(m.comments) ? m.comments : [],
-            likedBy: Array.isArray(m.likedBy) ? m.likedBy : [],
-            likes: typeof m.likes === "number" ? m.likes : 0,
-            likedByMe: !!m.likedByMe,
-          }));
-          setMoments(sanitized);
-          localStorage.setItem("wx_moments", JSON.stringify(sanitized));
-        }
-      })
-      .catch(() => {});
-  }, []);
+  // 朋友圈数据仅保存在用户浏览器本地，不进行云端同步
 
   const [showPublishModal, setShowPublishModal] = useState(false);
   const [showPublishToast, setShowPublishToast] = useState(false);
@@ -614,41 +594,10 @@ const SystemTuningPage: React.FC = () => {
   const [expandedCommentsId, setExpandedCommentsId] = useState<string | null>(null);
   const [commentText, setCommentText] = useState("");
 
-  const [syncStatus, setSyncStatus] = useState<string | null>(null);
 
   const saveMoments = (list: MomentItem[]) => {
     setMoments(list);
     localStorage.setItem("wx_moments", JSON.stringify(list));
-    // 异步推送到远程
-    const payload = JSON.stringify({ password: "ling", data: list });
-    if (payload.length > 900_000) {
-      // GitHub Contents API 有 1MB 限制（base64 编码后体积约增 33%）
-      console.warn("[moments] 数据过大，跳过远程同步:", (payload.length / 1024).toFixed(0), "KB");
-      setSyncStatus("数据过大，仅保存在本地");
-      setTimeout(() => setSyncStatus(null), 3000);
-      return;
-    }
-    fetch("/api/moments", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: payload,
-    })
-      .then(async (r) => {
-        if (r.ok) {
-          setSyncStatus("已同步到云端");
-          setTimeout(() => setSyncStatus(null), 2000);
-        } else {
-          const err = await r.text();
-          console.warn("[moments] 远程同步失败:", r.status, err);
-          setSyncStatus("同步失败，已保存本地");
-          setTimeout(() => setSyncStatus(null), 3000);
-        }
-      })
-      .catch((e) => {
-        console.warn("[moments] 远程同步异常:", e);
-        setSyncStatus("同步异常，已保存本地");
-        setTimeout(() => setSyncStatus(null), 3000);
-      });
   };
   const handlePublish = () => {
     if (!publishText.trim() && publishImages.length === 0) return;
@@ -1565,18 +1514,7 @@ const SystemTuningPage: React.FC = () => {
                 </motion.div>
               )}
 
-              {/* 远程同步状态提示 */}
-              {syncStatus && (
-                <motion.div
-                  className="wx-sync-toast"
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: 20 }}
-                  transition={{ duration: 0.3 }}
-                >
-                  {syncStatus}
-                </motion.div>
-              )}
+
 
               <div className="wx-discover-footer">LeafBook · 让情绪有处安放</div>
             </div>

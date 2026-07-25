@@ -436,7 +436,8 @@ function getFriendlyVoice(): SpeechSynthesisVoice | undefined {
 }
 
 /** 预加载语音列表（解决 getVoices() 异步加载问题） */
-let voicesLoaded = false;
+let voicesReady = false;
+let warmedUp = false;
 function ensureVoicesLoaded(): Promise<void> {
   return new Promise((resolve) => {
     if (typeof window === "undefined" || !window.speechSynthesis) {
@@ -445,24 +446,37 @@ function ensureVoicesLoaded(): Promise<void> {
     }
     const voices = window.speechSynthesis.getVoices();
     if (voices.length > 0) {
-      voicesLoaded = true;
+      voicesReady = true;
       resolve();
       return;
     }
     window.speechSynthesis.onvoiceschanged = () => {
-      voicesLoaded = true;
+      voicesReady = true;
       resolve();
     };
     // 超时兜底 3 秒
-    setTimeout(() => { voicesLoaded = true; resolve(); }, 3000);
+    setTimeout(() => { voicesReady = true; resolve(); }, 3000);
   });
+}
+
+/** 唤醒语音引擎（部分浏览器首次 speak 静默失败，需先空播一次解锁） */
+function warmupSpeech(): void {
+  if (warmedUp || typeof window === "undefined" || !window.speechSynthesis) return;
+  try {
+    const probe = new SpeechSynthesisUtterance("");
+    probe.volume = 0;
+    window.speechSynthesis.speak(probe);
+    warmedUp = true;
+  } catch {
+    /* ignore */
+  }
 }
 
 /** 播放语音引导 */
 function speakGuide(text: string, onEnd?: () => void): SpeechSynthesisUtterance | null {
   if (typeof window === "undefined" || !window.speechSynthesis) return null;
-  // iOS 修复：不调用 cancel()，直接创建新的 utterance
-  // cancel() 会导致后续 speak() 在某些 iOS 版本上被静默忽略
+  // 唤醒语音引擎
+  warmupSpeech();
   const u = new SpeechSynthesisUtterance(text);
   const voice = getFriendlyVoice();
   if (voice) u.voice = voice;
@@ -520,6 +534,11 @@ const MeditationTimer: React.FC = () => {
       stopVoiceGuide();
     };
   }, [stopAmbient]);
+
+  // 组件挂载时预加载语音列表（移动端 getVoices() 异步，不预加载会导致 speak 静默失败）
+  useEffect(() => {
+    ensureVoicesLoaded();
+  }, []);
 
   // 倒计时 + 语音引导调度
   useEffect(() => {

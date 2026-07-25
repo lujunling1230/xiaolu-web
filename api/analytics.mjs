@@ -1,5 +1,5 @@
 /*
- * Analytics API v3
+ * Analytics API v4 — Supabase 版
  * POST /api/analytics          -> 写入埋点事件（支持 ?batch=1 批量）
  * GET  /api/analytics          -> 读取全部埋点事件
  * GET  /api/analytics?hours=24 -> 读取最近 N 小时的事件
@@ -12,11 +12,25 @@
  *   - 同 IP 60次/分钟 限流
  */
 
-import { put, list, del } from "@vercel/blob";
+import { createClient } from "@supabase/supabase-js";
 
-const BLOB_KEY = "luro-analytics/events.json";
+const SUPABASE_URL = process.env.SUPABASE_URL;
+const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY;
+const TABLE_NAME = "analytics_events";
 const ADMIN_PASSWORD = "ling";
 const MAX_EVENTS = 15000;
+
+/* ---- Supabase 客户端（服务端用 service_role key，绕过 RLS） ---- */
+let supabase = null;
+
+function getSupabase() {
+  if (!supabase && SUPABASE_URL && SUPABASE_SERVICE_KEY) {
+    supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY, {
+      auth: { persistSession: false, autoRefreshToken: false },
+    });
+  }
+  return supabase;
+}
 
 /* ---- P0 事件白名单（与前端 track.ts 保持一致） ---- */
 const ALLOWED_EVENTS = new Set([
@@ -83,72 +97,6 @@ function getClientIp(req) {
   );
 }
 
-/* ---- 数据读写 ---- */
-const BLOB_TOKEN = process.env.BLOB_READ_WRITE_TOKEN;
-
-async function readAllEvents() {
-  try {
-    const { blobs } = await list({ prefix: "luro-analytics/" });
-    if (blobs.length === 0) return [];
-    const blob = blobs.find((b) => b.pathname === BLOB_KEY);
-    if (!blob) return [];
-    const downloadUrl = blob.downloadUrl || blob.url;
-    const res = await fetch(downloadUrl, {
-      headers: BLOB_TOKEN
-        ? { Authorization: `Bearer ${BLOB_TOKEN}` }
-        : {},
-      cache: "no-store",
-    });
-    if (!res.ok) {
-      console.error("[analytics] fetch blob failed:", res.status, res.statusText);
-      return [];
-    }
-    const text = await res.text();
-    if (!text || text === "Forbidden") return [];
-    const parsed = JSON.parse(text);
-    return Array.isArray(parsed) ? parsed : [];
-  } catch (err) {
-    console.error("[analytics] readAllEvents error:", err.message);
-    return [];
-  }
-}
-
-/**
- * 写入事件到 Vercel Blob
- * 自动尝试 public 和 private 两种 access 模式，
- * 因为 store 的 access 类型在运行时不确定。
- */
-async function writeAllEvents(events) {
-  const json = JSON.stringify(events);
-  const options = {
-    contentType: "application/json",
-    addRandomSuffix: false,
-    allowOverwrite: true,
-  };
-
-  // 尝试 access: 'public'（默认）
-  try {
-    const result = await put(BLOB_KEY, json, {
-      ...options,
-      access: "public",
-    });
-    return result;
-  } catch (err) {
-    console.error("[analytics] put with access=public failed:", err.message);
-    // 回退到 access: 'private'
-    try {
-      const result = await put(BLOB_KEY, json, {
-        ...options,
-        access: "private",
-      });
-      return result;
-    } catch (err2) {
-      console.error("[analytics] put with access=private also failed:", err2.message);
-      throw new Error(`Blob write failed (public: ${err.message}, private: ${err2.message})`);
-    }
-  }
-}
-
 /* ---- 清洗单条事件 ---- */
 function sanitizeEvent(evt) {
   return {
@@ -160,6 +108,59 @@ function sanitizeEvent(evt) {
     anon_id: String(evt.anon_id || "").slice(0, 50),
     path: String(evt.path || "").slice(0, 200),
   };
+}
+
+/* ---- 数据读写 ---- */
+
+/** 写入事件到 Supabase */
+async function insertEvents(events) {
+  const sb = getSupabase();
+  if (!sb) throw new Error("Supabase 未配置");
+
+  const { error } = await sb.from(TABLE_NAME).insert(events);
+  if (error) throw new Error(`Supabase insert failed: ${error.message}`);
+}
+
+/** 读取全部事件（按时间倒序） */
+async function readAllEvents() {
+  const sb = getSupabase();
+  if (!sb) throw new Error("Supabase 未配置");
+
+  const { data, error } = await sb
+    .from(TABLE_NAME)
+    .select("*")
+    .order("ts", { ascending: false })
+    .limit(MAX_EVENTS);
+
+  if (error) throw new Error(`Supabase select failed: ${error.message}`);
+  return data || [];
+}
+
+/** 读取最近 N 小时的事件 */
+async function readRecentEvents(hours) {
+  const sb = getSupabase();
+  if (!sb) throw new Error("Supabase 未配置");
+
+  const cutoff = Date.now() - Number(hours) * 3600_000;
+
+  const { data, error } = await sb
+    .from(TABLE_NAME)
+    .select("*")
+    .gte("ts", cutoff)
+    .order("ts", { ascending: false })
+    .limit(MAX_EVENTS);
+
+  if (error) throw new Error(`Supabase select failed: ${error.message}`);
+  return data || [];
+}
+
+/** 清空全部事件 */
+async function clearAllEvents() {
+  const sb = getSupabase();
+  if (!sb) throw new Error("Supabase 未配置");
+
+  const { error } = await sb.from(TABLE_NAME).delete().neq("id", "___never___");
+  if (error) throw new Error(`Supabase delete failed: ${error.message}`);
 }
 
 export default async function handler(req, res) {
@@ -211,72 +212,26 @@ export default async function handler(req, res) {
         return res.status(200).json({ ok: true, accepted: 0 });
       }
 
-      // 读取已有事件
-      const all = await readAllEvents();
-      all.push(...validEvents);
-      if (all.length > MAX_EVENTS) {
-        all.splice(0, all.length - MAX_EVENTS);
-      }
-
-      // 写入（自动尝试 public/private）
-      const writeResult = await writeAllEvents(all);
+      await insertEvents(validEvents);
 
       return res.status(200).json({
         ok: true,
         accepted: validEvents.length,
-        total: all.length,
       });
     }
 
     /* ---- GET: 读取事件 ---- */
     if (req.method === "GET") {
-      const { hours, debug } = req.query || {};
+      const { hours } = req.query || {};
 
-      /* 调试模式：查看 Blob 存储状态 + 尝试读取内容 */
-      if (debug === "1") {
-        const { blobs } = await list({ prefix: "luro-analytics/" });
-        const blob = blobs.find((b) => b.pathname === BLOB_KEY);
-        let readDebug = null;
-        if (blob) {
-          try {
-            const downloadUrl = blob.downloadUrl || blob.url;
-            const fetchRes = await fetch(downloadUrl, {
-              headers: BLOB_TOKEN
-                ? { Authorization: `Bearer ${BLOB_TOKEN}` }
-                : {},
-              cache: "no-store",
-            });
-            const text = await fetchRes.text();
-            readDebug = {
-              fetchStatus: fetchRes.status,
-              fetchOk: fetchRes.ok,
-              contentLength: text.length,
-              contentPreview: text.slice(0, 300),
-              isJson: text.startsWith("[") || text.startsWith("{"),
-            };
-          } catch (err) {
-            readDebug = { error: err.message };
-          }
-        }
-        return res.status(200).json({
-          blobCount: blobs.length,
-          blobs: blobs.map((b) => ({
-            pathname: b.pathname,
-            hasDownloadUrl: !!b.downloadUrl,
-            hasUrl: !!b.url,
-            size: b.size,
-          })),
-          readDebug,
-        });
-      }
-
-      const all = await readAllEvents();
+      let events;
       if (hours) {
-        const cutoff = Date.now() - Number(hours) * 3600_000;
-        const filtered = all.filter((e) => e.ts >= cutoff);
-        return res.status(200).json({ events: filtered, total: all.length });
+        events = await readRecentEvents(hours);
+      } else {
+        events = await readAllEvents();
       }
-      return res.status(200).json({ events: all, total: all.length });
+
+      return res.status(200).json({ events, total: events.length });
     }
 
     /* ---- DELETE: 清空数据 ---- */
@@ -285,14 +240,7 @@ export default async function handler(req, res) {
       if (password !== ADMIN_PASSWORD) {
         return res.status(403).json({ error: "密码错误" });
       }
-      try {
-        const { blobs } = await list({ prefix: "luro-analytics/" });
-        for (const blob of blobs) {
-          await del(blob.url);
-        }
-      } catch {
-        // 忽略删除失败
-      }
+      await clearAllEvents();
       return res.status(200).json({ ok: true });
     }
 

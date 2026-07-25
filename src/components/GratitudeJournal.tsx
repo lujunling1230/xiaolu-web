@@ -902,17 +902,24 @@ const GratitudeJournal: React.FC = () => {
     []
   );
 
-  /** 打开某月日记：优先读草稿，其次读最近一条记录 */
+  /** 打开某月日记：优先恢复草稿 */
   const openMonth = useCallback(
     (m: number) => {
       setSelectedMonth(m);
       setFlipDir(1);
       setView("diary");
 
-      // 切换月份时总是从空白开始
-      setWeather("sun");
-      setColor("");
-      setContent("");
+      // 恢复草稿（用户上次写了一半退出场景）
+      const draft = loadDraft(m);
+      if (draft) {
+        setWeather(draft.weather || "sun");
+        setColor(draft.color || "");
+        setContent(draft.content || "");
+      } else {
+        setWeather("sun");
+        setColor("");
+        setContent("");
+      }
     },
     []
   );

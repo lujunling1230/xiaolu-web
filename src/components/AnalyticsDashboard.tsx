@@ -796,40 +796,84 @@ function formatPagePath(rawPath: string): string {
 function TrendChart({ data }: { data: { date: string; count: number }[] }) {
   const max = Math.max(...data.map((d) => d.count), 1);
   const chartH = 120;
-  const barW = 60;
-  const gap = 20;
-  const totalW = data.length * (barW + gap);
+  const chartW = 320;
+  const padL = 28;
+  const padR = 12;
+  const padT = 16;
+  const padB = 28;
+  const plotW = chartW - padL - padR;
+  const plotH = chartH - padT - padB;
+
+  const points = data.map((d, i) => {
+    const x = padL + (data.length === 1 ? plotW / 2 : (i / (data.length - 1)) * plotW);
+    const y = padT + plotH - (d.count / max) * plotH;
+    return { x, y, ...d };
+  });
+
+  const linePath = points
+    .map((p, i) => `${i === 0 ? "M" : "L"} ${p.x} ${p.y}`)
+    .join(" ");
+  const areaPath =
+    points.length > 0
+      ? `${linePath} L ${points[points.length - 1].x} ${padT + plotH} L ${points[0].x} ${padT + plotH} Z`
+      : "";
 
   return (
     <div style={{ overflowX: "auto" }}>
-      <svg width={totalW} height={chartH + 30} style={{ display: "block" }}>
-        {data.map((d, i) => {
-          const h = (d.count / max) * chartH;
-          const x = i * (barW + gap) + gap / 2;
-          const y = chartH - h;
+      <svg width={chartW} height={chartH + 16} style={{ display: "block" }}>
+        {/* 网格线 */}
+        {[0, 0.5, 1].map((t) => {
+          const y = padT + plotH - t * plotH;
           return (
-            <g key={d.date}>
-              <motion.rect
-                initial={{ height: 0, y: chartH }}
-                animate={{ height: h, y }}
-                transition={{ duration: 0.6, delay: i * 0.08 }}
-                x={x}
-                width={barW}
-                rx={6}
-                fill="#7BA89E"
-                opacity={0.85}
-              />
-              <text x={x + barW / 2} y={chartH + 18} textAnchor="middle" fontSize={11} fill="#a8a39b">
-                {d.date}
-              </text>
-              {d.count > 0 && (
-                <text x={x + barW / 2} y={y - 6} textAnchor="middle" fontSize={11} fill="#4a4038" fontWeight={600}>
-                  {d.count}
-                </text>
-              )}
-            </g>
+            <line
+              key={t}
+              x1={padL}
+              y1={y}
+              x2={chartW - padR}
+              y2={y}
+              stroke="#E8E6E1"
+              strokeWidth={1}
+            />
           );
         })}
+        {/* 区域填充 */}
+        {areaPath && <path d={areaPath} fill="#7BA89E" opacity={0.12} />}
+        {/* 折线 */}
+        <motion.path
+          d={linePath}
+          fill="none"
+          stroke="#7BA89E"
+          strokeWidth={2}
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          initial={{ pathLength: 0 }}
+          animate={{ pathLength: 1 }}
+          transition={{ duration: 0.8, ease: "easeOut" }}
+        />
+        {/* 数据点 */}
+        {points.map((p, i) => (
+          <g key={p.date}>
+            <motion.circle
+              cx={p.x}
+              cy={p.y}
+              r={3.5}
+              fill="#fff"
+              stroke="#7BA89E"
+              strokeWidth={2}
+              initial={{ scale: 0 }}
+              animate={{ scale: 1 }}
+              transition={{ delay: 0.3 + i * 0.06, duration: 0.3 }}
+            />
+            {p.count > 0 && (
+              <text x={p.x} y={p.y - 8} textAnchor="middle" fontSize={10} fill="#4a4038" fontWeight={600}>
+                {p.count}
+              </text>
+            )}
+            <text x={p.x} y={chartH + 4} textAnchor="middle" fontSize={10} fill="#a8a39b">
+              {p.date}
+            </text>
+          </g>
+        ))}
       </svg>
     </div>
   );

@@ -576,8 +576,11 @@ const MeditationTimer: React.FC = () => {
     setSeconds(duration * 60);
     setRunning(true);
     guideStageRef.current.clear();
-    // 启动环境音
-    stopAmbient();
+    // 只停环境音，不调 cancel()（cancel 会干扰紧接着的 speak，导致 iOS 静默失败）
+    if (ambientRef.current) {
+      ambientRef.current.stop();
+      ambientRef.current = null;
+    }
     ambientRef.current = startAmbientSound(selectedSound);
     // 语音引导：必须在用户手势同步路径中直接 speak（iOS Safari 要求）
     if (voiceGuide && typeof window !== "undefined" && window.speechSynthesis) {

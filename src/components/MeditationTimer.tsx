@@ -410,13 +410,39 @@ function startAmbientSound(soundId: SoundId): { stop: () => void } {
 
 /* ─── 语音引导 ─── */
 
-const GUIDE_TEXTS: Record<string, string> = {
+/** 引导词库：多个段落的短句，按进度穿插播放，避免长时间纯白噪音 */
+const GUIDE_LIBRARY = {
+  // 开场（固定，仅1次）
   start:
     "你好，欢迎来到冥想空间。找一个舒适的姿势，轻轻闭上双眼。让我们跟随呼吸的节律，让身心慢慢沉入这片宁静之中。",
-  mid30:
-    "保持深呼吸，感受空气流过鼻腔的温度。每一次呼气，都让身体更加放松。不必赶走任何念头，只是温柔地注视着它们，然后轻轻放下。",
-  mid60:
-    "此刻，你与自然融为了一体。外界的声音变得遥远，内心的湖泊平静如镜。继续安住在这份宁静里，不需要去往任何地方。",
+  // 呼吸引导类（短句，循环使用）
+  breath: [
+    "吸气，感受空气充满胸腔。呼气，让肩膀自然下沉。",
+    "再来一次。吸气，新鲜。呼气，释放。",
+    "让呼吸变得更深更慢，每一次呼气都带走一点紧张。",
+    "注意呼吸的间隙，那个短暂的停顿，是最安静的片刻。",
+    "气息像潮汐，来了又走，你只需要跟随它的节奏。",
+    "深吸一口气，想象清新的空气流遍全身。缓缓呼出，带走所有的疲惫。",
+  ],
+  // 身体放松类（短句，循环使用）
+  body: [
+    "放松你的额头，舒展眉心。让脸部肌肉变得柔软。",
+    "放松肩膀和手臂，让它们自然垂落，不再紧绷。",
+    "感受背部贴合地面或椅背的支撑，你是安全的。",
+    "放松腹部，让它随着呼吸自然起伏。",
+    "放松双腿和双脚，它们承载了你一整天的重量，现在可以休息了。",
+    "从头顶到脚趾，全身都在放松，越来越轻，越来越温暖。",
+  ],
+  // 正念觉察类（短句，循环使用）
+  mindfulness: [
+    "如果思绪飘走了，没关系，温柔地把注意力带回呼吸。",
+    "不必评判此刻的感受，只是观察，允许一切如其所是。",
+    "外界的声音只是声音，让它来，让它走，不追逐，不抗拒。",
+    "此刻你不需要做任何事，不需要去往任何地方，只是在这里。",
+    "每一个念头都是天上的云，你看着它来，看着它走，自己始终是那片天空。",
+    "允许自己什么都不想，也允许自己想着什么，不苛责，不催促。",
+  ],
+  // 结束语（固定，仅1次）
   end:
     "冥想即将结束。慢慢将意识带回身体，感受手脚的存在。轻轻活动手指和脚趾，缓缓睁开双眼。愿你带着这份平静，走进接下来的生活。",
 };
@@ -536,27 +562,44 @@ const MeditationTimer: React.FC = () => {
     if (!running) return;
     const total = duration * 60;
 
-    // 语音引导时间规划（基于绝对剩余秒数，确保结束语在倒计时结束前说完）：
-    // 各段语音预估播放时长（rate=0.78，约 3.5 字/秒）：
-    //   start ~16s, mid30 ~18s, mid60 ~16s, end ~20s
-    // 结束语需在剩余 22 秒时触发（20s 播放 + 2s 缓冲）
-    const END_TRIGGER_REMAINING = 22;
-    // 1 分钟冥想只播 start + end（时间不够插中间引导）
+    // ── 语音引导调度策略 ──
+    // 每段短句约 6-8 秒播放（rate=0.78，约 3.5 字/秒，每句 ~25 字）
+    // 结束语约 18 秒，需在剩余 20 秒时触发
+    const END_TRIGGER_REMAINING = 20;
+    const SEGMENT_DURATION = 8; // 每段引导间的间隔秒数（含播放+安静）
+
+    // 1 分钟冥想只播 start + end
     const skipMid = duration <= 1;
-    // 中间引导窗口：start 结束后（剩余 total-19）到 end 开始前（剩余 22）
-    // mid30 在窗口 33% 处，mid60 在窗口 67% 处
-    const windowStart = total - 19; // start 语音结束时的剩余秒数
-    const windowSize = windowStart - END_TRIGGER_REMAINING;
-    const mid30Remaining = skipMid ? 0 : Math.round(windowStart - windowSize * 0.33);
-    const mid60Remaining = skipMid ? 0 : Math.round(windowStart - windowSize * 0.67);
+
+    // 构建中间引导队列：呼吸 → 身体 → 正念 交替循环
+    const midGuideQueue: string[] = [];
+    if (!skipMid) {
+      const maxMidSegments = Math.floor((total - 19 - END_TRIGGER_REMAINING) / SEGMENT_DURATION);
+      for (let i = 0; i < maxMidSegments; i++) {
+        const category = i % 3; // 0=breath, 1=body, 2=mindfulness
+        if (category === 0) midGuideQueue.push(GUIDE_LIBRARY.breath[i % GUIDE_LIBRARY.breath.length]);
+        else if (category === 1) midGuideQueue.push(GUIDE_LIBRARY.body[i % GUIDE_LIBRARY.body.length]);
+        else midGuideQueue.push(GUIDE_LIBRARY.mindfulness[i % GUIDE_LIBRARY.mindfulness.length]);
+      }
+    }
+
+    // 计算每段中间引导的触发剩余秒数（均匀分布在 start 结束后到 end 开始前）
+    const midTriggerTimes: number[] = [];
+    if (midGuideQueue.length > 0) {
+      const windowStart = total - 19; // start 语音结束时的剩余秒数
+      const windowEnd = END_TRIGGER_REMAINING; // end 开始时的剩余秒数
+      const windowSize = windowStart - windowEnd;
+      const step = windowSize / midGuideQueue.length;
+      for (let i = 0; i < midGuideQueue.length; i++) {
+        midTriggerTimes.push(Math.round(windowStart - step * (i + 0.5)));
+      }
+    }
 
     // Chrome 安卓端 bug：speechSynthesis 运行 15 秒后会自动暂停
-    // 用独立定时器每 10 秒 resume 一次（不能太频繁，否则会吞字）
     const resumeTimer = voiceGuide
       ? setInterval(() => {
           if (typeof window !== "undefined" && window.speechSynthesis) {
             try {
-              // 仅在暂停状态时 resume，避免打断正在播放的语音
               if (window.speechSynthesis.paused) {
                 window.speechSynthesis.resume();
               }
@@ -572,20 +615,18 @@ const MeditationTimer: React.FC = () => {
 
         // 语音引导：基于剩余秒数触发
         if (voiceGuide) {
-          // 中间引导 1（仅 >1 分钟时播放）
-          if (!skipMid && remaining <= mid30Remaining && remaining > mid60Remaining && !guideStageRef.current.has("mid30")) {
-            guideStageRef.current.add("mid30");
-            voiceRef.current = speakGuide(GUIDE_TEXTS.mid30);
-          }
-          // 中间引导 2（仅 >1 分钟时播放）
-          if (!skipMid && remaining <= mid60Remaining && remaining > END_TRIGGER_REMAINING && !guideStageRef.current.has("mid60")) {
-            guideStageRef.current.add("mid60");
-            voiceRef.current = speakGuide(GUIDE_TEXTS.mid60);
-          }
-          // 结束语：剩余 22 秒时触发，确保 20 秒内说完
+          // 中间引导队列
+          midTriggerTimes.forEach((triggerTime, idx) => {
+            const stageKey = `mid${idx}`;
+            if (remaining <= triggerTime && !guideStageRef.current.has(stageKey)) {
+              guideStageRef.current.add(stageKey);
+              voiceRef.current = speakGuide(midGuideQueue[idx]);
+            }
+          });
+          // 结束语：剩余 20 秒时触发，确保说完
           if (remaining <= END_TRIGGER_REMAINING && remaining > 0 && !guideStageRef.current.has("end")) {
             guideStageRef.current.add("end");
-            voiceRef.current = speakGuide(GUIDE_TEXTS.end);
+            voiceRef.current = speakGuide(GUIDE_LIBRARY.end);
           }
         }
 
@@ -636,7 +677,7 @@ const MeditationTimer: React.FC = () => {
       if (startGuideTimerRef.current) clearTimeout(startGuideTimerRef.current);
       startGuideTimerRef.current = setTimeout(() => {
         startGuideTimerRef.current = null;
-        voiceRef.current = speakGuide(GUIDE_TEXTS.start);
+        voiceRef.current = speakGuide(GUIDE_LIBRARY.start);
       }, 3000);
     }
   };

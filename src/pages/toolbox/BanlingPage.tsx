@@ -456,8 +456,8 @@ function BanlingStyles() {
     <style>{`
       .banling-root {
         min-height: 100vh;
-        background: linear-gradient(180deg, #FFF5E6 0%, #FFEFD5 100%);
-        font-family: 'Noto Sans SC', -apple-system, sans-serif;
+        background: #f5f0e6;
+        font-family: 'Noto Serif SC', 'Songti SC', 'STSong', serif;
         color: #4a3828;
         position: relative;
         overflow-x: hidden;
@@ -470,16 +470,17 @@ function BanlingStyles() {
         left: 20px;
         z-index: 100;
         padding: 8px 16px;
-        font-size: 14px;
-        color: #8b6f47;
+        font-size: 13px;
+        color: #8b7355;
         text-decoration: none;
-        background: rgba(255, 255, 255, 0.7);
-        border-radius: 999px;
-        border: 1px solid rgba(255, 176, 66, 0.2);
+        background: #ffffff;
+        border: 1px solid #d4c4a8;
+        border-radius: 0;
         transition: all 0.2s ease;
       }
       .banling-back:hover {
-        background: rgba(255, 176, 66, 0.15);
+        background: #ede4d3;
+        border-color: #8b7355;
       }
 
       /* ===== 首页 ===== */
@@ -495,7 +496,7 @@ function BanlingStyles() {
         text-align: center;
       }
       .banling-logo {
-        font-size: 56px;
+        font-size: 48px;
         margin-bottom: 16px;
         animation: banling-float 3s ease-in-out infinite;
       }
@@ -504,27 +505,28 @@ function BanlingStyles() {
         50% { transform: translateY(-8px); }
       }
       .banling-title {
-        font-size: 36px;
+        font-size: 34px;
         font-weight: 700;
-        color: #C08020;
+        color: #6b5840;
         margin: 0 0 8px;
-        letter-spacing: 0.05em;
+        letter-spacing: 0.08em;
       }
       .banling-subtitle {
-        font-size: 16px;
-        color: #a0886a;
+        font-size: 14px;
+        color: #8b7355;
         margin: 0 0 32px;
+        letter-spacing: 0.1em;
       }
       .banling-greeting {
-        font-size: 18px;
-        color: #8b6f47;
+        font-size: 17px;
+        color: #5d4e3a;
         margin: 0 0 20px;
         font-weight: 500;
       }
       .banling-desc {
-        font-size: 15px;
-        line-height: 2;
-        color: #7a6a5a;
+        font-size: 14px;
+        line-height: 2.1;
+        color: #6b5d4a;
         margin: 0 0 32px;
       }
 
@@ -537,7 +539,7 @@ function BanlingStyles() {
         justify-content: center;
       }
       .banling-progress-seed {
-        font-size: 24px;
+        font-size: 22px;
         animation: banling-grow 2s ease-in-out infinite;
       }
       @keyframes banling-grow {
@@ -546,38 +548,40 @@ function BanlingStyles() {
       }
       .banling-progress-track {
         width: 160px;
-        height: 8px;
-        background: rgba(255, 176, 66, 0.15);
-        border-radius: 999px;
+        height: 6px;
+        background: #e8dcc8;
+        border-radius: 0;
         overflow: hidden;
       }
       .banling-progress-fill {
         height: 100%;
-        background: linear-gradient(90deg, #FFB042, #FFC766);
-        border-radius: 999px;
+        background: #8b7355;
+        border-radius: 0;
       }
       .banling-progress-label {
         font-size: 12px;
-        color: #a0886a;
+        color: #8b7355;
         white-space: nowrap;
       }
 
       /* ===== 开始按钮 ===== */
       .banling-start-btn {
-        padding: 14px 40px;
-        font-size: 16px;
+        padding: 13px 40px;
+        font-size: 15px;
         font-weight: 600;
-        color: #fff;
-        background: linear-gradient(135deg, #FFB042, #FF9F1C);
-        border: none;
-        border-radius: 999px;
+        color: #f5f0e6;
+        background: #6b5840;
+        border: 1px solid #6b5840;
+        border-radius: 0;
         cursor: pointer;
-        box-shadow: 0 8px 24px rgba(255, 176, 66, 0.35);
+        font-family: inherit;
+        letter-spacing: 0.05em;
         transition: all 0.3s ease;
       }
       .banling-start-btn:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 12px 32px rgba(255, 176, 66, 0.45);
+        background: #5d4e3a;
+        border-color: #5d4e3a;
+        transform: translateY(-1px);
       }
 
       /* ===== 对话页 ===== */
@@ -592,37 +596,40 @@ function BanlingStyles() {
         align-items: center;
         gap: 12px;
         padding: 12px 20px;
-        background: rgba(255, 245, 230, 0.95);
-        border-bottom: 1px solid rgba(255, 176, 66, 0.15);
+        background: #ffffff;
+        border-bottom: 1px solid #d4c4a8;
         flex-shrink: 0;
       }
       .banling-chat-back {
         background: none;
         border: none;
-        font-size: 20px;
-        color: #8b6f47;
+        font-size: 18px;
+        color: #8b7355;
         cursor: pointer;
         padding: 4px 8px;
+        font-family: inherit;
       }
       .banling-chat-title {
         flex: 1;
-        font-size: 15px;
+        font-size: 14px;
         font-weight: 600;
-        color: #6b5840;
+        color: #5d4e3a;
+        letter-spacing: 0.04em;
       }
       .banling-report-btn {
         padding: 6px 14px;
-        font-size: 13px;
-        color: #fff;
-        background: #FFB042;
-        border: none;
-        border-radius: 999px;
+        font-size: 12px;
+        color: #f5f0e6;
+        background: #6b5840;
+        border: 1px solid #6b5840;
+        border-radius: 0;
         cursor: pointer;
         white-space: nowrap;
+        font-family: inherit;
         transition: all 0.2s ease;
       }
       .banling-report-btn:hover {
-        background: #FF9F1C;
+        background: #5d4e3a;
       }
 
       .banling-chat-body {
@@ -645,35 +652,35 @@ function BanlingStyles() {
         align-self: flex-end;
       }
       .banling-msg-avatar {
-        width: 36px;
-        height: 36px;
-        border-radius: 50%;
-        background: rgba(255, 176, 66, 0.12);
+        width: 34px;
+        height: 34px;
+        border-radius: 0;
+        background: #ede4d3;
         display: flex;
         align-items: center;
         justify-content: center;
-        font-size: 18px;
+        font-size: 17px;
         flex-shrink: 0;
       }
       .banling-msg.user .banling-msg-avatar {
-        background: rgba(122, 106, 90, 0.12);
+        background: #e0d4bc;
       }
       .banling-msg-bubble {
         padding: 12px 16px;
-        border-radius: 16px;
+        border-radius: 0;
         font-size: 14px;
         line-height: 1.7;
       }
       .banling-msg.assistant .banling-msg-bubble {
-        background: #fff;
+        background: #ffffff;
         color: #4a3828;
-        border-top-left-radius: 4px;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+        border: 1px solid #e8dcc8;
+        border-top-left-radius: 0;
       }
       .banling-msg.user .banling-msg-bubble {
-        background: #FFB042;
-        color: #fff;
-        border-top-right-radius: 4px;
+        background: #6b5840;
+        color: #f5f0e6;
+        border-top-right-radius: 0;
       }
       .banling-msg-bubble p {
         margin: 0;
@@ -689,10 +696,10 @@ function BanlingStyles() {
         align-items: center;
       }
       .banling-typing span {
-        width: 7px;
-        height: 7px;
+        width: 6px;
+        height: 6px;
         border-radius: 50%;
-        background: #FFB042;
+        background: #8b7355;
         animation: banling-typing-bounce 1.2s infinite;
       }
       .banling-typing span:nth-child(2) { animation-delay: 0.15s; }
@@ -710,18 +717,19 @@ function BanlingStyles() {
         padding: 0 20px 12px;
       }
       .banling-quick-btn {
-        padding: 8px 14px;
-        font-size: 13px;
-        color: #8b6f47;
-        background: rgba(255, 255, 255, 0.7);
-        border: 1px solid rgba(255, 176, 66, 0.2);
-        border-radius: 999px;
+        padding: 7px 14px;
+        font-size: 12px;
+        color: #6b5840;
+        background: #ffffff;
+        border: 1px solid #d4c4a8;
+        border-radius: 0;
         cursor: pointer;
+        font-family: inherit;
         transition: all 0.2s ease;
       }
       .banling-quick-btn:hover {
-        background: rgba(255, 176, 66, 0.12);
-        border-color: #FFB042;
+        background: #ede4d3;
+        border-color: #8b7355;
       }
 
       /* ===== 输入栏 ===== */
@@ -729,17 +737,17 @@ function BanlingStyles() {
         display: flex;
         gap: 10px;
         padding: 12px 20px;
-        background: rgba(255, 245, 230, 0.95);
-        border-top: 1px solid rgba(255, 176, 66, 0.15);
+        background: #ffffff;
+        border-top: 1px solid #d4c4a8;
         flex-shrink: 0;
       }
       .banling-input {
         flex: 1;
-        padding: 10px 16px;
+        padding: 10px 14px;
         font-size: 14px;
-        border: 1px solid rgba(255, 176, 66, 0.2);
-        border-radius: 12px;
-        background: #fff;
+        border: 1px solid #d4c4a8;
+        border-radius: 0;
+        background: #fdfaf4;
         resize: none;
         outline: none;
         font-family: inherit;
@@ -747,25 +755,27 @@ function BanlingStyles() {
         transition: border-color 0.2s ease;
       }
       .banling-input:focus {
-        border-color: #FFB042;
+        border-color: #8b7355;
       }
       .banling-send-btn {
         padding: 0 20px;
         font-size: 14px;
         font-weight: 600;
-        color: #fff;
-        background: #FFB042;
-        border: none;
-        border-radius: 12px;
+        color: #f5f0e6;
+        background: #6b5840;
+        border: 1px solid #6b5840;
+        border-radius: 0;
         cursor: pointer;
+        font-family: inherit;
         transition: all 0.2s ease;
       }
       .banling-send-btn:disabled {
-        background: #d4c4a8;
+        background: #c8bca8;
+        border-color: #c8bca8;
         cursor: not-allowed;
       }
       .banling-send-btn:not(:disabled):hover {
-        background: #FF9F1C;
+        background: #5d4e3a;
       }
 
       /* ===== 报告页 ===== */
@@ -783,13 +793,13 @@ function BanlingStyles() {
         padding: 80px 20px;
       }
       .banling-loading-seed {
-        font-size: 48px;
+        font-size: 44px;
         margin-bottom: 16px;
         animation: banling-grow 1.5s ease-in-out infinite;
       }
       .banling-loading-sub {
-        font-size: 13px;
-        color: #a0886a;
+        font-size: 12px;
+        color: #8b7355;
         margin-top: 8px;
       }
 
@@ -799,20 +809,22 @@ function BanlingStyles() {
       .banling-section-tag {
         display: inline-block;
         padding: 4px 12px;
-        font-size: 12px;
-        color: #C08020;
-        background: rgba(255, 176, 66, 0.1);
-        border-radius: 999px;
+        font-size: 11px;
+        color: #6b5840;
+        background: transparent;
+        border: 1px solid #8b7355;
+        border-radius: 0;
         margin-bottom: 14px;
+        letter-spacing: 0.05em;
       }
       .banling-insight-card {
-        background: #fff;
-        border-radius: 16px;
+        background: #ffffff;
+        border: 1px solid #e8dcc8;
+        border-radius: 0;
         padding: 24px;
-        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);
       }
       .banling-insight-text {
-        font-size: 18px;
+        font-size: 17px;
         line-height: 1.7;
         color: #4a3828;
         margin: 0;
@@ -826,55 +838,56 @@ function BanlingStyles() {
         gap: 12px;
       }
       .banling-metric-card {
-        background: #fff;
-        border-radius: 14px;
+        background: #ffffff;
+        border: 1px solid #e8dcc8;
+        border-radius: 0;
         padding: 16px 12px;
         text-align: center;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
       }
       .banling-metric-label {
-        font-size: 12px;
-        color: #a0886a;
+        font-size: 11px;
+        color: #8b7355;
         margin-bottom: 6px;
       }
       .banling-metric-value {
-        font-size: 20px;
+        font-size: 19px;
         font-weight: 700;
-        color: #C08020;
+        color: #6b5840;
         margin-bottom: 4px;
       }
       .banling-metric-hint {
-        font-size: 11px;
-        color: #bfa880;
+        font-size: 10px;
+        color: #a89880;
       }
 
       /* ===== 行动建议 ===== */
       .banling-actions-list {
         display: flex;
         flex-direction: column;
-        gap: 12px;
+        gap: 10px;
       }
       .banling-action-item {
         display: flex;
         align-items: flex-start;
         gap: 12px;
-        background: #fff;
-        border-radius: 12px;
+        background: #ffffff;
+        border: 1px solid #e8dcc8;
+        border-radius: 0;
         padding: 14px 16px;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
       }
       .banling-action-num {
         flex-shrink: 0;
-        width: 26px;
-        height: 26px;
-        border-radius: 50%;
-        background: linear-gradient(135deg, #FFB042, #FF9F1C);
-        color: #fff;
-        font-size: 13px;
+        width: 24px;
+        height: 24px;
+        border-radius: 0;
+        background: #6b5840;
+        color: #f5f0e6;
+        font-size: 12px;
         font-weight: 700;
         display: flex;
         align-items: center;
         justify-content: center;
+        font-family: inherit;
       }
       .banling-action-text {
         font-size: 14px;
@@ -884,16 +897,17 @@ function BanlingStyles() {
 
       /* ===== 寄语 ===== */
       .banling-report-summary {
-        background: linear-gradient(135deg, rgba(255, 176, 66, 0.08), rgba(255, 199, 102, 0.05));
-        border-radius: 16px;
+        background: #ede4d3;
+        border: 1px solid #d4c4a8;
+        border-radius: 0;
         padding: 24px;
         text-align: center;
         margin-bottom: 28px;
       }
       .banling-report-summary p {
-        font-size: 15px;
+        font-size: 14px;
         line-height: 1.8;
-        color: #6b5840;
+        color: #5d4e3a;
         margin: 0;
         font-style: italic;
       }
@@ -905,32 +919,34 @@ function BanlingStyles() {
         justify-content: center;
       }
       .banling-again-btn {
-        padding: 12px 28px;
-        font-size: 14px;
+        padding: 11px 28px;
+        font-size: 13px;
         font-weight: 600;
-        color: #C08020;
-        background: #fff;
-        border: 1px solid #FFB042;
-        border-radius: 999px;
+        color: #6b5840;
+        background: #ffffff;
+        border: 1px solid #6b5840;
+        border-radius: 0;
         cursor: pointer;
+        font-family: inherit;
         transition: all 0.2s ease;
       }
       .banling-again-btn:hover {
-        background: rgba(255, 176, 66, 0.08);
+        background: #ede4d3;
       }
       .banling-restart-btn {
-        padding: 12px 28px;
-        font-size: 14px;
+        padding: 11px 28px;
+        font-size: 13px;
         font-weight: 600;
-        color: #fff;
-        background: #FFB042;
-        border: none;
-        border-radius: 999px;
+        color: #f5f0e6;
+        background: #6b5840;
+        border: 1px solid #6b5840;
+        border-radius: 0;
         cursor: pointer;
+        font-family: inherit;
         transition: all 0.2s ease;
       }
       .banling-restart-btn:hover {
-        background: #FF9F1C;
+        background: #5d4e3a;
       }
 
       /* ===== 响应式 ===== */
@@ -939,7 +955,7 @@ function BanlingStyles() {
           grid-template-columns: 1fr;
         }
         .banling-title { font-size: 28px; }
-        .banling-desc { font-size: 14px; }
+        .banling-desc { font-size: 13px; }
         .banling-msg { max-width: 92%; }
         .banling-report-actions {
           flex-direction: column;

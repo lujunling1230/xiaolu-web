@@ -458,14 +458,9 @@ function ensureVoicesLoaded(): Promise<void> {
 /** 播放语音引导 */
 function speakGuide(text: string, onEnd?: () => void): SpeechSynthesisUtterance | null {
   if (typeof window === "undefined" || !window.speechSynthesis) return null;
-  // Chrome 长时间运行后 speechSynthesis 会自动暂停，需 resume 恢复
-  try {
-    if (window.speechSynthesis.paused) {
-      window.speechSynthesis.resume();
-    }
-  } catch {
-    /* ignore */
-  }
+  // 先取消队列中残留的语音（避免堆积导致卡顿吞字）
+  try { window.speechSynthesis.cancel(); } catch { /* ignore */ }
+  // 短暂延迟让 cancel 生效，再 speak
   const u = new SpeechSynthesisUtterance(text);
   const voice = getFriendlyVoice();
   if (voice) {
@@ -479,7 +474,12 @@ function speakGuide(text: string, onEnd?: () => void): SpeechSynthesisUtterance 
   u.onerror = (e) => {
     console.warn("[Meditation] speechSynthesis error:", e.error);
   };
-  window.speechSynthesis.speak(u);
+  // 用微延迟确保 cancel 完全生效后再 speak，避免首个字被吞
+  setTimeout(() => {
+    try {
+      window.speechSynthesis.speak(u);
+    } catch { /* ignore */ }
+  }, 50);
   return u;
 }
 
@@ -541,11 +541,23 @@ const MeditationTimer: React.FC = () => {
   useEffect(() => {
     if (!running) return;
     const total = duration * 60;
+
+    // Chrome 安卓端 bug：speechSynthesis 运行 15 秒后会自动暂停
+    // 用独立定时器每 10 秒 resume 一次（不能太频繁，否则会吞字）
+    const resumeTimer = voiceGuide
+      ? setInterval(() => {
+          if (typeof window !== "undefined" && window.speechSynthesis) {
+            try {
+              // 仅在暂停状态时 resume，避免打断正在播放的语音
+              if (window.speechSynthesis.paused) {
+                window.speechSynthesis.resume();
+              }
+            } catch { /* ignore */ }
+          }
+        }, 10000)
+      : null;
+
     const interval = setInterval(() => {
-      // Chrome 安卓端 bug：speechSynthesis 运行 15 秒后会自动暂停，需定期 resume
-      if (voiceGuide && typeof window !== "undefined" && window.speechSynthesis) {
-        try { window.speechSynthesis.resume(); } catch { /* ignore */ }
-      }
       setSeconds((prev) => {
         const next = prev - 1;
         const elapsed = total - next;
@@ -569,6 +581,7 @@ const MeditationTimer: React.FC = () => {
 
         if (next <= 0) {
           clearInterval(interval);
+          if (resumeTimer) clearInterval(resumeTimer);
           setRunning(false);
           setCompleted(true);
           stopAmbient();
@@ -587,7 +600,10 @@ const MeditationTimer: React.FC = () => {
         return next;
       });
     }, 1000);
-    return () => clearInterval(interval);
+    return () => {
+      clearInterval(interval);
+      if (resumeTimer) clearInterval(resumeTimer);
+    };
   }, [running, duration, stopAmbient, voiceGuide]);
 
   const handleStart = () => {
@@ -602,7 +618,7 @@ const MeditationTimer: React.FC = () => {
       ambientRef.current = null;
     }
     ambientRef.current = startAmbientSound(selectedSound);
-    // 语音引导：延迟 2 秒后开始（让环境音先淡入，用户进入状态后再引导）
+    // 语音引导：延迟 3 秒后开始（让环境音先淡入，用户进入状态后再引导）
     if (voiceGuide && typeof window !== "undefined" && window.speechSynthesis) {
       // 同步解锁语音引擎（iOS Safari 首次需在用户手势内触发）
       try { window.speechSynthesis.resume(); } catch { /* ignore */ }
@@ -611,7 +627,7 @@ const MeditationTimer: React.FC = () => {
       startGuideTimerRef.current = setTimeout(() => {
         startGuideTimerRef.current = null;
         voiceRef.current = speakGuide(GUIDE_TEXTS.start);
-      }, 2000);
+      }, 3000);
     }
   };
 
@@ -653,6 +669,31 @@ const MeditationTimer: React.FC = () => {
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.4, ease: "easeOut" }}
     >
+      {/* ===== 右上角关闭按钮（冥想完成时显示） ===== */}
+      <AnimatePresence>
+        {completed && (
+          <motion.button
+            className="ms-close-btn"
+            onClick={() => {
+              setCompleted(false);
+              setRunning(false);
+              setSeconds(0);
+              stopAmbient();
+              if (typeof window !== "undefined" && window.speechSynthesis) {
+                window.speechSynthesis.cancel();
+              }
+            }}
+            title="退出"
+            initial={{ opacity: 0, scale: 0.5 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.5 }}
+            transition={{ duration: 0.2 }}
+          >
+            ×
+          </motion.button>
+        )}
+      </AnimatePresence>
+
       {/* ===== 标题 ===== */}
       <div className="ms-header">
         <h3 className="ms-title">冥想空间</h3>
@@ -837,22 +878,6 @@ const MeditationTimer: React.FC = () => {
             exit={{ opacity: 0, scale: 0.85 }}
             transition={{ duration: 0.5, ease: "easeOut" }}
           >
-            {/* 右上角关闭按钮 */}
-            <button
-              className="ms-close-btn"
-              onClick={() => {
-                setCompleted(false);
-                setRunning(false);
-                setSeconds(0);
-                stopAmbient();
-                if (typeof window !== "undefined" && window.speechSynthesis) {
-                  window.speechSynthesis.cancel();
-                }
-              }}
-              title="退出"
-            >
-              ×
-            </button>
             {/* 涟漪动画 */}
             {[0, 1, 2].map((i) => (
               <motion.div
@@ -1169,8 +1194,8 @@ const MeditationTimer: React.FC = () => {
         }
         .ms-close-btn {
           position: absolute;
-          top: -8px;
-          right: -4px;
+          top: 12px;
+          right: 12px;
           width: 32px;
           height: 32px;
           border-radius: 50%;
@@ -1182,7 +1207,7 @@ const MeditationTimer: React.FC = () => {
           display: flex;
           align-items: center;
           justify-content: center;
-          z-index: 10;
+          z-index: 20;
           transition: all 0.2s;
         }
         .ms-close-btn:hover {

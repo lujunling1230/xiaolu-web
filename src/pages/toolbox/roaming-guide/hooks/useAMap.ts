@@ -48,14 +48,34 @@ export function useAMap(options: UseAMapOptions): UseAMapReturn {
 
     initedRef.current = true;
     let destroyed = false;
+    let retryCount = 0;
+    const MAX_RETRIES = 10;
 
-    // 延迟一帧确保容器已渲染
-    requestAnimationFrame(() => {
+    // 尝试初始化地图，容器尺寸为 0 时自动重试（解决移动端布局延迟问题）
+    const tryInit = () => {
       if (destroyed) return;
+
+      const container = containerRef.current;
+      if (!container) {
+        if (retryCount < MAX_RETRIES) {
+          retryCount++;
+          requestAnimationFrame(tryInit);
+          return;
+        }
+        setError("地图容器未找到");
+        setLoading(false);
+        return;
+      }
 
       const rect = container.getBoundingClientRect();
       if (rect.width === 0 || rect.height === 0) {
-        setError("地图容器尺寸为 0");
+        // 容器尚未布局完成，延迟重试
+        if (retryCount < MAX_RETRIES) {
+          retryCount++;
+          setTimeout(tryInit, 100);
+          return;
+        }
+        setError("地图容器尺寸为 0，请刷新页面重试");
         setLoading(false);
         return;
       }
@@ -91,7 +111,10 @@ export function useAMap(options: UseAMapOptions): UseAMapReturn {
         setError(msg);
         setLoading(false);
       });
-    });
+    };
+
+    // 延迟一帧确保容器已渲染
+    requestAnimationFrame(tryInit);
 
     return () => {
       destroyed = true;

@@ -127,6 +127,7 @@ export default function AnalyticsDashboard() {
       /* 伴龄 */
       banlingChats: countEvent("banling_chat", hours, events),
       banlingReports: countEvent("banling_report", hours, events),
+      banlingAdopts: countEvent("banling_action_adopt", hours, events),
       /* 小叶 */
       xiaoyeOpens: countEvent("xiaoye_open", hours, events),
       xiaoyeChats: countEvent("xiaoye_chat", hours, events),
@@ -363,6 +364,7 @@ export default function AnalyticsDashboard() {
           <WorkStatRow label="伴龄">
             <StatCard label="AI 对话" value={stats.banlingChats} color="#C08020" compact />
             <StatCard label="生成报告" value={stats.banlingReports} color="#FFB042" compact />
+            <StatCard label="采纳建议" value={stats.banlingAdopts} color="#8b7355" compact />
           </WorkStatRow>
           {/* 小叶 */}
           <WorkStatRow label="小叶">

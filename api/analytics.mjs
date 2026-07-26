@@ -65,6 +65,7 @@ const ALLOWED_EVENTS = new Set([
   /* 伴龄 */
   "banling_chat",
   "banling_report",
+  "banling_action_adopt",
 ]);
 
 /* ---- Bot / Crawler 检测 ---- */

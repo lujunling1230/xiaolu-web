@@ -418,7 +418,7 @@ const GUIDE_TEXTS: Record<string, string> = {
   mid60:
     "此刻，你与自然融为了一体。外界的声音变得遥远，内心的湖泊平静如镜。继续安住在这份宁静里，不需要去往任何地方。",
   end:
-    "冥想即将结束。慢慢将意识带回身体，感受手脚的存在。轻轻活动手指和脚趾，当你准备好了，缓缓睁开双眼。愿你带着这份平静，走进接下来的生活。",
+    "冥想即将结束。慢慢将意识带回身体，感受手脚的存在。轻轻活动手指和脚趾，缓缓睁开双眼。愿你带着这份平静，走进接下来的生活。",
 };
 
 /** 获取最温柔的中文女声 */
@@ -458,9 +458,6 @@ function ensureVoicesLoaded(): Promise<void> {
 /** 播放语音引导 */
 function speakGuide(text: string, onEnd?: () => void): SpeechSynthesisUtterance | null {
   if (typeof window === "undefined" || !window.speechSynthesis) return null;
-  // 先取消队列中残留的语音（避免堆积导致卡顿吞字）
-  try { window.speechSynthesis.cancel(); } catch { /* ignore */ }
-  // 短暂延迟让 cancel 生效，再 speak
   const u = new SpeechSynthesisUtterance(text);
   const voice = getFriendlyVoice();
   if (voice) {
@@ -474,12 +471,9 @@ function speakGuide(text: string, onEnd?: () => void): SpeechSynthesisUtterance 
   u.onerror = (e) => {
     console.warn("[Meditation] speechSynthesis error:", e.error);
   };
-  // 用微延迟确保 cancel 完全生效后再 speak，避免首个字被吞
-  setTimeout(() => {
-    try {
-      window.speechSynthesis.speak(u);
-    } catch { /* ignore */ }
-  }, 50);
+  try {
+    window.speechSynthesis.speak(u);
+  } catch { /* ignore */ }
   return u;
 }
 
@@ -542,6 +536,20 @@ const MeditationTimer: React.FC = () => {
     if (!running) return;
     const total = duration * 60;
 
+    // 语音引导时间规划（基于绝对剩余秒数，确保结束语在倒计时结束前说完）：
+    // 各段语音预估播放时长（rate=0.78，约 3.5 字/秒）：
+    //   start ~16s, mid30 ~18s, mid60 ~16s, end ~20s
+    // 结束语需在剩余 22 秒时触发（20s 播放 + 2s 缓冲）
+    const END_TRIGGER_REMAINING = 22;
+    // 1 分钟冥想只播 start + end（时间不够插中间引导）
+    const skipMid = duration <= 1;
+    // 中间引导窗口：start 结束后（剩余 total-19）到 end 开始前（剩余 22）
+    // mid30 在窗口 33% 处，mid60 在窗口 67% 处
+    const windowStart = total - 19; // start 语音结束时的剩余秒数
+    const windowSize = windowStart - END_TRIGGER_REMAINING;
+    const mid30Remaining = skipMid ? 0 : Math.round(windowStart - windowSize * 0.33);
+    const mid60Remaining = skipMid ? 0 : Math.round(windowStart - windowSize * 0.67);
+
     // Chrome 安卓端 bug：speechSynthesis 运行 15 秒后会自动暂停
     // 用独立定时器每 10 秒 resume 一次（不能太频繁，否则会吞字）
     const resumeTimer = voiceGuide
@@ -560,20 +568,22 @@ const MeditationTimer: React.FC = () => {
     const interval = setInterval(() => {
       setSeconds((prev) => {
         const next = prev - 1;
-        const elapsed = total - next;
-        const progress = elapsed / total;
+        const remaining = next;
 
-        // 语音引导：按进度触发
+        // 语音引导：基于剩余秒数触发
         if (voiceGuide) {
-          if (progress >= 0.28 && progress < 0.35 && !guideStageRef.current.has("mid30")) {
+          // 中间引导 1（仅 >1 分钟时播放）
+          if (!skipMid && remaining <= mid30Remaining && remaining > mid60Remaining && !guideStageRef.current.has("mid30")) {
             guideStageRef.current.add("mid30");
             voiceRef.current = speakGuide(GUIDE_TEXTS.mid30);
           }
-          if (progress >= 0.55 && progress < 0.65 && !guideStageRef.current.has("mid60")) {
+          // 中间引导 2（仅 >1 分钟时播放）
+          if (!skipMid && remaining <= mid60Remaining && remaining > END_TRIGGER_REMAINING && !guideStageRef.current.has("mid60")) {
             guideStageRef.current.add("mid60");
             voiceRef.current = speakGuide(GUIDE_TEXTS.mid60);
           }
-          if (progress >= 0.82 && progress < 0.92 && !guideStageRef.current.has("end")) {
+          // 结束语：剩余 22 秒时触发，确保 20 秒内说完
+          if (remaining <= END_TRIGGER_REMAINING && remaining > 0 && !guideStageRef.current.has("end")) {
             guideStageRef.current.add("end");
             voiceRef.current = speakGuide(GUIDE_TEXTS.end);
           }

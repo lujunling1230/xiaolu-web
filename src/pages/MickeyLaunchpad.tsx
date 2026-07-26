@@ -19,6 +19,58 @@ interface Tool {
   hoverHint?: string;
 }
 
+/* ===== 伴龄图标：日落水面（暖橙天空 + 青蓝水面 + 太阳倒影）===== */
+const BanlingIcon: React.FC = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width={48} height={48} style={{ borderRadius: "50%", filter: "drop-shadow(0 0 6px rgba(255,184,77,0.35))" }}>
+    <defs>
+      <radialGradient id="banlingGlow" cx="50%" cy="50%" r="50%">
+        <stop offset="0%" stopColor="#FFF3D6" stopOpacity={1}/>
+        <stop offset="70%" stopColor="#FFE0B2" stopOpacity={0.9}/>
+        <stop offset="100%" stopColor="#FFB84D" stopOpacity={0.3}/>
+      </radialGradient>
+      <linearGradient id="banlingSky" x1="0%" y1="0%" x2="0%" y2="100%">
+        <stop offset="0%" stopColor="#FF8A65"/>
+        <stop offset="50%" stopColor="#FFB74D"/>
+        <stop offset="100%" stopColor="#FFD54F"/>
+      </linearGradient>
+      <linearGradient id="banlingWater" x1="0%" y1="0%" x2="0%" y2="100%">
+        <stop offset="0%" stopColor="#4DD0E1"/>
+        <stop offset="60%" stopColor="#26C6DA"/>
+        <stop offset="100%" stopColor="#00ACC1"/>
+      </linearGradient>
+    </defs>
+    {/* 外圈发光 */}
+    <circle cx="24" cy="24" r="23" fill="url(#banlingGlow)"/>
+    <circle cx="24" cy="24" r="23" fill="none" stroke="#FFB84D" strokeWidth="0.5" opacity="0.3"/>
+    {/* 内圆容器（日落场景） */}
+    <circle cx="24" cy="24" r="20" fill="#1A1A1A" opacity="0.92"/>
+    {/* 天空（上半） */}
+    <path d="M 4,24 A 20,20 0 0,1 44,24 Z" fill="url(#banlingSky)"/>
+    {/* 水面（下半） */}
+    <path d="M 4,24 A 20,20 0 0,0 44,24 Z" fill="url(#banlingWater)"/>
+    {/* 地平线分割 */}
+    <line x1="4" y1="24" x2="44" y2="24" stroke="#1A1A1A" strokeWidth="0.6" opacity="0.5"/>
+    {/* 太阳 */}
+    <circle cx="24" cy="20" r="5" fill="#FFF8E1"/>
+    {/* 太阳光线 */}
+    <g stroke="#FFF8E1" strokeWidth="1.2" strokeLinecap="round" opacity="0.9">
+      <line x1="24" y1="11" x2="24" y2="13.5"/>
+      <line x1="16.5" y1="13" x2="18" y2="15"/>
+      <line x1="31.5" y1="13" x2="30" y2="15"/>
+      <line x1="13.5" y1="18" x2="16" y2="18.8"/>
+      <line x1="34.5" y1="18" x2="32" y2="18.8"/>
+    </g>
+    {/* 水面太阳倒影 */}
+    <ellipse cx="24" cy="28" rx="3" ry="1.5" fill="#FFF8E1" opacity="0.7"/>
+    <ellipse cx="24" cy="31" rx="2" ry="1" fill="#FFF8E1" opacity="0.5"/>
+    <ellipse cx="24" cy="34" rx="1.3" ry="0.7" fill="#FFF8E1" opacity="0.35"/>
+    {/* 水波纹 */}
+    <path d="M 8,27 Q 11,26 14,27 T 20,27" fill="none" stroke="#E0F7FA" strokeWidth="0.6" opacity="0.6"/>
+    <path d="M 28,30 Q 31,29 34,30 T 40,30" fill="none" stroke="#E0F7FA" strokeWidth="0.6" opacity="0.5"/>
+    <path d="M 10,33 Q 13,32 16,33 T 22,33" fill="none" stroke="#E0F7FA" strokeWidth="0.5" opacity="0.4"/>
+  </svg>
+);
+
 /* ===== 爱情公寓图标 ===== */
 const ApartmentIcon: React.FC = () => (
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width={48} height={48} style={{ borderRadius: "50%", filter: "drop-shadow(0 0 6px rgba(255,215,0,0.3))" }}>
@@ -50,7 +102,7 @@ const tools: Tool[] = [
   { name: "解忧杂货店", slogan: "总有一句话，能解开你的心结。", icon: "🕯️", url: "/toolbox/advice", glow: true, hoverHint: "进来坐坐？" },
   { name: "漫游指南", slogan: "走过的路，看过的云。", icon: "🗺️", url: "/toolbox/travel", glow: true, hoverHint: "出发吧" },
   { name: "回血清单", slogan: "允许一切崩塌，只做一件极小的事。", icon: "🔋", url: "/toolbox/recharge", glow: true, hoverHint: "充一会儿电" },
-  { name: "伴龄", slogan: "AI 养老规划伴侣，把焦虑变成小目标。", icon: "🌅", url: "/toolbox/banling", glow: true, hoverHint: "聊聊未来？" },
+  { name: "伴龄", slogan: "AI 养老规划伴侣，把焦虑变成小目标。", icon: <BanlingIcon />, url: "/toolbox/banling", glow: true, hoverHint: "聊聊未来？" },
 ];
 
 /* ===== Web Audio 合成"叮"声 ===== */

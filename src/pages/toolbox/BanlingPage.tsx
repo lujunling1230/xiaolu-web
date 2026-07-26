@@ -138,13 +138,129 @@ const CONCERN_REPLIES = [
   "怕老了孤独",
 ];
 
-/* ===== 动态问候 ===== */
-function getGreeting(): string {
+/* ===== 动态问候（根据时间+昵称） ===== */
+function getGreetingHour(): { prefix: string; emoji: string } {
   const h = new Date().getHours();
-  if (h < 6) return "夜深了，还在想未来的事吗？";
-  if (h < 12) return "早上好！今天也是美好的一天";
-  if (h < 18) return "午后的阳光正好，聊聊我们的未来？";
-  return "夜幕降临，让我们规划一下安心岁月。";
+  if (h < 6) return { prefix: "夜深了", emoji: "🌙" };
+  if (h < 9) return { prefix: "早上好", emoji: "☀️" };
+  if (h < 12) return { prefix: "上午好", emoji: "🌤️" };
+  if (h < 14) return { prefix: "中午好", emoji: "🌞" };
+  if (h < 18) return { prefix: "下午好", emoji: "🌤️" };
+  if (h < 22) return { prefix: "晚上好", emoji: "🌆" };
+  return { prefix: "夜深了", emoji: "🌙" };
+}
+
+function getGreeting(nickname: string): string {
+  const { prefix, emoji } = getGreetingHour();
+  const name = nickname || "您";
+  return `${prefix}，${name}${emoji}`;
+}
+
+/* ===== 可选城市列表 ===== */
+const CITY_OPTIONS = [
+  "北京市", "上海市", "广州市", "深圳市", "杭州市", "南京市",
+  "成都市", "武汉市", "西安市", "重庆市", "苏州市", "天津市",
+  "长沙市", "郑州市", "青岛市", "沈阳市", "大连市", "厦门市",
+];
+
+/* ===== 今日小贴士（根据天气+年龄，结合出行建议） ===== */
+interface WeatherInfo {
+  code: string;       // 内部天气码
+  temp?: number;      // 实际温度
+  desc: string;       // 天气描述（如"小雨"）
+}
+
+function getDailyTip(weather: string, ageGroup: string, city: string, temp?: number): {
+  title: string; content: string; icon: string;
+  healthTip: string; healthIcon: string;
+} {
+  const tempHint = temp !== undefined ? `今日${city}约${temp}°C，` : `今日${city}，`;
+
+  const tips: Record<string, { title: string; content: string; icon: string; healthTip: string; healthIcon: string }> = {
+    rain: {
+      title: "雨天出行提醒",
+      content: `${tempHint}有雨水光临，出门请带好雨伞，路面湿滑穿防滑鞋。`,
+      icon: "🌧️",
+      healthTip: "雨天湿气偏重，回家不妨泡杯姜茶暖暖胃，关节处注意保暖别受凉。",
+      healthIcon: "🫖",
+    },
+    sunny: {
+      title: "晴好天气提醒",
+      content: `${tempHint}阳光明媚，很适合去公园散步、晒晒太阳补补钙。`,
+      icon: "☀️",
+      healthTip: "记得戴上遮阳帽、抹好防晒，避开正午烈日，随身带杯温水及时补水。",
+      healthIcon: "💧",
+    },
+    cloudy: {
+      title: "阴天出行提醒",
+      content: `${tempHint}云层较厚，外出加件薄外套，以防温差着凉。`,
+      icon: "☁️",
+      healthTip: "气压偏低容易犯困，室内可开窗通通风、做几组舒缓拉伸提提神。",
+      healthIcon: "🧘",
+    },
+    snow: {
+      title: "雪天出行提醒",
+      content: `${tempHint}有降雪，路面结冰易滑倒，尽量减少外出。`,
+      icon: "❄️",
+      healthTip: "若必须出门请穿防滑靴、慢步稳行。在家多喝温水，注意手脚保暖防冻疮。",
+      healthIcon: "🌡️",
+    },
+    fog: {
+      title: "雾天出行提醒",
+      content: `${tempHint}能见度较低，外出请慢行，开车记得开雾灯。`,
+      icon: "🌫️",
+      healthTip: "雾霾天建议戴口罩，回到家先用温水洗脸，喝碗热汤润润肺。",
+      healthIcon: "🥣",
+    },
+    default: {
+      title: "今日出行提醒",
+      content: `${tempHint}出门带件薄外套以备温差，保持身心舒展。`,
+      icon: "🌤️",
+      healthTip: "晨起一杯温水唤醒身体，今日宜散步、宜静坐，保持身心舒展。",
+      healthIcon: "💧",
+    },
+  };
+
+  let tip = tips[weather] || tips.default;
+
+  /* 根据年龄调整建议细节 */
+  if (ageGroup === "50岁+") {
+    if (weather === "rain") {
+      tip = {
+        ...tip,
+        content: `${tempHint}有雨，雨天路滑，建议尽量减少外出，确需出门请穿防滑鞋、带好拐杖。`,
+        healthTip: "在家可以做做椅子操活动筋骨，泡杯热茶暖暖身，关节处注意保暖。",
+      };
+    } else if (weather === "sunny") {
+      tip = {
+        ...tip,
+        content: `${tempHint}天气晴好，适合在小区或公园散步30分钟，晒晒太阳补钙。`,
+        healthTip: "记得带遮阳帽、避开正午时段，随身带温水及时补水。",
+      };
+    } else if (weather === "snow") {
+      tip = {
+        ...tip,
+        content: `${tempHint}有降雪，路面结冰，老年人尤其要防跌倒，建议尽量待在室内。`,
+        healthTip: "多喝温水，注意膝盖和腰部保暖，可做室内拉伸保持灵活。",
+      };
+    }
+  } else if (ageGroup === "30-50岁") {
+    if (weather === "rain") {
+      tip = {
+        ...tip,
+        content: `${tempHint}有雨，出门带伞，通勤路上注意防滑。`,
+        healthTip: "工作间隙起身活动5分钟，缓解久坐疲劳，雨天湿气重可喝杯红豆薏米水。",
+      };
+    } else if (weather === "cloudy") {
+      tip = {
+        ...tip,
+        content: `${tempHint}阴天，外出加件薄外套防温差着凉。`,
+        healthTip: "气压低易疲倦，午间可散步10分钟提神，室内多开窗通风。",
+      };
+    }
+  }
+
+  return tip;
 }
 
 /* ===== 格式化时间 ===== */
@@ -312,6 +428,13 @@ export default function BanlingPage() {
   const [toast, setToast] = useState<string | null>(null);
   const [viewingReport, setViewingReport] = useState<SavedReport | null>(null);
   const [adoptedActions, setAdoptedActions] = useState<boolean[]>([]);
+  const [showNotice, setShowNotice] = useState(false);
+  const [showCityPicker, setShowCityPicker] = useState(false);
+  const [location, setLocation] = useState("上海市");
+  const [weather, setWeather] = useState("default");
+  const [weatherTemp, setWeatherTemp] = useState<number | undefined>(undefined);
+  const [weatherDesc, setWeatherDesc] = useState<string>("");
+  const [todayChats, setTodayChats] = useState(0);
 
   /* 密码校验 */
   const handleUnlock = useCallback(() => {
@@ -323,6 +446,87 @@ export default function BanlingPage() {
       setPwdInput("");
     }
   }, [pwdInput]);
+
+  /* 根据天气描述映射到内部天气码 */
+  const mapWeatherCode = (desc: string): string => {
+    const d = desc.toLowerCase();
+    if (d.includes("雨") || d.includes("rain") || d.includes("drizzle")) return "rain";
+    if (d.includes("雪") || d.includes("snow") || d.includes("sleet")) return "snow";
+    if (d.includes("雾") || d.includes("fog") || d.includes("mist") || d.includes("haze")) return "fog";
+    if (d.includes("晴") || d.includes("clear") || d.includes("sunny")) return "sunny";
+    if (d.includes("阴") || d.includes("overcast")) return "cloudy";
+    if (d.includes("云") || d.includes("cloud") || d.includes("partly")) return "cloudy";
+    return "default";
+  };
+
+  /* 获取指定城市的真实天气（wttr.in 免费API，无需key） */
+  const fetchWeather = useCallback(async (cityName: string) => {
+    try {
+      /* 去掉"市"后缀，wttr.in 用城市名查询 */
+      const queryCity = cityName.replace(/市$/, "");
+      const res = await fetch(
+        `https://wttr.in/${encodeURIComponent(queryCity)}?format=j1`,
+        { headers: { "Accept-Language": "zh-CN" } }
+      );
+      if (!res.ok) return;
+      const data = await res.json();
+      const current = data?.current_condition?.[0];
+      if (!current) return;
+
+      const tempC = parseInt(current.temp_C, 10);
+      const descArr = current.lang_zh?.[0]?.value || current.weatherDesc?.[0]?.value || "";
+      const desc = typeof descArr === "string" ? descArr : String(descArr);
+
+      setWeatherTemp(Number.isNaN(tempC) ? undefined : tempC);
+      setWeatherDesc(desc);
+      setWeather(mapWeatherCode(desc));
+    } catch {
+      /* 天气获取失败，保持默认 */
+    }
+  }, []);
+
+  /* 获取地理位置并初始化天气 */
+  useEffect(() => {
+    let initialized = false;
+    if (!navigator.geolocation || initialized) {
+      fetchWeather(location);
+      return;
+    }
+    navigator.geolocation.getCurrentPosition(
+      async (pos) => {
+        try {
+          const res = await fetch(
+            `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${pos.coords.latitude}&longitude=${pos.coords.longitude}&localityLanguage=zh`
+          );
+          const data = await res.json();
+          const rawCity = data.city || data.principalSubdivision || data.locality || "";
+          /* 匹配到可选城市则使用，否则用原始值 */
+          const matched = CITY_OPTIONS.find((c) => c.includes(rawCity) || rawCity.includes(c.replace(/市$/, "")));
+          const finalCity = matched || (rawCity ? rawCity + "市" : "上海市");
+          setLocation(finalCity);
+          fetchWeather(finalCity);
+        } catch {
+          fetchWeather("上海市");
+        }
+      },
+      () => {
+        fetchWeather("上海市");
+      },
+      { timeout: 5000 }
+    );
+    initialized = true;
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  /* 选择城市后重新获取天气 */
+  const handleSelectCity = useCallback((city: string) => {
+    setLocation(city);
+    setShowCityPicker(false);
+    setWeather("default");
+    setWeatherTemp(undefined);
+    setWeatherDesc("");
+    fetchWeather(city);
+  }, [fetchWeather]);
 
   /* 工具箱状态 */
   const [toolTab, setToolTab] = useState<"calc" | "plan" | "goal">("calc");
@@ -366,6 +570,7 @@ export default function BanlingPage() {
     if (!trimmed || loading) return;
 
     track("banling_chat", { msg_length: trimmed.length });
+    setTodayChats((c) => c + 1);
 
     const userMsg: ChatMessage = {
       id: `u-${Date.now()}`, role: "user", content: trimmed, timestamp: Date.now(),
@@ -614,163 +819,165 @@ ${messages.map((m) => `${m.role === "user" ? "用户" : "伴龄"}: ${m.content}`
   /* ============================================================
    * 渲染：首页
    * ============================================================ */
-  const renderHome = () => (
-    <div className="bl-page bl-home">
-      {/* 问候语 */}
-      <div className="bl-greeting-bar">
-        <span className="bl-greeting-text">✨ {getGreeting()}</span>
-        <span className="bl-greeting-date">{formatDate(Date.now())}</span>
-      </div>
+  const renderHome = () => {
+    const dailyTip = getDailyTip(weather, profile?.ageGroup || "", location, weatherTemp);
+    const greeting = getGreeting(profile?.nickname || "您");
+    const companionStars = Math.min(5, todayChats);
+    const chatsToNextStar = companionStars >= 5 ? 0 : 1;
 
-      {/* Hero 区 */}
-      <div className="bl-hero">
-        <div className="bl-hero-logo">
-          <div className="bl-logo-icon">💛</div>
-          <span>伴龄</span>
-        </div>
-        <h1 className="bl-hero-title">
-          养老不焦虑
-          <br />
-          <span className="bl-hero-accent">我们用数据说话</span>
-        </h1>
-        <p className="bl-hero-desc">
-          结合 AI 智能算法与专业顾问经验，
-          <br />
-          为您量身定制个性化养老规划方案
-        </p>
+    return (
+      <div className="bl-page bl-home">
+        {/* 主视觉区：插画出血式背景 + 顶部栏 + 问候语叠加 */}
+        <div className="bl-hero-zone">
+          <img
+            src="/banling/banling-home-green.jpg"
+            alt="阳光客厅里捧着热茶的老奶奶"
+            className="bl-hero-bg"
+            loading="eager"
+            decoding="async"
+          />
+          {/* 底部渐变过渡到卡片区 */}
+          <div className="bl-hero-fade" />
 
-        {/* 养老金输入 */}
-        <div className="bl-pension-input">
-          <label>我的养老金</label>
-          <div className="bl-pension-field">
-            <span className="bl-currency">¥</span>
-            <input type="text" placeholder="3000" defaultValue="" />
-          </div>
-        </div>
-
-        {/* CTA */}
-        <button className="bl-cta-main" onClick={handleStartChat}>
-          测测我的养老缺口 →
-        </button>
-
-        {/* 信任标签 */}
-        <div className="bl-trust-tags">
-          <span>✓ 专业评估</span>
-          <span>✓ 智能规划</span>
-          <span>✓ 专属服务</span>
-        </div>
-      </div>
-
-      {/* 安心星卡片 */}
-      <div className="bl-star-card">
-        <div className="bl-star-header">
-          <span className="bl-star-title">🌟 我的安心星</span>
-          <span className="bl-star-count">{getProgress().stars}/5</span>
-        </div>
-        <div className="bl-star-row">
-          {Array.from({ length: 5 }).map((_, i) => (
-            <span key={i} className={`bl-star ${i < getProgress().stars ? "filled" : ""}`}>★</span>
-          ))}
-        </div>
-        <div className="bl-star-progress">
-          <div className="bl-star-track">
-            <motion.div
-              className="bl-star-fill"
-              initial={{ width: 0 }}
-              animate={{ width: `${getProgress().percent}%` }}
-              transition={{ duration: 1.2, delay: 0.5 }}
-            />
-          </div>
-          <span className="bl-star-label">🌱 {getProgress().label}</span>
-        </div>
-      </div>
-
-      {/* 目标人群 */}
-      <div className="bl-section">
-        <h2 className="bl-section-title">我们是您身边的谁?</h2>
-        <div className="bl-persona-grid">
-          <div className="bl-persona-card bl-persona-green">
-            <div className="bl-persona-icon">🌱</div>
-            <h3>职场新鲜人</h3>
-            <p className="bl-persona-age">20-30岁</p>
-            <p>刚步入职场，趁年轻提前布局</p>
-          </div>
-          <div className="bl-persona-card bl-persona-orange">
-            <div className="bl-persona-icon">🏠</div>
-            <h3>家庭顶梁柱</h3>
-            <p className="bl-persona-age">30-50岁</p>
-            <p>事业稳定，优化资产配置</p>
-          </div>
-          <div className="bl-persona-card bl-persona-pink">
-            <div className="bl-persona-icon">🌸</div>
-            <h3>预备退休族</h3>
-            <p className="bl-persona-age">50岁+</p>
-            <p>退休在即，确保安享晚年</p>
-          </div>
-        </div>
-      </div>
-
-      {/* 价值主张 */}
-      <div className="bl-section">
-        <h2 className="bl-section-title">为什么选择伴龄?</h2>
-        <div className="bl-value-grid">
-          <div className="bl-value-card">
-            <div className="bl-value-icon">🤖</div>
-            <h3>智能AI测算</h3>
-            <p>AI 驱动精准计算</p>
-          </div>
-          <div className="bl-value-card">
-            <div className="bl-value-icon">📋</div>
-            <h3>个性化规划</h3>
-            <p>专属定制养老路径</p>
-          </div>
-          <div className="bl-value-card">
-            <div className="bl-value-icon">📊</div>
-            <h3>可视化分析</h3>
-            <p>进度一目了然</p>
-          </div>
-          <div className="bl-value-card">
-            <div className="bl-value-icon">🎧</div>
-            <h3>专家1V1服务</h3>
-            <p>专业顾问贴心陪伴</p>
-          </div>
-        </div>
-      </div>
-
-      {/* 4步流程 */}
-      <div className="bl-section">
-        <h2 className="bl-section-title">4步完成您的养老规划</h2>
-        <div className="bl-steps">
-          {[
-            { num: "01", title: "评估测算", desc: "智能评估当前养老状况", color: "#FF9F43" },
-            { num: "02", title: "缺口分析", desc: "精准分析养老金缺口", color: "#FFC107" },
-            { num: "03", title: "定制方案", desc: "生成个性化规划方案", color: "#FFB74D" },
-            { num: "04", title: "长期陪伴", desc: "持续跟踪定期复盘", color: "#FB8C00" },
-          ].map((step) => (
-            <div key={step.num} className="bl-step-card" style={{ background: step.color }}>
-              <div className="bl-step-num">{step.num}</div>
-              <h3>{step.title}</h3>
-              <p>{step.desc}</p>
+          {/* 顶部栏：浮在插画上方 */}
+          <div className="bl-home-topbar bl-topbar-overlay">
+            <div className="bl-location" onClick={() => setShowCityPicker(!showCityPicker)}>
+              <svg className="bl-loc-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z" strokeLinecap="round" strokeLinejoin="round" />
+                <circle cx="12" cy="10" r="3" />
+              </svg>
+              <span>{location}</span>
+              <svg className="bl-loc-arrow" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M6 9l6 6 6-6" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
             </div>
-          ))}
+            <button className="bl-notice-btn" onClick={() => setShowNotice(!showNotice)}>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 01-3.46 0" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+              <span className="bl-notice-dot" />
+            </button>
+          </div>
+
+          {/* 城市选择面板 */}
+          <AnimatePresence>
+            {showCityPicker && (
+              <motion.div
+                initial={{ opacity: 0, y: -8 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -8 }}
+                className="bl-city-picker"
+              >
+                <div className="bl-cp-header">
+                  <span>选择城市</span>
+                  <button onClick={() => setShowCityPicker(false)}>×</button>
+                </div>
+                <div className="bl-cp-list">
+                  {CITY_OPTIONS.map((city) => (
+                    <button
+                      key={city}
+                      className={`bl-cp-item ${city === location ? "active" : ""}`}
+                      onClick={() => handleSelectCity(city)}
+                    >
+                      {city}
+                    </button>
+                  ))}
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {/* 问候语叠加在插画左上角浅色区域 */}
+          <div className="bl-greeting-overlay">
+            <h1 className="bl-greeting-title">{greeting}</h1>
+            <p className="bl-greeting-sub">新的一天，愿您心情舒畅，</p>
+            <p className="bl-greeting-sub">我们一直在您身边。</p>
+          </div>
+        </div>
+
+        {/* 通知面板（点击展开） */}
+        <AnimatePresence>
+          {showNotice && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: "auto" }}
+              exit={{ opacity: 0, height: 0 }}
+              className="bl-notice-panel"
+            >
+              <div className="bl-notice-content">
+                <h3>为什么选择伴龄?</h3>
+                <div className="bl-notice-features">
+                  <div className="bl-notice-feature"><span>🤖</span> 智能AI测算</div>
+                  <div className="bl-notice-feature"><span>📋</span> 个性化规划</div>
+                  <div className="bl-notice-feature"><span>📊</span> 可视化分析</div>
+                  <div className="bl-notice-feature"><span>🎧</span> 专家1V1服务</div>
+                </div>
+
+                <h3>4步完成您的养老规划</h3>
+                <div className="bl-notice-steps">
+                  <div className="bl-notice-step"><span className="bl-ns-num">01</span> 评估测算</div>
+                  <div className="bl-notice-step"><span className="bl-ns-num">02</span> 缺口分析</div>
+                  <div className="bl-notice-step"><span className="bl-ns-num">03</span> 定制方案</div>
+                  <div className="bl-notice-step"><span className="bl-ns-num">04</span> 长期陪伴</div>
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* 今日陪伴星 */}
+        <div className="bl-companion-card">
+          <div className="bl-companion-header">
+            <span className="bl-companion-title">今日陪伴星</span>
+            <span className="bl-companion-count">{companionStars}/5</span>
+          </div>
+          <div className="bl-companion-stars">
+            {Array.from({ length: 5 }).map((_, i) => (
+              <span key={i} className={`bl-cstar ${i < companionStars ? "filled" : ""}`}>★</span>
+            ))}
+          </div>
+          <p className="bl-companion-hint">
+            {companionStars >= 5 ? "今日陪伴星已全部点亮，真棒！🌟" : `再聊${chatsToNextStar}次天，点亮今日星星✨`}
+          </p>
+          <button className="bl-companion-cta" onClick={handleStartChat}>
+            去聊天 →
+          </button>
+        </div>
+
+        {/* 今日小贴士 */}
+        <div className="bl-tip-card">
+          <div className="bl-tip-header">
+            <span className="bl-tip-title">今日小贴士</span>
+            <span className="bl-tip-icon">{dailyTip.icon}</span>
+          </div>
+          {weatherDesc && (
+            <div className="bl-tip-weather">
+              {location} · {weatherDesc}{weatherTemp !== undefined ? ` ${weatherTemp}°C` : ""}
+            </div>
+          )}
+          <h3 className="bl-tip-name">{dailyTip.title}</h3>
+          <p className="bl-tip-content">{dailyTip.content}</p>
+
+          {/* 养生小贴士 */}
+          <div className="bl-health-tip">
+            <div className="bl-health-divider" />
+            <div className="bl-health-row">
+              <span className="bl-health-icon">{dailyTip.healthIcon}</span>
+              <div className="bl-health-body">
+                <span className="bl-health-label">养生小贴士</span>
+                <p className="bl-health-text">{dailyTip.healthTip}</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Footer */}
+        <div className="bl-footer">
+          <p>© 2026 伴龄 养老规划平台 All rights reserved</p>
         </div>
       </div>
-
-      {/* 底部 CTA */}
-      <div className="bl-section bl-final-cta">
-        <h2>现在就行动，未来的你会感谢今天</h2>
-        <p>养老规划越早开始，收获越丰厚</p>
-        <button className="bl-cta-main" onClick={handleStartChat}>
-          免费获取我的养老方案 →
-        </button>
-      </div>
-
-      {/* Footer */}
-      <div className="bl-footer">
-        <p>© 2026 伴龄 养老规划平台 All rights reserved</p>
-      </div>
-    </div>
-  );
+    );
+  };
 
   /* ============================================================
    * 渲染：AI 规划对话
@@ -780,7 +987,27 @@ ${messages.map((m) => `${m.role === "user" ? "用户" : "伴龄"}: ${m.content}`
       {/* 顶栏 */}
       <div className="bl-ai-topbar">
         <div className="bl-ai-topbar-logo">
-          <div className="bl-logo-icon-sm">💛</div>
+          <div className="bl-logo-icon-sm">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width={28} height={28} style={{ borderRadius: "50%" }}>
+              <defs>
+                <linearGradient id="blAiSky" x1="0%" y1="0%" x2="0%" y2="100%">
+                  <stop offset="0%" stopColor="#FF8A65"/>
+                  <stop offset="50%" stopColor="#FFB74D"/>
+                  <stop offset="100%" stopColor="#FFD54F"/>
+                </linearGradient>
+                <linearGradient id="blAiWater" x1="0%" y1="0%" x2="0%" y2="100%">
+                  <stop offset="0%" stopColor="#4DD0E1"/>
+                  <stop offset="100%" stopColor="#00ACC1"/>
+                </linearGradient>
+              </defs>
+              <circle cx="24" cy="24" r="23" fill="#1A1A1A"/>
+              <path d="M 4,24 A 20,20 0 0,1 44,24 Z" fill="url(#blAiSky)"/>
+              <path d="M 4,24 A 20,20 0 0,0 44,24 Z" fill="url(#blAiWater)"/>
+              <circle cx="24" cy="20" r="5" fill="#FFF8E1"/>
+              <ellipse cx="24" cy="28" rx="3" ry="1.5" fill="#FFF8E1" opacity="0.7"/>
+              <ellipse cx="24" cy="31" rx="2" ry="1" fill="#FFF8E1" opacity="0.5"/>
+            </svg>
+          </div>
           <span>伴龄</span>
         </div>
         <span className="bl-ai-status">温暖模式 · 正在陪伴</span>
@@ -1263,7 +1490,45 @@ ${messages.map((m) => `${m.role === "user" ? "用户" : "伴龄"}: ${m.content}`
             返回作品集
           </Link>
 
-          <div className="bl-lock-icon">💛</div>
+          <div className="bl-lock-icon">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width={56} height={56} style={{ borderRadius: "50%", filter: "drop-shadow(0 0 10px rgba(255,184,77,0.4))" }}>
+              <defs>
+                <radialGradient id="blLockGlow" cx="50%" cy="50%" r="50%">
+                  <stop offset="0%" stopColor="#FFF3D6" stopOpacity={1}/>
+                  <stop offset="70%" stopColor="#FFE0B2" stopOpacity={0.9}/>
+                  <stop offset="100%" stopColor="#FFB84D" stopOpacity={0.3}/>
+                </radialGradient>
+                <linearGradient id="blLockSky" x1="0%" y1="0%" x2="0%" y2="100%">
+                  <stop offset="0%" stopColor="#FF8A65"/>
+                  <stop offset="50%" stopColor="#FFB74D"/>
+                  <stop offset="100%" stopColor="#FFD54F"/>
+                </linearGradient>
+                <linearGradient id="blLockWater" x1="0%" y1="0%" x2="0%" y2="100%">
+                  <stop offset="0%" stopColor="#4DD0E1"/>
+                  <stop offset="60%" stopColor="#26C6DA"/>
+                  <stop offset="100%" stopColor="#00ACC1"/>
+                </linearGradient>
+              </defs>
+              <circle cx="24" cy="24" r="23" fill="url(#blLockGlow)"/>
+              <circle cx="24" cy="24" r="20" fill="#1A1A1A" opacity="0.92"/>
+              <path d="M 4,24 A 20,20 0 0,1 44,24 Z" fill="url(#blLockSky)"/>
+              <path d="M 4,24 A 20,20 0 0,0 44,24 Z" fill="url(#blLockWater)"/>
+              <line x1="4" y1="24" x2="44" y2="24" stroke="#1A1A1A" strokeWidth="0.6" opacity="0.5"/>
+              <circle cx="24" cy="20" r="5" fill="#FFF8E1"/>
+              <g stroke="#FFF8E1" strokeWidth="1.2" strokeLinecap="round" opacity="0.9">
+                <line x1="24" y1="11" x2="24" y2="13.5"/>
+                <line x1="16.5" y1="13" x2="18" y2="15"/>
+                <line x1="31.5" y1="13" x2="30" y2="15"/>
+                <line x1="13.5" y1="18" x2="16" y2="18.8"/>
+                <line x1="34.5" y1="18" x2="32" y2="18.8"/>
+              </g>
+              <ellipse cx="24" cy="28" rx="3" ry="1.5" fill="#FFF8E1" opacity="0.7"/>
+              <ellipse cx="24" cy="31" rx="2" ry="1" fill="#FFF8E1" opacity="0.5"/>
+              <ellipse cx="24" cy="34" rx="1.3" ry="0.7" fill="#FFF8E1" opacity="0.35"/>
+              <path d="M 8,27 Q 11,26 14,27 T 20,27" fill="none" stroke="#E0F7FA" strokeWidth="0.6" opacity="0.6"/>
+              <path d="M 28,30 Q 31,29 34,30 T 40,30" fill="none" stroke="#E0F7FA" strokeWidth="0.6" opacity="0.5"/>
+            </svg>
+          </div>
           <h1 className="bl-lock-title">伴龄</h1>
           <p className="bl-lock-sub">AI 养老规划伴侣</p>
           <p className="bl-lock-hint">请输入密码进入</p>
@@ -1325,16 +1590,19 @@ function BanlingStyles() {
     <style>{`
       /* ===== 全局 ===== */
       .bl-root {
-        --orange: #FFB84D;
-        --orange-dark: #FFA726;
-        --orange-light: #FFF3E0;
-        --bg: #FFF9F0;
+        --sage: #87A96B;
+        --sage-dark: #6B8E4E;
+        --sage-light: #E8F0E0;
+        --sage-lighter: #F2F7EE;
+        --accent: #FFC107;
+        --bg: #F5F8F2;
         --card: #FFFFFF;
-        --text: #333333;
-        --text-light: #999999;
-        --border: #F0F0F0;
-        --shadow: 0 2px 12px rgba(0,0,0,0.06);
-        --shadow-hover: 0 4px 20px rgba(255,184,77,0.15);
+        --text: #3A3A3A;
+        --text-mid: #5D4037;
+        --text-light: #8C8C8C;
+        --border: #E8E8E8;
+        --shadow: 0 2px 12px rgba(0,0,0,0.05);
+        --shadow-hover: 0 4px 20px rgba(135,169,107,0.15);
         max-width: 480px;
         margin: 0 auto;
         min-height: 100vh;
@@ -1345,7 +1613,7 @@ function BanlingStyles() {
         padding-bottom: 64px;
       }
 
-      /* 电脑端适配：铺满全屏，内容区居中限宽 */
+      /* 电脑端适配：铺满全屏，内容区居中限宽（宽度为手机端两倍） */
       @media (min-width: 768px) {
         .bl-root {
           max-width: 100%;
@@ -1353,7 +1621,7 @@ function BanlingStyles() {
           box-shadow: none;
         }
         .bl-content {
-          max-width: 480px;
+          max-width: 960px;
           margin: 0 auto;
         }
       }
@@ -1384,7 +1652,7 @@ function BanlingStyles() {
       }
 
       .bl-back-link:hover {
-        background: var(--orange);
+        background: var(--sage);
         color: #fff;
       }
 
@@ -1400,93 +1668,507 @@ function BanlingStyles() {
       }
 
       /* ===== 问候语栏 ===== */
-      .bl-greeting-bar {
+      /* ===== 首页 ===== */
+      .bl-home {
+        padding: 0;
+      }
+
+      /* ===== 主视觉区：插画完整展示 + 渐变淡出 ===== */
+      .bl-hero-zone {
+        position: relative;
+        width: 100%;
+        height: 50vh;
+        min-height: 360px;
+        max-height: 520px;
+        overflow: hidden;
+      }
+
+      .bl-hero-bg {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        object-position: center top;
+      }
+
+      /* 底部渐变过渡：从插画自然淡出到背景色 */
+      .bl-hero-fade {
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        height: 100px;
+        background: linear-gradient(
+          to bottom,
+          rgba(245,248,242,0) 0%,
+          rgba(245,248,242,0.5) 50%,
+          rgba(245,248,242,0.9) 85%,
+          var(--bg) 100%
+        );
+        pointer-events: none;
+      }
+
+      /* ===== 顶部栏：浮在插画上方 ===== */
+      .bl-topbar-overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        z-index: 10;
+        background: linear-gradient(
+          to bottom,
+          rgba(245,248,242,0.5) 0%,
+          rgba(245,248,242,0.2) 60%,
+          rgba(245,248,242,0) 100%
+        );
+        border-bottom: none;
+      }
+
+      /* ===== 问候语叠加层 ===== */
+      .bl-greeting-overlay {
+        position: absolute;
+        top: 52px;
+        left: 24px;
+        right: 24px;
+        z-index: 5;
+      }
+
+      .bl-location {
         display: flex;
-        justify-content: space-between;
         align-items: center;
-        padding: 12px 20px;
+        gap: 4px;
+        font-size: 14px;
+        color: var(--text);
+        cursor: pointer;
+      }
+
+      .bl-loc-icon {
+        width: 16px;
+        height: 16px;
+        color: var(--sage-dark);
+      }
+
+      .bl-loc-arrow {
+        width: 14px;
+        height: 14px;
+        color: var(--text-light);
+      }
+
+      .bl-notice-btn {
+        position: relative;
+        background: none;
+        border: none;
+        cursor: pointer;
+        padding: 4px;
+        color: var(--text);
+      }
+
+      .bl-notice-btn svg {
+        width: 22px;
+        height: 22px;
+      }
+
+      .bl-notice-dot {
+        position: absolute;
+        top: 2px;
+        right: 2px;
+        width: 8px;
+        height: 8px;
+        background: #E57373;
+        border-radius: 50%;
+        border: 2px solid var(--card);
+      }
+
+      /* 通知面板 */
+      .bl-notice-panel {
+        overflow: hidden;
         background: var(--card);
         border-bottom: 1px solid var(--border);
       }
 
-      .bl-greeting-text {
-        font-size: 14px;
-        font-weight: 500;
+      .bl-notice-content {
+        padding: 16px 20px;
+      }
+
+      .bl-notice-content h3 {
+        font-size: 15px;
+        font-weight: 600;
+        margin: 0 0 10px;
         color: var(--text);
       }
 
-      .bl-greeting-date {
-        font-size: 12px;
-        color: var(--text-light);
+      .bl-notice-content h3:not(:first-child) {
+        margin-top: 16px;
       }
 
-      /* ===== 安心星卡片 ===== */
-      .bl-star-card {
-        background: var(--card);
-        border-radius: 14px;
-        padding: 20px;
-        margin: 0 20px 20px;
-        box-shadow: var(--shadow);
+      .bl-notice-features {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
       }
 
-      .bl-star-header {
+      .bl-notice-feature {
+        font-size: 13px;
+        color: var(--text);
+        padding: 8px 12px;
+        background: var(--sage-light);
+        border-radius: 8px;
+      }
+
+      .bl-notice-steps {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+      }
+
+      .bl-notice-step {
+        font-size: 13px;
+        color: var(--text);
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .bl-ns-num {
+        font-size: 14px;
+        font-weight: 700;
+        color: var(--sage-dark);
+      }
+
+      /* ===== 顶部栏基础布局（flex 布局，叠加层样式由 bl-topbar-overlay 控制）===== */
+      .bl-home-topbar {
         display: flex;
         justify-content: space-between;
         align-items: center;
-        margin-bottom: 12px;
+        padding: 12px 20px;
       }
 
-      .bl-star-title {
-        font-size: 15px;
-        font-weight: 600;
-      }
-
-      .bl-star-count {
-        font-size: 16px;
+      /* ===== 问候语叠加样式（三行棕色排版）===== */
+      .bl-greeting-title {
+        font-size: 28px;
         font-weight: 700;
-        color: var(--orange-dark);
+        color: #5D4037;
+        margin: 0 0 14px;
+        line-height: 1.3;
+        letter-spacing: 0.5px;
+        text-shadow: 0 1px 6px rgba(255,255,255,0.7);
       }
 
-      .bl-star-row {
-        display: flex;
-        gap: 6px;
-        margin-bottom: 12px;
+      .bl-greeting-sub {
+        font-size: 17px;
+        font-weight: 400;
+        color: #5D4037;
+        line-height: 1.5;
+        margin: 0 0 6px;
+        text-shadow: 0 1px 4px rgba(255,255,255,0.6);
       }
 
-      .bl-star {
-        font-size: 24px;
-        color: var(--border);
-        transition: color 0.3s;
+      .bl-greeting-sub:last-child {
+        margin-bottom: 0;
       }
 
-      .bl-star.filled {
-        color: var(--orange);
-      }
-
-      .bl-star-progress {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-      }
-
-      .bl-star-track {
-        flex: 1;
-        height: 8px;
-        background: var(--border);
-        border-radius: 4px;
+      /* ===== 今日陪伴星（核心行动卡：绿渐变背景）===== */
+      .bl-companion-card {
+        background: linear-gradient(135deg, #87A96B 0%, #6B8E4E 100%);
+        border-radius: 20px;
+        padding: 24px 24px 22px;
+        margin: -28px 20px 18px;
+        position: relative;
+        z-index: 3;
+        box-shadow: 0 8px 28px rgba(107,142,78,0.22), 0 2px 8px rgba(0,0,0,0.04);
         overflow: hidden;
       }
 
-      .bl-star-fill {
-        height: 100%;
-        background: linear-gradient(90deg, var(--orange), var(--orange-dark));
-        border-radius: 4px;
+      /* 卡片右上角装饰光斑 */
+      .bl-companion-card::before {
+        content: "";
+        position: absolute;
+        top: -30px;
+        right: -30px;
+        width: 120px;
+        height: 120px;
+        background: radial-gradient(circle, rgba(255,255,255,0.12) 0%, transparent 70%);
+        border-radius: 50%;
+        pointer-events: none;
       }
 
-      .bl-star-label {
+      .bl-companion-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 16px;
+        position: relative;
+      }
+
+      .bl-companion-title {
+        font-size: 17px;
+        font-weight: 600;
+        color: #FFFFFF;
+        letter-spacing: 0.5px;
+      }
+
+      .bl-companion-count {
+        font-size: 14px;
+        font-weight: 600;
+        color: rgba(255,255,255,0.85);
+        background: rgba(255,255,255,0.18);
+        padding: 3px 12px;
+        border-radius: 999px;
+      }
+
+      .bl-companion-stars {
+        display: flex;
+        gap: 14px;
+        margin-bottom: 14px;
+        justify-content: center;
+        position: relative;
+      }
+
+      .bl-cstar {
+        font-size: 30px;
+        color: rgba(255,255,255,0.25);
+        transition: color 0.3s, transform 0.3s;
+        line-height: 1;
+      }
+
+      .bl-cstar.filled {
+        color: #FFD54F;
+        text-shadow: 0 1px 3px rgba(255,193,7,0.4), 0 0 10px rgba(255,213,79,0.35);
+      }
+
+      .bl-companion-hint {
+        font-size: 13px;
+        font-weight: 400;
+        color: rgba(255,255,255,0.75);
+        margin: 0 0 18px;
+        text-align: center;
+        position: relative;
+      }
+
+      .bl-companion-cta {
+        width: 100%;
+        background: #FFFFFF;
+        color: #6B8E4E;
+        border: none;
+        border-radius: 26px;
+        padding: 13px 0;
+        font-size: 16px;
+        font-weight: 600;
+        cursor: pointer;
+        box-shadow: 0 4px 14px rgba(0,0,0,0.10);
+        transition: transform 0.2s, box-shadow 0.2s;
+        letter-spacing: 0.5px;
+        position: relative;
+      }
+
+      .bl-companion-cta:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 18px rgba(0,0,0,0.14);
+      }
+
+      .bl-companion-cta:active {
+        transform: translateY(0);
+      }
+
+      /* ===== 今日小贴士（信息阅读卡：白底 + 左侧绿色色条）===== */
+      .bl-tip-card {
+        background: #FFFFFF;
+        border-radius: 20px;
+        padding: 22px 24px 22px 26px;
+        margin: 0 20px 20px;
+        position: relative;
+        z-index: 3;
+        box-shadow: 0 6px 24px rgba(107,142,78,0.10), 0 2px 6px rgba(0,0,0,0.03);
+        overflow: hidden;
+      }
+
+      /* 左侧鼠尾草绿色条装饰 */
+      .bl-tip-card::before {
+        content: "";
+        position: absolute;
+        top: 18px;
+        bottom: 18px;
+        left: 0;
+        width: 4px;
+        background: linear-gradient(to bottom, #87A96B, #6B8E4E);
+        border-radius: 0 4px 4px 0;
+      }
+
+      .bl-tip-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 14px;
+      }
+
+      .bl-tip-title {
+        font-size: 17px;
+        font-weight: 600;
+        color: #5D4037;
+      }
+
+      .bl-tip-icon {
+        font-size: 26px;
+      }
+
+      .bl-tip-name {
+        font-size: 15px;
+        font-weight: 600;
+        color: #6B8E4E;
+        margin: 0 0 8px;
+      }
+
+      .bl-tip-content {
+        font-size: 14px;
+        font-weight: 400;
+        color: #555555;
+        line-height: 1.75;
+        margin: 0;
+      }
+
+      /* 天气描述行 */
+      .bl-tip-weather {
         font-size: 12px;
+        font-weight: 400;
+        color: #6B8E4E;
+        margin-bottom: 10px;
+        padding: 4px 10px;
+        background: #E8F0E0;
+        border-radius: 10px;
+        display: inline-block;
+      }
+
+      /* ===== 养生小贴士区块（浅绿背景色块）===== */
+      .bl-health-tip {
+        margin-top: 16px;
+        background: #F2F7EE;
+        border-radius: 12px;
+        padding: 14px 16px;
+      }
+
+      .bl-health-divider {
+        display: none;
+      }
+
+      .bl-health-row {
+        display: flex;
+        align-items: flex-start;
+        gap: 10px;
+      }
+
+      .bl-health-icon {
+        font-size: 22px;
+        flex-shrink: 0;
+        line-height: 1.4;
+      }
+
+      .bl-health-body {
+        flex: 1;
+      }
+
+      .bl-health-label {
+        font-size: 13px;
+        font-weight: 600;
+        color: #6B8E4E;
+        display: block;
+        margin-bottom: 4px;
+      }
+
+      .bl-health-text {
+        font-size: 13px;
+        font-weight: 400;
+        color: #5A5A5A;
+        line-height: 1.75;
+        margin: 0;
+      }
+
+      /* ===== 城市选择面板 ===== */
+      .bl-city-picker {
+        position: absolute;
+        top: 44px;
+        left: 16px;
+        right: 16px;
+        z-index: 20;
+        background: #fff;
+        border-radius: 14px;
+        box-shadow: 0 8px 32px rgba(0,0,0,0.12);
+        overflow: hidden;
+      }
+
+      .bl-cp-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 12px 16px;
+        font-size: 14px;
+        font-weight: 600;
+        color: var(--text);
+        border-bottom: 1px solid var(--border);
+      }
+
+      .bl-cp-header button {
+        background: none;
+        border: none;
+        font-size: 20px;
         color: var(--text-light);
-        white-space: nowrap;
+        cursor: pointer;
+        padding: 0 4px;
+        line-height: 1;
+      }
+
+      .bl-cp-list {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 4px;
+        padding: 8px;
+        max-height: 240px;
+        overflow-y: auto;
+      }
+
+      .bl-cp-item {
+        background: none;
+        border: none;
+        padding: 10px 8px;
+        font-size: 13px;
+        color: var(--text);
+        cursor: pointer;
+        border-radius: 8px;
+        transition: background 0.15s, color 0.15s;
+      }
+
+      .bl-cp-item:hover {
+        background: var(--sage-light);
+      }
+
+      .bl-cp-item.active {
+        background: var(--sage);
+        color: #fff;
+        font-weight: 600;
+      }
+
+      /* 通用 CTA（保留给其他页面用） */
+      .bl-cta-main {
+        width: 100%;
+        background: linear-gradient(135deg, var(--sage), var(--sage-dark));
+        color: #fff;
+        border: none;
+        border-radius: 12px;
+        padding: 14px 0;
+        font-size: 16px;
+        font-weight: 600;
+        cursor: pointer;
+        box-shadow: 0 4px 16px rgba(255,167,38,0.3);
+        transition: transform 0.2s, box-shadow 0.2s;
+      }
+
+      .bl-cta-main:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(255,167,38,0.4);
+      }
+
+      .bl-cta-main:active {
+        transform: translateY(0);
       }
 
       /* ===== 底部导航 ===== */
@@ -1510,7 +2192,7 @@ function BanlingStyles() {
       /* 电脑端底部导航居中限宽 */
       @media (min-width: 768px) {
         .bl-bottom-nav {
-          max-width: 480px;
+          max-width: 960px;
         }
       }
 
@@ -1529,7 +2211,7 @@ function BanlingStyles() {
       }
 
       .bl-nav-item.active {
-        color: var(--orange-dark);
+        color: var(--sage-dark);
       }
 
       .bl-nav-icon {
@@ -1558,7 +2240,7 @@ function BanlingStyles() {
       .bl-logo-icon {
         width: 40px;
         height: 40px;
-        background: var(--orange);
+        background: var(--sage);
         border-radius: 10px;
         display: flex;
         align-items: center;
@@ -1580,7 +2262,7 @@ function BanlingStyles() {
       }
 
       .bl-hero-accent {
-        background: linear-gradient(135deg, var(--orange), var(--orange-dark));
+        background: linear-gradient(135deg, var(--sage), var(--sage-dark));
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
         background-clip: text;
@@ -1588,7 +2270,7 @@ function BanlingStyles() {
 
       .bl-hero-sub {
         font-size: 15px;
-        color: var(--orange-dark);
+        color: var(--sage-dark);
         font-weight: 500;
         margin: 0 0 16px;
       }
@@ -1625,7 +2307,7 @@ function BanlingStyles() {
       .bl-currency {
         font-size: 24px;
         font-weight: 700;
-        color: var(--orange-dark);
+        color: var(--sage-dark);
       }
 
       .bl-pension-field input {
@@ -1640,7 +2322,7 @@ function BanlingStyles() {
 
       .bl-cta-main {
         width: 100%;
-        background: linear-gradient(135deg, var(--orange), var(--orange-dark));
+        background: linear-gradient(135deg, var(--sage), var(--sage-dark));
         color: #fff;
         border: none;
         border-radius: 12px;
@@ -1734,7 +2416,7 @@ function BanlingStyles() {
 
       .bl-persona-age {
         font-size: 13px;
-        color: var(--orange-dark);
+        color: var(--sage-dark);
         font-weight: 500;
         margin: 0 0 4px;
       }
@@ -1833,14 +2515,14 @@ function BanlingStyles() {
       /* Footer */
       .bl-footer {
         text-align: center;
-        padding: 20px 0 40px;
-        border-top: 1px solid var(--border);
+        padding: 28px 0 24px;
       }
 
       .bl-footer p {
         font-size: 11px;
-        color: var(--text-light);
+        color: #B5B5B5;
         margin: 0;
+        letter-spacing: 0.3px;
       }
 
       /* ===== AI 对话页 ===== */
@@ -1869,12 +2551,14 @@ function BanlingStyles() {
       .bl-logo-icon-sm {
         width: 28px;
         height: 28px;
-        background: var(--orange);
-        border-radius: 6px;
         display: flex;
         align-items: center;
         justify-content: center;
-        font-size: 14px;
+        flex-shrink: 0;
+      }
+
+      .bl-logo-icon-sm svg {
+        display: block;
       }
 
       .bl-ai-topbar-logo span {
@@ -1917,7 +2601,7 @@ function BanlingStyles() {
       }
 
       .bl-ai-tag {
-        background: var(--orange);
+        background: var(--sage);
         color: #fff;
         font-size: 10px;
         font-weight: 700;
@@ -1935,7 +2619,7 @@ function BanlingStyles() {
       }
 
       .bl-msg.user .bl-msg-bubble {
-        background: var(--orange);
+        background: var(--sage);
         color: #fff;
       }
 
@@ -1969,9 +2653,9 @@ function BanlingStyles() {
       }
 
       .bl-quick-btn {
-        background: var(--orange-light);
-        color: var(--orange-dark);
-        border: 1px solid var(--orange);
+        background: var(--sage-light);
+        color: var(--sage-dark);
+        border: 1px solid var(--sage);
         border-radius: 20px;
         padding: 6px 14px;
         font-size: 13px;
@@ -1980,7 +2664,7 @@ function BanlingStyles() {
       }
 
       .bl-quick-btn:hover {
-        background: var(--orange);
+        background: var(--sage);
         color: #fff;
       }
 
@@ -1990,7 +2674,7 @@ function BanlingStyles() {
 
       .bl-report-trigger-btn {
         width: 100%;
-        background: linear-gradient(135deg, var(--orange), var(--orange-dark));
+        background: linear-gradient(135deg, var(--sage), var(--sage-dark));
         color: #fff;
         border: none;
         border-radius: 10px;
@@ -2022,13 +2706,13 @@ function BanlingStyles() {
       }
 
       .bl-input:focus {
-        border-color: var(--orange);
+        border-color: var(--sage);
       }
 
       .bl-send-btn {
         width: 40px;
         height: 40px;
-        background: var(--orange);
+        background: var(--sage);
         color: #fff;
         border: none;
         border-radius: 50%;
@@ -2064,7 +2748,7 @@ function BanlingStyles() {
         width: 40px;
         height: 40px;
         border: 3px solid var(--border);
-        border-top-color: var(--orange);
+        border-top-color: var(--sage);
         border-radius: 50%;
         animation: bl-spin 0.8s linear infinite;
       }
@@ -2146,7 +2830,7 @@ function BanlingStyles() {
       }
 
       .bl-insight-card {
-        background: linear-gradient(135deg, var(--orange-light), #fff);
+        background: linear-gradient(135deg, var(--sage-light), #fff);
       }
 
       .bl-insight-card p {
@@ -2174,7 +2858,7 @@ function BanlingStyles() {
       .bl-metric-value {
         font-size: 20px;
         font-weight: 700;
-        color: var(--orange-dark);
+        color: var(--sage-dark);
       }
 
       .bl-metric-hint {
@@ -2200,7 +2884,7 @@ function BanlingStyles() {
         flex-shrink: 0;
         width: 22px;
         height: 22px;
-        border: 2px solid var(--orange);
+        border: 2px solid var(--sage);
         border-radius: 50%;
         background: none;
         cursor: pointer;
@@ -2213,12 +2897,12 @@ function BanlingStyles() {
       }
 
       .bl-action-item.adopted .bl-action-check {
-        background: var(--orange);
+        background: var(--sage);
         color: #fff;
       }
 
       .bl-summary-card {
-        background: var(--orange-light);
+        background: var(--sage-light);
       }
 
       .bl-summary-card p {
@@ -2237,8 +2921,8 @@ function BanlingStyles() {
       .bl-btn-outline {
         flex: 1;
         background: #fff;
-        border: 1px solid var(--orange);
-        color: var(--orange-dark);
+        border: 1px solid var(--sage);
+        color: var(--sage-dark);
         border-radius: 10px;
         padding: 10px 0;
         font-size: 14px;
@@ -2304,7 +2988,7 @@ function BanlingStyles() {
         font-size: 24px;
         font-weight: 800;
         margin: 0 0 8px;
-        background: linear-gradient(135deg, var(--orange), var(--orange-dark));
+        background: linear-gradient(135deg, var(--sage), var(--sage-dark));
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
         background-clip: text;
@@ -2397,7 +3081,7 @@ function BanlingStyles() {
       .bl-slider-value {
         font-size: 16px;
         font-weight: 700;
-        color: var(--orange-dark);
+        color: var(--sage-dark);
       }
 
       .bl-slider-track-wrap {
@@ -2421,7 +3105,7 @@ function BanlingStyles() {
         top: 0;
         left: 0;
         height: 6px;
-        background: linear-gradient(90deg, var(--orange), var(--orange-dark));
+        background: linear-gradient(90deg, var(--sage), var(--sage-dark));
         border-radius: 3px;
       }
 
@@ -2443,7 +3127,7 @@ function BanlingStyles() {
         height: 20px;
         border-radius: 50%;
         background: #fff;
-        border: 3px solid var(--orange);
+        border: 3px solid var(--sage);
         cursor: pointer;
         opacity: 1;
       }
@@ -2457,7 +3141,7 @@ function BanlingStyles() {
 
       .bl-calc-btn {
         width: 100%;
-        background: linear-gradient(135deg, var(--orange), var(--orange-dark));
+        background: linear-gradient(135deg, var(--sage), var(--sage-dark));
         color: #fff;
         border: none;
         border-radius: 10px;
@@ -2470,7 +3154,7 @@ function BanlingStyles() {
       }
 
       .bl-result-card {
-        background: linear-gradient(135deg, var(--orange-light), #fff);
+        background: linear-gradient(135deg, var(--sage-light), #fff);
       }
 
       .bl-result-grid {
@@ -2496,7 +3180,7 @@ function BanlingStyles() {
       .bl-result-value {
         font-size: 20px;
         font-weight: 700;
-        color: var(--orange-dark);
+        color: var(--sage-dark);
       }
 
       .bl-result-item.highlight .bl-result-value {
@@ -2519,8 +3203,8 @@ function BanlingStyles() {
       }
 
       .bl-scenario-card.selected {
-        background: var(--orange-light) !important;
-        border-color: var(--orange);
+        background: var(--sage-light) !important;
+        border-color: var(--sage);
       }
 
       .bl-scenario-header {
@@ -2543,7 +3227,7 @@ function BanlingStyles() {
       }
 
       .bl-scenario-card.selected .bl-scenario-tag {
-        background: var(--orange);
+        background: var(--sage);
         color: #fff;
       }
 
@@ -2554,7 +3238,7 @@ function BanlingStyles() {
 
       .bl-projection-card {
         text-align: center;
-        background: linear-gradient(135deg, var(--orange), var(--orange-dark));
+        background: linear-gradient(135deg, var(--sage), var(--sage-dark));
         color: #fff;
       }
 
@@ -2598,7 +3282,7 @@ function BanlingStyles() {
       }
 
       .bl-vision-field textarea:focus {
-        border-color: var(--orange);
+        border-color: var(--sage);
       }
 
       /* ===== 我的页 ===== */
@@ -2619,7 +3303,7 @@ function BanlingStyles() {
         width: 56px;
         height: 56px;
         border-radius: 50%;
-        background: var(--orange);
+        background: var(--sage);
         color: #fff;
         font-size: 24px;
         font-weight: 700;
@@ -2652,11 +3336,11 @@ function BanlingStyles() {
       }
 
       .bl-profile-name-input:focus {
-        border-bottom-color: var(--orange);
+        border-bottom-color: var(--sage);
       }
 
       .bl-save-btn {
-        background: var(--orange);
+        background: var(--sage);
         color: #fff;
         border: none;
         border-radius: 6px;
@@ -2693,7 +3377,7 @@ function BanlingStyles() {
       .bl-link-btn {
         background: none;
         border: none;
-        color: var(--orange-dark);
+        color: var(--sage-dark);
         font-size: 13px;
         cursor: pointer;
       }
@@ -2758,8 +3442,8 @@ function BanlingStyles() {
       }
 
       .bl-session-status.ongoing {
-        background: var(--orange-light);
-        color: var(--orange-dark);
+        background: var(--sage-light);
+        color: var(--sage-dark);
       }
 
       .bl-session-status.completed {
@@ -2887,8 +3571,14 @@ function BanlingStyles() {
       }
 
       .bl-lock-icon {
-        font-size: 56px;
         margin-bottom: 16px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .bl-lock-icon svg {
+        display: block;
       }
 
       .bl-lock-title {

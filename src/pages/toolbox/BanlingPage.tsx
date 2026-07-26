@@ -567,6 +567,24 @@ ${messages.map((m) => `${m.role === "user" ? "用户" : "伴龄"}: ${m.content}`
     setCalcResult(calcPensionGap(calcParams));
   };
 
+  /* 安心星进度计算 */
+  const getProgress = useCallback((): { percent: number; label: string; stars: number } => {
+    let stars = 0;
+    if (profile?.nickname) stars++;
+    if (sessions.length > 0) stars++;
+    if (messages.length >= 4) stars++;
+    if (savedReports.length > 0) stars++;
+    if (savedReports.some((r) => r.adoptedActions.some((a) => a))) stars++;
+    const percent = Math.round((stars / 5) * 100);
+    const label =
+      stars === 0 ? "尚未启程" :
+      stars <= 1 ? "迈出第一步" :
+      stars <= 2 ? "正在了解自己" :
+      stars <= 3 ? "规划进行中" :
+      stars <= 4 ? "方案已成形" : "安心在眼前";
+    return { percent, label, stars };
+  }, [profile, sessions, messages, savedReports]);
+
   /* 退休规划场景计算 */
   const planScenarios = {
     early: { age: 55, years: 55 - planParams.currentAge, label: "提前退休", tag: "激进", color: "#FFB3B3" },
@@ -584,6 +602,12 @@ ${messages.map((m) => `${m.role === "user" ? "用户" : "伴龄"}: ${m.content}`
    * ============================================================ */
   const renderHome = () => (
     <div className="bl-page bl-home">
+      {/* 问候语 */}
+      <div className="bl-greeting-bar">
+        <span className="bl-greeting-text">✨ {getGreeting()}</span>
+        <span className="bl-greeting-date">{formatDate(Date.now())}</span>
+      </div>
+
       {/* Hero 区 */}
       <div className="bl-hero">
         <div className="bl-hero-logo">
@@ -621,6 +645,30 @@ ${messages.map((m) => `${m.role === "user" ? "用户" : "伴龄"}: ${m.content}`
           <span>✓ 专业评估</span>
           <span>✓ 稳健增值</span>
           <span>✓ 专属规划</span>
+        </div>
+      </div>
+
+      {/* 安心星卡片 */}
+      <div className="bl-star-card">
+        <div className="bl-star-header">
+          <span className="bl-star-title">🌟 我的安心星</span>
+          <span className="bl-star-count">{getProgress().stars}/5</span>
+        </div>
+        <div className="bl-star-row">
+          {Array.from({ length: 5 }).map((_, i) => (
+            <span key={i} className={`bl-star ${i < getProgress().stars ? "filled" : ""}`}>★</span>
+          ))}
+        </div>
+        <div className="bl-star-progress">
+          <div className="bl-star-track">
+            <motion.div
+              className="bl-star-fill"
+              initial={{ width: 0 }}
+              animate={{ width: `${getProgress().percent}%` }}
+              transition={{ duration: 1.2, delay: 0.5 }}
+            />
+          </div>
+          <span className="bl-star-label">🌱 {getProgress().label}</span>
         </div>
       </div>
 
@@ -1194,7 +1242,13 @@ ${messages.map((m) => `${m.role === "user" ? "用户" : "伴龄"}: ${m.content}`
         {tab === "tools" && renderTools()}
         {tab === "profile" && renderProfile()}
       </div>
-      <BottomNav tab={tab} onChange={setTab} />
+      <BottomNav tab={tab} onChange={(t) => {
+        if (t === "ai" && messages.length === 0) {
+          handleStartChat();
+        } else {
+          setTab(t);
+        }
+      }} />
       <BanlingStyles />
       {toast && <div className="bl-toast">{toast}</div>}
     </div>
@@ -1227,8 +1281,107 @@ function BanlingStyles() {
         padding-bottom: 64px;
       }
 
+      /* 电脑端适配：居中显示，加柔和背景 */
+      @media (min-width: 768px) {
+        .bl-root {
+          max-width: 480px;
+          min-height: 100vh;
+          box-shadow: 0 0 40px rgba(255,184,77,0.08);
+        }
+      }
+
       .bl-content {
         min-height: calc(100vh - 64px);
+      }
+
+      /* ===== 问候语栏 ===== */
+      .bl-greeting-bar {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 12px 20px;
+        background: var(--card);
+        border-bottom: 1px solid var(--border);
+      }
+
+      .bl-greeting-text {
+        font-size: 14px;
+        font-weight: 500;
+        color: var(--text);
+      }
+
+      .bl-greeting-date {
+        font-size: 12px;
+        color: var(--text-light);
+      }
+
+      /* ===== 安心星卡片 ===== */
+      .bl-star-card {
+        background: var(--card);
+        border-radius: 14px;
+        padding: 20px;
+        margin: 0 20px 20px;
+        box-shadow: var(--shadow);
+      }
+
+      .bl-star-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 12px;
+      }
+
+      .bl-star-title {
+        font-size: 15px;
+        font-weight: 600;
+      }
+
+      .bl-star-count {
+        font-size: 16px;
+        font-weight: 700;
+        color: var(--orange-dark);
+      }
+
+      .bl-star-row {
+        display: flex;
+        gap: 6px;
+        margin-bottom: 12px;
+      }
+
+      .bl-star {
+        font-size: 24px;
+        color: var(--border);
+        transition: color 0.3s;
+      }
+
+      .bl-star.filled {
+        color: var(--orange);
+      }
+
+      .bl-star-progress {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+
+      .bl-star-track {
+        flex: 1;
+        height: 8px;
+        background: var(--border);
+        border-radius: 4px;
+        overflow: hidden;
+      }
+
+      .bl-star-fill {
+        height: 100%;
+        background: linear-gradient(90deg, var(--orange), var(--orange-dark));
+        border-radius: 4px;
+      }
+
+      .bl-star-label {
+        font-size: 12px;
+        color: var(--text-light);
+        white-space: nowrap;
       }
 
       /* ===== 底部导航 ===== */
@@ -1554,7 +1707,7 @@ function BanlingStyles() {
       .bl-ai-page {
         display: flex;
         flex-direction: column;
-        height: 100vh;
+        height: calc(100vh - 64px);
         padding-top: 0;
       }
 

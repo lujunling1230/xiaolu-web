@@ -8,7 +8,7 @@ import { callAI } from "../../utils/aiClient";
  * 伴龄 · AI 养老规划伴侣
  *
  * 三阶段流程：首页（情绪感知）→ 对话页（AI Copilot）→ 报告页（结构化方案）
- * 暖米色 #f5f0e6 / 棕褐色 #6b5840 书籍式风格
+ * 暖橙黄主色 #FFB800 / 米白辅色 #FFF8E7 / 温暖治愈风格
  * 复用 /api/ai 通用 AI 代理
  * 报告持久化到 localStorage，支持导出分享
  */
@@ -116,9 +116,17 @@ const QUICK_REPLIES = [
 function getGreeting(): string {
   const h = new Date().getHours();
   if (h < 6) return "夜深了，还在想未来的事吗？";
-  if (h < 12) return "早安，今天也是向着安心生活靠近的一天。";
+  if (h < 12) return "早上好！今天也是美好的一天";
   if (h < 18) return "午后的阳光正好，聊聊我们的未来？";
   return "夜幕降临，让我们规划一下安心岁月。";
+}
+
+function getGreetingEmoji(): string {
+  const h = new Date().getHours();
+  if (h < 6) return "🌙";
+  if (h < 12) return "✨";
+  if (h < 18) return "☀️";
+  return "🌆";
 }
 
 /* ===== 格式化时间 ===== */
@@ -178,6 +186,17 @@ async function copyToClipboard(text: string): Promise<boolean> {
   } catch {
     return false;
   }
+}
+
+/* ===== 星星渲染 ===== */
+function StarRow({ filled, total }: { filled: number; total: number }) {
+  return (
+    <span className="banling-stars">
+      {Array.from({ length: total }).map((_, i) => (
+        <span key={i} className={i < filled ? "star filled" : "star"}>★</span>
+      ))}
+    </span>
+  );
 }
 
 /* ===== 组件 ===== */
@@ -446,63 +465,142 @@ ${messages.map((m) => `${m.role === "user" ? "用户" : "伴龄"}: ${m.content}`
   }, [profile]);
 
   /* 计算安心星进度 */
-  const getProgress = useCallback((): { percent: number; label: string } => {
+  const getProgress = useCallback((): { percent: number; label: string; stars: number } => {
     const reportCount = savedReports.length;
-    const adoptedCount = adoptedActions.filter(Boolean).length;
-    if (reportCount === 0) return { percent: 15, label: "安心星 · 起步阶段" };
-    if (reportCount === 1 && adoptedCount === 0) return { percent: 30, label: "安心星 · 探索阶段" };
-    if (adoptedCount >= 1) return { percent: 60, label: "安心星 · 行动阶段" };
-    if (reportCount >= 2) return { percent: 75, label: "安心星 · 稳步阶段" };
-    return { percent: 45, label: "安心星 · 成长阶段" };
-  }, [savedReports, adoptedActions]);
+    const adoptedCount = savedReports.reduce((sum, r) => sum + r.adoptedActions.filter(Boolean).length, 0);
+    if (reportCount === 0) return { percent: 15, label: "起步阶段", stars: 0 };
+    if (reportCount === 1 && adoptedCount === 0) return { percent: 30, label: "探索阶段", stars: 1 };
+    if (adoptedCount >= 1) return { percent: 60, label: "行动阶段", stars: 3 };
+    if (reportCount >= 2) return { percent: 75, label: "稳步阶段", stars: 4 };
+    return { percent: 45, label: "成长阶段", stars: 2 };
+  }, [savedReports]);
 
   /* ===== 首页 ===== */
   if (stage === "home") {
     const progress = getProgress();
     return (
       <div className="banling-root banling-home">
-        <Link to="/mickey" className="banling-back">← 返回作品集</Link>
-        <button className="banling-profile-entry" onClick={() => setStage("profile")}>
-          {profile ? profile.nickname : "个人中心"}
-        </button>
-        <div className="banling-home-inner">
+        <div className="banling-topbar">
+          <Link to="/mickey" className="banling-topbar-back">
+            <span className="banling-topbar-logo">💛</span>
+            <span>伴龄</span>
+          </Link>
+          <button className="banling-topbar-profile" onClick={() => setStage("profile")}>
+            <span className="banling-topbar-avatar">👤</span>
+            <span>{profile ? profile.nickname : "我的"}</span>
+          </button>
+        </div>
+
+        <div className="banling-home-content">
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
+            initial={{ opacity: 0, y: 24 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
-            className="banling-home-card"
+            className="banling-home-left"
           >
-            <div className="banling-logo">🌅</div>
-            <h1 className="banling-title">伴龄</h1>
-            <p className="banling-subtitle">AI 养老规划伴侣</p>
-            <p className="banling-greeting">{getGreeting()}</p>
-            <p className="banling-desc">
+            <div className="banling-greeting-tag">
+              {getGreetingEmoji()} {getGreeting()}
+            </div>
+
+            <h1 className="banling-hero-title">
+              <span className="banling-hero-line1">养老不焦虑</span>
+              <span className="banling-hero-line2">我们陪你规划</span>
+            </h1>
+
+            <p className="banling-hero-desc">
               不用填表，不用算数。<br />
               像和朋友聊天一样，聊聊关于未来的事。<br />
               我们会一起把模糊的焦虑，变成清晰的小目标。
             </p>
-            <div className="banling-progress">
-              <div className="banling-progress-seed">🌱</div>
-              <div className="banling-progress-track">
-                <motion.div
-                  className="banling-progress-fill"
-                  initial={{ width: 0 }}
-                  animate={{ width: `${progress.percent}%` }}
-                  transition={{ duration: 1.2, delay: 0.5 }}
-                />
+
+            {/* 安心星卡片 */}
+            <div className="banling-star-card">
+              <div className="banling-star-header">
+                <span className="banling-star-title">我的安心星</span>
+                <span className="banling-star-count">{progress.stars}/5</span>
               </div>
-              <span className="banling-progress-label">{progress.label}</span>
+              <StarRow filled={progress.stars} total={5} />
+              <div className="banling-star-progress">
+                <div className="banling-star-track">
+                  <motion.div
+                    className="banling-star-fill"
+                    initial={{ width: 0 }}
+                    animate={{ width: `${progress.percent}%` }}
+                    transition={{ duration: 1.2, delay: 0.5 }}
+                  />
+                </div>
+                <span className="banling-star-label">🌱 {progress.label}</span>
+              </div>
             </div>
-            <button className="banling-start-btn" onClick={handleStart}>
-              开启第一次对话
-            </button>
-            {savedReports.length > 0 && (
-              <button className="banling-history-btn" onClick={() => setStage("profile")}>
-                查看历史报告（{savedReports.length}）
+
+            {/* CTA 按钮 */}
+            <div className="banling-cta-group">
+              <button className="banling-cta-primary" onClick={handleStart}>
+                开启我们的第一次对话 →
               </button>
-            )}
+              {savedReports.length > 0 && (
+                <button className="banling-cta-secondary" onClick={() => setStage("profile")}>
+                  查看历史报告（{savedReports.length}）
+                </button>
+              )}
+            </div>
+          </motion.div>
+
+          {/* 右侧聊天预览 */}
+          <motion.div
+            initial={{ opacity: 0, x: 30 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.6, delay: 0.2 }}
+            className="banling-home-right"
+          >
+            <div className="banling-preview-window">
+              <div className="banling-preview-header">
+                <span className="banling-preview-dots">
+                  <span /> <span /> <span />
+                </span>
+                <div className="banling-preview-title">
+                  <span className="banling-preview-logo">💛</span>
+                  <div>
+                    <div className="banling-preview-name">伴龄 AI 伴侣</div>
+                    <div className="banling-preview-status">正在陪伴规划中</div>
+                  </div>
+                </div>
+                <span className="banling-preview-mode">温暖模式</span>
+              </div>
+              <div className="banling-preview-body">
+                <div className="banling-preview-msg ai">
+                  <div className="banling-preview-avatar">🌅</div>
+                  <div className="banling-preview-bubble">
+                    你好呀！我是伴龄。可以先告诉我你的年龄段吗？
+                  </div>
+                </div>
+                <div className="banling-preview-tags">
+                  <span className="banling-preview-tag">月收入约8000</span>
+                  <span className="banling-preview-tag">已婚有孩子</span>
+                  <span className="banling-preview-tag">想60岁退休</span>
+                </div>
+                <div className="banling-preview-msg user">
+                  <div className="banling-preview-bubble">
+                    想60岁退休，不知道钱够不够
+                  </div>
+                </div>
+                <div className="banling-preview-msg ai">
+                  <div className="banling-preview-avatar">🌅</div>
+                  <div className="banling-preview-bubble">
+                    我们一起来算算～时间是你最大的朋友哦。
+                  </div>
+                </div>
+              </div>
+              {/* 悬浮评分卡片 */}
+              <div className="banling-preview-score">
+                <div className="banling-preview-score-label">安全感分数</div>
+                <div className="banling-preview-score-value">72<span>/100</span></div>
+                <StarRow filled={3} total={5} />
+              </div>
+            </div>
           </motion.div>
         </div>
+
         <BanlingStyles />
         <BanlingToast toast={toast} />
       </div>
@@ -513,10 +611,15 @@ ${messages.map((m) => `${m.role === "user" ? "用户" : "伴龄"}: ${m.content}`
   if (stage === "chat") {
     return (
       <div className="banling-root banling-chat-root">
-        <Link to="/mickey" className="banling-back">← 返回作品集</Link>
-        <div className="banling-chat-header">
-          <button className="banling-chat-back" onClick={() => setStage("home")}>←</button>
-          <span className="banling-chat-title">伴龄 · 规划对话</span>
+        <div className="banling-chat-topbar">
+          <button className="banling-chat-back-btn" onClick={() => setStage("home")}>←</button>
+          <div className="banling-chat-topbar-info">
+            <span className="banling-chat-topbar-logo">💛</span>
+            <div>
+              <div className="banling-chat-topbar-name">伴龄 · 规划对话</div>
+              <div className="banling-chat-topbar-status">温暖模式 · 正在陪伴</div>
+            </div>
+          </div>
           {messages.length >= 4 && (
             <button className="banling-report-btn" onClick={handleGenerateReport}>
               查看规划报告 →
@@ -532,9 +635,9 @@ ${messages.map((m) => `${m.role === "user" ? "用户" : "伴龄"}: ${m.content}`
                 animate={{ opacity: 1, y: 0 }}
                 className={`banling-msg ${msg.role}`}
               >
-                <div className="banling-msg-avatar">
-                  {msg.role === "assistant" ? "🌅" : "🙂"}
-                </div>
+                {msg.role === "assistant" && (
+                  <div className="banling-msg-avatar">🌅</div>
+                )}
                 <div className="banling-msg-bubble">
                   {msg.content.split("\n").map((line, i) => (
                     <p key={i}>{line}</p>
@@ -588,7 +691,7 @@ ${messages.map((m) => `${m.role === "user" ? "用户" : "伴龄"}: ${m.content}`
             onClick={() => handleSend(input)}
             disabled={!input.trim() || loading}
           >
-            {loading ? "…" : "发送"}
+            {loading ? "…" : "发送 →"}
           </button>
         </div>
         <BanlingStyles />
@@ -601,11 +704,26 @@ ${messages.map((m) => `${m.role === "user" ? "用户" : "伴龄"}: ${m.content}`
   if (stage === "report") {
     return (
       <div className="banling-root banling-report-root">
-        <Link to="/mickey" className="banling-back">← 返回作品集</Link>
+        <div className="banling-chat-topbar">
+          <button className="banling-chat-back-btn" onClick={() => setStage("home")}>←</button>
+          <div className="banling-chat-topbar-info">
+            <span className="banling-chat-topbar-logo">💛</span>
+            <div>
+              <div className="banling-chat-topbar-name">规划报告</div>
+              <div className="banling-chat-topbar-status">为你定制</div>
+            </div>
+          </div>
+        </div>
         <div className="banling-report-inner">
           {reportLoading ? (
             <div className="banling-report-loading">
-              <div className="banling-loading-seed">🌱</div>
+              <motion.div
+                className="banling-loading-icon"
+                animate={{ scale: [1, 1.15, 1] }}
+                transition={{ duration: 1.5, repeat: Infinity }}
+              >
+                🌱
+              </motion.div>
               <p>正在为你生成规划报告…</p>
               <p className="banling-loading-sub">把焦虑翻译成方案，需要一点时间</p>
             </div>
@@ -644,7 +762,7 @@ ${messages.map((m) => `${m.role === "user" ? "用户" : "伴龄"}: ${m.content}`
               {/* 行动建议 */}
               <div className="banling-report-section">
                 <span className="banling-section-tag">行动建议</span>
-                <p className="banling-action-hint">点击勾选已采纳的建议</p>
+                <p className="banling-action-hint">点击勾选已采纳的建议 ✨</p>
                 <div className="banling-actions-list">
                   {report.actions.map((action, i) => (
                     <motion.div
@@ -672,10 +790,10 @@ ${messages.map((m) => `${m.role === "user" ? "用户" : "伴龄"}: ${m.content}`
               {/* 导出分享 */}
               <div className="banling-export-bar">
                 <button className="banling-export-btn" onClick={handleExport}>
-                  导出报告
+                  📄 导出报告
                 </button>
                 <button className="banling-export-btn" onClick={handleCopy}>
-                  复制分享
+                  📋 复制分享
                 </button>
               </div>
 
@@ -716,16 +834,22 @@ ${messages.map((m) => `${m.role === "user" ? "用户" : "伴龄"}: ${m.content}`
   /* ===== 个人中心 ===== */
   return (
     <div className="banling-root banling-profile-root">
-      <Link to="/mickey" className="banling-back">← 返回作品集</Link>
-      <div className="banling-profile-inner">
+      <div className="banling-chat-topbar">
+        <button className="banling-chat-back-btn" onClick={() => setStage("home")}>←</button>
+        <div className="banling-chat-topbar-info">
+          <span className="banling-chat-topbar-logo">💛</span>
+          <div>
+            <div className="banling-chat-topbar-name">个人中心</div>
+            <div className="banling-chat-topbar-status">规划成长记录</div>
+          </div>
+        </div>
+      </div>
+      <div className="banling-report-inner">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
         >
-          <button className="banling-chat-back" onClick={() => setStage("home")}>←</button>
-          <h1 className="banling-profile-title">个人中心</h1>
-
           {/* 个人档案 */}
           <div className="banling-report-section">
             <div className="banling-section-header">
@@ -935,169 +1059,356 @@ function BanlingStyles() {
     <style>{`
       .banling-root {
         min-height: 100vh;
-        background: #f5f0e6;
-        font-family: 'Noto Serif SC', 'Songti SC', 'STSong', serif;
-        color: #4a3828;
+        background: linear-gradient(180deg, #FFF8E7 0%, #FFF5E6 100%);
+        font-family: -apple-system, "PingFang SC", "Microsoft YaHei", "Noto Sans SC", sans-serif;
+        color: #333333;
         position: relative;
         overflow-x: hidden;
       }
 
-      /* ===== 返回按钮 ===== */
-      .banling-back {
-        position: fixed;
-        top: 20px;
-        left: 20px;
+      /* ===== 顶部导航栏 ===== */
+      .banling-topbar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 14px 24px;
+        background: rgba(255, 248, 231, 0.9);
+        backdrop-filter: blur(8px);
+        position: sticky;
+        top: 0;
         z-index: 100;
-        padding: 8px 16px;
-        font-size: 13px;
-        color: #8b7355;
+        border-bottom: 1px solid rgba(255, 184, 0, 0.08);
+      }
+      .banling-topbar-back {
+        display: flex;
+        align-items: center;
+        gap: 8px;
         text-decoration: none;
-        background: #ffffff;
-        border: 1px solid #d4c4a8;
-        border-radius: 0;
-        transition: all 0.2s ease;
+        color: #333;
+        font-size: 18px;
+        font-weight: 700;
       }
-      .banling-back:hover {
-        background: #ede4d3;
-        border-color: #8b7355;
+      .banling-topbar-logo {
+        font-size: 22px;
       }
-
-      /* ===== 个人中心入口 ===== */
-      .banling-profile-entry {
-        position: fixed;
-        top: 20px;
-        right: 20px;
-        z-index: 100;
-        padding: 8px 16px;
-        font-size: 13px;
-        color: #6b5840;
-        background: #ffffff;
-        border: 1px solid #d4c4a8;
-        border-radius: 0;
+      .banling-topbar-profile {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        padding: 8px 18px;
+        font-size: 14px;
+        color: #fff;
+        background: linear-gradient(135deg, #FF8C00, #FFB800);
+        border: none;
+        border-radius: 999px;
         cursor: pointer;
         font-family: inherit;
+        font-weight: 600;
         transition: all 0.2s ease;
+        box-shadow: 0 2px 8px rgba(255, 184, 0, 0.3);
       }
-      .banling-profile-entry:hover {
-        background: #ede4d3;
-        border-color: #8b7355;
+      .banling-topbar-profile:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(255, 184, 0, 0.4);
+      }
+      .banling-topbar-avatar {
+        font-size: 16px;
       }
 
       /* ===== 首页 ===== */
-      .banling-home-inner {
-        min-height: 100vh;
+      .banling-home-content {
         display: flex;
         align-items: center;
         justify-content: center;
-        padding: 40px 20px;
+        gap: 48px;
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 48px 24px;
+        min-height: calc(100vh - 60px);
       }
-      .banling-home-card {
+      .banling-home-left {
+        flex: 1;
+        max-width: 520px;
+      }
+      .banling-home-right {
+        flex: 1;
         max-width: 480px;
-        text-align: center;
       }
-      .banling-logo {
-        font-size: 48px;
-        margin-bottom: 16px;
-        animation: banling-float 3s ease-in-out infinite;
-      }
-      @keyframes banling-float {
-        0%, 100% { transform: translateY(0); }
-        50% { transform: translateY(-8px); }
-      }
-      .banling-title {
-        font-size: 34px;
-        font-weight: 700;
-        color: #6b5840;
-        margin: 0 0 8px;
-        letter-spacing: 0.08em;
-      }
-      .banling-subtitle {
+
+      .banling-greeting-tag {
+        display: inline-block;
+        padding: 8px 18px;
         font-size: 14px;
-        color: #8b7355;
-        margin: 0 0 32px;
-        letter-spacing: 0.1em;
+        color: #8a6a20;
+        background: rgba(255, 230, 150, 0.4);
+        border-radius: 999px;
+        margin-bottom: 24px;
       }
-      .banling-greeting {
-        font-size: 17px;
-        color: #5d4e3a;
-        margin: 0 0 20px;
-        font-weight: 500;
+
+      .banling-hero-title {
+        margin: 0 0 24px;
+        line-height: 1.1;
       }
-      .banling-desc {
-        font-size: 14px;
-        line-height: 2.1;
-        color: #6b5d4a;
+      .banling-hero-line1 {
+        display: block;
+        font-size: 42px;
+        font-weight: 900;
+        color: #1a1a1a;
+        transform: rotate(-2deg);
+        margin-bottom: 4px;
+      }
+      .banling-hero-line2 {
+        display: block;
+        font-size: 42px;
+        font-weight: 900;
+        background: linear-gradient(135deg, #FF8C00, #FFB800);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        transform: rotate(-2deg);
+        text-shadow: 0 2px 4px rgba(255, 140, 0, 0.15);
+      }
+      .banling-hero-desc {
+        font-size: 15px;
+        line-height: 1.8;
+        color: #666;
         margin: 0 0 32px;
       }
 
-      /* ===== 进度条 ===== */
-      .banling-progress {
+      /* ===== 安心星卡片 ===== */
+      .banling-star-card {
+        background: #fff;
+        border-radius: 20px;
+        padding: 20px 24px;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
+        margin-bottom: 32px;
+      }
+      .banling-star-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 12px;
+      }
+      .banling-star-title {
+        font-size: 16px;
+        font-weight: 700;
+        color: #333;
+      }
+      .banling-star-count {
+        font-size: 18px;
+        font-weight: 800;
+        color: #FFB800;
+      }
+      .banling-stars {
+        display: flex;
+        gap: 6px;
+        margin-bottom: 16px;
+      }
+      .banling-stars .star {
+        font-size: 28px;
+        color: #E0E0E0;
+        line-height: 1;
+      }
+      .banling-stars .star.filled {
+        color: #FFB800;
+        text-shadow: 0 2px 8px rgba(255, 184, 0, 0.4);
+      }
+      .banling-star-progress {
         display: flex;
         align-items: center;
         gap: 12px;
-        margin: 0 0 40px;
-        justify-content: center;
       }
-      .banling-progress-seed {
-        font-size: 22px;
-        animation: banling-grow 2s ease-in-out infinite;
-      }
-      @keyframes banling-grow {
-        0%, 100% { transform: scale(1); }
-        50% { transform: scale(1.15); }
-      }
-      .banling-progress-track {
-        width: 160px;
-        height: 6px;
-        background: #e8dcc8;
-        border-radius: 0;
+      .banling-star-track {
+        flex: 1;
+        height: 8px;
+        background: #FFF0CC;
+        border-radius: 999px;
         overflow: hidden;
       }
-      .banling-progress-fill {
+      .banling-star-fill {
         height: 100%;
-        background: #8b7355;
-        border-radius: 0;
+        background: linear-gradient(90deg, #FFB800, #FF8C00);
+        border-radius: 999px;
       }
-      .banling-progress-label {
-        font-size: 12px;
-        color: #8b7355;
+      .banling-star-label {
+        font-size: 13px;
+        color: #999;
         white-space: nowrap;
       }
 
-      /* ===== 开始按钮 ===== */
-      .banling-start-btn {
-        padding: 13px 40px;
-        font-size: 15px;
-        font-weight: 600;
-        color: #f5f0e6;
-        background: #6b5840;
-        border: 1px solid #6b5840;
-        border-radius: 0;
+      /* ===== CTA 按钮 ===== */
+      .banling-cta-group {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+      }
+      .banling-cta-primary {
+        padding: 16px 32px;
+        font-size: 17px;
+        font-weight: 700;
+        color: #fff;
+        background: linear-gradient(135deg, #FF8C00, #FFB800);
+        border: none;
+        border-radius: 999px;
         cursor: pointer;
         font-family: inherit;
-        letter-spacing: 0.05em;
+        box-shadow: 0 8px 24px rgba(255, 184, 0, 0.35);
         transition: all 0.3s ease;
       }
-      .banling-start-btn:hover {
-        background: #5d4e3a;
-        border-color: #5d4e3a;
-        transform: translateY(-1px);
+      .banling-cta-primary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 12px 32px rgba(255, 184, 0, 0.45);
       }
-      .banling-history-btn {
-        display: block;
-        margin: 16px auto 0;
-        padding: 8px 20px;
-        font-size: 13px;
-        color: #8b7355;
+      .banling-cta-secondary {
+        padding: 12px 28px;
+        font-size: 14px;
+        font-weight: 600;
+        color: #FF8C00;
         background: transparent;
-        border: 1px solid #d4c4a8;
-        border-radius: 0;
+        border: 2px solid rgba(255, 184, 0, 0.3);
+        border-radius: 999px;
         cursor: pointer;
         font-family: inherit;
         transition: all 0.2s ease;
       }
-      .banling-history-btn:hover {
-        background: #ede4d3;
+      .banling-cta-secondary:hover {
+        background: rgba(255, 184, 0, 0.08);
+        border-color: #FFB800;
+      }
+
+      /* ===== 右侧聊天预览 ===== */
+      .banling-preview-window {
+        background: #fff;
+        border-radius: 20px;
+        box-shadow: 0 12px 40px rgba(0, 0, 0, 0.1);
+        overflow: hidden;
+        position: relative;
+      }
+      .banling-preview-header {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 14px 20px;
+        background: #FFF8E7;
+        border-bottom: 1px solid rgba(255, 184, 0, 0.1);
+      }
+      .banling-preview-dots {
+        display: flex;
+        gap: 5px;
+      }
+      .banling-preview-dots span {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        background: #FFD966;
+      }
+      .banling-preview-title {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        flex: 1;
+        margin-left: 8px;
+      }
+      .banling-preview-logo {
+        font-size: 20px;
+      }
+      .banling-preview-name {
+        font-size: 14px;
+        font-weight: 700;
+        color: #333;
+      }
+      .banling-preview-status {
+        font-size: 11px;
+        color: #999;
+      }
+      .banling-preview-mode {
+        padding: 4px 12px;
+        font-size: 11px;
+        color: #5a9e3f;
+        background: rgba(126, 211, 33, 0.12);
+        border-radius: 999px;
+        font-weight: 600;
+      }
+      .banling-preview-body {
+        padding: 20px;
+        display: flex;
+        flex-direction: column;
+        gap: 14px;
+      }
+      .banling-preview-msg {
+        display: flex;
+        gap: 8px;
+        max-width: 80%;
+      }
+      .banling-preview-msg.user {
+        flex-direction: row-reverse;
+        align-self: flex-end;
+      }
+      .banling-preview-avatar {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        background: rgba(255, 184, 0, 0.12);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 16px;
+        flex-shrink: 0;
+      }
+      .banling-preview-bubble {
+        padding: 10px 14px;
+        border-radius: 16px;
+        font-size: 13px;
+        line-height: 1.6;
+      }
+      .banling-preview-msg.ai .banling-preview-bubble {
+        background: #FFF8E7;
+        color: #333;
+        border-top-left-radius: 4px;
+      }
+      .banling-preview-msg.user .banling-preview-bubble {
+        background: linear-gradient(135deg, #FF8C00, #FFB800);
+        color: #fff;
+        border-top-right-radius: 4px;
+      }
+      .banling-preview-tags {
+        display: flex;
+        gap: 6px;
+        flex-wrap: wrap;
+        padding-left: 40px;
+      }
+      .banling-preview-tag {
+        padding: 4px 12px;
+        font-size: 11px;
+        color: #8a6a20;
+        background: rgba(255, 230, 150, 0.4);
+        border-radius: 999px;
+      }
+      .banling-preview-score {
+        position: absolute;
+        bottom: -16px;
+        right: 20px;
+        background: #fff;
+        border-radius: 16px;
+        padding: 14px 20px;
+        box-shadow: 0 8px 28px rgba(0, 0, 0, 0.12);
+        text-align: center;
+      }
+      .banling-preview-score-label {
+        font-size: 11px;
+        color: #999;
+        margin-bottom: 2px;
+      }
+      .banling-preview-score-value {
+        font-size: 28px;
+        font-weight: 900;
+        color: #FF8C00;
+        margin-bottom: 4px;
+      }
+      .banling-preview-score-value span {
+        font-size: 13px;
+        color: #ccc;
+        font-weight: 400;
       }
 
       /* ===== 对话页 ===== */
@@ -1105,47 +1416,70 @@ function BanlingStyles() {
         display: flex;
         flex-direction: column;
         height: 100vh;
-        padding-top: 60px;
       }
-      .banling-chat-header {
+      .banling-chat-topbar {
         display: flex;
         align-items: center;
         gap: 12px;
         padding: 12px 20px;
-        background: #ffffff;
-        border-bottom: 1px solid #d4c4a8;
+        background: rgba(255, 248, 231, 0.95);
+        backdrop-filter: blur(8px);
+        border-bottom: 1px solid rgba(255, 184, 0, 0.1);
         flex-shrink: 0;
       }
-      .banling-chat-back {
-        background: none;
+      .banling-chat-back-btn {
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        background: rgba(255, 184, 0, 0.12);
         border: none;
         font-size: 18px;
-        color: #8b7355;
+        color: #FF8C00;
         cursor: pointer;
-        padding: 4px 8px;
         font-family: inherit;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: all 0.2s ease;
       }
-      .banling-chat-title {
+      .banling-chat-back-btn:hover {
+        background: rgba(255, 184, 0, 0.2);
+      }
+      .banling-chat-topbar-info {
+        display: flex;
+        align-items: center;
+        gap: 10px;
         flex: 1;
-        font-size: 14px;
-        font-weight: 600;
-        color: #5d4e3a;
-        letter-spacing: 0.04em;
+      }
+      .banling-chat-topbar-logo {
+        font-size: 22px;
+      }
+      .banling-chat-topbar-name {
+        font-size: 15px;
+        font-weight: 700;
+        color: #333;
+      }
+      .banling-chat-topbar-status {
+        font-size: 12px;
+        color: #5a9e3f;
       }
       .banling-report-btn {
-        padding: 6px 14px;
-        font-size: 12px;
-        color: #f5f0e6;
-        background: #6b5840;
-        border: 1px solid #6b5840;
-        border-radius: 0;
+        padding: 8px 18px;
+        font-size: 13px;
+        font-weight: 600;
+        color: #fff;
+        background: linear-gradient(135deg, #FF8C00, #FFB800);
+        border: none;
+        border-radius: 999px;
         cursor: pointer;
         white-space: nowrap;
         font-family: inherit;
+        box-shadow: 0 4px 12px rgba(255, 184, 0, 0.3);
         transition: all 0.2s ease;
       }
       .banling-report-btn:hover {
-        background: #5d4e3a;
+        transform: translateY(-1px);
+        box-shadow: 0 6px 16px rgba(255, 184, 0, 0.4);
       }
 
       .banling-chat-body {
@@ -1161,42 +1495,40 @@ function BanlingStyles() {
       .banling-msg {
         display: flex;
         gap: 10px;
-        max-width: 85%;
+        max-width: 82%;
       }
       .banling-msg.user {
         flex-direction: row-reverse;
         align-self: flex-end;
       }
       .banling-msg-avatar {
-        width: 34px;
-        height: 34px;
-        border-radius: 0;
-        background: #ede4d3;
+        width: 38px;
+        height: 38px;
+        border-radius: 50%;
+        background: rgba(255, 184, 0, 0.12);
         display: flex;
         align-items: center;
         justify-content: center;
-        font-size: 17px;
+        font-size: 19px;
         flex-shrink: 0;
       }
-      .banling-msg.user .banling-msg-avatar {
-        background: #e0d4bc;
-      }
       .banling-msg-bubble {
-        padding: 12px 16px;
-        border-radius: 0;
-        font-size: 14px;
+        padding: 12px 18px;
+        border-radius: 18px;
+        font-size: 15px;
         line-height: 1.7;
       }
       .banling-msg.assistant .banling-msg-bubble {
-        background: #ffffff;
-        color: #4a3828;
-        border: 1px solid #e8dcc8;
-        border-top-left-radius: 0;
+        background: #fff;
+        color: #333;
+        border-top-left-radius: 6px;
+        box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
       }
       .banling-msg.user .banling-msg-bubble {
-        background: #6b5840;
-        color: #f5f0e6;
-        border-top-right-radius: 0;
+        background: linear-gradient(135deg, #FF8C00, #FFB800);
+        color: #fff;
+        border-top-right-radius: 6px;
+        box-shadow: 0 2px 12px rgba(255, 184, 0, 0.25);
       }
       .banling-msg-bubble p {
         margin: 0;
@@ -1208,21 +1540,21 @@ function BanlingStyles() {
       /* ===== 打字动画 ===== */
       .banling-typing {
         display: flex;
-        gap: 4px;
+        gap: 5px;
         align-items: center;
       }
       .banling-typing span {
-        width: 6px;
-        height: 6px;
+        width: 8px;
+        height: 8px;
         border-radius: 50%;
-        background: #8b7355;
+        background: #FFB800;
         animation: banling-typing-bounce 1.2s infinite;
       }
       .banling-typing span:nth-child(2) { animation-delay: 0.15s; }
       .banling-typing span:nth-child(3) { animation-delay: 0.3s; }
       @keyframes banling-typing-bounce {
         0%, 60%, 100% { transform: translateY(0); opacity: 0.5; }
-        30% { transform: translateY(-6px); opacity: 1; }
+        30% { transform: translateY(-8px); opacity: 1; }
       }
 
       /* ===== 快捷回复 ===== */
@@ -1233,19 +1565,20 @@ function BanlingStyles() {
         padding: 0 20px 12px;
       }
       .banling-quick-btn {
-        padding: 7px 14px;
-        font-size: 12px;
-        color: #6b5840;
-        background: #ffffff;
-        border: 1px solid #d4c4a8;
-        border-radius: 0;
+        padding: 9px 16px;
+        font-size: 13px;
+        color: #8a6a20;
+        background: rgba(255, 230, 150, 0.35);
+        border: 1px solid rgba(255, 184, 0, 0.2);
+        border-radius: 999px;
         cursor: pointer;
         font-family: inherit;
         transition: all 0.2s ease;
       }
       .banling-quick-btn:hover {
-        background: #ede4d3;
-        border-color: #8b7355;
+        background: rgba(255, 184, 0, 0.15);
+        border-color: #FFB800;
+        transform: translateY(-1px);
       }
 
       /* ===== 输入栏 ===== */
@@ -1253,69 +1586,70 @@ function BanlingStyles() {
         display: flex;
         gap: 10px;
         padding: 12px 20px;
-        background: #ffffff;
-        border-top: 1px solid #d4c4a8;
+        background: rgba(255, 248, 231, 0.95);
+        backdrop-filter: blur(8px);
+        border-top: 1px solid rgba(255, 184, 0, 0.1);
         flex-shrink: 0;
       }
       .banling-input {
         flex: 1;
-        padding: 10px 14px;
-        font-size: 14px;
-        border: 1px solid #d4c4a8;
-        border-radius: 0;
-        background: #fdfaf4;
+        padding: 12px 18px;
+        font-size: 15px;
+        border: 2px solid rgba(255, 184, 0, 0.15);
+        border-radius: 999px;
+        background: #fff;
         resize: none;
         outline: none;
         font-family: inherit;
-        color: #4a3828;
+        color: #333;
         transition: border-color 0.2s ease;
       }
       .banling-input:focus {
-        border-color: #8b7355;
+        border-color: #FFB800;
       }
       .banling-send-btn {
-        padding: 0 20px;
-        font-size: 14px;
-        font-weight: 600;
-        color: #f5f0e6;
-        background: #6b5840;
-        border: 1px solid #6b5840;
-        border-radius: 0;
+        padding: 0 24px;
+        font-size: 15px;
+        font-weight: 700;
+        color: #fff;
+        background: linear-gradient(135deg, #FF8C00, #FFB800);
+        border: none;
+        border-radius: 999px;
         cursor: pointer;
         font-family: inherit;
+        box-shadow: 0 4px 12px rgba(255, 184, 0, 0.3);
         transition: all 0.2s ease;
       }
       .banling-send-btn:disabled {
-        background: #c8bca8;
-        border-color: #c8bca8;
+        background: #E0D5C0;
+        box-shadow: none;
         cursor: not-allowed;
       }
       .banling-send-btn:not(:disabled):hover {
-        background: #5d4e3a;
+        transform: translateY(-1px);
+        box-shadow: 0 6px 16px rgba(255, 184, 0, 0.4);
       }
 
       /* ===== 报告页 ===== */
       .banling-report-root {
         min-height: 100vh;
-        padding-top: 60px;
       }
       .banling-report-inner {
         max-width: 640px;
         margin: 0 auto;
-        padding: 20px;
+        padding: 24px 20px;
       }
       .banling-report-loading {
         text-align: center;
         padding: 80px 20px;
       }
-      .banling-loading-seed {
-        font-size: 44px;
+      .banling-loading-icon {
+        font-size: 52px;
         margin-bottom: 16px;
-        animation: banling-grow 1.5s ease-in-out infinite;
       }
       .banling-loading-sub {
-        font-size: 12px;
-        color: #8b7355;
+        font-size: 13px;
+        color: #999;
         margin-top: 8px;
       }
 
@@ -1330,14 +1664,13 @@ function BanlingStyles() {
       }
       .banling-section-tag {
         display: inline-block;
-        padding: 4px 12px;
-        font-size: 11px;
-        color: #6b5840;
-        background: transparent;
-        border: 1px solid #8b7355;
-        border-radius: 0;
+        padding: 5px 14px;
+        font-size: 12px;
+        font-weight: 600;
+        color: #FF8C00;
+        background: rgba(255, 184, 0, 0.1);
+        border-radius: 999px;
         margin-bottom: 14px;
-        letter-spacing: 0.05em;
       }
       .banling-section-header .banling-section-tag {
         margin-bottom: 0;
@@ -1345,28 +1678,28 @@ function BanlingStyles() {
       .banling-text-btn {
         background: none;
         border: none;
-        font-size: 12px;
-        color: #8b7355;
+        font-size: 13px;
+        color: #FF8C00;
         cursor: pointer;
         font-family: inherit;
-        text-decoration: underline;
+        font-weight: 600;
         padding: 0;
       }
       .banling-text-btn:hover {
-        color: #6b5840;
+        color: #FF6600;
       }
       .banling-insight-card {
-        background: #ffffff;
-        border: 1px solid #e8dcc8;
-        border-radius: 0;
+        background: #fff;
+        border-radius: 20px;
         padding: 24px;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
       }
       .banling-insight-text {
-        font-size: 17px;
+        font-size: 18px;
         line-height: 1.7;
-        color: #4a3828;
+        color: #1a1a1a;
         margin: 0;
-        font-weight: 600;
+        font-weight: 700;
       }
 
       /* ===== 指标网格 ===== */
@@ -1376,33 +1709,33 @@ function BanlingStyles() {
         gap: 12px;
       }
       .banling-metric-card {
-        background: #ffffff;
-        border: 1px solid #e8dcc8;
-        border-radius: 0;
-        padding: 16px 12px;
+        background: #fff;
+        border-radius: 16px;
+        padding: 18px 14px;
         text-align: center;
+        box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
       }
       .banling-metric-label {
-        font-size: 11px;
-        color: #8b7355;
+        font-size: 12px;
+        color: #999;
         margin-bottom: 6px;
       }
       .banling-metric-value {
-        font-size: 19px;
-        font-weight: 700;
-        color: #6b5840;
+        font-size: 22px;
+        font-weight: 900;
+        color: #FF8C00;
         margin-bottom: 4px;
       }
       .banling-metric-hint {
-        font-size: 10px;
-        color: #a89880;
+        font-size: 11px;
+        color: #ccc;
       }
 
       /* ===== 行动建议 ===== */
       .banling-action-hint {
-        font-size: 12px;
-        color: #a89880;
-        margin: 0 0 10px;
+        font-size: 13px;
+        color: #999;
+        margin: 0 0 12px;
       }
       .banling-actions-list {
         display: flex;
@@ -1413,33 +1746,32 @@ function BanlingStyles() {
         display: flex;
         align-items: flex-start;
         gap: 12px;
-        background: #ffffff;
-        border: 1px solid #e8dcc8;
-        border-radius: 0;
-        padding: 14px 16px;
+        background: #fff;
+        border-radius: 16px;
+        padding: 16px 18px;
         cursor: pointer;
+        box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
         transition: all 0.2s ease;
       }
       .banling-action-item:hover {
-        background: #fdfaf4;
-        border-color: #d4c4a8;
+        transform: translateY(-1px);
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
       }
       .banling-action-item.adopted {
-        background: #ede4d3;
-        border-color: #8b7355;
+        background: linear-gradient(135deg, rgba(126, 211, 33, 0.08), rgba(255, 184, 0, 0.05));
       }
       .banling-action-item.adopted .banling-action-text {
+        color: #999;
         text-decoration: line-through;
-        color: #8b7355;
       }
       .banling-action-num {
         flex-shrink: 0;
-        width: 24px;
-        height: 24px;
-        border-radius: 0;
-        background: #6b5840;
-        color: #f5f0e6;
-        font-size: 12px;
+        width: 28px;
+        height: 28px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #FF8C00, #FFB800);
+        color: #fff;
+        font-size: 14px;
         font-weight: 700;
         display: flex;
         align-items: center;
@@ -1447,27 +1779,26 @@ function BanlingStyles() {
         font-family: inherit;
       }
       .banling-action-item.adopted .banling-action-num {
-        background: #5d8a6a;
+        background: linear-gradient(135deg, #5a9e3f, #7ED321);
       }
       .banling-action-text {
-        font-size: 14px;
+        font-size: 15px;
         line-height: 1.6;
-        color: #4a3828;
+        color: #333;
       }
 
       /* ===== 寄语 ===== */
       .banling-report-summary {
-        background: #ede4d3;
-        border: 1px solid #d4c4a8;
-        border-radius: 0;
+        background: linear-gradient(135deg, rgba(255, 184, 0, 0.08), rgba(255, 140, 0, 0.04));
+        border-radius: 20px;
         padding: 24px;
         text-align: center;
-        margin-bottom: 28px;
+        margin-bottom: 24px;
       }
       .banling-report-summary p {
-        font-size: 14px;
+        font-size: 15px;
         line-height: 1.8;
-        color: #5d4e3a;
+        color: #8a6a20;
         margin: 0;
         font-style: italic;
       }
@@ -1480,19 +1811,22 @@ function BanlingStyles() {
         margin-bottom: 20px;
       }
       .banling-export-btn {
-        padding: 10px 24px;
-        font-size: 13px;
+        padding: 11px 24px;
+        font-size: 14px;
         font-weight: 600;
-        color: #6b5840;
-        background: #ffffff;
-        border: 1px solid #6b5840;
-        border-radius: 0;
+        color: #FF8C00;
+        background: #fff;
+        border: 2px solid rgba(255, 184, 0, 0.25);
+        border-radius: 999px;
         cursor: pointer;
         font-family: inherit;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
         transition: all 0.2s ease;
       }
       .banling-export-btn:hover {
-        background: #ede4d3;
+        background: rgba(255, 184, 0, 0.06);
+        border-color: #FFB800;
+        transform: translateY(-1px);
       }
 
       /* ===== 操作按钮 ===== */
@@ -1502,52 +1836,42 @@ function BanlingStyles() {
         justify-content: center;
       }
       .banling-again-btn {
-        padding: 11px 28px;
-        font-size: 13px;
-        font-weight: 600;
-        color: #6b5840;
-        background: #ffffff;
-        border: 1px solid #6b5840;
-        border-radius: 0;
+        padding: 13px 28px;
+        font-size: 14px;
+        font-weight: 700;
+        color: #FF8C00;
+        background: #fff;
+        border: 2px solid rgba(255, 184, 0, 0.25);
+        border-radius: 999px;
         cursor: pointer;
         font-family: inherit;
         transition: all 0.2s ease;
       }
       .banling-again-btn:hover {
-        background: #ede4d3;
+        background: rgba(255, 184, 0, 0.06);
+        border-color: #FFB800;
       }
       .banling-restart-btn {
-        padding: 11px 28px;
-        font-size: 13px;
-        font-weight: 600;
-        color: #f5f0e6;
-        background: #6b5840;
-        border: 1px solid #6b5840;
-        border-radius: 0;
+        padding: 13px 28px;
+        font-size: 14px;
+        font-weight: 700;
+        color: #fff;
+        background: linear-gradient(135deg, #FF8C00, #FFB800);
+        border: none;
+        border-radius: 999px;
         cursor: pointer;
         font-family: inherit;
+        box-shadow: 0 4px 16px rgba(255, 184, 0, 0.3);
         transition: all 0.2s ease;
       }
       .banling-restart-btn:hover {
-        background: #5d4e3a;
+        transform: translateY(-1px);
+        box-shadow: 0 6px 20px rgba(255, 184, 0, 0.4);
       }
 
       /* ===== 个人中心 ===== */
       .banling-profile-root {
         min-height: 100vh;
-        padding-top: 60px;
-      }
-      .banling-profile-inner {
-        max-width: 640px;
-        margin: 0 auto;
-        padding: 20px;
-      }
-      .banling-profile-title {
-        font-size: 24px;
-        font-weight: 700;
-        color: #6b5840;
-        margin: 0 0 28px;
-        letter-spacing: 0.05em;
       }
       .banling-profile-form {
         display: flex;
@@ -1555,17 +1879,18 @@ function BanlingStyles() {
         gap: 12px;
       }
       .banling-profile-input {
-        padding: 10px 14px;
-        font-size: 14px;
-        border: 1px solid #d4c4a8;
-        border-radius: 0;
-        background: #fdfaf4;
+        padding: 12px 16px;
+        font-size: 15px;
+        border: 2px solid rgba(255, 184, 0, 0.15);
+        border-radius: 14px;
+        background: #fff;
         outline: none;
         font-family: inherit;
-        color: #4a3828;
+        color: #333;
+        transition: border-color 0.2s ease;
       }
       .banling-profile-input:focus {
-        border-color: #8b7355;
+        border-color: #FFB800;
       }
       .banling-profile-form-actions {
         display: flex;
@@ -1574,52 +1899,55 @@ function BanlingStyles() {
         align-items: center;
       }
       .banling-save-btn {
-        padding: 8px 24px;
-        font-size: 13px;
-        font-weight: 600;
-        color: #f5f0e6;
-        background: #6b5840;
-        border: 1px solid #6b5840;
-        border-radius: 0;
+        padding: 10px 28px;
+        font-size: 14px;
+        font-weight: 700;
+        color: #fff;
+        background: linear-gradient(135deg, #FF8C00, #FFB800);
+        border: none;
+        border-radius: 999px;
         cursor: pointer;
         font-family: inherit;
+        box-shadow: 0 4px 12px rgba(255, 184, 0, 0.3);
         transition: all 0.2s ease;
       }
       .banling-save-btn:hover {
-        background: #5d4e3a;
+        transform: translateY(-1px);
+        box-shadow: 0 6px 16px rgba(255, 184, 0, 0.4);
       }
       .banling-profile-info {
-        background: #ffffff;
-        border: 1px solid #e8dcc8;
-        border-radius: 0;
-        padding: 16px 20px;
+        background: #fff;
+        border-radius: 16px;
+        padding: 18px 22px;
+        box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
       }
       .banling-profile-row {
         display: flex;
-        padding: 8px 0;
-        border-bottom: 1px solid #f0eadd;
+        padding: 10px 0;
+        border-bottom: 1px solid #f5f0e8;
       }
       .banling-profile-row:last-child {
         border-bottom: none;
       }
       .banling-profile-key {
         width: 100px;
-        font-size: 13px;
-        color: #8b7355;
+        font-size: 14px;
+        color: #999;
         flex-shrink: 0;
       }
       .banling-profile-val {
-        font-size: 14px;
-        color: #4a3828;
+        font-size: 15px;
+        color: #333;
       }
       .banling-profile-empty {
-        font-size: 13px;
-        color: #a89880;
+        font-size: 14px;
+        color: #999;
         margin: 0;
-        padding: 20px;
-        background: #ffffff;
-        border: 1px solid #e8dcc8;
-        border-radius: 0;
+        padding: 24px;
+        background: #fff;
+        border-radius: 16px;
+        box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
+        text-align: center;
       }
 
       /* ===== 统计概览 ===== */
@@ -1629,21 +1957,24 @@ function BanlingStyles() {
         gap: 12px;
       }
       .banling-stat-card {
-        background: #ffffff;
-        border: 1px solid #e8dcc8;
-        border-radius: 0;
-        padding: 20px 12px;
+        background: #fff;
+        border-radius: 16px;
+        padding: 24px 14px;
         text-align: center;
+        box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
       }
       .banling-stat-num {
-        font-size: 26px;
-        font-weight: 700;
-        color: #6b5840;
+        font-size: 30px;
+        font-weight: 900;
+        background: linear-gradient(135deg, #FF8C00, #FFB800);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
         margin-bottom: 4px;
       }
       .banling-stat-label {
-        font-size: 11px;
-        color: #8b7355;
+        font-size: 12px;
+        color: #999;
       }
 
       /* ===== 历史报告 ===== */
@@ -1656,14 +1987,15 @@ function BanlingStyles() {
         display: flex;
         align-items: center;
         gap: 12px;
-        background: #ffffff;
-        border: 1px solid #e8dcc8;
-        border-radius: 0;
-        padding: 14px 16px;
+        background: #fff;
+        border-radius: 16px;
+        padding: 16px 18px;
+        box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
         transition: all 0.2s ease;
       }
       .banling-history-item:hover {
-        border-color: #d4c4a8;
+        transform: translateY(-1px);
+        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
       }
       .banling-history-main {
         flex: 1;
@@ -1672,38 +2004,39 @@ function BanlingStyles() {
       }
       .banling-history-insight {
         font-size: 14px;
-        color: #4a3828;
+        color: #333;
         margin-bottom: 4px;
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
+        font-weight: 600;
       }
       .banling-history-meta {
-        font-size: 11px;
-        color: #a89880;
+        font-size: 12px;
+        color: #999;
       }
       .banling-history-del {
         flex-shrink: 0;
-        padding: 4px 12px;
-        font-size: 11px;
-        color: #b06a6a;
-        background: transparent;
-        border: 1px solid #d4b8b8;
-        border-radius: 0;
+        padding: 6px 14px;
+        font-size: 12px;
+        color: #d66;
+        background: rgba(200, 80, 80, 0.08);
+        border: none;
+        border-radius: 999px;
         cursor: pointer;
         font-family: inherit;
         transition: all 0.2s ease;
       }
       .banling-history-del:hover {
-        background: #f5e8e8;
-        border-color: #b06a6a;
+        background: rgba(200, 80, 80, 0.15);
       }
 
       /* ===== 弹窗 ===== */
       .banling-modal-overlay {
         position: fixed;
         top: 0; left: 0; right: 0; bottom: 0;
-        background: rgba(74, 56, 40, 0.4);
+        background: rgba(50, 40, 20, 0.4);
+        backdrop-filter: blur(4px);
         z-index: 200;
         display: flex;
         align-items: center;
@@ -1711,36 +2044,47 @@ function BanlingStyles() {
         padding: 20px;
       }
       .banling-modal {
-        background: #f5f0e6;
-        border: 1px solid #8b7355;
-        border-radius: 0;
+        background: #FFF8E7;
+        border-radius: 24px;
         max-width: 560px;
         width: 100%;
         max-height: 80vh;
         overflow-y: auto;
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
       }
       .banling-modal-header {
         display: flex;
         align-items: center;
         justify-content: space-between;
-        padding: 14px 20px;
-        border-bottom: 1px solid #d4c4a8;
-        font-size: 14px;
-        color: #5d4e3a;
-        font-weight: 600;
+        padding: 16px 22px;
+        border-bottom: 1px solid rgba(255, 184, 0, 0.1);
+        font-size: 15px;
+        color: #333;
+        font-weight: 700;
       }
       .banling-modal-close {
-        background: none;
+        background: rgba(255, 184, 0, 0.1);
         border: none;
         font-size: 22px;
-        color: #8b7355;
+        color: #999;
         cursor: pointer;
         font-family: inherit;
         padding: 0;
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
         line-height: 1;
+        transition: all 0.2s ease;
+      }
+      .banling-modal-close:hover {
+        background: rgba(255, 184, 0, 0.2);
+        color: #333;
       }
       .banling-modal-body {
-        padding: 20px;
+        padding: 22px;
       }
       .banling-modal-body .banling-insight-card {
         margin-bottom: 20px;
@@ -1764,26 +2108,48 @@ function BanlingStyles() {
         bottom: 30px;
         left: 50%;
         transform: translateX(-50%);
-        padding: 10px 24px;
-        font-size: 13px;
-        color: #f5f0e6;
-        background: #6b5840;
-        border: 1px solid #5d4e3a;
-        border-radius: 0;
+        padding: 12px 28px;
+        font-size: 14px;
+        font-weight: 600;
+        color: #fff;
+        background: linear-gradient(135deg, #FF8C00, #FFB800);
+        border-radius: 999px;
         z-index: 300;
         font-family: inherit;
-        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        box-shadow: 0 8px 24px rgba(255, 184, 0, 0.4);
       }
 
       /* ===== 响应式 ===== */
+      @media (max-width: 900px) {
+        .banling-home-content {
+          flex-direction: column;
+          gap: 32px;
+          padding: 32px 20px;
+        }
+        .banling-home-right {
+          max-width: 100%;
+          width: 100%;
+        }
+        .banling-hero-line1,
+        .banling-hero-line2 {
+          font-size: 32px;
+        }
+      }
       @media (max-width: 640px) {
         .banling-metrics-grid,
         .banling-stats-grid {
           grid-template-columns: 1fr;
         }
-        .banling-title { font-size: 28px; }
-        .banling-desc { font-size: 13px; }
-        .banling-msg { max-width: 92%; }
+        .banling-hero-line1,
+        .banling-hero-line2 {
+          font-size: 28px;
+        }
+        .banling-hero-desc {
+          font-size: 14px;
+        }
+        .banling-msg {
+          max-width: 90%;
+        }
         .banling-report-actions,
         .banling-export-bar {
           flex-direction: column;
@@ -1794,6 +2160,19 @@ function BanlingStyles() {
         }
         .banling-profile-key {
           width: auto;
+        }
+        .banling-topbar {
+          padding: 12px 16px;
+        }
+        .banling-topbar-profile span:last-child {
+          display: none;
+        }
+        .banling-preview-score {
+          position: relative;
+          bottom: auto;
+          right: auto;
+          margin: 16px auto 0;
+          display: inline-block;
         }
       }
     `}</style>

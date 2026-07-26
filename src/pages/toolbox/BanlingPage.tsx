@@ -617,13 +617,12 @@ ${messages.map((m) => `${m.role === "user" ? "用户" : "伴龄"}: ${m.content}`
         <h1 className="bl-hero-title">
           养老不焦虑
           <br />
-          <span className="bl-hero-accent">我们帮您规划</span>
+          <span className="bl-hero-accent">我们用数据说话</span>
         </h1>
-        <p className="bl-hero-sub">低门槛、稳收益的养老规划</p>
         <p className="bl-hero-desc">
-          根据您的年龄、风险偏好和养老金缺口，
+          结合 AI 智能算法与专业顾问经验，
           <br />
-          为您量身定制专属养老方案
+          为您量身定制个性化养老规划方案
         </p>
 
         {/* 养老金输入 */}
@@ -637,14 +636,14 @@ ${messages.map((m) => `${m.role === "user" ? "用户" : "伴龄"}: ${m.content}`
 
         {/* CTA */}
         <button className="bl-cta-main" onClick={handleStartChat}>
-          立即定制我的养老方案 →
+          测测我的养老缺口 →
         </button>
 
         {/* 信任标签 */}
         <div className="bl-trust-tags">
           <span>✓ 专业评估</span>
-          <span>✓ 稳健增值</span>
-          <span>✓ 专属规划</span>
+          <span>✓ 智能规划</span>
+          <span>✓ 专属服务</span>
         </div>
       </div>
 
@@ -674,23 +673,23 @@ ${messages.map((m) => `${m.role === "user" ? "用户" : "伴龄"}: ${m.content}`
 
       {/* 目标人群 */}
       <div className="bl-section">
-        <h2 className="bl-section-title">我们是哪群人？</h2>
+        <h2 className="bl-section-title">我们是您身边的谁?</h2>
         <div className="bl-persona-grid">
-          <div className="bl-persona-card">
+          <div className="bl-persona-card bl-persona-green">
             <div className="bl-persona-icon">🌱</div>
-            <h3>养老规划师</h3>
-            <p className="bl-persona-age">25-35岁</p>
+            <h3>职场新鲜人</h3>
+            <p className="bl-persona-age">20-30岁</p>
             <p>刚步入职场，趁年轻提前布局</p>
           </div>
-          <div className="bl-persona-card">
-            <div className="bl-persona-icon">🌿</div>
-            <h3>小有积蓄</h3>
-            <p className="bl-persona-age">35-50岁</p>
+          <div className="bl-persona-card bl-persona-orange">
+            <div className="bl-persona-icon">🏠</div>
+            <h3>家庭顶梁柱</h3>
+            <p className="bl-persona-age">30-50岁</p>
             <p>事业稳定，优化资产配置</p>
           </div>
-          <div className="bl-persona-card">
-            <div className="bl-persona-icon">🌳</div>
-            <h3>临近退休</h3>
+          <div className="bl-persona-card bl-persona-pink">
+            <div className="bl-persona-icon">🌸</div>
+            <h3>预备退休族</h3>
             <p className="bl-persona-age">50岁+</p>
             <p>退休在即，确保安享晚年</p>
           </div>
@@ -699,28 +698,27 @@ ${messages.map((m) => `${m.role === "user" ? "用户" : "伴龄"}: ${m.content}`
 
       {/* 价值主张 */}
       <div className="bl-section">
-        <h2 className="bl-section-title">为什么选择伴龄？</h2>
-        <p className="bl-section-intro">专业团队，严格风控，让每一分钱都有迹可循</p>
+        <h2 className="bl-section-title">为什么选择伴龄?</h2>
         <div className="bl-value-grid">
           <div className="bl-value-card">
             <div className="bl-value-icon">🤖</div>
-            <h3>智能 AI 规划</h3>
-            <p>AI 驱动个性化方案</p>
+            <h3>智能AI测算</h3>
+            <p>AI 驱动精准计算</p>
           </div>
           <div className="bl-value-card">
-            <div className="bl-value-icon">✅</div>
-            <h3>个性化服务</h3>
+            <div className="bl-value-icon">📋</div>
+            <h3>个性化规划</h3>
             <p>专属定制养老路径</p>
           </div>
           <div className="bl-value-card">
             <div className="bl-value-icon">📊</div>
-            <h3>可视化进程</h3>
+            <h3>可视化分析</h3>
             <p>进度一目了然</p>
           </div>
           <div className="bl-value-card">
-            <div className="bl-value-icon">🧰</div>
-            <h3>专业工具箱</h3>
-            <p>计算器/规划/目标</p>
+            <div className="bl-value-icon">🎧</div>
+            <h3>专家1V1服务</h3>
+            <p>专业顾问贴心陪伴</p>
           </div>
         </div>
       </div>
@@ -730,12 +728,12 @@ ${messages.map((m) => `${m.role === "user" ? "用户" : "伴龄"}: ${m.content}`
         <h2 className="bl-section-title">4步完成您的养老规划</h2>
         <div className="bl-steps">
           {[
-            { num: "01", title: "开启规划", desc: "和 AI 伴侣聊聊天" },
-            { num: "02", title: "测算缺口", desc: "智能分析养老金缺口" },
-            { num: "03", title: "生成方案", desc: "个性化养老规划报告" },
-            { num: "04", title: "持续跟踪", desc: "定期复盘调整方向" },
+            { num: "01", title: "评估测算", desc: "智能评估当前养老状况", color: "#FF9F43" },
+            { num: "02", title: "缺口分析", desc: "精准分析养老金缺口", color: "#FFC107" },
+            { num: "03", title: "定制方案", desc: "生成个性化规划方案", color: "#FFB74D" },
+            { num: "04", title: "长期陪伴", desc: "持续跟踪定期复盘", color: "#FB8C00" },
           ].map((step) => (
-            <div key={step.num} className="bl-step-card">
+            <div key={step.num} className="bl-step-card" style={{ background: step.color }}>
               <div className="bl-step-num">{step.num}</div>
               <h3>{step.title}</h3>
               <p>{step.desc}</p>
@@ -747,10 +745,15 @@ ${messages.map((m) => `${m.role === "user" ? "用户" : "伴龄"}: ${m.content}`
       {/* 底部 CTA */}
       <div className="bl-section bl-final-cta">
         <h2>现在就行动，未来的你会感谢今天</h2>
-        <p>养老规划越早越好，伴财陪您每一步</p>
+        <p>养老规划越早开始，收获越丰厚</p>
         <button className="bl-cta-main" onClick={handleStartChat}>
-          开启 AI 规划对话 →
+          免费获取我的养老方案 →
         </button>
+      </div>
+
+      {/* Footer */}
+      <div className="bl-footer">
+        <p>© 2024 伴龄 养老规划平台 All rights reserved</p>
       </div>
     </div>
   );
@@ -1594,6 +1597,19 @@ function BanlingStyles() {
         padding: 20px;
         box-shadow: var(--shadow);
         text-align: center;
+        border-top: 3px solid transparent;
+      }
+
+      .bl-persona-card.bl-persona-green {
+        border-top-color: #66BB6A;
+      }
+
+      .bl-persona-card.bl-persona-orange {
+        border-top-color: #FF9F43;
+      }
+
+      .bl-persona-card.bl-persona-pink {
+        border-top-color: #EC407A;
       }
 
       .bl-persona-icon {
@@ -1660,16 +1676,17 @@ function BanlingStyles() {
       }
 
       .bl-step-card {
-        background: var(--card);
         border-radius: 12px;
         padding: 20px 16px;
         box-shadow: var(--shadow);
+        color: #fff;
       }
 
       .bl-step-num {
         font-size: 24px;
         font-weight: 800;
-        color: var(--orange);
+        color: #fff;
+        opacity: 0.9;
         margin-bottom: 8px;
       }
 
@@ -1677,11 +1694,12 @@ function BanlingStyles() {
         font-size: 15px;
         font-weight: 600;
         margin: 0 0 4px;
+        color: #fff;
       }
 
       .bl-step-card p {
         font-size: 12px;
-        color: var(--text-light);
+        color: rgba(255,255,255,0.85);
         margin: 0;
       }
 
@@ -1701,6 +1719,19 @@ function BanlingStyles() {
         font-size: 13px;
         color: var(--text-light);
         margin: 0 0 20px;
+      }
+
+      /* Footer */
+      .bl-footer {
+        text-align: center;
+        padding: 20px 0 40px;
+        border-top: 1px solid var(--border);
+      }
+
+      .bl-footer p {
+        font-size: 11px;
+        color: var(--text-light);
+        margin: 0;
       }
 
       /* ===== AI 对话页 ===== */

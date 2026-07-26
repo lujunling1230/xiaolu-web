@@ -62,6 +62,9 @@ const ALLOWED_EVENTS = new Set([
   "advice_letter",
   "advice_reply",
   "recharge_action",
+  /* 伴龄 */
+  "banling_chat",
+  "banling_report",
 ]);
 
 /* ---- Bot / Crawler 检测 ---- */

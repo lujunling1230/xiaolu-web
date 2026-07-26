@@ -124,6 +124,9 @@ export default function AnalyticsDashboard() {
       adviceReply: countEvent("advice_reply", hours, events),
       /* 回血清单 */
       rechargeAction: countEvent("recharge_action", hours, events),
+      /* 伴龄 */
+      banlingChats: countEvent("banling_chat", hours, events),
+      banlingReports: countEvent("banling_report", hours, events),
       /* 小叶 */
       xiaoyeOpens: countEvent("xiaoye_open", hours, events),
       xiaoyeChats: countEvent("xiaoye_chat", hours, events),
@@ -355,6 +358,11 @@ export default function AnalyticsDashboard() {
           {/* 回血清单 */}
           <WorkStatRow label="回血清单">
             <StatCard label="回血行动" value={stats.rechargeAction} color="#8a5f8a" compact />
+          </WorkStatRow>
+          {/* 伴龄 */}
+          <WorkStatRow label="伴龄">
+            <StatCard label="AI 对话" value={stats.banlingChats} color="#C08020" compact />
+            <StatCard label="生成报告" value={stats.banlingReports} color="#FFB042" compact />
           </WorkStatRow>
           {/* 小叶 */}
           <WorkStatRow label="小叶">

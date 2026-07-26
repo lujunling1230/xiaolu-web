@@ -20,6 +20,7 @@ import PlanPage from "./pages/toolbox/roaming-guide/PlanPage";
 import AboutPage from "./pages/toolbox/roaming-guide/AboutPage";
 import { RoamingGuideProvider } from "./pages/toolbox/roaming-guide/RoamingGuideContext";
 import SystemTuningPage from "./pages/toolbox/SystemTuningPage";
+import BanlingPage from "./pages/toolbox/BanlingPage";
 // LifeFilmPage removed - module deleted
 import HealingRoomPage from "./pages/HealingRoomPage";
 import MusicPage from "./pages/toolbox/MusicPage";
@@ -113,6 +114,8 @@ createRoot(document.getElementById("root")!).render(
         </Route>
         {/* 系统调频：5% 微改变认知工具 */}
         <Route path="/toolbox/answer" element={<SystemTuningPage />} />
+        {/* 伴龄：AI 养老规划伴侣 */}
+        <Route path="/toolbox/banling" element={<BanlingPage />} />
         {/* 作品详情占位页 */}
         <Route path="/toolbox/:title" element={<ToolboxDetail />} />
       </Routes>

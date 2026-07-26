@@ -19,6 +19,7 @@ const products = [
   { dimension: "游", title: "漫游指南", value: "探索与规划" },
   { dimension: "术", title: "万能百事通", value: "效率与工具" },
   { dimension: "管", title: "物资管家", value: "资源管理与反" },
+  { dimension: "未", title: "伴龄", value: "养老规划与陪伴" },
 ];
 
 /**
@@ -57,6 +58,7 @@ const ToolboxHome: React.FC = () => {
       "漫游指南": "/toolbox/travel",
       "通关清单": "/toolbox/quests",
       "系统调频 + 回血清单": "/toolbox/answer",
+      "伴龄": "/toolbox/banling",
     };
 
     const route = routeMap[title];

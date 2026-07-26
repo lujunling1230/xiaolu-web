@@ -54,6 +54,9 @@ const ALLOWED_EVENTS = [
   "advice_reply",
   /* 回血清单 */
   "recharge_action",
+  /* 伴龄 */
+  "banling_chat",
+  "banling_report",
 ] as const;
 
 const EVENT_SET = new Set<string>(ALLOWED_EVENTS);

@@ -7,14 +7,13 @@ import { callAI } from "../../utils/aiClient";
 /**
  * 伴龄 · AI 养老规划伴侣
  *
- * 三阶段流程：首页（情绪感知）→ 对话页（AI Copilot）→ 报告页（结构化方案）
- * 暖橙黄主色 #FFB800 / 米白辅色 #FFF8E7 / 温暖治愈风格
+ * 5 Tab 底部导航结构：首页 / AI规划 / 报告 / 工具 / 我的
+ * 暖橙黄主色 #FFB84D / 暖白背景 #FFF9F0 / 白色卡片 + 柔和阴影
  * 复用 /api/ai 通用 AI 代理
- * 报告持久化到 localStorage，支持导出分享
  */
 
 /* ===== 类型 ===== */
-type Stage = "home" | "chat" | "report" | "profile";
+type Tab = "home" | "ai" | "report" | "tools" | "profile";
 
 interface ChatMessage {
   id: string;
@@ -38,9 +37,25 @@ interface SavedReport {
   adoptedActions: boolean[];
 }
 
+interface ChatSession {
+  id: string;
+  title: string;
+  createdAt: number;
+  messageCount: number;
+  status: "ongoing" | "completed";
+}
+
+interface UserProfile {
+  nickname: string;
+  ageGroup: string;
+  concern: string;
+  createdAt: number;
+}
+
 /* ===== localStorage ===== */
 const REPORTS_KEY = "banling_reports";
 const PROFILE_KEY = "banling_profile";
+const SESSIONS_KEY = "banling_sessions";
 
 const loadReports = (): SavedReport[] => {
   try {
@@ -58,13 +73,6 @@ const saveReports = (reports: SavedReport[]) => {
     /* 静默处理 */
   }
 };
-
-interface UserProfile {
-  nickname: string;
-  ageGroup: string;
-  concern: string;
-  createdAt: number;
-}
 
 const loadProfile = (): UserProfile | null => {
   try {
@@ -84,6 +92,23 @@ const saveProfile = (p: UserProfile | null) => {
   }
 };
 
+const loadSessions = (): ChatSession[] => {
+  try {
+    const r = localStorage.getItem(SESSIONS_KEY);
+    return r ? JSON.parse(r) : [];
+  } catch {
+    return [];
+  }
+};
+
+const saveSessions = (sessions: ChatSession[]) => {
+  try {
+    localStorage.setItem(SESSIONS_KEY, JSON.stringify(sessions));
+  } catch {
+    /* 静默处理 */
+  }
+};
+
 /* ===== System Prompt ===== */
 const SYSTEM_PROMPT = `你是"伴龄"，一位兼具资深理财顾问和心理咨询师身份的AI伙伴。
 你的语言风格温暖、包容，擅长用比喻解释复杂概念。
@@ -93,7 +118,7 @@ const SYSTEM_PROMPT = `你是"伴龄"，一位兼具资深理财顾问和心理�
 【对话策略】
 1. 每次只问一个问题，不要一次性问完所有信息
 2. 渐进式采集：先了解年龄段 → 再了解退休担忧 → 最后了解财务状况
-3. 用"我们"代替"你"，用"小目标"代替"强制储蓄"，用"安心星"代替"完成度"
+3. 用"我们"代替"你"，用"小目标"代替"强制储蓄"
 4. 每轮回复控制在150字以内，语气像朋友聊天
 5. 当采集到足够信息（至少3轮对话）后，主动引导用户查看规划报告
 
@@ -104,12 +129,13 @@ const SYSTEM_PROMPT = `你是"伴龄"，一位兼具资深理财顾问和心理�
 - 期望退休年龄和生活方式`;
 
 /* ===== 快捷回复 ===== */
-const QUICK_REPLIES = [
+const QUICK_REPLIES = ["25岁", "30岁", "35岁", "40岁以上"];
+
+const CONCERN_REPLIES = [
   "我还年轻，养老太远了吧",
   "担心父母的医疗费用",
   "不知道退休金够不够",
   "怕老了孤独",
-  "想了解商业保险",
 ];
 
 /* ===== 动态问候 ===== */
@@ -121,22 +147,20 @@ function getGreeting(): string {
   return "夜幕降临，让我们规划一下安心岁月。";
 }
 
-function getGreetingEmoji(): string {
-  const h = new Date().getHours();
-  if (h < 6) return "🌙";
-  if (h < 12) return "✨";
-  if (h < 18) return "☀️";
-  return "🌆";
-}
-
 /* ===== 格式化时间 ===== */
+const formatDate = (ts: number) => {
+  const d = new Date(ts);
+  const p = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
+};
+
 const formatTime = (ts: number) => {
   const d = new Date(ts);
   const p = (n: number) => String(n).padStart(2, "0");
   return `${d.getFullYear()}.${p(d.getMonth() + 1)}.${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
 };
 
-/* ===== 导出报告为文本 ===== */
+/* ===== 导出报告 ===== */
 function exportReportAsText(report: ReportData, createdAt: number): string {
   const lines: string[] = [];
   lines.push("═══════════════════════════════════");
@@ -159,15 +183,9 @@ function exportReportAsText(report: ReportData, createdAt: number): string {
   lines.push("");
   lines.push("【寄语】");
   lines.push(report.summary);
-  lines.push("");
-  lines.push("───────────────────────────────────");
-  lines.push("伴龄 · AI 养老规划伴侣");
-  lines.push("把焦虑变成小目标，把未来变成安心岁月");
-  lines.push("───────────────────────────────────");
   return lines.join("\n");
 }
 
-/* ===== 下载文本文件 ===== */
 function downloadText(filename: string, text: string) {
   const blob = new Blob([text], { type: "text/plain;charset=utf-8" });
   const url = URL.createObjectURL(blob);
@@ -178,7 +196,6 @@ function downloadText(filename: string, text: string) {
   URL.revokeObjectURL(url);
 }
 
-/* ===== 复制到剪贴板 ===== */
 async function copyToClipboard(text: string): Promise<boolean> {
   try {
     await navigator.clipboard.writeText(text);
@@ -188,33 +205,127 @@ async function copyToClipboard(text: string): Promise<boolean> {
   }
 }
 
-/* ===== 星星渲染 ===== */
-function StarRow({ filled, total }: { filled: number; total: number }) {
+/* ===== 工具箱计算 ===== */
+interface CalcParams {
+  currentAge: number;
+  retireAge: number;
+  monthlyIncome: number;
+  pension: number;
+  monthlyExpense: number;
+  lifeExpectancy: number;
+  returnRate: number;
+}
+
+function calcPensionGap(p: CalcParams) {
+  const yearsToRetire = p.retireAge - p.currentAge;
+  const yearsInRetire = p.lifeExpectancy - p.retireAge;
+  const monthlyGap = p.monthlyExpense - p.pension;
+  const totalGap = monthlyGap * 12 * yearsInRetire;
+  const monthlySave = Math.max(0, (p.monthlyIncome * 0.2));
+  const totalSave = monthlySave * 12 * yearsToRetire;
+  const investGrowth = totalSave * (Math.pow(1 + p.returnRate / 100, yearsToRetire) - 1);
+  const finalSavings = Math.round(totalSave + investGrowth);
+  return { yearsToRetire, yearsInRetire, monthlyGap, totalGap, finalSavings };
+}
+
+/* ===== 滑块组件 ===== */
+function Slider({
+  label, value, min, max, step = 1, unit, onChange,
+}: {
+  label: string; value: number; min: number; max: number; step?: number; unit: string;
+  onChange: (v: number) => void;
+}) {
+  const percent = ((value - min) / (max - min)) * 100;
   return (
-    <span className="banling-stars">
-      {Array.from({ length: total }).map((_, i) => (
-        <span key={i} className={i < filled ? "star filled" : "star"}>★</span>
-      ))}
-    </span>
+    <div className="bl-slider-row">
+      <div className="bl-slider-label">
+        <span>{label}</span>
+        <span className="bl-slider-value">{unit === "¥" ? `¥${value.toLocaleString()}` : `${value}${unit}`}</span>
+      </div>
+      <div className="bl-slider-track-wrap">
+        <div className="bl-slider-bg" />
+        <div className="bl-slider-fill" style={{ width: `${percent}%` }} />
+        <input
+          type="range"
+          min={min}
+          max={max}
+          step={step}
+          value={value}
+          onChange={(e) => onChange(Number(e.target.value))}
+          className="bl-slider-input"
+        />
+      </div>
+      <div className="bl-slider-range">
+        <span>{unit === "¥" ? `¥${min.toLocaleString()}` : `${min}${unit}`}</span>
+        <span>{unit === "¥" ? `¥${max.toLocaleString()}` : `${max}${unit}`}</span>
+      </div>
+    </div>
   );
 }
 
-/* ===== 组件 ===== */
+/* ===== 底部导航 ===== */
+function BottomNav({ tab, onChange }: { tab: Tab; onChange: (t: Tab) => void }) {
+  const items: { key: Tab; label: string; icon: string }[] = [
+    { key: "home", label: "首页", icon: "home" },
+    { key: "ai", label: "AI规划", icon: "chat" },
+    { key: "report", label: "报告", icon: "doc" },
+    { key: "tools", label: "工具", icon: "tool" },
+    { key: "profile", label: "我的", icon: "user" },
+  ];
+  return (
+    <div className="bl-bottom-nav">
+      {items.map((item) => (
+        <button
+          key={item.key}
+          className={`bl-nav-item ${tab === item.key ? "active" : ""}`}
+          onClick={() => onChange(item.key)}
+        >
+          <svg className="bl-nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            {item.icon === "home" && <path d="M3 12l9-9 9 9M5 10v10h14V10" strokeLinecap="round" strokeLinejoin="round" />}
+            {item.icon === "chat" && <><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" strokeLinecap="round" strokeLinejoin="round" /></>}
+            {item.icon === "doc" && <><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" strokeLinecap="round" strokeLinejoin="round" /><path d="M14 2v6h6M8 13h8M8 17h5" strokeLinecap="round" /></>}
+            {item.icon === "tool" && <><path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z" strokeLinecap="round" strokeLinejoin="round" /></>}
+            {item.icon === "user" && <><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2" strokeLinecap="round" strokeLinejoin="round" /><circle cx="12" cy="7" r="4" /></>}
+          </svg>
+          <span>{item.label}</span>
+        </button>
+      ))}
+    </div>
+  );
+}
+
+/* ============================================================
+ * 主组件
+ * ============================================================ */
 export default function BanlingPage() {
-  const [stage, setStage] = useState<Stage>("home");
+  const [tab, setTab] = useState<Tab>("home");
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
-  const [report, setReport] = useState<ReportData | null>(null);
   const [reportLoading, setReportLoading] = useState(false);
   const [savedReports, setSavedReports] = useState<SavedReport[]>([]);
-  const [currentReportId, setCurrentReportId] = useState<string | null>(null);
-  const [adoptedActions, setAdoptedActions] = useState<boolean[]>([]);
+  const [sessions, setSessions] = useState<ChatSession[]>([]);
   const [profile, setProfile] = useState<UserProfile | null>(null);
-  const [showProfileForm, setShowProfileForm] = useState(false);
-  const [profileInput, setProfileInput] = useState({ nickname: "", ageGroup: "", concern: "" });
   const [toast, setToast] = useState<string | null>(null);
   const [viewingReport, setViewingReport] = useState<SavedReport | null>(null);
+  const [adoptedActions, setAdoptedActions] = useState<boolean[]>([]);
+
+  /* 工具箱状态 */
+  const [toolTab, setToolTab] = useState<"calc" | "plan" | "goal">("calc");
+  const [calcResult, setCalcResult] = useState<ReturnType<typeof calcPensionGap> | null>(null);
+  const [calcParams, setCalcParams] = useState<CalcParams>({
+    currentAge: 30, retireAge: 65, monthlyIncome: 8000, pension: 3000,
+    monthlyExpense: 6000, lifeExpectancy: 85, returnRate: 5,
+  });
+  const [planParams, setPlanParams] = useState({
+    currentAge: 30, monthlyIncome: 8000, currentSavings: 50000, retireAge: 60,
+  });
+  const [planScenario, setPlanScenario] = useState<"early" | "normal" | "late">("normal");
+  const [goalParams, setGoalParams] = useState({
+    retireAge: 65, monthlyExpense: 6000, totalAssets: 1500000, lifeExpectancy: 85,
+  });
+  const [goalVision, setGoalVision] = useState("");
+
   const abortRef = useRef<AbortController | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
@@ -223,20 +334,19 @@ export default function BanlingPage() {
     track("tool_enter", { tool_name: "伴龄" });
     setSavedReports(loadReports());
     setProfile(loadProfile());
+    setSessions(loadSessions());
   }, []);
 
-  /* 显示 toast 提示 */
   const showToast = useCallback((msg: string) => {
     setToast(msg);
     setTimeout(() => setToast(null), 2000);
   }, []);
 
-  /* 自动滚动到底部 */
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages, loading]);
 
-  /* 发送消息 */
+  /* ===== AI 对话 ===== */
   const handleSend = useCallback(async (text: string) => {
     const trimmed = text.trim();
     if (!trimmed || loading) return;
@@ -244,12 +354,8 @@ export default function BanlingPage() {
     track("banling_chat", { msg_length: trimmed.length });
 
     const userMsg: ChatMessage = {
-      id: `u-${Date.now()}`,
-      role: "user",
-      content: trimmed,
-      timestamp: Date.now(),
+      id: `u-${Date.now()}`, role: "user", content: trimmed, timestamp: Date.now(),
     };
-
     const newMessages = [...messages, userMsg];
     setMessages(newMessages);
     setInput("");
@@ -264,40 +370,46 @@ export default function BanlingPage() {
         newMessages.map((m) => ({ role: m.role === "user" ? "user" : "assistant", content: m.content })),
         { maxTokens: 300, temperature: 0.75, signal: controller.signal }
       );
-
       if (reply) {
-        const aiMsg: ChatMessage = {
-          id: `a-${Date.now()}`,
-          role: "assistant",
-          content: reply,
-          timestamp: Date.now(),
-        };
-        setMessages((prev) => [...prev, aiMsg]);
+        setMessages((prev) => [...prev, {
+          id: `a-${Date.now()}`, role: "assistant", content: reply, timestamp: Date.now(),
+        }]);
       }
     } catch {
-      /* 中断或失败静默处理 */
+      /* 静默处理 */
     } finally {
       setLoading(false);
       abortRef.current = null;
     }
   }, [messages, loading]);
 
-  /* 开始对话 */
-  const handleStart = useCallback(() => {
-    setStage("chat");
+  /* 开始新对话 */
+  const handleStartChat = useCallback(() => {
+    setTab("ai");
     const greeting: ChatMessage = {
-      id: `a-${Date.now()}`,
-      role: "assistant",
-      content: "你好呀，我是伴龄 🌅\n很高兴我们能一起聊聊关于未来的事。\n不用紧张，我们就像朋友一样聊聊天就好。\n\n可以先告诉我，你大概在哪个年龄段吗？是刚步入职场，还是已经成家，或者已经享受退休生活了？",
+      id: `a-${Date.now()}`, role: "assistant",
+      content: "你好！我是伴龄，你的 AI 养老规划伴侣 🌟\n\n养老规划听起来很遥远，但就像给未来的自己写一封信——我们现在开始，就是最好的时机。\n\n先聊聊，请问你今年多大了？",
       timestamp: Date.now(),
     };
     setMessages([greeting]);
+
+    /* 创建新会话记录 */
+    const newSession: ChatSession = {
+      id: `s-${Date.now()}`,
+      title: "新的养老规划对话",
+      createdAt: Date.now(),
+      messageCount: 1,
+      status: "ongoing",
+    };
+    const updated = [newSession, ...sessions].slice(0, 20);
+    setSessions(updated);
+    saveSessions(updated);
     setTimeout(() => inputRef.current?.focus(), 300);
-  }, []);
+  }, [sessions]);
 
   /* 生成报告 */
   const handleGenerateReport = useCallback(async () => {
-    setStage("report");
+    setTab("report");
     setReportLoading(true);
     track("banling_report", { msg_count: messages.length });
 
@@ -308,14 +420,14 @@ export default function BanlingPage() {
       const reportPrompt = `基于以下对话内容，为用户生成一份养老规划报告。
 要求返回严格 JSON 格式（不要 markdown 代码块），结构如下：
 {
-  "insight": "一句核心洞察，定性结论（如'你正处于起步阶段，时间是你最大的优势'）",
+  "insight": "一句核心洞察",
   "metrics": [
     {"label": "安全感分数", "value": "75", "hint": "满分100"},
     {"label": "缺口估算", "value": "约200万", "hint": "按当前消费水平"},
     {"label": "建议起步", "value": "每月500元", "hint": "小目标定投"}
   ],
-  "actions": ["第一步可执行行动", "第二步行动", "第三步行动"],
-  "summary": "一段温暖的收尾寄语（50字以内）"
+  "actions": ["第一步行动", "第二步行动", "第三步行动"],
+  "summary": "温暖收尾寄语"
 }
 
 对话记录：
@@ -327,13 +439,11 @@ ${messages.map((m) => `${m.role === "user" ? "用户" : "伴龄"}: ${m.content}`
         { maxTokens: 600, temperature: 0.5, signal: controller.signal, model: "qwen-plus" }
       );
 
-      /* 尝试解析 JSON */
       let parsed: ReportData;
       try {
         const cleaned = result.replace(/```json|```/g, "").trim();
         parsed = JSON.parse(cleaned);
       } catch {
-        /* JSON 解析失败，使用兜底数据 */
         parsed = {
           insight: "你已经开始思考养老，这本身就是最大的优势。",
           metrics: [
@@ -349,23 +459,26 @@ ${messages.map((m) => `${m.role === "user" ? "用户" : "伴龄"}: ${m.content}`
           summary: "未来很长，我们慢慢来。每一步小小的积累，都是通往安心岁月的路。",
         };
       }
-      setReport(parsed);
+
       setAdoptedActions(new Array(parsed.actions.length).fill(false));
 
-      /* 保存报告到 localStorage */
       const newReport: SavedReport = {
-        id: `r-${Date.now()}`,
-        data: parsed,
-        createdAt: Date.now(),
+        id: `r-${Date.now()}`, data: parsed, createdAt: Date.now(),
         msgCount: messages.length,
         adoptedActions: new Array(parsed.actions.length).fill(false),
       };
       const updated = [newReport, ...savedReports].slice(0, 20);
       setSavedReports(updated);
       saveReports(updated);
-      setCurrentReportId(newReport.id);
+      setViewingReport(newReport);
+
+      /* 更新会话状态 */
+      const updatedSessions = sessions.map((s, i) =>
+        i === 0 ? { ...s, status: "completed" as const, messageCount: messages.length } : s
+      );
+      setSessions(updatedSessions);
+      saveSessions(updatedSessions);
     } catch {
-      /* 失败使用兜底 */
       const fallback: ReportData = {
         insight: "你已经开始思考养老，这本身就是最大的优势。",
         metrics: [
@@ -378,25 +491,31 @@ ${messages.map((m) => `${m.role === "user" ? "用户" : "伴龄"}: ${m.content}`
           "了解当地的社保政策，明确自己的基础保障范围",
           "和伴龄再聊一次，细化你的退休生活蓝图",
         ],
-        summary: "未来很长，我们慢慢来。每一步小小的积累，都是通往安心岁月的路。",
+        summary: "未来很长，我们慢慢来。",
       };
-      setReport(fallback);
-      setAdoptedActions(new Array(fallback.actions.length).fill(false));
+      const newReport: SavedReport = {
+        id: `r-${Date.now()}`, data: fallback, createdAt: Date.now(),
+        msgCount: messages.length,
+        adoptedActions: new Array(fallback.actions.length).fill(false),
+      };
+      const updated = [newReport, ...savedReports].slice(0, 20);
+      setSavedReports(updated);
+      saveReports(updated);
+      setViewingReport(newReport);
     } finally {
       setReportLoading(false);
       abortRef.current = null;
     }
-  }, [messages, savedReports]);
+  }, [messages, savedReports, sessions]);
 
-  /* 切换行动建议采纳状态 */
+  /* 采纳建议 */
   const toggleAction = useCallback((index: number) => {
     setAdoptedActions((prev) => {
       const next = [...prev];
       next[index] = !next[index];
-      /* 更新 localStorage */
-      if (currentReportId) {
+      if (viewingReport) {
         const updated = savedReports.map((r) =>
-          r.id === currentReportId ? { ...r, adoptedActions: next } : r
+          r.id === viewingReport.id ? { ...r, adoptedActions: next } : r
         );
         setSavedReports(updated);
         saveReports(updated);
@@ -404,652 +523,681 @@ ${messages.map((m) => `${m.role === "user" ? "用户" : "伴龄"}: ${m.content}`
       return next;
     });
     track("banling_action_adopt", { index });
-  }, [currentReportId, savedReports]);
+  }, [viewingReport, savedReports]);
 
-  /* 导出报告 */
   const handleExport = useCallback(() => {
-    if (!report || !currentReportId) return;
-    const saved = savedReports.find((r) => r.id === currentReportId);
-    const text = exportReportAsText(report, saved?.createdAt ?? Date.now());
+    if (!viewingReport) return;
+    const text = exportReportAsText(viewingReport.data, viewingReport.createdAt);
     downloadText(`伴龄规划报告_${new Date().toISOString().slice(0, 10)}.txt`, text);
     showToast("报告已导出");
-  }, [report, currentReportId, savedReports, showToast]);
+  }, [viewingReport, showToast]);
 
-  /* 复制报告 */
   const handleCopy = useCallback(async () => {
-    if (!report || !currentReportId) return;
-    const saved = savedReports.find((r) => r.id === currentReportId);
-    const text = exportReportAsText(report, saved?.createdAt ?? Date.now());
+    if (!viewingReport) return;
+    const text = exportReportAsText(viewingReport.data, viewingReport.createdAt);
     const ok = await copyToClipboard(text);
-    showToast(ok ? "报告已复制到剪贴板" : "复制失败，请手动选择");
-  }, [report, currentReportId, savedReports, showToast]);
+    showToast(ok ? "报告已复制到剪贴板" : "复制失败");
+  }, [viewingReport, showToast]);
 
-  /* 删除历史报告 */
   const handleDeleteReport = useCallback((id: string) => {
     const updated = savedReports.filter((r) => r.id !== id);
     setSavedReports(updated);
     saveReports(updated);
-    if (viewingReport?.id === id) {
-      setViewingReport(null);
-    }
+    if (viewingReport?.id === id) setViewingReport(null);
     showToast("已删除");
   }, [savedReports, viewingReport, showToast]);
 
-  /* 查看历史报告 */
-  const handleViewReport = useCallback((r: SavedReport) => {
-    setViewingReport(r);
-  }, []);
-
-  /* 保存个人档案 */
-  const handleSaveProfile = useCallback(() => {
+  /* 保存昵称 */
+  const [editNickname, setEditNickname] = useState("");
+  const handleSaveNickname = useCallback(() => {
+    const name = editNickname.trim() || "匿名用户";
     const p: UserProfile = {
-      nickname: profileInput.nickname.trim() || "匿名旅人",
-      ageGroup: profileInput.ageGroup,
-      concern: profileInput.concern,
-      createdAt: profile?.createdAt ?? Date.now(),
+      nickname: name,
+      ageGroup: profile?.ageGroup || "",
+      concern: profile?.concern || "",
+      createdAt: profile?.createdAt || Date.now(),
     };
     setProfile(p);
     saveProfile(p);
-    setShowProfileForm(false);
-    showToast("档案已保存");
-  }, [profileInput, profile, showToast]);
+    showToast("已保存");
+  }, [editNickname, profile, showToast]);
 
-  /* 开始编辑档案 */
-  const startEditProfile = useCallback(() => {
-    setProfileInput({
-      nickname: profile?.nickname ?? "",
-      ageGroup: profile?.ageGroup ?? "",
-      concern: profile?.concern ?? "",
-    });
-    setShowProfileForm(true);
-  }, [profile]);
+  /* 计算按钮 */
+  const handleCalc = () => {
+    setCalcResult(calcPensionGap(calcParams));
+  };
 
-  /* 计算安心星进度 */
-  const getProgress = useCallback((): { percent: number; label: string; stars: number } => {
-    const reportCount = savedReports.length;
-    const adoptedCount = savedReports.reduce((sum, r) => sum + r.adoptedActions.filter(Boolean).length, 0);
-    if (reportCount === 0) return { percent: 15, label: "起步阶段", stars: 0 };
-    if (reportCount === 1 && adoptedCount === 0) return { percent: 30, label: "探索阶段", stars: 1 };
-    if (adoptedCount >= 1) return { percent: 60, label: "行动阶段", stars: 3 };
-    if (reportCount >= 2) return { percent: 75, label: "稳步阶段", stars: 4 };
-    return { percent: 45, label: "成长阶段", stars: 2 };
-  }, [savedReports]);
+  /* 退休规划场景计算 */
+  const planScenarios = {
+    early: { age: 55, years: 55 - planParams.currentAge, label: "提前退休", tag: "激进", color: "#FFB3B3" },
+    normal: { age: 60, years: 60 - planParams.currentAge, label: "正常退休", tag: "推荐", color: "#FFD56B" },
+    late: { age: 65, years: 65 - planParams.currentAge, label: "延迟退休", tag: "保守", color: "#B3D9B3" },
+  };
+  const currentScenario = planScenarios[planScenario];
+  const planEstimate = Math.round(
+    planParams.monthlyIncome * 0.2 * 12 * currentScenario.years *
+    (1 + 0.05 * currentScenario.years / 2) + planParams.currentSavings
+  );
 
-  /* ===== 首页 ===== */
-  if (stage === "home") {
-    const progress = getProgress();
-    return (
-      <div className="banling-root banling-home">
-        <div className="banling-topbar">
-          <Link to="/mickey" className="banling-topbar-back">
-            <span className="banling-topbar-logo">💛</span>
-            <span>伴龄</span>
-          </Link>
-          <button className="banling-topbar-profile" onClick={() => setStage("profile")}>
-            <span className="banling-topbar-avatar">👤</span>
-            <span>{profile ? profile.nickname : "我的"}</span>
-          </button>
+  /* ============================================================
+   * 渲染：首页
+   * ============================================================ */
+  const renderHome = () => (
+    <div className="bl-page bl-home">
+      {/* Hero 区 */}
+      <div className="bl-hero">
+        <div className="bl-hero-logo">
+          <div className="bl-logo-icon">💛</div>
+          <span>伴龄</span>
+        </div>
+        <h1 className="bl-hero-title">
+          养老不焦虑
+          <br />
+          <span className="bl-hero-accent">我们帮您规划</span>
+        </h1>
+        <p className="bl-hero-sub">低门槛、稳收益的养老规划</p>
+        <p className="bl-hero-desc">
+          根据您的年龄、风险偏好和养老金缺口，
+          <br />
+          为您量身定制专属养老方案
+        </p>
+
+        {/* 养老金输入 */}
+        <div className="bl-pension-input">
+          <label>我的养老金</label>
+          <div className="bl-pension-field">
+            <span className="bl-currency">¥</span>
+            <input type="text" placeholder="3000" defaultValue="" />
+          </div>
         </div>
 
-        <div className="banling-home-content">
-          <motion.div
-            initial={{ opacity: 0, y: 24 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
-            className="banling-home-left"
-          >
-            <div className="banling-greeting-tag">
-              {getGreetingEmoji()} {getGreeting()}
-            </div>
+        {/* CTA */}
+        <button className="bl-cta-main" onClick={handleStartChat}>
+          立即定制我的养老方案 →
+        </button>
 
-            <h1 className="banling-hero-title">
-              <span className="banling-hero-line1">养老不焦虑</span>
-              <span className="banling-hero-line2">我们陪你规划</span>
-            </h1>
-
-            <p className="banling-hero-desc">
-              不用填表，不用算数。<br />
-              像和朋友聊天一样，聊聊关于未来的事。<br />
-              我们会一起把模糊的焦虑，变成清晰的小目标。
-            </p>
-
-            {/* 安心星卡片 */}
-            <div className="banling-star-card">
-              <div className="banling-star-header">
-                <span className="banling-star-title">我的安心星</span>
-                <span className="banling-star-count">{progress.stars}/5</span>
-              </div>
-              <StarRow filled={progress.stars} total={5} />
-              <div className="banling-star-progress">
-                <div className="banling-star-track">
-                  <motion.div
-                    className="banling-star-fill"
-                    initial={{ width: 0 }}
-                    animate={{ width: `${progress.percent}%` }}
-                    transition={{ duration: 1.2, delay: 0.5 }}
-                  />
-                </div>
-                <span className="banling-star-label">🌱 {progress.label}</span>
-              </div>
-            </div>
-
-            {/* CTA 按钮 */}
-            <div className="banling-cta-group">
-              <button className="banling-cta-primary" onClick={handleStart}>
-                开启我们的第一次对话 →
-              </button>
-              {savedReports.length > 0 && (
-                <button className="banling-cta-secondary" onClick={() => setStage("profile")}>
-                  查看历史报告（{savedReports.length}）
-                </button>
-              )}
-            </div>
-          </motion.div>
-
-          {/* 右侧聊天预览 */}
-          <motion.div
-            initial={{ opacity: 0, x: 30 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.6, delay: 0.2 }}
-            className="banling-home-right"
-          >
-            <div className="banling-preview-window">
-              <div className="banling-preview-header">
-                <span className="banling-preview-dots">
-                  <span /> <span /> <span />
-                </span>
-                <div className="banling-preview-title">
-                  <span className="banling-preview-logo">💛</span>
-                  <div>
-                    <div className="banling-preview-name">伴龄 AI 伴侣</div>
-                    <div className="banling-preview-status">正在陪伴规划中</div>
-                  </div>
-                </div>
-                <span className="banling-preview-mode">温暖模式</span>
-              </div>
-              <div className="banling-preview-body">
-                <div className="banling-preview-msg ai">
-                  <div className="banling-preview-avatar">🌅</div>
-                  <div className="banling-preview-bubble">
-                    你好呀！我是伴龄。可以先告诉我你的年龄段吗？
-                  </div>
-                </div>
-                <div className="banling-preview-tags">
-                  <span className="banling-preview-tag">月收入约8000</span>
-                  <span className="banling-preview-tag">已婚有孩子</span>
-                  <span className="banling-preview-tag">想60岁退休</span>
-                </div>
-                <div className="banling-preview-msg user">
-                  <div className="banling-preview-bubble">
-                    想60岁退休，不知道钱够不够
-                  </div>
-                </div>
-                <div className="banling-preview-msg ai">
-                  <div className="banling-preview-avatar">🌅</div>
-                  <div className="banling-preview-bubble">
-                    我们一起来算算～时间是你最大的朋友哦。
-                  </div>
-                </div>
-              </div>
-              {/* 悬浮评分卡片 */}
-              <div className="banling-preview-score">
-                <div className="banling-preview-score-label">安全感分数</div>
-                <div className="banling-preview-score-value">72<span>/100</span></div>
-                <StarRow filled={3} total={5} />
-              </div>
-            </div>
-          </motion.div>
+        {/* 信任标签 */}
+        <div className="bl-trust-tags">
+          <span>✓ 专业评估</span>
+          <span>✓ 稳健增值</span>
+          <span>✓ 专属规划</span>
         </div>
-
-        <BanlingStyles />
-        <BanlingToast toast={toast} />
       </div>
-    );
-  }
 
-  /* ===== 对话页 ===== */
-  if (stage === "chat") {
-    return (
-      <div className="banling-root banling-chat-root">
-        <div className="banling-chat-topbar">
-          <button className="banling-chat-back-btn" onClick={() => setStage("home")}>←</button>
-          <div className="banling-chat-topbar-info">
-            <span className="banling-chat-topbar-logo">💛</span>
-            <div>
-              <div className="banling-chat-topbar-name">伴龄 · 规划对话</div>
-              <div className="banling-chat-topbar-status">温暖模式 · 正在陪伴</div>
-            </div>
+      {/* 目标人群 */}
+      <div className="bl-section">
+        <h2 className="bl-section-title">我们是哪群人？</h2>
+        <div className="bl-persona-grid">
+          <div className="bl-persona-card">
+            <div className="bl-persona-icon">🌱</div>
+            <h3>养老规划师</h3>
+            <p className="bl-persona-age">25-35岁</p>
+            <p>刚步入职场，趁年轻提前布局</p>
           </div>
-          {messages.length >= 4 && (
-            <button className="banling-report-btn" onClick={handleGenerateReport}>
-              查看规划报告 →
-            </button>
-          )}
-        </div>
-        <div className="banling-chat-body">
-          <AnimatePresence>
-            {messages.map((msg) => (
-              <motion.div
-                key={msg.id}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                className={`banling-msg ${msg.role}`}
-              >
-                {msg.role === "assistant" && (
-                  <div className="banling-msg-avatar">🌅</div>
-                )}
-                <div className="banling-msg-bubble">
-                  {msg.content.split("\n").map((line, i) => (
-                    <p key={i}>{line}</p>
-                  ))}
-                </div>
-              </motion.div>
-            ))}
-          </AnimatePresence>
-          {loading && (
-            <div className="banling-msg assistant">
-              <div className="banling-msg-avatar">🌅</div>
-              <div className="banling-msg-bubble banling-typing">
-                <span /> <span /> <span />
-              </div>
-            </div>
-          )}
-          <div ref={messagesEndRef} />
-        </div>
-        {/* 快捷回复 */}
-        {messages.length <= 2 && !loading && (
-          <div className="banling-quick-replies">
-            {QUICK_REPLIES.map((reply) => (
-              <button
-                key={reply}
-                className="banling-quick-btn"
-                onClick={() => handleSend(reply)}
-              >
-                {reply}
-              </button>
-            ))}
+          <div className="bl-persona-card">
+            <div className="bl-persona-icon">🌿</div>
+            <h3>小有积蓄</h3>
+            <p className="bl-persona-age">35-50岁</p>
+            <p>事业稳定，优化资产配置</p>
           </div>
-        )}
-        {/* 输入栏 */}
-        <div className="banling-input-bar">
-          <textarea
-            ref={inputRef}
-            className="banling-input"
-            placeholder="说说你的想法…"
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" && !e.shiftKey) {
-                e.preventDefault();
-                handleSend(input);
-              }
-            }}
-            rows={1}
-          />
-          <button
-            className="banling-send-btn"
-            onClick={() => handleSend(input)}
-            disabled={!input.trim() || loading}
-          >
-            {loading ? "…" : "发送 →"}
-          </button>
+          <div className="bl-persona-card">
+            <div className="bl-persona-icon">🌳</div>
+            <h3>临近退休</h3>
+            <p className="bl-persona-age">50岁+</p>
+            <p>退休在即，确保安享晚年</p>
+          </div>
         </div>
-        <BanlingStyles />
-        <BanlingToast toast={toast} />
       </div>
-    );
-  }
 
-  /* ===== 报告页 ===== */
-  if (stage === "report") {
-    return (
-      <div className="banling-root banling-report-root">
-        <div className="banling-chat-topbar">
-          <button className="banling-chat-back-btn" onClick={() => setStage("home")}>←</button>
-          <div className="banling-chat-topbar-info">
-            <span className="banling-chat-topbar-logo">💛</span>
-            <div>
-              <div className="banling-chat-topbar-name">规划报告</div>
-              <div className="banling-chat-topbar-status">为你定制</div>
-            </div>
+      {/* 价值主张 */}
+      <div className="bl-section">
+        <h2 className="bl-section-title">为什么选择伴龄？</h2>
+        <p className="bl-section-intro">专业团队，严格风控，让每一分钱都有迹可循</p>
+        <div className="bl-value-grid">
+          <div className="bl-value-card">
+            <div className="bl-value-icon">🤖</div>
+            <h3>智能 AI 规划</h3>
+            <p>AI 驱动个性化方案</p>
+          </div>
+          <div className="bl-value-card">
+            <div className="bl-value-icon">✅</div>
+            <h3>个性化服务</h3>
+            <p>专属定制养老路径</p>
+          </div>
+          <div className="bl-value-card">
+            <div className="bl-value-icon">📊</div>
+            <h3>可视化进程</h3>
+            <p>进度一目了然</p>
+          </div>
+          <div className="bl-value-card">
+            <div className="bl-value-icon">🧰</div>
+            <h3>专业工具箱</h3>
+            <p>计算器/规划/目标</p>
           </div>
         </div>
-        <div className="banling-report-inner">
-          {reportLoading ? (
-            <div className="banling-report-loading">
-              <motion.div
-                className="banling-loading-icon"
-                animate={{ scale: [1, 1.15, 1] }}
-                transition={{ duration: 1.5, repeat: Infinity }}
-              >
-                🌱
-              </motion.div>
-              <p>正在为你生成规划报告…</p>
-              <p className="banling-loading-sub">把焦虑翻译成方案，需要一点时间</p>
+      </div>
+
+      {/* 4步流程 */}
+      <div className="bl-section">
+        <h2 className="bl-section-title">4步完成您的养老规划</h2>
+        <div className="bl-steps">
+          {[
+            { num: "01", title: "开启规划", desc: "和 AI 伴侣聊聊天" },
+            { num: "02", title: "测算缺口", desc: "智能分析养老金缺口" },
+            { num: "03", title: "生成方案", desc: "个性化养老规划报告" },
+            { num: "04", title: "持续跟踪", desc: "定期复盘调整方向" },
+          ].map((step) => (
+            <div key={step.num} className="bl-step-card">
+              <div className="bl-step-num">{step.num}</div>
+              <h3>{step.title}</h3>
+              <p>{step.desc}</p>
             </div>
-          ) : report ? (
+          ))}
+        </div>
+      </div>
+
+      {/* 底部 CTA */}
+      <div className="bl-section bl-final-cta">
+        <h2>现在就行动，未来的你会感谢今天</h2>
+        <p>养老规划越早越好，伴财陪您每一步</p>
+        <button className="bl-cta-main" onClick={handleStartChat}>
+          开启 AI 规划对话 →
+        </button>
+      </div>
+    </div>
+  );
+
+  /* ============================================================
+   * 渲染：AI 规划对话
+   * ============================================================ */
+  const renderAI = () => (
+    <div className="bl-page bl-ai-page">
+      {/* 顶栏 */}
+      <div className="bl-ai-topbar">
+        <div className="bl-ai-topbar-logo">
+          <div className="bl-logo-icon-sm">💛</div>
+          <span>伴龄</span>
+        </div>
+        <span className="bl-ai-status">温暖模式 · 正在陪伴</span>
+      </div>
+
+      {/* 对话区 */}
+      <div className="bl-ai-body">
+        <AnimatePresence>
+          {messages.map((msg) => (
             <motion.div
-              initial={{ opacity: 0, y: 20 }}
+              key={msg.id}
+              initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5 }}
+              className={`bl-msg ${msg.role}`}
             >
-              {/* 核心洞察 */}
-              <div className="banling-report-section banling-insight-card">
-                <span className="banling-section-tag">核心洞察</span>
-                <h2 className="banling-insight-text">{report.insight}</h2>
-              </div>
-
-              {/* 关键指标 */}
-              <div className="banling-report-section">
-                <span className="banling-section-tag">关键指标</span>
-                <div className="banling-metrics-grid">
-                  {report.metrics.map((m, i) => (
-                    <motion.div
-                      key={i}
-                      className="banling-metric-card"
-                      initial={{ opacity: 0, scale: 0.9 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      transition={{ delay: 0.1 * i }}
-                    >
-                      <div className="banling-metric-label">{m.label}</div>
-                      <div className="banling-metric-value">{m.value}</div>
-                      <div className="banling-metric-hint">{m.hint}</div>
-                    </motion.div>
-                  ))}
+              {msg.role === "assistant" && (
+                <div className="bl-msg-avatar">
+                  <span className="bl-ai-tag">AI</span>
                 </div>
-              </div>
-
-              {/* 行动建议 */}
-              <div className="banling-report-section">
-                <span className="banling-section-tag">行动建议</span>
-                <p className="banling-action-hint">点击勾选已采纳的建议 ✨</p>
-                <div className="banling-actions-list">
-                  {report.actions.map((action, i) => (
-                    <motion.div
-                      key={i}
-                      className={`banling-action-item ${adoptedActions[i] ? "adopted" : ""}`}
-                      initial={{ opacity: 0, x: -10 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: 0.1 * i }}
-                      onClick={() => toggleAction(i)}
-                    >
-                      <span className="banling-action-num">
-                        {adoptedActions[i] ? "✓" : i + 1}
-                      </span>
-                      <span className="banling-action-text">{action}</span>
-                    </motion.div>
-                  ))}
-                </div>
-              </div>
-
-              {/* 寄语 */}
-              <div className="banling-report-summary">
-                <p>{report.summary}</p>
-              </div>
-
-              {/* 导出分享 */}
-              <div className="banling-export-bar">
-                <button className="banling-export-btn" onClick={handleExport}>
-                  📄 导出报告
-                </button>
-                <button className="banling-export-btn" onClick={handleCopy}>
-                  📋 复制分享
-                </button>
-              </div>
-
-              {/* 操作按钮 */}
-              <div className="banling-report-actions">
-                <button
-                  className="banling-again-btn"
-                  onClick={() => {
-                    setStage("chat");
-                    setReport(null);
-                    setCurrentReportId(null);
-                  }}
-                >
-                  继续对话
-                </button>
-                <button
-                  className="banling-restart-btn"
-                  onClick={() => {
-                    setStage("home");
-                    setMessages([]);
-                    setReport(null);
-                    setCurrentReportId(null);
-                    setAdoptedActions([]);
-                  }}
-                >
-                  重新开始
-                </button>
+              )}
+              <div className="bl-msg-bubble">
+                {msg.content.split("\n").map((line, i) => (
+                  <p key={i}>{line}</p>
+                ))}
               </div>
             </motion.div>
-          ) : null}
-        </div>
-        <BanlingStyles />
-        <BanlingToast toast={toast} />
-      </div>
-    );
-  }
-
-  /* ===== 个人中心 ===== */
-  return (
-    <div className="banling-root banling-profile-root">
-      <div className="banling-chat-topbar">
-        <button className="banling-chat-back-btn" onClick={() => setStage("home")}>←</button>
-        <div className="banling-chat-topbar-info">
-          <span className="banling-chat-topbar-logo">💛</span>
-          <div>
-            <div className="banling-chat-topbar-name">个人中心</div>
-            <div className="banling-chat-topbar-status">规划成长记录</div>
+          ))}
+        </AnimatePresence>
+        {loading && (
+          <div className="bl-msg assistant">
+            <div className="bl-msg-avatar">
+              <span className="bl-ai-tag">AI</span>
+            </div>
+            <div className="bl-msg-bubble bl-typing">
+              <span /> <span /> <span />
+            </div>
           </div>
-        </div>
+        )}
+        <div ref={messagesEndRef} />
       </div>
-      <div className="banling-report-inner">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
+
+      {/* 快捷回复 */}
+      {messages.length <= 2 && !loading && (
+        <div className="bl-quick-replies">
+          {QUICK_REPLIES.map((reply) => (
+            <button key={reply} className="bl-quick-btn" onClick={() => handleSend(reply)}>
+              {reply}
+            </button>
+          ))}
+        </div>
+      )}
+      {messages.length > 2 && messages.length < 8 && !loading && (
+        <div className="bl-quick-replies">
+          {CONCERN_REPLIES.map((reply) => (
+            <button key={reply} className="bl-quick-btn" onClick={() => handleSend(reply)}>
+              {reply}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {/* 生成报告按钮 */}
+      {messages.length >= 4 && !loading && (
+        <div className="bl-report-trigger">
+          <button className="bl-report-trigger-btn" onClick={handleGenerateReport}>
+            查看规划报告 →
+          </button>
+        </div>
+      )}
+
+      {/* 输入栏 */}
+      <div className="bl-input-bar">
+        <textarea
+          ref={inputRef}
+          className="bl-input"
+          placeholder="说说你的想法... (Enter 发送, Shift+Enter 换行)"
+          value={input}
+          onChange={(e) => setInput(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" && !e.shiftKey) {
+              e.preventDefault();
+              handleSend(input);
+            }
+          }}
+          rows={1}
+        />
+        <button
+          className="bl-send-btn"
+          onClick={() => handleSend(input)}
+          disabled={!input.trim() || loading}
         >
-          {/* 个人档案 */}
-          <div className="banling-report-section">
-            <div className="banling-section-header">
-              <span className="banling-section-tag">我的档案</span>
-              {!showProfileForm && (
-                <button className="banling-text-btn" onClick={startEditProfile}>
-                  {profile ? "编辑" : "创建"}
-                </button>
-              )}
-            </div>
-            {showProfileForm ? (
-              <div className="banling-profile-form">
-                <input
-                  className="banling-profile-input"
-                  placeholder="昵称"
-                  value={profileInput.nickname}
-                  onChange={(e) => setProfileInput({ ...profileInput, nickname: e.target.value })}
-                />
-                <select
-                  className="banling-profile-input"
-                  value={profileInput.ageGroup}
-                  onChange={(e) => setProfileInput({ ...profileInput, ageGroup: e.target.value })}
-                >
-                  <option value="">选择年龄段</option>
-                  <option value="青年">青年（25-35）</option>
-                  <option value="中年">中年（35-50）</option>
-                  <option value="银发">银发（60+）</option>
-                </select>
-                <input
-                  className="banling-profile-input"
-                  placeholder="主要担忧（如：父母医疗、退休金）"
-                  value={profileInput.concern}
-                  onChange={(e) => setProfileInput({ ...profileInput, concern: e.target.value })}
-                />
-                <div className="banling-profile-form-actions">
-                  <button className="banling-text-btn" onClick={() => setShowProfileForm(false)}>取消</button>
-                  <button className="banling-save-btn" onClick={handleSaveProfile}>保存</button>
-                </div>
-              </div>
-            ) : profile ? (
-              <div className="banling-profile-info">
-                <div className="banling-profile-row">
-                  <span className="banling-profile-key">昵称</span>
-                  <span className="banling-profile-val">{profile.nickname}</span>
-                </div>
-                {profile.ageGroup && (
-                  <div className="banling-profile-row">
-                    <span className="banling-profile-key">年龄段</span>
-                    <span className="banling-profile-val">{profile.ageGroup}</span>
-                  </div>
-                )}
-                {profile.concern && (
-                  <div className="banling-profile-row">
-                    <span className="banling-profile-key">主要担忧</span>
-                    <span className="banling-profile-val">{profile.concern}</span>
-                  </div>
-                )}
-                <div className="banling-profile-row">
-                  <span className="banling-profile-key">加入时间</span>
-                  <span className="banling-profile-val">{formatTime(profile.createdAt)}</span>
-                </div>
-              </div>
-            ) : (
-              <p className="banling-profile-empty">还没有档案，点击「创建」建立你的养老规划档案</p>
-            )}
-          </div>
+          {loading ? "…" : "➤"}
+        </button>
+      </div>
+    </div>
+  );
 
-          {/* 统计概览 */}
-          <div className="banling-report-section">
-            <span className="banling-section-tag">规划概览</span>
-            <div className="banling-stats-grid">
-              <div className="banling-stat-card">
-                <div className="banling-stat-num">{savedReports.length}</div>
-                <div className="banling-stat-label">规划报告</div>
-              </div>
-              <div className="banling-stat-card">
-                <div className="banling-stat-num">
-                  {savedReports.reduce((sum, r) => sum + r.adoptedActions.filter(Boolean).length, 0)}
-                </div>
-                <div className="banling-stat-label">采纳建议</div>
-              </div>
-              <div className="banling-stat-card">
-                <div className="banling-stat-num">{getProgress().percent}%</div>
-                <div className="banling-stat-label">安心星</div>
-              </div>
-            </div>
+  /* ============================================================
+   * 渲染：报告
+   * ============================================================ */
+  const renderReport = () => {
+    if (reportLoading) {
+      return (
+        <div className="bl-page bl-report-page">
+          <div className="bl-report-loading">
+            <div className="bl-loading-spinner" />
+            <p>正在生成您的规划报告...</p>
           </div>
+        </div>
+      );
+    }
 
-          {/* 历史报告 */}
-          <div className="banling-report-section">
-            <span className="banling-section-tag">历史报告</span>
-            {savedReports.length === 0 ? (
-              <p className="banling-profile-empty">还没有生成过规划报告</p>
-            ) : (
-              <div className="banling-history-list">
-                {savedReports.map((r) => (
-                  <div key={r.id} className="banling-history-item">
-                    <div className="banling-history-main" onClick={() => handleViewReport(r)}>
-                      <div className="banling-history-insight">{r.data.insight}</div>
-                      <div className="banling-history-meta">
-                        {formatTime(r.createdAt)} · {r.msgCount} 轮对话 · 采纳 {r.adoptedActions.filter(Boolean).length}/{r.data.actions.length}
-                      </div>
-                    </div>
-                    <button
-                      className="banling-history-del"
-                      onClick={() => handleDeleteReport(r.id)}
-                    >
-                      删除
-                    </button>
+    if (viewingReport) {
+      const r = viewingReport.data;
+      return (
+        <div className="bl-page bl-report-page">
+          <div className="bl-report-header">
+            <button className="bl-back-btn" onClick={() => setViewingReport(null)}>←</button>
+            <h2>规划报告</h2>
+          </div>
+          <div className="bl-report-content">
+            <div className="bl-report-meta">
+              生成于 {formatTime(viewingReport.createdAt)} · 基于 {viewingReport.msgCount} 条对话
+            </div>
+
+            {/* 核心洞察 */}
+            <div className="bl-report-card bl-insight-card">
+              <h3>💡 核心洞察</h3>
+              <p>{r.insight}</p>
+            </div>
+
+            {/* 关键指标 */}
+            <div className="bl-report-card">
+              <h3>📊 关键指标</h3>
+              <div className="bl-metrics-grid">
+                {r.metrics.map((m, i) => (
+                  <div key={i} className="bl-metric-item">
+                    <div className="bl-metric-label">{m.label}</div>
+                    <div className="bl-metric-value">{m.value}</div>
+                    <div className="bl-metric-hint">{m.hint}</div>
                   </div>
                 ))}
               </div>
-            )}
+            </div>
+
+            {/* 行动建议 */}
+            <div className="bl-report-card">
+              <h3>🎯 行动建议</h3>
+              <div className="bl-actions-list">
+                {r.actions.map((action, i) => (
+                  <div key={i} className={`bl-action-item ${adoptedActions[i] ? "adopted" : ""}`}>
+                    <button
+                      className="bl-action-check"
+                      onClick={() => toggleAction(i)}
+                    >
+                      {adoptedActions[i] ? "✓" : "○"}
+                    </button>
+                    <span>{action}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* 寄语 */}
+            <div className="bl-report-card bl-summary-card">
+              <h3>💌 寄语</h3>
+              <p>{r.summary}</p>
+            </div>
+
+            {/* 操作按钮 */}
+            <div className="bl-report-actions">
+              <button className="bl-btn-outline" onClick={handleExport}>导出报告</button>
+              <button className="bl-btn-outline" onClick={handleCopy}>复制内容</button>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    /* 空状态 */
+    return (
+      <div className="bl-page bl-report-page">
+        <div className="bl-report-empty">
+          <div className="bl-empty-icon">📄</div>
+          <h2>暂无规划报告</h2>
+          <p>还没有生成养老规划报告，先和 AI 伴侣聊聊吧</p>
+          <button className="bl-cta-main" onClick={handleStartChat}>
+            开始 AI 规划对话 →
+          </button>
+        </div>
+
+        {/* 历史报告列表 */}
+        {savedReports.length > 0 && (
+          <div className="bl-report-history">
+            <h3 className="bl-history-title">历史报告</h3>
+            {savedReports.map((r) => (
+              <div key={r.id} className="bl-history-item">
+                <div className="bl-history-info" onClick={() => { setViewingReport(r); setAdoptedActions(r.adoptedActions); }}>
+                  <div className="bl-history-date">{formatDate(r.createdAt)}</div>
+                  <div className="bl-history-insight">{r.data.insight}</div>
+                </div>
+                <button className="bl-history-delete" onClick={() => handleDeleteReport(r.id)}>×</button>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  /* ============================================================
+   * 渲染：工具箱
+   * ============================================================ */
+  const renderTools = () => (
+    <div className="bl-page bl-tools-page">
+      <div className="bl-tools-header">
+        <h1 className="bl-tools-title">规划工具箱</h1>
+        <p className="bl-tools-sub">专业工具，精准规划你的养老未来</p>
+      </div>
+
+      {/* Tab 切换 */}
+      <div className="bl-tools-tabs">
+        <button
+          className={`bl-tool-tab ${toolTab === "calc" ? "active" : ""}`}
+          onClick={() => setToolTab("calc")}
+        >
+          <span className="bl-tab-icon">🔢</span>
+          <span>养老金计算器</span>
+        </button>
+        <button
+          className={`bl-tool-tab ${toolTab === "plan" ? "active" : ""}`}
+          onClick={() => setToolTab("plan")}
+        >
+          <span className="bl-tab-icon">⏰</span>
+          <span>退休规划</span>
+        </button>
+        <button
+          className={`bl-tool-tab ${toolTab === "goal" ? "active" : ""}`}
+          onClick={() => setToolTab("goal")}
+        >
+          <span className="bl-tab-icon">🎯</span>
+          <span>目标设定</span>
+        </button>
+      </div>
+
+      {/* 养老金计算器 */}
+      {toolTab === "calc" && (
+        <div className="bl-tool-content">
+          <div className="bl-tool-card">
+            <h3 className="bl-card-title">输入基本信息</h3>
+            <Slider label="当前年龄" value={calcParams.currentAge} min={18} max={60} unit="岁" onChange={(v) => setCalcParams({ ...calcParams, currentAge: v })} />
+            <Slider label="计划退休年龄" value={calcParams.retireAge} min={50} max={70} unit="岁" onChange={(v) => setCalcParams({ ...calcParams, retireAge: v })} />
+            <Slider label="税后月收入" value={calcParams.monthlyIncome} min={2000} max={50000} step={500} unit="¥" onChange={(v) => setCalcParams({ ...calcParams, monthlyIncome: v })} />
+            <Slider label="预计社保月养老金" value={calcParams.pension} min={0} max={10000} step={500} unit="¥" onChange={(v) => setCalcParams({ ...calcParams, pension: v })} />
+            <Slider label="退休后月生活费" value={calcParams.monthlyExpense} min={2000} max={30000} step={500} unit="¥" onChange={(v) => setCalcParams({ ...calcParams, monthlyExpense: v })} />
+            <Slider label="预期寿命" value={calcParams.lifeExpectancy} min={70} max={100} unit="岁" onChange={(v) => setCalcParams({ ...calcParams, lifeExpectancy: v })} />
+            <Slider label="投资年化收益率" value={calcParams.returnRate} min={1} max={10} step={0.5} unit="%" onChange={(v) => setCalcParams({ ...calcParams, returnRate: v })} />
+            <button className="bl-calc-btn" onClick={handleCalc}>立即计算</button>
           </div>
 
-          {/* 查看历史报告详情 */}
-          <AnimatePresence>
-            {viewingReport && (
-              <motion.div
-                className="banling-modal-overlay"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                onClick={() => setViewingReport(null)}
-              >
-                <motion.div
-                  className="banling-modal"
-                  initial={{ scale: 0.9, y: 20 }}
-                  animate={{ scale: 1, y: 0 }}
-                  exit={{ scale: 0.9, y: 20 }}
-                  onClick={(e) => e.stopPropagation()}
+          {calcResult && (
+            <div className="bl-tool-card bl-result-card">
+              <h3 className="bl-card-title">计算结果</h3>
+              <div className="bl-result-grid">
+                <div className="bl-result-item">
+                  <div className="bl-result-label">距离退休</div>
+                  <div className="bl-result-value">{calcResult.yearsToRetire}年</div>
+                </div>
+                <div className="bl-result-item">
+                  <div className="bl-result-label">退休生活期</div>
+                  <div className="bl-result-value">{calcResult.yearsInRetire}年</div>
+                </div>
+                <div className="bl-result-item">
+                  <div className="bl-result-label">月度缺口</div>
+                  <div className="bl-result-value">¥{calcResult.monthlyGap.toLocaleString()}</div>
+                </div>
+                <div className="bl-result-item highlight">
+                  <div className="bl-result-label">养老金总缺口</div>
+                  <div className="bl-result-value">¥{calcResult.totalGap.toLocaleString()}</div>
+                </div>
+                <div className="bl-result-item">
+                  <div className="bl-result-label">预计储蓄</div>
+                  <div className="bl-result-value">¥{calcResult.finalSavings.toLocaleString()}</div>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* 退休规划 */}
+      {toolTab === "plan" && (
+        <div className="bl-tool-content">
+          <div className="bl-tool-card">
+            <h3 className="bl-card-title">基本参数</h3>
+            <Slider label="当前年龄" value={planParams.currentAge} min={18} max={60} unit="岁" onChange={(v) => setPlanParams({ ...planParams, currentAge: v })} />
+            <Slider label="税后月收入" value={planParams.monthlyIncome} min={2000} max={50000} step={500} unit="¥" onChange={(v) => setPlanParams({ ...planParams, monthlyIncome: v })} />
+            <Slider label="现有储蓄" value={planParams.currentSavings} min={0} max={1000000} step={10000} unit="¥" onChange={(v) => setPlanParams({ ...planParams, currentSavings: v })} />
+            <Slider label="目标退休年龄" value={planParams.retireAge} min={50} max={70} unit="岁" onChange={(v) => setPlanParams({ ...planParams, retireAge: v })} />
+          </div>
+
+          <div className="bl-tool-card">
+            <h3 className="bl-card-title">退休场景对比</h3>
+            <div className="bl-scenarios">
+              {([
+                { key: "early" as const, ...planScenarios.early },
+                { key: "normal" as const, ...planScenarios.normal },
+                { key: "late" as const, ...planScenarios.late },
+              ]).map((s) => (
+                <div
+                  key={s.key}
+                  className={`bl-scenario-card ${planScenario === s.key ? "selected" : ""}`}
+                  style={{ background: planScenario === s.key ? undefined : s.color }}
+                  onClick={() => setPlanScenario(s.key)}
                 >
-                  <div className="banling-modal-header">
-                    <span>历史报告 · {formatTime(viewingReport.createdAt)}</span>
-                    <button className="banling-modal-close" onClick={() => setViewingReport(null)}>×</button>
+                  <div className="bl-scenario-header">
+                    <span className="bl-scenario-label">{s.label}</span>
+                    <span className="bl-scenario-tag">{s.tag}</span>
                   </div>
-                  <div className="banling-modal-body">
-                    <div className="banling-insight-card">
-                      <span className="banling-section-tag">核心洞察</span>
-                      <h2 className="banling-insight-text">{viewingReport.data.insight}</h2>
-                    </div>
-                    <div className="banling-metrics-grid">
-                      {viewingReport.data.metrics.map((m, i) => (
-                        <div key={i} className="banling-metric-card">
-                          <div className="banling-metric-label">{m.label}</div>
-                          <div className="banling-metric-value">{m.value}</div>
-                          <div className="banling-metric-hint">{m.hint}</div>
-                        </div>
-                      ))}
-                    </div>
-                    <div className="banling-actions-list">
-                      {viewingReport.data.actions.map((a, i) => (
-                        <div key={i} className={`banling-action-item ${viewingReport.adoptedActions[i] ? "adopted" : ""}`}>
-                          <span className="banling-action-num">
-                            {viewingReport.adoptedActions[i] ? "✓" : i + 1}
-                          </span>
-                          <span className="banling-action-text">{a}</span>
-                        </div>
-                      ))}
-                    </div>
-                    <div className="banling-report-summary">
-                      <p>{viewingReport.data.summary}</p>
-                    </div>
-                    <button
-                      className="banling-export-btn"
-                      onClick={() => {
-                        const text = exportReportAsText(viewingReport.data, viewingReport.createdAt);
-                        downloadText(`伴龄规划报告_${new Date(viewingReport.createdAt).toISOString().slice(0, 10)}.txt`, text);
-                        showToast("报告已导出");
-                      }}
-                    >
-                      导出此报告
-                    </button>
-                  </div>
-                </motion.div>
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </motion.div>
-      </div>
-      <BanlingStyles />
-      <BanlingToast toast={toast} />
+                  <div className="bl-scenario-age">{s.age}岁退休 · {s.years}年后</div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="bl-tool-card bl-projection-card">
+            <div className="bl-projection-label">按目标退休年龄预计储蓄</div>
+            <div className="bl-projection-value">¥{planEstimate.toLocaleString()}</div>
+            <div className="bl-projection-note">基于月储蓄率20%、年化5%估算</div>
+          </div>
+        </div>
+      )}
+
+      {/* 目标设定 */}
+      {toolTab === "goal" && (
+        <div className="bl-tool-content">
+          <div className="bl-tool-card">
+            <h3 className="bl-card-title">设定养老目标</h3>
+            <p className="bl-card-subtitle">设定清晰的目标，让规划更有方向感</p>
+            <Slider label="目标退休年龄" value={goalParams.retireAge} min={50} max={70} unit="岁" onChange={(v) => setGoalParams({ ...goalParams, retireAge: v })} />
+            <Slider label="退休后月生活费目标" value={goalParams.monthlyExpense} min={2000} max={30000} step={500} unit="¥" onChange={(v) => setGoalParams({ ...goalParams, monthlyExpense: v })} />
+            <Slider label="目标养老总资产" value={goalParams.totalAssets} min={500000} max={5000000} step={100000} unit="¥" onChange={(v) => setGoalParams({ ...goalParams, totalAssets: v })} />
+            <Slider label="预期寿命" value={goalParams.lifeExpectancy} min={70} max={100} unit="岁" onChange={(v) => setGoalParams({ ...goalParams, lifeExpectancy: v })} />
+
+            <div className="bl-vision-field">
+              <label>养老愿景描述（选填）</label>
+              <textarea
+                placeholder="例如：在南方小城养老，偶尔旅行，"
+                value={goalVision}
+                onChange={(e) => setGoalVision(e.target.value)}
+                rows={3}
+              />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
-}
 
-/* ===== Toast 组件 ===== */
-function BanlingToast({ toast }: { toast: string | null }) {
-  if (!toast) return null;
+  /* ============================================================
+   * 渲染：我的
+   * ============================================================ */
+  const renderProfile = () => (
+    <div className="bl-page bl-profile-page">
+      {/* 用户头部 */}
+      <div className="bl-profile-header">
+        <div className="bl-profile-avatar">
+          {profile?.nickname ? profile.nickname[0].toUpperCase() : "U"}
+        </div>
+        <div className="bl-profile-stats">
+          <div className="bl-profile-name-row">
+            <input
+              className="bl-profile-name-input"
+              value={editNickname || profile?.nickname || ""}
+              placeholder={profile?.nickname || "用户名"}
+              onChange={(e) => setEditNickname(e.target.value)}
+            />
+            <button className="bl-save-btn" onClick={handleSaveNickname}>保存</button>
+          </div>
+          <div className="bl-profile-meta">
+            <span>注册于 {profile ? formatDate(profile.createdAt) : formatDate(Date.now())}</span>
+            <span>·</span>
+            <span>{sessions.length}次规划对话</span>
+            <span>·</span>
+            <span>{savedReports.length}份规划报告</span>
+          </div>
+        </div>
+      </div>
+
+      {/* 规划对话记录 */}
+      <div className="bl-profile-section">
+        <div className="bl-section-header">
+          <h3>规划对话记录</h3>
+          <button className="bl-link-btn" onClick={handleStartChat}>新建对话</button>
+        </div>
+        {sessions.length === 0 ? (
+          <div className="bl-empty-mini">暂无对话记录</div>
+        ) : (
+          <div className="bl-session-list">
+            {sessions.map((s) => (
+              <div key={s.id} className="bl-session-item">
+                <div className="bl-session-icon">🕐</div>
+                <div className="bl-session-info">
+                  <div className="bl-session-title">{s.title}</div>
+                  <div className="bl-session-date">{formatDate(s.createdAt)}</div>
+                </div>
+                <span className={`bl-session-status ${s.status}`}>
+                  {s.status === "ongoing" ? "进行中" : "已完成"}
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* 规划报告历史 */}
+      <div className="bl-profile-section">
+        <div className="bl-section-header">
+          <h3>规划报告历史</h3>
+          <button className="bl-link-btn" onClick={() => setTab("report")}>查看报告</button>
+        </div>
+        {savedReports.length === 0 ? (
+          <div className="bl-empty-mini">
+            <div className="bl-empty-icon-sm">📄</div>
+            <div>暂无规划报告</div>
+            <div className="bl-empty-hint">完成AI规划对话后自动生成</div>
+          </div>
+        ) : (
+          <div className="bl-report-list-mini">
+            {savedReports.map((r) => (
+              <div key={r.id} className="bl-report-item-mini" onClick={() => { setViewingReport(r); setAdoptedActions(r.adoptedActions); setTab("report"); }}>
+                <div className="bl-report-date">{formatDate(r.createdAt)}</div>
+                <div className="bl-report-insight">{r.data.insight}</div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* 账号设置 */}
+      <div className="bl-profile-section">
+        <div className="bl-section-header">
+          <h3>账号设置</h3>
+        </div>
+        <div className="bl-settings-list">
+          <button className="bl-setting-item">
+            <span>🔒 修改密码</span>
+            <span className="bl-arrow">›</span>
+          </button>
+          <button className="bl-setting-item" onClick={() => setTab("report")}>
+            <span>📋 查看所有规划报告</span>
+            <span className="bl-arrow">›</span>
+          </button>
+          <Link to="/mickey" className="bl-setting-item danger">
+            <span>🚪 退出伴龄</span>
+            <span className="bl-arrow">›</span>
+          </Link>
+        </div>
+      </div>
+
+      <div className="bl-profile-footer">
+        使用即代表同意《用户协议》和《隐私政策》
+      </div>
+    </div>
+  );
+
+  /* ============================================================
+   * 渲染主结构
+   * ============================================================ */
   return (
-    <AnimatePresence>
-      <motion.div
-        className="banling-toast"
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        exit={{ opacity: 0, y: 20 }}
-      >
-        {toast}
-      </motion.div>
-    </AnimatePresence>
+    <div className="bl-root">
+      <div className="bl-content">
+        {tab === "home" && renderHome()}
+        {tab === "ai" && renderAI()}
+        {tab === "report" && renderReport()}
+        {tab === "tools" && renderTools()}
+        {tab === "profile" && renderProfile()}
+      </div>
+      <BottomNav tab={tab} onChange={setTab} />
+      <BanlingStyles />
+      {toast && <div className="bl-toast">{toast}</div>}
+    </div>
   );
 }
 
@@ -1057,1123 +1205,1363 @@ function BanlingToast({ toast }: { toast: string | null }) {
 function BanlingStyles() {
   return (
     <style>{`
-      .banling-root {
+      /* ===== 全局 ===== */
+      .bl-root {
+        --orange: #FFB84D;
+        --orange-dark: #FFA726;
+        --orange-light: #FFF3E0;
+        --bg: #FFF9F0;
+        --card: #FFFFFF;
+        --text: #333333;
+        --text-light: #999999;
+        --border: #F0F0F0;
+        --shadow: 0 2px 12px rgba(0,0,0,0.06);
+        --shadow-hover: 0 4px 20px rgba(255,184,77,0.15);
+        max-width: 480px;
+        margin: 0 auto;
         min-height: 100vh;
-        background: linear-gradient(180deg, #FFF8E7 0%, #FFF5E6 100%);
-        font-family: -apple-system, "PingFang SC", "Microsoft YaHei", "Noto Sans SC", sans-serif;
-        color: #333333;
+        background: var(--bg);
+        font-family: -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif;
+        color: var(--text);
         position: relative;
-        overflow-x: hidden;
+        padding-bottom: 64px;
       }
 
-      /* ===== 顶部导航栏 ===== */
-      .banling-topbar {
+      .bl-content {
+        min-height: calc(100vh - 64px);
+      }
+
+      /* ===== 底部导航 ===== */
+      .bl-bottom-nav {
+        position: fixed;
+        bottom: 0;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 100%;
+        max-width: 480px;
+        height: 64px;
+        background: #fff;
         display: flex;
         align-items: center;
-        justify-content: space-between;
-        padding: 14px 24px;
-        background: rgba(255, 248, 231, 0.9);
-        backdrop-filter: blur(8px);
-        position: sticky;
-        top: 0;
+        justify-content: space-around;
+        border-top: 1px solid var(--border);
         z-index: 100;
-        border-bottom: 1px solid rgba(255, 184, 0, 0.08);
+        box-shadow: 0 -2px 12px rgba(0,0,0,0.04);
       }
-      .banling-topbar-back {
+
+      .bl-nav-item {
         display: flex;
+        flex-direction: column;
         align-items: center;
-        gap: 8px;
-        text-decoration: none;
-        color: #333;
-        font-size: 18px;
-        font-weight: 700;
-      }
-      .banling-topbar-logo {
-        font-size: 22px;
-      }
-      .banling-topbar-profile {
-        display: flex;
-        align-items: center;
-        gap: 6px;
-        padding: 8px 18px;
-        font-size: 14px;
-        color: #fff;
-        background: linear-gradient(135deg, #FF8C00, #FFB800);
+        gap: 2px;
+        background: none;
         border: none;
-        border-radius: 999px;
         cursor: pointer;
-        font-family: inherit;
-        font-weight: 600;
-        transition: all 0.2s ease;
-        box-shadow: 0 2px 8px rgba(255, 184, 0, 0.3);
+        color: var(--text-light);
+        font-size: 10px;
+        transition: color 0.2s;
+        padding: 4px 8px;
       }
-      .banling-topbar-profile:hover {
-        transform: translateY(-1px);
-        box-shadow: 0 4px 12px rgba(255, 184, 0, 0.4);
+
+      .bl-nav-item.active {
+        color: var(--orange-dark);
       }
-      .banling-topbar-avatar {
-        font-size: 16px;
+
+      .bl-nav-icon {
+        width: 22px;
+        height: 22px;
       }
 
       /* ===== 首页 ===== */
-      .banling-home-content {
+      .bl-home {
+        padding: 0 20px;
+      }
+
+      .bl-hero {
+        text-align: center;
+        padding: 48px 0 32px;
+      }
+
+      .bl-hero-logo {
         display: flex;
         align-items: center;
         justify-content: center;
-        gap: 48px;
-        max-width: 1200px;
-        margin: 0 auto;
-        padding: 48px 24px;
-        min-height: calc(100vh - 60px);
-      }
-      .banling-home-left {
-        flex: 1;
-        max-width: 520px;
-      }
-      .banling-home-right {
-        flex: 1;
-        max-width: 480px;
-      }
-
-      .banling-greeting-tag {
-        display: inline-block;
-        padding: 8px 18px;
-        font-size: 14px;
-        color: #8a6a20;
-        background: rgba(255, 230, 150, 0.4);
-        border-radius: 999px;
+        gap: 8px;
         margin-bottom: 24px;
       }
 
-      .banling-hero-title {
-        margin: 0 0 24px;
-        line-height: 1.1;
+      .bl-logo-icon {
+        width: 40px;
+        height: 40px;
+        background: var(--orange);
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 20px;
       }
-      .banling-hero-line1 {
-        display: block;
-        font-size: 42px;
-        font-weight: 900;
-        color: #1a1a1a;
-        transform: rotate(-2deg);
-        margin-bottom: 4px;
+
+      .bl-hero-logo span {
+        font-size: 18px;
+        font-weight: 700;
       }
-      .banling-hero-line2 {
-        display: block;
-        font-size: 42px;
-        font-weight: 900;
-        background: linear-gradient(135deg, #FF8C00, #FFB800);
+
+      .bl-hero-title {
+        font-size: 32px;
+        font-weight: 800;
+        line-height: 1.3;
+        margin: 0 0 12px;
+        color: var(--text);
+      }
+
+      .bl-hero-accent {
+        background: linear-gradient(135deg, var(--orange), var(--orange-dark));
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
         background-clip: text;
-        transform: rotate(-2deg);
-        text-shadow: 0 2px 4px rgba(255, 140, 0, 0.15);
       }
-      .banling-hero-desc {
+
+      .bl-hero-sub {
         font-size: 15px;
-        line-height: 1.8;
-        color: #666;
+        color: var(--orange-dark);
+        font-weight: 500;
+        margin: 0 0 16px;
+      }
+
+      .bl-hero-desc {
+        font-size: 14px;
+        color: var(--text-light);
+        line-height: 1.6;
         margin: 0 0 32px;
       }
 
-      /* ===== 安心星卡片 ===== */
-      .banling-star-card {
-        background: #fff;
-        border-radius: 20px;
-        padding: 20px 24px;
-        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
-        margin-bottom: 32px;
-      }
-      .banling-star-header {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        margin-bottom: 12px;
-      }
-      .banling-star-title {
-        font-size: 16px;
-        font-weight: 700;
-        color: #333;
-      }
-      .banling-star-count {
-        font-size: 18px;
-        font-weight: 800;
-        color: #FFB800;
-      }
-      .banling-stars {
-        display: flex;
-        gap: 6px;
-        margin-bottom: 16px;
-      }
-      .banling-stars .star {
-        font-size: 28px;
-        color: #E0E0E0;
-        line-height: 1;
-      }
-      .banling-stars .star.filled {
-        color: #FFB800;
-        text-shadow: 0 2px 8px rgba(255, 184, 0, 0.4);
-      }
-      .banling-star-progress {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-      }
-      .banling-star-track {
-        flex: 1;
-        height: 8px;
-        background: #FFF0CC;
-        border-radius: 999px;
-        overflow: hidden;
-      }
-      .banling-star-fill {
-        height: 100%;
-        background: linear-gradient(90deg, #FFB800, #FF8C00);
-        border-radius: 999px;
-      }
-      .banling-star-label {
-        font-size: 13px;
-        color: #999;
-        white-space: nowrap;
-      }
-
-      /* ===== CTA 按钮 ===== */
-      .banling-cta-group {
-        display: flex;
-        flex-direction: column;
-        gap: 12px;
-      }
-      .banling-cta-primary {
-        padding: 16px 32px;
-        font-size: 17px;
-        font-weight: 700;
-        color: #fff;
-        background: linear-gradient(135deg, #FF8C00, #FFB800);
-        border: none;
-        border-radius: 999px;
-        cursor: pointer;
-        font-family: inherit;
-        box-shadow: 0 8px 24px rgba(255, 184, 0, 0.35);
-        transition: all 0.3s ease;
-      }
-      .banling-cta-primary:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 12px 32px rgba(255, 184, 0, 0.45);
-      }
-      .banling-cta-secondary {
-        padding: 12px 28px;
-        font-size: 14px;
-        font-weight: 600;
-        color: #FF8C00;
-        background: transparent;
-        border: 2px solid rgba(255, 184, 0, 0.3);
-        border-radius: 999px;
-        cursor: pointer;
-        font-family: inherit;
-        transition: all 0.2s ease;
-      }
-      .banling-cta-secondary:hover {
-        background: rgba(255, 184, 0, 0.08);
-        border-color: #FFB800;
-      }
-
-      /* ===== 右侧聊天预览 ===== */
-      .banling-preview-window {
-        background: #fff;
-        border-radius: 20px;
-        box-shadow: 0 12px 40px rgba(0, 0, 0, 0.1);
-        overflow: hidden;
-        position: relative;
-      }
-      .banling-preview-header {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        padding: 14px 20px;
-        background: #FFF8E7;
-        border-bottom: 1px solid rgba(255, 184, 0, 0.1);
-      }
-      .banling-preview-dots {
-        display: flex;
-        gap: 5px;
-      }
-      .banling-preview-dots span {
-        width: 10px;
-        height: 10px;
-        border-radius: 50%;
-        background: #FFD966;
-      }
-      .banling-preview-title {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        flex: 1;
-        margin-left: 8px;
-      }
-      .banling-preview-logo {
-        font-size: 20px;
-      }
-      .banling-preview-name {
-        font-size: 14px;
-        font-weight: 700;
-        color: #333;
-      }
-      .banling-preview-status {
-        font-size: 11px;
-        color: #999;
-      }
-      .banling-preview-mode {
-        padding: 4px 12px;
-        font-size: 11px;
-        color: #5a9e3f;
-        background: rgba(126, 211, 33, 0.12);
-        border-radius: 999px;
-        font-weight: 600;
-      }
-      .banling-preview-body {
+      .bl-pension-input {
+        background: var(--card);
+        border-radius: 16px;
         padding: 20px;
-        display: flex;
-        flex-direction: column;
-        gap: 14px;
+        margin-bottom: 20px;
+        box-shadow: var(--shadow);
+        text-align: left;
       }
-      .banling-preview-msg {
-        display: flex;
-        gap: 8px;
-        max-width: 80%;
+
+      .bl-pension-input label {
+        display: block;
+        font-size: 13px;
+        color: var(--text-light);
+        margin-bottom: 8px;
       }
-      .banling-preview-msg.user {
-        flex-direction: row-reverse;
-        align-self: flex-end;
-      }
-      .banling-preview-avatar {
-        width: 32px;
-        height: 32px;
-        border-radius: 50%;
-        background: rgba(255, 184, 0, 0.12);
+
+      .bl-pension-field {
         display: flex;
         align-items: center;
-        justify-content: center;
-        font-size: 16px;
-        flex-shrink: 0;
+        gap: 4px;
       }
-      .banling-preview-bubble {
-        padding: 10px 14px;
-        border-radius: 16px;
-        font-size: 13px;
-        line-height: 1.6;
+
+      .bl-currency {
+        font-size: 24px;
+        font-weight: 700;
+        color: var(--orange-dark);
       }
-      .banling-preview-msg.ai .banling-preview-bubble {
-        background: #FFF8E7;
-        color: #333;
-        border-top-left-radius: 4px;
+
+      .bl-pension-field input {
+        flex: 1;
+        border: none;
+        outline: none;
+        font-size: 28px;
+        font-weight: 700;
+        color: var(--text);
+        background: transparent;
       }
-      .banling-preview-msg.user .banling-preview-bubble {
-        background: linear-gradient(135deg, #FF8C00, #FFB800);
+
+      .bl-cta-main {
+        width: 100%;
+        background: linear-gradient(135deg, var(--orange), var(--orange-dark));
         color: #fff;
-        border-top-right-radius: 4px;
+        border: none;
+        border-radius: 12px;
+        padding: 14px 0;
+        font-size: 16px;
+        font-weight: 600;
+        cursor: pointer;
+        box-shadow: 0 4px 16px rgba(255,167,38,0.3);
+        transition: transform 0.2s, box-shadow 0.2s;
       }
-      .banling-preview-tags {
+
+      .bl-cta-main:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(255,167,38,0.4);
+      }
+
+      .bl-cta-main:active {
+        transform: translateY(0);
+      }
+
+      .bl-trust-tags {
         display: flex;
-        gap: 6px;
-        flex-wrap: wrap;
-        padding-left: 40px;
+        justify-content: center;
+        gap: 16px;
+        margin-top: 16px;
       }
-      .banling-preview-tag {
-        padding: 4px 12px;
-        font-size: 11px;
-        color: #8a6a20;
-        background: rgba(255, 230, 150, 0.4);
-        border-radius: 999px;
+
+      .bl-trust-tags span {
+        font-size: 12px;
+        color: var(--text-light);
       }
-      .banling-preview-score {
-        position: absolute;
-        bottom: -16px;
-        right: 20px;
-        background: #fff;
-        border-radius: 16px;
-        padding: 14px 20px;
-        box-shadow: 0 8px 28px rgba(0, 0, 0, 0.12);
+
+      /* ===== 通用 Section ===== */
+      .bl-section {
+        padding: 32px 0;
+        border-top: 1px solid var(--border);
+      }
+
+      .bl-section-title {
+        font-size: 20px;
+        font-weight: 700;
+        text-align: center;
+        margin: 0 0 8px;
+      }
+
+      .bl-section-intro {
+        font-size: 13px;
+        color: var(--text-light);
+        text-align: center;
+        margin: 0 0 24px;
+      }
+
+      /* 目标人群 */
+      .bl-persona-grid {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+      }
+
+      .bl-persona-card {
+        background: var(--card);
+        border-radius: 12px;
+        padding: 20px;
+        box-shadow: var(--shadow);
         text-align: center;
       }
-      .banling-preview-score-label {
-        font-size: 11px;
-        color: #999;
-        margin-bottom: 2px;
-      }
-      .banling-preview-score-value {
-        font-size: 28px;
-        font-weight: 900;
-        color: #FF8C00;
-        margin-bottom: 4px;
-      }
-      .banling-preview-score-value span {
-        font-size: 13px;
-        color: #ccc;
-        font-weight: 400;
+
+      .bl-persona-icon {
+        font-size: 32px;
+        margin-bottom: 8px;
       }
 
-      /* ===== 对话页 ===== */
-      .banling-chat-root {
+      .bl-persona-card h3 {
+        font-size: 16px;
+        font-weight: 600;
+        margin: 0 0 4px;
+      }
+
+      .bl-persona-age {
+        font-size: 13px;
+        color: var(--orange-dark);
+        font-weight: 500;
+        margin: 0 0 4px;
+      }
+
+      .bl-persona-card p:last-child {
+        font-size: 13px;
+        color: var(--text-light);
+        margin: 0;
+      }
+
+      /* 价值主张 */
+      .bl-value-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+      }
+
+      .bl-value-card {
+        background: var(--card);
+        border-radius: 12px;
+        padding: 20px 16px;
+        text-align: center;
+        box-shadow: var(--shadow);
+      }
+
+      .bl-value-icon {
+        font-size: 28px;
+        margin-bottom: 8px;
+      }
+
+      .bl-value-card h3 {
+        font-size: 14px;
+        font-weight: 600;
+        margin: 0 0 4px;
+      }
+
+      .bl-value-card p {
+        font-size: 12px;
+        color: var(--text-light);
+        margin: 0;
+      }
+
+      /* 4步流程 */
+      .bl-steps {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+      }
+
+      .bl-step-card {
+        background: var(--card);
+        border-radius: 12px;
+        padding: 20px 16px;
+        box-shadow: var(--shadow);
+      }
+
+      .bl-step-num {
+        font-size: 24px;
+        font-weight: 800;
+        color: var(--orange);
+        margin-bottom: 8px;
+      }
+
+      .bl-step-card h3 {
+        font-size: 15px;
+        font-weight: 600;
+        margin: 0 0 4px;
+      }
+
+      .bl-step-card p {
+        font-size: 12px;
+        color: var(--text-light);
+        margin: 0;
+      }
+
+      /* 底部CTA */
+      .bl-final-cta {
+        text-align: center;
+        padding: 40px 0;
+      }
+
+      .bl-final-cta h2 {
+        font-size: 18px;
+        font-weight: 700;
+        margin: 0 0 8px;
+      }
+
+      .bl-final-cta p {
+        font-size: 13px;
+        color: var(--text-light);
+        margin: 0 0 20px;
+      }
+
+      /* ===== AI 对话页 ===== */
+      .bl-ai-page {
         display: flex;
         flex-direction: column;
         height: 100vh;
+        padding-top: 0;
       }
-      .banling-chat-topbar {
+
+      .bl-ai-topbar {
         display: flex;
         align-items: center;
-        gap: 12px;
+        justify-content: space-between;
         padding: 12px 20px;
-        background: rgba(255, 248, 231, 0.95);
-        backdrop-filter: blur(8px);
-        border-bottom: 1px solid rgba(255, 184, 0, 0.1);
-        flex-shrink: 0;
+        background: #fff;
+        border-bottom: 1px solid var(--border);
       }
-      .banling-chat-back-btn {
-        width: 36px;
-        height: 36px;
-        border-radius: 50%;
-        background: rgba(255, 184, 0, 0.12);
-        border: none;
-        font-size: 18px;
-        color: #FF8C00;
-        cursor: pointer;
-        font-family: inherit;
+
+      .bl-ai-topbar-logo {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+
+      .bl-logo-icon-sm {
+        width: 28px;
+        height: 28px;
+        background: var(--orange);
+        border-radius: 6px;
         display: flex;
         align-items: center;
         justify-content: center;
-        transition: all 0.2s ease;
-      }
-      .banling-chat-back-btn:hover {
-        background: rgba(255, 184, 0, 0.2);
-      }
-      .banling-chat-topbar-info {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        flex: 1;
-      }
-      .banling-chat-topbar-logo {
-        font-size: 22px;
-      }
-      .banling-chat-topbar-name {
-        font-size: 15px;
-        font-weight: 700;
-        color: #333;
-      }
-      .banling-chat-topbar-status {
-        font-size: 12px;
-        color: #5a9e3f;
-      }
-      .banling-report-btn {
-        padding: 8px 18px;
-        font-size: 13px;
-        font-weight: 600;
-        color: #fff;
-        background: linear-gradient(135deg, #FF8C00, #FFB800);
-        border: none;
-        border-radius: 999px;
-        cursor: pointer;
-        white-space: nowrap;
-        font-family: inherit;
-        box-shadow: 0 4px 12px rgba(255, 184, 0, 0.3);
-        transition: all 0.2s ease;
-      }
-      .banling-report-btn:hover {
-        transform: translateY(-1px);
-        box-shadow: 0 6px 16px rgba(255, 184, 0, 0.4);
+        font-size: 14px;
       }
 
-      .banling-chat-body {
+      .bl-ai-topbar-logo span {
+        font-size: 16px;
+        font-weight: 700;
+      }
+
+      .bl-ai-status {
+        font-size: 12px;
+        color: var(--text-light);
+      }
+
+      .bl-ai-body {
         flex: 1;
         overflow-y: auto;
-        padding: 20px;
+        padding: 16px 20px;
         display: flex;
         flex-direction: column;
         gap: 16px;
       }
 
-      /* ===== 消息 ===== */
-      .banling-msg {
+      .bl-msg {
         display: flex;
-        gap: 10px;
-        max-width: 82%;
+        gap: 8px;
+        max-width: 85%;
       }
-      .banling-msg.user {
-        flex-direction: row-reverse;
+
+      .bl-msg.user {
         align-self: flex-end;
+        flex-direction: row-reverse;
       }
-      .banling-msg-avatar {
-        width: 38px;
-        height: 38px;
-        border-radius: 50%;
-        background: rgba(255, 184, 0, 0.12);
+
+      .bl-msg-avatar {
+        flex-shrink: 0;
+        width: 32px;
+        height: 32px;
         display: flex;
         align-items: center;
         justify-content: center;
-        font-size: 19px;
-        flex-shrink: 0;
       }
-      .banling-msg-bubble {
-        padding: 12px 18px;
-        border-radius: 18px;
-        font-size: 15px;
-        line-height: 1.7;
-      }
-      .banling-msg.assistant .banling-msg-bubble {
-        background: #fff;
-        color: #333;
-        border-top-left-radius: 6px;
-        box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
-      }
-      .banling-msg.user .banling-msg-bubble {
-        background: linear-gradient(135deg, #FF8C00, #FFB800);
+
+      .bl-ai-tag {
+        background: var(--orange);
         color: #fff;
-        border-top-right-radius: 6px;
-        box-shadow: 0 2px 12px rgba(255, 184, 0, 0.25);
+        font-size: 10px;
+        font-weight: 700;
+        padding: 2px 6px;
+        border-radius: 4px;
       }
-      .banling-msg-bubble p {
+
+      .bl-msg-bubble {
+        background: #fff;
+        padding: 12px 16px;
+        border-radius: 12px;
+        font-size: 14px;
+        line-height: 1.6;
+        box-shadow: var(--shadow);
+      }
+
+      .bl-msg.user .bl-msg-bubble {
+        background: var(--orange);
+        color: #fff;
+      }
+
+      .bl-msg-bubble p {
         margin: 0;
       }
-      .banling-msg-bubble p + p {
-        margin-top: 6px;
-      }
 
-      /* ===== 打字动画 ===== */
-      .banling-typing {
-        display: flex;
-        gap: 5px;
-        align-items: center;
-      }
-      .banling-typing span {
-        width: 8px;
-        height: 8px;
+      .bl-typing span {
+        display: inline-block;
+        width: 6px;
+        height: 6px;
+        background: var(--text-light);
         border-radius: 50%;
-        background: #FFB800;
-        animation: banling-typing-bounce 1.2s infinite;
-      }
-      .banling-typing span:nth-child(2) { animation-delay: 0.15s; }
-      .banling-typing span:nth-child(3) { animation-delay: 0.3s; }
-      @keyframes banling-typing-bounce {
-        0%, 60%, 100% { transform: translateY(0); opacity: 0.5; }
-        30% { transform: translateY(-8px); opacity: 1; }
+        margin: 0 2px;
+        animation: bl-bounce 1.4s infinite;
       }
 
-      /* ===== 快捷回复 ===== */
-      .banling-quick-replies {
+      .bl-typing span:nth-child(2) { animation-delay: 0.2s; }
+      .bl-typing span:nth-child(3) { animation-delay: 0.4s; }
+
+      @keyframes bl-bounce {
+        0%, 60%, 100% { transform: translateY(0); }
+        30% { transform: translateY(-6px); }
+      }
+
+      .bl-quick-replies {
         display: flex;
         flex-wrap: wrap;
         gap: 8px;
-        padding: 0 20px 12px;
-      }
-      .banling-quick-btn {
-        padding: 9px 16px;
-        font-size: 13px;
-        color: #8a6a20;
-        background: rgba(255, 230, 150, 0.35);
-        border: 1px solid rgba(255, 184, 0, 0.2);
-        border-radius: 999px;
-        cursor: pointer;
-        font-family: inherit;
-        transition: all 0.2s ease;
-      }
-      .banling-quick-btn:hover {
-        background: rgba(255, 184, 0, 0.15);
-        border-color: #FFB800;
-        transform: translateY(-1px);
+        padding: 0 20px 8px;
       }
 
-      /* ===== 输入栏 ===== */
-      .banling-input-bar {
-        display: flex;
-        gap: 10px;
-        padding: 12px 20px;
-        background: rgba(255, 248, 231, 0.95);
-        backdrop-filter: blur(8px);
-        border-top: 1px solid rgba(255, 184, 0, 0.1);
-        flex-shrink: 0;
-      }
-      .banling-input {
-        flex: 1;
-        padding: 12px 18px;
-        font-size: 15px;
-        border: 2px solid rgba(255, 184, 0, 0.15);
-        border-radius: 999px;
-        background: #fff;
-        resize: none;
-        outline: none;
-        font-family: inherit;
-        color: #333;
-        transition: border-color 0.2s ease;
-      }
-      .banling-input:focus {
-        border-color: #FFB800;
-      }
-      .banling-send-btn {
-        padding: 0 24px;
-        font-size: 15px;
-        font-weight: 700;
-        color: #fff;
-        background: linear-gradient(135deg, #FF8C00, #FFB800);
-        border: none;
-        border-radius: 999px;
+      .bl-quick-btn {
+        background: var(--orange-light);
+        color: var(--orange-dark);
+        border: 1px solid var(--orange);
+        border-radius: 20px;
+        padding: 6px 14px;
+        font-size: 13px;
         cursor: pointer;
+        transition: all 0.2s;
+      }
+
+      .bl-quick-btn:hover {
+        background: var(--orange);
+        color: #fff;
+      }
+
+      .bl-report-trigger {
+        padding: 0 20px 8px;
+      }
+
+      .bl-report-trigger-btn {
+        width: 100%;
+        background: linear-gradient(135deg, var(--orange), var(--orange-dark));
+        color: #fff;
+        border: none;
+        border-radius: 10px;
+        padding: 10px 0;
+        font-size: 14px;
+        font-weight: 600;
+        cursor: pointer;
+      }
+
+      .bl-input-bar {
+        display: flex;
+        align-items: flex-end;
+        gap: 8px;
+        padding: 12px 20px;
+        background: #fff;
+        border-top: 1px solid var(--border);
+      }
+
+      .bl-input {
+        flex: 1;
+        border: 1px solid var(--border);
+        border-radius: 20px;
+        padding: 10px 16px;
+        font-size: 14px;
+        outline: none;
+        resize: none;
+        max-height: 100px;
         font-family: inherit;
-        box-shadow: 0 4px 12px rgba(255, 184, 0, 0.3);
-        transition: all 0.2s ease;
       }
-      .banling-send-btn:disabled {
-        background: #E0D5C0;
-        box-shadow: none;
+
+      .bl-input:focus {
+        border-color: var(--orange);
+      }
+
+      .bl-send-btn {
+        width: 40px;
+        height: 40px;
+        background: var(--orange);
+        color: #fff;
+        border: none;
+        border-radius: 50%;
+        font-size: 16px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: background 0.2s;
+      }
+
+      .bl-send-btn:disabled {
+        background: var(--border);
         cursor: not-allowed;
-      }
-      .banling-send-btn:not(:disabled):hover {
-        transform: translateY(-1px);
-        box-shadow: 0 6px 16px rgba(255, 184, 0, 0.4);
       }
 
       /* ===== 报告页 ===== */
-      .banling-report-root {
-        min-height: 100vh;
+      .bl-report-page {
+        padding: 20px;
       }
-      .banling-report-inner {
-        max-width: 640px;
-        margin: 0 auto;
-        padding: 24px 20px;
+
+      .bl-report-loading {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        min-height: 60vh;
+        gap: 16px;
+        color: var(--text-light);
       }
-      .banling-report-loading {
+
+      .bl-loading-spinner {
+        width: 40px;
+        height: 40px;
+        border: 3px solid var(--border);
+        border-top-color: var(--orange);
+        border-radius: 50%;
+        animation: bl-spin 0.8s linear infinite;
+      }
+
+      @keyframes bl-spin {
+        to { transform: rotate(360deg); }
+      }
+
+      .bl-report-empty {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        min-height: 50vh;
         text-align: center;
-        padding: 80px 20px;
+        gap: 12px;
       }
-      .banling-loading-icon {
-        font-size: 52px;
+
+      .bl-empty-icon {
+        font-size: 48px;
+        opacity: 0.5;
+      }
+
+      .bl-report-empty h2 {
+        font-size: 20px;
+        font-weight: 700;
+        margin: 0;
+      }
+
+      .bl-report-empty p {
+        font-size: 14px;
+        color: var(--text-light);
+        margin: 0 0 16px;
+      }
+
+      .bl-report-empty .bl-cta-main {
+        max-width: 240px;
+      }
+
+      .bl-report-header {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        margin-bottom: 20px;
+      }
+
+      .bl-back-btn {
+        background: none;
+        border: none;
+        font-size: 24px;
+        cursor: pointer;
+        color: var(--text);
+      }
+
+      .bl-report-header h2 {
+        font-size: 18px;
+        font-weight: 700;
+        margin: 0;
+      }
+
+      .bl-report-meta {
+        font-size: 12px;
+        color: var(--text-light);
         margin-bottom: 16px;
       }
-      .banling-loading-sub {
-        font-size: 13px;
-        color: #999;
+
+      .bl-report-card {
+        background: var(--card);
+        border-radius: 12px;
+        padding: 20px;
+        margin-bottom: 12px;
+        box-shadow: var(--shadow);
+      }
+
+      .bl-report-card h3 {
+        font-size: 15px;
+        font-weight: 600;
+        margin: 0 0 12px;
+      }
+
+      .bl-insight-card {
+        background: linear-gradient(135deg, var(--orange-light), #fff);
+      }
+
+      .bl-insight-card p {
+        font-size: 15px;
+        line-height: 1.6;
+        margin: 0;
+      }
+
+      .bl-metrics-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+      }
+
+      .bl-metric-item {
+        text-align: center;
+      }
+
+      .bl-metric-label {
+        font-size: 12px;
+        color: var(--text-light);
+        margin-bottom: 4px;
+      }
+
+      .bl-metric-value {
+        font-size: 20px;
+        font-weight: 700;
+        color: var(--orange-dark);
+      }
+
+      .bl-metric-hint {
+        font-size: 11px;
+        color: var(--text-light);
+      }
+
+      .bl-actions-list {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+      }
+
+      .bl-action-item {
+        display: flex;
+        align-items: flex-start;
+        gap: 8px;
+        font-size: 14px;
+        line-height: 1.5;
+      }
+
+      .bl-action-check {
+        flex-shrink: 0;
+        width: 22px;
+        height: 22px;
+        border: 2px solid var(--orange);
+        border-radius: 50%;
+        background: none;
+        cursor: pointer;
+        font-size: 12px;
+        color: transparent;
+        transition: all 0.2s;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .bl-action-item.adopted .bl-action-check {
+        background: var(--orange);
+        color: #fff;
+      }
+
+      .bl-summary-card {
+        background: var(--orange-light);
+      }
+
+      .bl-summary-card p {
+        font-size: 14px;
+        line-height: 1.6;
+        margin: 0;
+        color: var(--text);
+      }
+
+      .bl-report-actions {
+        display: flex;
+        gap: 12px;
         margin-top: 8px;
       }
 
-      .banling-report-section {
-        margin-bottom: 28px;
-      }
-      .banling-section-header {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        margin-bottom: 14px;
-      }
-      .banling-section-tag {
-        display: inline-block;
-        padding: 5px 14px;
-        font-size: 12px;
-        font-weight: 600;
-        color: #FF8C00;
-        background: rgba(255, 184, 0, 0.1);
-        border-radius: 999px;
-        margin-bottom: 14px;
-      }
-      .banling-section-header .banling-section-tag {
-        margin-bottom: 0;
-      }
-      .banling-text-btn {
-        background: none;
-        border: none;
-        font-size: 13px;
-        color: #FF8C00;
+      .bl-btn-outline {
+        flex: 1;
+        background: #fff;
+        border: 1px solid var(--orange);
+        color: var(--orange-dark);
+        border-radius: 10px;
+        padding: 10px 0;
+        font-size: 14px;
         cursor: pointer;
-        font-family: inherit;
+      }
+
+      .bl-report-history {
+        margin-top: 32px;
+      }
+
+      .bl-history-title {
+        font-size: 16px;
         font-weight: 600;
-        padding: 0;
-      }
-      .banling-text-btn:hover {
-        color: #FF6600;
-      }
-      .banling-insight-card {
-        background: #fff;
-        border-radius: 20px;
-        padding: 24px;
-        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
-      }
-      .banling-insight-text {
-        font-size: 18px;
-        line-height: 1.7;
-        color: #1a1a1a;
-        margin: 0;
-        font-weight: 700;
-      }
-
-      /* ===== 指标网格 ===== */
-      .banling-metrics-grid {
-        display: grid;
-        grid-template-columns: repeat(3, 1fr);
-        gap: 12px;
-      }
-      .banling-metric-card {
-        background: #fff;
-        border-radius: 16px;
-        padding: 18px 14px;
-        text-align: center;
-        box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
-      }
-      .banling-metric-label {
-        font-size: 12px;
-        color: #999;
-        margin-bottom: 6px;
-      }
-      .banling-metric-value {
-        font-size: 22px;
-        font-weight: 900;
-        color: #FF8C00;
-        margin-bottom: 4px;
-      }
-      .banling-metric-hint {
-        font-size: 11px;
-        color: #ccc;
-      }
-
-      /* ===== 行动建议 ===== */
-      .banling-action-hint {
-        font-size: 13px;
-        color: #999;
         margin: 0 0 12px;
       }
-      .banling-actions-list {
-        display: flex;
-        flex-direction: column;
-        gap: 10px;
-      }
-      .banling-action-item {
-        display: flex;
-        align-items: flex-start;
-        gap: 12px;
-        background: #fff;
-        border-radius: 16px;
-        padding: 16px 18px;
-        cursor: pointer;
-        box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
-        transition: all 0.2s ease;
-      }
-      .banling-action-item:hover {
-        transform: translateY(-1px);
-        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
-      }
-      .banling-action-item.adopted {
-        background: linear-gradient(135deg, rgba(126, 211, 33, 0.08), rgba(255, 184, 0, 0.05));
-      }
-      .banling-action-item.adopted .banling-action-text {
-        color: #999;
-        text-decoration: line-through;
-      }
-      .banling-action-num {
-        flex-shrink: 0;
-        width: 28px;
-        height: 28px;
-        border-radius: 50%;
-        background: linear-gradient(135deg, #FF8C00, #FFB800);
-        color: #fff;
-        font-size: 14px;
-        font-weight: 700;
+
+      .bl-history-item {
         display: flex;
         align-items: center;
-        justify-content: center;
-        font-family: inherit;
-      }
-      .banling-action-item.adopted .banling-action-num {
-        background: linear-gradient(135deg, #5a9e3f, #7ED321);
-      }
-      .banling-action-text {
-        font-size: 15px;
-        line-height: 1.6;
-        color: #333;
+        background: var(--card);
+        border-radius: 10px;
+        padding: 14px 16px;
+        margin-bottom: 8px;
+        box-shadow: var(--shadow);
       }
 
-      /* ===== 寄语 ===== */
-      .banling-report-summary {
-        background: linear-gradient(135deg, rgba(255, 184, 0, 0.08), rgba(255, 140, 0, 0.04));
-        border-radius: 20px;
-        padding: 24px;
+      .bl-history-info {
+        flex: 1;
+        cursor: pointer;
+      }
+
+      .bl-history-date {
+        font-size: 12px;
+        color: var(--text-light);
+        margin-bottom: 4px;
+      }
+
+      .bl-history-insight {
+        font-size: 14px;
+        line-height: 1.4;
+      }
+
+      .bl-history-delete {
+        background: none;
+        border: none;
+        font-size: 20px;
+        color: var(--text-light);
+        cursor: pointer;
+        padding: 0 4px;
+      }
+
+      /* ===== 工具箱页 ===== */
+      .bl-tools-page {
+        padding: 20px;
+      }
+
+      .bl-tools-header {
         text-align: center;
         margin-bottom: 24px;
       }
-      .banling-report-summary p {
-        font-size: 15px;
-        line-height: 1.8;
-        color: #8a6a20;
-        margin: 0;
-        font-style: italic;
-      }
 
-      /* ===== 导出分享 ===== */
-      .banling-export-bar {
-        display: flex;
-        gap: 10px;
-        justify-content: center;
-        margin-bottom: 20px;
-      }
-      .banling-export-btn {
-        padding: 11px 24px;
-        font-size: 14px;
-        font-weight: 600;
-        color: #FF8C00;
-        background: #fff;
-        border: 2px solid rgba(255, 184, 0, 0.25);
-        border-radius: 999px;
-        cursor: pointer;
-        font-family: inherit;
-        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
-        transition: all 0.2s ease;
-      }
-      .banling-export-btn:hover {
-        background: rgba(255, 184, 0, 0.06);
-        border-color: #FFB800;
-        transform: translateY(-1px);
-      }
-
-      /* ===== 操作按钮 ===== */
-      .banling-report-actions {
-        display: flex;
-        gap: 12px;
-        justify-content: center;
-      }
-      .banling-again-btn {
-        padding: 13px 28px;
-        font-size: 14px;
-        font-weight: 700;
-        color: #FF8C00;
-        background: #fff;
-        border: 2px solid rgba(255, 184, 0, 0.25);
-        border-radius: 999px;
-        cursor: pointer;
-        font-family: inherit;
-        transition: all 0.2s ease;
-      }
-      .banling-again-btn:hover {
-        background: rgba(255, 184, 0, 0.06);
-        border-color: #FFB800;
-      }
-      .banling-restart-btn {
-        padding: 13px 28px;
-        font-size: 14px;
-        font-weight: 700;
-        color: #fff;
-        background: linear-gradient(135deg, #FF8C00, #FFB800);
-        border: none;
-        border-radius: 999px;
-        cursor: pointer;
-        font-family: inherit;
-        box-shadow: 0 4px 16px rgba(255, 184, 0, 0.3);
-        transition: all 0.2s ease;
-      }
-      .banling-restart-btn:hover {
-        transform: translateY(-1px);
-        box-shadow: 0 6px 20px rgba(255, 184, 0, 0.4);
-      }
-
-      /* ===== 个人中心 ===== */
-      .banling-profile-root {
-        min-height: 100vh;
-      }
-      .banling-profile-form {
-        display: flex;
-        flex-direction: column;
-        gap: 12px;
-      }
-      .banling-profile-input {
-        padding: 12px 16px;
-        font-size: 15px;
-        border: 2px solid rgba(255, 184, 0, 0.15);
-        border-radius: 14px;
-        background: #fff;
-        outline: none;
-        font-family: inherit;
-        color: #333;
-        transition: border-color 0.2s ease;
-      }
-      .banling-profile-input:focus {
-        border-color: #FFB800;
-      }
-      .banling-profile-form-actions {
-        display: flex;
-        gap: 12px;
-        justify-content: flex-end;
-        align-items: center;
-      }
-      .banling-save-btn {
-        padding: 10px 28px;
-        font-size: 14px;
-        font-weight: 700;
-        color: #fff;
-        background: linear-gradient(135deg, #FF8C00, #FFB800);
-        border: none;
-        border-radius: 999px;
-        cursor: pointer;
-        font-family: inherit;
-        box-shadow: 0 4px 12px rgba(255, 184, 0, 0.3);
-        transition: all 0.2s ease;
-      }
-      .banling-save-btn:hover {
-        transform: translateY(-1px);
-        box-shadow: 0 6px 16px rgba(255, 184, 0, 0.4);
-      }
-      .banling-profile-info {
-        background: #fff;
-        border-radius: 16px;
-        padding: 18px 22px;
-        box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
-      }
-      .banling-profile-row {
-        display: flex;
-        padding: 10px 0;
-        border-bottom: 1px solid #f5f0e8;
-      }
-      .banling-profile-row:last-child {
-        border-bottom: none;
-      }
-      .banling-profile-key {
-        width: 100px;
-        font-size: 14px;
-        color: #999;
-        flex-shrink: 0;
-      }
-      .banling-profile-val {
-        font-size: 15px;
-        color: #333;
-      }
-      .banling-profile-empty {
-        font-size: 14px;
-        color: #999;
-        margin: 0;
-        padding: 24px;
-        background: #fff;
-        border-radius: 16px;
-        box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
-        text-align: center;
-      }
-
-      /* ===== 统计概览 ===== */
-      .banling-stats-grid {
-        display: grid;
-        grid-template-columns: repeat(3, 1fr);
-        gap: 12px;
-      }
-      .banling-stat-card {
-        background: #fff;
-        border-radius: 16px;
-        padding: 24px 14px;
-        text-align: center;
-        box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
-      }
-      .banling-stat-num {
-        font-size: 30px;
-        font-weight: 900;
-        background: linear-gradient(135deg, #FF8C00, #FFB800);
+      .bl-tools-title {
+        font-size: 24px;
+        font-weight: 800;
+        margin: 0 0 8px;
+        background: linear-gradient(135deg, var(--orange), var(--orange-dark));
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
         background-clip: text;
-        margin-bottom: 4px;
-      }
-      .banling-stat-label {
-        font-size: 12px;
-        color: #999;
       }
 
-      /* ===== 历史报告 ===== */
-      .banling-history-list {
+      .bl-tools-sub {
+        font-size: 13px;
+        color: var(--text-light);
+        margin: 0;
+      }
+
+      .bl-tools-tabs {
+        display: flex;
+        gap: 8px;
+        margin-bottom: 20px;
+      }
+
+      .bl-tool-tab {
+        flex: 1;
+        background: var(--card);
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        padding: 10px 8px;
+        font-size: 12px;
+        cursor: pointer;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 4px;
+        color: var(--text-light);
+        transition: all 0.2s;
+      }
+
+      .bl-tool-tab.active {
+        background: var(--text);
+        color: #fff;
+        border-color: var(--text);
+      }
+
+      .bl-tab-icon {
+        font-size: 18px;
+      }
+
+      .bl-tool-content {
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+      }
+
+      .bl-tool-card {
+        background: var(--card);
+        border-radius: 14px;
+        padding: 20px;
+        box-shadow: var(--shadow);
+      }
+
+      .bl-card-title {
+        font-size: 16px;
+        font-weight: 600;
+        margin: 0 0 16px;
+      }
+
+      .bl-card-subtitle {
+        font-size: 13px;
+        color: var(--text-light);
+        margin: 0 0 16px;
+      }
+
+      /* 滑块 */
+      .bl-slider-row {
+        margin-bottom: 20px;
+      }
+
+      .bl-slider-row:last-child {
+        margin-bottom: 0;
+      }
+
+      .bl-slider-label {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 8px;
+      }
+
+      .bl-slider-label span:first-child {
+        font-size: 14px;
+        color: var(--text);
+      }
+
+      .bl-slider-value {
+        font-size: 16px;
+        font-weight: 700;
+        color: var(--orange-dark);
+      }
+
+      .bl-slider-track-wrap {
+        position: relative;
+        height: 6px;
+        margin-bottom: 4px;
+      }
+
+      .bl-slider-bg {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 6px;
+        background: var(--border);
+        border-radius: 3px;
+      }
+
+      .bl-slider-fill {
+        position: absolute;
+        top: 0;
+        left: 0;
+        height: 6px;
+        background: linear-gradient(90deg, var(--orange), var(--orange-dark));
+        border-radius: 3px;
+      }
+
+      .bl-slider-input {
+        position: absolute;
+        top: -8px;
+        left: 0;
+        right: 0;
+        width: 100%;
+        height: 22px;
+        opacity: 0;
+        cursor: pointer;
+        -webkit-appearance: none;
+      }
+
+      .bl-slider-input::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        width: 20px;
+        height: 20px;
+        border-radius: 50%;
+        background: #fff;
+        border: 3px solid var(--orange);
+        cursor: pointer;
+        opacity: 1;
+      }
+
+      .bl-slider-range {
+        display: flex;
+        justify-content: space-between;
+        font-size: 10px;
+        color: var(--text-light);
+      }
+
+      .bl-calc-btn {
+        width: 100%;
+        background: linear-gradient(135deg, var(--orange), var(--orange-dark));
+        color: #fff;
+        border: none;
+        border-radius: 10px;
+        padding: 12px 0;
+        font-size: 15px;
+        font-weight: 600;
+        cursor: pointer;
+        margin-top: 8px;
+        box-shadow: 0 4px 12px rgba(255,167,38,0.3);
+      }
+
+      .bl-result-card {
+        background: linear-gradient(135deg, var(--orange-light), #fff);
+      }
+
+      .bl-result-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 16px;
+      }
+
+      .bl-result-item {
+        text-align: center;
+      }
+
+      .bl-result-item.highlight {
+        grid-column: span 2;
+      }
+
+      .bl-result-label {
+        font-size: 12px;
+        color: var(--text-light);
+        margin-bottom: 4px;
+      }
+
+      .bl-result-value {
+        font-size: 20px;
+        font-weight: 700;
+        color: var(--orange-dark);
+      }
+
+      .bl-result-item.highlight .bl-result-value {
+        font-size: 28px;
+      }
+
+      /* 场景对比 */
+      .bl-scenarios {
         display: flex;
         flex-direction: column;
         gap: 10px;
       }
-      .banling-history-item {
+
+      .bl-scenario-card {
+        border-radius: 10px;
+        padding: 14px 16px;
+        cursor: pointer;
+        border: 2px solid transparent;
+        transition: all 0.2s;
+      }
+
+      .bl-scenario-card.selected {
+        background: var(--orange-light) !important;
+        border-color: var(--orange);
+      }
+
+      .bl-scenario-header {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 4px;
+      }
+
+      .bl-scenario-label {
+        font-size: 14px;
+        font-weight: 600;
+      }
+
+      .bl-scenario-tag {
+        font-size: 11px;
+        padding: 2px 8px;
+        border-radius: 4px;
+        background: rgba(255,255,255,0.6);
+      }
+
+      .bl-scenario-card.selected .bl-scenario-tag {
+        background: var(--orange);
+        color: #fff;
+      }
+
+      .bl-scenario-age {
+        font-size: 13px;
+        color: var(--text-light);
+      }
+
+      .bl-projection-card {
+        text-align: center;
+        background: linear-gradient(135deg, var(--orange), var(--orange-dark));
+        color: #fff;
+      }
+
+      .bl-projection-label {
+        font-size: 13px;
+        opacity: 0.9;
+        margin-bottom: 8px;
+      }
+
+      .bl-projection-value {
+        font-size: 36px;
+        font-weight: 800;
+        margin-bottom: 8px;
+      }
+
+      .bl-projection-note {
+        font-size: 11px;
+        opacity: 0.7;
+      }
+
+      /* 目标设定 */
+      .bl-vision-field {
+        margin-top: 20px;
+      }
+
+      .bl-vision-field label {
+        display: block;
+        font-size: 14px;
+        margin-bottom: 8px;
+      }
+
+      .bl-vision-field textarea {
+        width: 100%;
+        border: 1px solid var(--border);
+        border-radius: 10px;
+        padding: 12px;
+        font-size: 14px;
+        outline: none;
+        resize: none;
+        font-family: inherit;
+      }
+
+      .bl-vision-field textarea:focus {
+        border-color: var(--orange);
+      }
+
+      /* ===== 我的页 ===== */
+      .bl-profile-page {
+        padding: 20px;
+      }
+
+      .bl-profile-header {
+        display: flex;
+        gap: 16px;
+        align-items: center;
+        padding: 20px 0;
+        border-bottom: 1px solid var(--border);
+        margin-bottom: 20px;
+      }
+
+      .bl-profile-avatar {
+        width: 56px;
+        height: 56px;
+        border-radius: 50%;
+        background: var(--orange);
+        color: #fff;
+        font-size: 24px;
+        font-weight: 700;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+      }
+
+      .bl-profile-stats {
+        flex: 1;
+      }
+
+      .bl-profile-name-row {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 6px;
+      }
+
+      .bl-profile-name-input {
+        border: none;
+        border-bottom: 1px solid var(--border);
+        background: transparent;
+        font-size: 18px;
+        font-weight: 600;
+        outline: none;
+        padding: 2px 0;
+        max-width: 120px;
+      }
+
+      .bl-profile-name-input:focus {
+        border-bottom-color: var(--orange);
+      }
+
+      .bl-save-btn {
+        background: var(--orange);
+        color: #fff;
+        border: none;
+        border-radius: 6px;
+        padding: 4px 12px;
+        font-size: 12px;
+        cursor: pointer;
+      }
+
+      .bl-profile-meta {
+        font-size: 12px;
+        color: var(--text-light);
+        display: flex;
+        gap: 4px;
+        flex-wrap: wrap;
+      }
+
+      .bl-profile-section {
+        margin-bottom: 24px;
+      }
+
+      .bl-section-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 12px;
+      }
+
+      .bl-section-header h3 {
+        font-size: 16px;
+        font-weight: 600;
+        margin: 0;
+      }
+
+      .bl-link-btn {
+        background: none;
+        border: none;
+        color: var(--orange-dark);
+        font-size: 13px;
+        cursor: pointer;
+      }
+
+      .bl-empty-mini {
+        text-align: center;
+        padding: 24px;
+        color: var(--text-light);
+        font-size: 14px;
+      }
+
+      .bl-empty-icon-sm {
+        font-size: 32px;
+        margin-bottom: 8px;
+        opacity: 0.4;
+      }
+
+      .bl-empty-hint {
+        font-size: 12px;
+        margin-top: 4px;
+      }
+
+      .bl-session-list {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+
+      .bl-session-item {
         display: flex;
         align-items: center;
         gap: 12px;
-        background: #fff;
-        border-radius: 16px;
-        padding: 16px 18px;
-        box-shadow: 0 2px 12px rgba(0, 0, 0, 0.04);
-        transition: all 0.2s ease;
-      }
-      .banling-history-item:hover {
-        transform: translateY(-1px);
-        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
-      }
-      .banling-history-main {
-        flex: 1;
-        cursor: pointer;
-        min-width: 0;
-      }
-      .banling-history-insight {
-        font-size: 14px;
-        color: #333;
-        margin-bottom: 4px;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-        font-weight: 600;
-      }
-      .banling-history-meta {
-        font-size: 12px;
-        color: #999;
-      }
-      .banling-history-del {
-        flex-shrink: 0;
-        padding: 6px 14px;
-        font-size: 12px;
-        color: #d66;
-        background: rgba(200, 80, 80, 0.08);
-        border: none;
-        border-radius: 999px;
-        cursor: pointer;
-        font-family: inherit;
-        transition: all 0.2s ease;
-      }
-      .banling-history-del:hover {
-        background: rgba(200, 80, 80, 0.15);
+        background: var(--card);
+        border-radius: 10px;
+        padding: 12px 16px;
+        box-shadow: var(--shadow);
       }
 
-      /* ===== 弹窗 ===== */
-      .banling-modal-overlay {
-        position: fixed;
-        top: 0; left: 0; right: 0; bottom: 0;
-        background: rgba(50, 40, 20, 0.4);
-        backdrop-filter: blur(4px);
-        z-index: 200;
+      .bl-session-icon {
+        font-size: 18px;
+      }
+
+      .bl-session-info {
+        flex: 1;
+      }
+
+      .bl-session-title {
+        font-size: 14px;
+        font-weight: 500;
+        margin-bottom: 2px;
+      }
+
+      .bl-session-date {
+        font-size: 12px;
+        color: var(--text-light);
+      }
+
+      .bl-session-status {
+        font-size: 11px;
+        padding: 2px 8px;
+        border-radius: 4px;
+      }
+
+      .bl-session-status.ongoing {
+        background: var(--orange-light);
+        color: var(--orange-dark);
+      }
+
+      .bl-session-status.completed {
+        background: #E8F5E9;
+        color: #4CAF50;
+      }
+
+      .bl-report-list-mini {
         display: flex;
-        align-items: center;
-        justify-content: center;
-        padding: 20px;
+        flex-direction: column;
+        gap: 8px;
       }
-      .banling-modal {
-        background: #FFF8E7;
-        border-radius: 24px;
-        max-width: 560px;
-        width: 100%;
-        max-height: 80vh;
-        overflow-y: auto;
-        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
-      }
-      .banling-modal-header {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        padding: 16px 22px;
-        border-bottom: 1px solid rgba(255, 184, 0, 0.1);
-        font-size: 15px;
-        color: #333;
-        font-weight: 700;
-      }
-      .banling-modal-close {
-        background: rgba(255, 184, 0, 0.1);
-        border: none;
-        font-size: 22px;
-        color: #999;
+
+      .bl-report-item-mini {
+        background: var(--card);
+        border-radius: 10px;
+        padding: 12px 16px;
+        box-shadow: var(--shadow);
         cursor: pointer;
-        font-family: inherit;
-        padding: 0;
-        width: 32px;
-        height: 32px;
-        border-radius: 50%;
+      }
+
+      .bl-report-date {
+        font-size: 12px;
+        color: var(--text-light);
+        margin-bottom: 4px;
+      }
+
+      .bl-report-insight {
+        font-size: 14px;
+        line-height: 1.4;
+      }
+
+      .bl-settings-list {
         display: flex;
+        flex-direction: column;
+        gap: 1px;
+        background: var(--card);
+        border-radius: 10px;
+        overflow: hidden;
+        box-shadow: var(--shadow);
+      }
+
+      .bl-setting-item {
+        display: flex;
+        justify-content: space-between;
         align-items: center;
-        justify-content: center;
-        line-height: 1;
-        transition: all 0.2s ease;
+        padding: 14px 16px;
+        background: var(--card);
+        border: none;
+        cursor: pointer;
+        font-size: 14px;
+        color: var(--text);
+        text-decoration: none;
+        transition: background 0.2s;
       }
-      .banling-modal-close:hover {
-        background: rgba(255, 184, 0, 0.2);
-        color: #333;
+
+      .bl-setting-item:hover {
+        background: var(--bg);
       }
-      .banling-modal-body {
-        padding: 22px;
+
+      .bl-setting-item.danger {
+        color: #E57373;
       }
-      .banling-modal-body .banling-insight-card {
-        margin-bottom: 20px;
+
+      .bl-arrow {
+        color: var(--text-light);
+        font-size: 18px;
       }
-      .banling-modal-body .banling-metrics-grid {
-        margin-bottom: 20px;
-      }
-      .banling-modal-body .banling-actions-list {
-        margin-bottom: 20px;
-      }
-      .banling-modal-body .banling-action-item {
-        cursor: default;
-      }
-      .banling-modal-body .banling-report-summary {
-        margin-bottom: 20px;
+
+      .bl-profile-footer {
+        text-align: center;
+        font-size: 11px;
+        color: var(--text-light);
+        padding: 20px 0;
+        line-height: 1.6;
       }
 
       /* ===== Toast ===== */
-      .banling-toast {
+      .bl-toast {
         position: fixed;
-        bottom: 30px;
+        bottom: 80px;
         left: 50%;
         transform: translateX(-50%);
-        padding: 12px 28px;
-        font-size: 14px;
-        font-weight: 600;
+        background: rgba(0,0,0,0.8);
         color: #fff;
-        background: linear-gradient(135deg, #FF8C00, #FFB800);
-        border-radius: 999px;
-        z-index: 300;
-        font-family: inherit;
-        box-shadow: 0 8px 24px rgba(255, 184, 0, 0.4);
+        padding: 8px 20px;
+        border-radius: 20px;
+        font-size: 13px;
+        z-index: 200;
+        animation: bl-fade-in 0.3s;
       }
 
-      /* ===== 响应式 ===== */
-      @media (max-width: 900px) {
-        .banling-home-content {
-          flex-direction: column;
-          gap: 32px;
-          padding: 32px 20px;
-        }
-        .banling-home-right {
-          max-width: 100%;
-          width: 100%;
-        }
-        .banling-hero-line1,
-        .banling-hero-line2 {
-          font-size: 32px;
-        }
-      }
-      @media (max-width: 640px) {
-        .banling-metrics-grid,
-        .banling-stats-grid {
-          grid-template-columns: 1fr;
-        }
-        .banling-hero-line1,
-        .banling-hero-line2 {
-          font-size: 28px;
-        }
-        .banling-hero-desc {
-          font-size: 14px;
-        }
-        .banling-msg {
-          max-width: 90%;
-        }
-        .banling-report-actions,
-        .banling-export-bar {
-          flex-direction: column;
-        }
-        .banling-profile-row {
-          flex-direction: column;
-          gap: 2px;
-        }
-        .banling-profile-key {
-          width: auto;
-        }
-        .banling-topbar {
-          padding: 12px 16px;
-        }
-        .banling-topbar-profile span:last-child {
-          display: none;
-        }
-        .banling-preview-score {
-          position: relative;
-          bottom: auto;
-          right: auto;
-          margin: 16px auto 0;
-          display: inline-block;
-        }
+      @keyframes bl-fade-in {
+        from { opacity: 0; transform: translate(-50%, 10px); }
+        to { opacity: 1; transform: translate(-50%, 0); }
       }
     `}</style>
   );

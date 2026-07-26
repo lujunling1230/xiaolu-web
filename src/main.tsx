@@ -19,6 +19,7 @@ import CitiesPage from "./pages/toolbox/roaming-guide/CitiesPage";
 import PlanPage from "./pages/toolbox/roaming-guide/PlanPage";
 import AboutPage from "./pages/toolbox/roaming-guide/AboutPage";
 import { RoamingGuideProvider } from "./pages/toolbox/roaming-guide/RoamingGuideContext";
+import ErrorBoundary from "./components/ErrorBoundary";
 import SystemTuningPage from "./pages/toolbox/SystemTuningPage";
 import BanlingPage from "./pages/toolbox/BanlingPage";
 // LifeFilmPage removed - module deleted
@@ -91,9 +92,11 @@ createRoot(document.getElementById("root")!).render(
         <Route path="/toolbox/recharge" element={<RechargePage />} />
         {/* 漫游指南：旅行足迹与攻略（三模块嵌套路由） */}
         <Route path="/toolbox/travel" element={
-          <RoamingGuideProvider>
-            <RoamingGuideLayout />
-          </RoamingGuideProvider>
+          <ErrorBoundary>
+            <RoamingGuideProvider>
+              <RoamingGuideLayout />
+            </RoamingGuideProvider>
+          </ErrorBoundary>
         }>
           <Route index element={<Navigate to="map" replace />} />
           <Route path="map" element={<MapPage />} />
@@ -102,9 +105,11 @@ createRoot(document.getElementById("root")!).render(
           <Route path="about" element={<AboutPage />} />
         </Route>
         <Route path="/toolbox/roaming-guide" element={
-          <RoamingGuideProvider>
-            <RoamingGuideLayout />
-          </RoamingGuideProvider>
+          <ErrorBoundary>
+            <RoamingGuideProvider>
+              <RoamingGuideLayout />
+            </RoamingGuideProvider>
+          </ErrorBoundary>
         }>
           <Route index element={<Navigate to="map" replace />} />
           <Route path="map" element={<MapPage />} />

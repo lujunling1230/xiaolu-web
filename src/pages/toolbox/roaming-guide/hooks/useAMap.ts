@@ -11,13 +11,16 @@ interface UseAMapOptions {
   zoom?: number;
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type AMapInstance = any;
+
 interface UseAMapReturn {
-  map: AMap.Map | null;
+  map: AMapInstance | null;
   loading: boolean;
   error: string | null;
   flyTo: (lng: number, lat: number, zoom?: number) => void;
   setCenter: (lng: number, lat: number) => void;
-  getAMap: () => typeof AMap | null;
+  getAMap: () => AMapInstance | null;
 }
 
 // 安全密钥配置（JS API 2.0 必须）
@@ -29,11 +32,11 @@ if (typeof window !== "undefined" && AMAP_SECRET) {
 
 export function useAMap(options: UseAMapOptions): UseAMapReturn {
   const { containerRef, center = [104.07, 35.44], zoom = 5 } = options;
-  const [map, setMap] = useState<AMap.Map | null>(null);
+  const [map, setMap] = useState<AMapInstance | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const mapRef = useRef<AMap.Map | null>(null);
-  const AMapRef = useRef<typeof AMap | null>(null);
+  const mapRef = useRef<AMapInstance | null>(null);
+  const AMapRef = useRef<AMapInstance | null>(null);
   const initedRef = useRef(false);
 
   useEffect(() => {
@@ -80,37 +83,48 @@ export function useAMap(options: UseAMapOptions): UseAMapReturn {
         return;
       }
 
-      AMapLoader.load({
+      // 添加 15 秒超时，防止移动端网络问题导致永久 loading
+      const loadPromise = AMapLoader.load({
         key: AMAP_KEY,
         version: "2.0",
-      }).then((AMapModule) => {
-        if (destroyed) return;
-        AMapRef.current = AMapModule;
+      });
+      const timeoutPromise = new Promise<never>((_, reject) => {
+        setTimeout(() => reject(new Error("地图加载超时，请检查网络后刷新")), 15000);
+      });
 
-        try {
-          const mapInstance = new AMapModule.Map(container, {
-            center: [center[0], center[1]],
-            zoom,
-            viewMode: "2D",
-            resizeEnable: true,
-          });
+      Promise.race([loadPromise, timeoutPromise])
+        .then((AMapModule: unknown) => {
+          if (destroyed) return;
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          AMapRef.current = AMapModule as any;
 
-          mapRef.current = mapInstance;
-          setMap(mapInstance);
-          setLoading(false);
-        } catch (e: unknown) {
-          const msg = e instanceof Error ? e.message : "地图初始化失败";
-          console.error("[AMap] 初始化失败:", msg);
+          try {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const AM = AMapModule as any;
+            const mapInstance = new AM.Map(container, {
+              center: [center[0], center[1]],
+              zoom,
+              viewMode: "2D",
+              resizeEnable: true,
+            });
+
+            mapRef.current = mapInstance;
+            setMap(mapInstance);
+            setLoading(false);
+          } catch (e: unknown) {
+            const msg = e instanceof Error ? e.message : "地图初始化失败";
+            console.error("[AMap] 初始化失败:", msg);
+            setError(msg);
+            setLoading(false);
+          }
+        })
+        .catch((e: unknown) => {
+          if (destroyed) return;
+          const msg = e instanceof Error ? e.message : "地图脚本加载失败";
+          console.error("[AMap] 加载失败:", msg);
           setError(msg);
           setLoading(false);
-        }
-      }).catch((e: unknown) => {
-        if (destroyed) return;
-        const msg = e instanceof Error ? e.message : "地图脚本加载失败";
-        console.error("[AMap] 加载失败:", msg);
-        setError(msg);
-        setLoading(false);
-      });
+        });
     };
 
     // 延迟一帧确保容器已渲染

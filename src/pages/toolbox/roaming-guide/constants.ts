@@ -2,8 +2,9 @@ import type { City, ProvinceArea, AIReverseRecommendResponse, AIForwardGenerateR
 
 /* ============================================================
    默认城市数据（6 城，从原 TravelPage 迁移 + 扩展字段）
+   status 字段在 useCityData 中统一补充默认值 "visited"
    ============================================================ */
-export const DEFAULT_CITIES: City[] = [
+export const DEFAULT_CITIES = [
   {
     id: 1,
     name: "大理",

@@ -298,6 +298,9 @@ function BottomNav({ tab, onChange }: { tab: Tab; onChange: (t: Tab) => void }) 
  * 主组件
  * ============================================================ */
 export default function BanlingPage() {
+  const [unlocked, setUnlocked] = useState(false);
+  const [pwdInput, setPwdInput] = useState("");
+  const [pwdError, setPwdError] = useState(false);
   const [tab, setTab] = useState<Tab>("home");
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
@@ -309,6 +312,17 @@ export default function BanlingPage() {
   const [toast, setToast] = useState<string | null>(null);
   const [viewingReport, setViewingReport] = useState<SavedReport | null>(null);
   const [adoptedActions, setAdoptedActions] = useState<boolean[]>([]);
+
+  /* 密码校验 */
+  const handleUnlock = useCallback(() => {
+    if (pwdInput.trim() === "ling") {
+      setUnlocked(true);
+      setPwdError(false);
+    } else {
+      setPwdError(true);
+      setPwdInput("");
+    }
+  }, [pwdInput]);
 
   /* 工具箱状态 */
   const [toolTab, setToolTab] = useState<"calc" | "plan" | "goal">("calc");
@@ -753,7 +767,7 @@ ${messages.map((m) => `${m.role === "user" ? "用户" : "伴龄"}: ${m.content}`
 
       {/* Footer */}
       <div className="bl-footer">
-        <p>© 2024 伴龄 养老规划平台 All rights reserved</p>
+        <p>© 2026 伴龄 养老规划平台 All rights reserved</p>
       </div>
     </div>
   );
@@ -1236,8 +1250,55 @@ ${messages.map((m) => `${m.role === "user" ? "用户" : "伴龄"}: ${m.content}`
   /* ============================================================
    * 渲染主结构
    * ============================================================ */
+
+  /* 密码门 */
+  if (!unlocked) {
+    return (
+      <div className="bl-lock-root">
+        <div className="bl-lock-card">
+          <Link to="/mickey" className="bl-back-link">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M19 12H5M12 19l-7-7 7-7" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+            返回作品集
+          </Link>
+
+          <div className="bl-lock-icon">💛</div>
+          <h1 className="bl-lock-title">伴龄</h1>
+          <p className="bl-lock-sub">AI 养老规划伴侣</p>
+          <p className="bl-lock-hint">请输入密码进入</p>
+
+          <div className="bl-lock-input-wrap">
+            <input
+              type="password"
+              className={`bl-lock-input ${pwdError ? "error" : ""}`}
+              placeholder="请输入密码"
+              value={pwdInput}
+              onChange={(e) => { setPwdInput(e.target.value); setPwdError(false); }}
+              onKeyDown={(e) => { if (e.key === "Enter") handleUnlock(); }}
+              autoFocus
+            />
+          </div>
+
+          {pwdError && <p className="bl-lock-error">密码不正确，请重新输入</p>}
+
+          <button className="bl-lock-btn" onClick={handleUnlock}>
+            进入伴龄 →
+          </button>
+        </div>
+        <BanlingStyles />
+      </div>
+    );
+  }
+
   return (
     <div className="bl-root">
+      <Link to="/mickey" className="bl-back-link">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <path d="M19 12H5M12 19l-7-7 7-7" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+        返回作品集
+      </Link>
       <div className="bl-content">
         {tab === "home" && renderHome()}
         {tab === "ai" && renderAI()}
@@ -1284,17 +1345,58 @@ function BanlingStyles() {
         padding-bottom: 64px;
       }
 
-      /* 电脑端适配：居中显示，加柔和背景 */
+      /* 电脑端适配：铺满全屏，内容区居中限宽 */
       @media (min-width: 768px) {
         .bl-root {
-          max-width: 480px;
+          max-width: 100%;
           min-height: 100vh;
-          box-shadow: 0 0 40px rgba(255,184,77,0.08);
+          box-shadow: none;
+        }
+        .bl-content {
+          max-width: 480px;
+          margin: 0 auto;
         }
       }
 
       .bl-content {
         min-height: calc(100vh - 64px);
+      }
+
+      /* 返回作品集按钮 */
+      .bl-back-link {
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
+        position: fixed;
+        top: 16px;
+        left: 20px;
+        z-index: 200;
+        background: rgba(255,255,255,0.92);
+        backdrop-filter: none;
+        color: var(--text);
+        font-size: 13px;
+        text-decoration: none;
+        padding: 6px 14px;
+        border-radius: 20px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        cursor: pointer;
+        transition: all 0.2s;
+      }
+
+      .bl-back-link:hover {
+        background: var(--orange);
+        color: #fff;
+      }
+
+      .bl-back-link svg {
+        width: 14px;
+        height: 14px;
+      }
+
+      @media (max-width: 767px) {
+        .bl-back-link {
+          position: absolute;
+        }
       }
 
       /* ===== 问候语栏 ===== */
@@ -1403,6 +1505,13 @@ function BanlingStyles() {
         border-top: 1px solid var(--border);
         z-index: 100;
         box-shadow: 0 -2px 12px rgba(0,0,0,0.04);
+      }
+
+      /* 电脑端底部导航居中限宽 */
+      @media (min-width: 768px) {
+        .bl-bottom-nav {
+          max-width: 480px;
+        }
       }
 
       .bl-nav-item {
@@ -2746,6 +2855,114 @@ function BanlingStyles() {
       @keyframes bl-fade-in {
         from { opacity: 0; transform: translate(-50%, 10px); }
         to { opacity: 1; transform: translate(-50%, 0); }
+      }
+
+      /* ===== 密码门 ===== */
+      .bl-lock-root {
+        min-height: 100vh;
+        background: linear-gradient(135deg, #FFF9F0 0%, #FFF3E0 100%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+        position: relative;
+        font-family: -apple-system, "PingFang SC", "Microsoft YaHei", sans-serif;
+      }
+
+      .bl-lock-card {
+        background: #fff;
+        border-radius: 20px;
+        padding: 48px 40px;
+        max-width: 380px;
+        width: 100%;
+        text-align: center;
+        box-shadow: 0 8px 40px rgba(255,184,77,0.15);
+        position: relative;
+      }
+
+      .bl-lock-card .bl-back-link {
+        position: absolute;
+        top: 16px;
+        left: 16px;
+      }
+
+      .bl-lock-icon {
+        font-size: 56px;
+        margin-bottom: 16px;
+      }
+
+      .bl-lock-title {
+        font-size: 28px;
+        font-weight: 800;
+        color: #333;
+        margin: 0 0 4px;
+      }
+
+      .bl-lock-sub {
+        font-size: 14px;
+        color: #999;
+        margin: 0 0 32px;
+      }
+
+      .bl-lock-hint {
+        font-size: 13px;
+        color: #666;
+        margin: 0 0 16px;
+      }
+
+      .bl-lock-input-wrap {
+        margin-bottom: 16px;
+      }
+
+      .bl-lock-input {
+        width: 100%;
+        border: 2px solid #F0F0F0;
+        border-radius: 12px;
+        padding: 14px 16px;
+        font-size: 16px;
+        text-align: center;
+        outline: none;
+        transition: border-color 0.2s;
+        box-sizing: border-box;
+      }
+
+      .bl-lock-input:focus {
+        border-color: #FFB84D;
+      }
+
+      .bl-lock-input.error {
+        border-color: #E57373;
+        animation: bl-shake 0.4s;
+      }
+
+      @keyframes bl-shake {
+        0%, 100% { transform: translateX(0); }
+        25% { transform: translateX(-8px); }
+        75% { transform: translateX(8px); }
+      }
+
+      .bl-lock-error {
+        color: #E57373;
+        font-size: 12px;
+        margin: 0 0 12px;
+      }
+
+      .bl-lock-btn {
+        width: 100%;
+        background: linear-gradient(135deg, #FFB84D, #FFA726);
+        color: #fff;
+        border: none;
+        border-radius: 12px;
+        padding: 14px 0;
+        font-size: 16px;
+        font-weight: 600;
+        cursor: pointer;
+        box-shadow: 0 4px 16px rgba(255,167,38,0.3);
+        transition: transform 0.2s;
+      }
+
+      .bl-lock-btn:hover {
+        transform: translateY(-2px);
       }
     `}</style>
   );

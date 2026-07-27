@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { useAdminGuard } from "../../hooks/useAdminGuard";
 import { useSolo } from "../../context/StandaloneContext";
+import { useAppManifest } from "../../hooks/useAppManifest";
 import { track } from "../../utils/track";
 
 /**
@@ -796,6 +797,7 @@ const PhotoConfirmModal: React.FC<{
    主组件
    ============================================================ */
 const InventoryPage: React.FC = () => {
+  useAppManifest("/manifests/inventory.webmanifest");
   const { isSolo } = useSolo();
   const { isAdmin: adminMode, verifyAdmin, AdminGuardUI } = useAdminGuard();
   const [items, setItems] = useState<InventoryItem[]>(() => loadItems());

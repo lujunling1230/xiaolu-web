@@ -22,6 +22,7 @@ import {
   extractPreferenceKeywords,
 } from "./rechargeTags";
 import { useSolo } from "../../context/StandaloneContext";
+import { useAppManifest } from "../../hooks/useAppManifest";
 import {
   getPoints,
   getCheckinData,
@@ -1586,6 +1587,7 @@ const CompletionModal: React.FC<{
    主组件
    ============================================================ */
 const RechargePage: React.FC = () => {
+  useAppManifest("/manifests/recharge.webmanifest");
   const { isSolo } = useSolo();
   const [activeTab, setActiveTab] = useState<TabKey>("home");
   const [doneIds, setDoneIds] = useState<Set<number>>(loadDoneIds);

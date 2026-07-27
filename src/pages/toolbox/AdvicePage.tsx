@@ -4,6 +4,7 @@ import { Link } from "react-router-dom";
 import { track } from "../../utils/track";
 import { callAI } from "../../utils/aiClient";
 import { useSolo } from "../../context/StandaloneContext";
+import { useAppManifest } from "../../hooks/useAppManifest";
 
 /**
  * 解忧杂货店 · The Advice Shop
@@ -153,6 +154,7 @@ const AdviceMiao: React.FC<{
 
 /* ===== 主组件 ===== */
 const AdvicePage: React.FC = () => {
+  useAppManifest("/manifests/advice.webmanifest");
   const { isSolo } = useSolo();
   const [question, setQuestion] = useState("");
   const [reply, setReply] = useState<string | null>(null);

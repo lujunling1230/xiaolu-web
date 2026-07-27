@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Link } from "react-router-dom";
 import { useSolo } from "../../context/StandaloneContext";
+import { useAppManifest } from "../../hooks/useAppManifest";
 
 /**
  * 漫游指南 · Travel Log
@@ -454,6 +455,7 @@ const BLANK_CITY = (): City => ({
    主组件
    ============================================================ */
 const TravelPage: React.FC = () => {
+  useAppManifest("/manifests/travel.webmanifest");
   useEffect(() => { document.title = "漫游指南"; }, []);
   const { isSolo } = useSolo();
   const [cities, setCities] = useState<City[]>(loadCities);

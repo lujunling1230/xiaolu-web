@@ -5,6 +5,7 @@ import { track } from "../../utils/track";
 import { callAI } from "../../utils/aiClient";
 import { CHARACTERS, getCharacter, resolveGroupChat, CHARACTER_FEEDS, type Character } from "../../data/characters";
 import { useSolo } from "../../context/StandaloneContext";
+import { useAppManifest } from "../../hooks/useAppManifest";
 
 /**
  * 爱情公寓·元宇宙客厅
@@ -406,6 +407,7 @@ const ChatBubble: React.FC<{
    主组件
    ============================================================ */
 const SystemTuningPage: React.FC = () => {
+  useAppManifest("/manifests/apartment.webmanifest");
   const { isSolo } = useSolo();
   const [view, setView] = useState<ViewMode>("lobby");
   const [selectedCharId, setSelectedCharId] = useState<string | null>(null);

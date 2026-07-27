@@ -4,6 +4,7 @@ import { Link } from "react-router-dom";
 import { track } from "../../utils/track";
 import { callAI } from "../../utils/aiClient";
 import { useSolo } from "../../context/StandaloneContext";
+import { useAppManifest } from "../../hooks/useAppManifest";
 
 /**
  * 伴龄 · AI 养老规划伴侣
@@ -415,6 +416,7 @@ function BottomNav({ tab, onChange }: { tab: Tab; onChange: (t: Tab) => void }) 
  * 主组件
  * ============================================================ */
 export default function BanlingPage() {
+  useAppManifest("/manifests/banling.webmanifest");
   const { isSolo } = useSolo();
   useEffect(() => { document.title = "伴龄"; }, []);
   const [unlocked, setUnlocked] = useState(true);

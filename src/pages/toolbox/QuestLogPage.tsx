@@ -5,6 +5,7 @@ import { track } from "../../utils/track";
 import { legacyLoad, legacySave } from "../../utils/siteData";
 import { useAdminGuard } from "../../hooks/useAdminGuard";
 import { useSolo } from "../../context/StandaloneContext";
+import { useAppManifest } from "../../hooks/useAppManifest";
 
 /**
  * 通关清单 · Quest Log
@@ -478,6 +479,7 @@ const BreakdownModal: React.FC<{
    主组件
    ============================================================ */
 const QuestLogPage: React.FC = () => {
+  useAppManifest("/manifests/quest.webmanifest");
   const { isSolo } = useSolo();
   const { isAdmin: adminMode, verifyAdmin, AdminGuardUI } = useAdminGuard();
   const [quests, setQuests] = useState<Quest[]>(() => loadQuests());

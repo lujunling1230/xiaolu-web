@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { track } from "../utils/track";
 import { useSolo } from "../context/StandaloneContext";
+import { useAppManifest } from "../hooks/useAppManifest";
 import GratitudeJournal from "../components/GratitudeJournal";
 import BreathingGuide from "../components/BreathingGuide";
 import MeditationTimer from "../components/MeditationTimer";
@@ -67,6 +68,7 @@ const WelcomeCard = () => (
 
 /* ===== 主组件 ===== */
 const HealingRoomPage: React.FC = () => {
+  useAppManifest("/manifests/healing.webmanifest");
   const { isSolo } = useSolo();
   const [active, setActive] = useState<ModuleId>("welcome");
   const [mobileNavOpen, setMobileNavOpen] = useState(false);

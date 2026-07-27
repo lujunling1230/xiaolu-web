@@ -357,7 +357,9 @@ export function pageDistribution(
   src
     .filter((e) => e.name === "page_view")
     .forEach((e) => {
-      const p = e.path || (e.props?.path as string) || "/";
+      /* 剥离 query string，避免 / 和 /?mode=full 被当成两条数据 */
+      const raw = e.path || (e.props?.path as string) || "/";
+      const p = raw.split("?")[0];
       map.set(p, (map.get(p) || 0) + 1);
     });
   return Array.from(map.entries())
@@ -998,6 +1000,7 @@ function simplifyPath(path: string): string {
     "/zhiyong": "致用",
     "/mickey": "作品集",
     "/toolbox": "工具箱",
+    "/healing": "森林疗愈室",
     "/toolbox/healing": "森林疗愈室",
     "/toolbox/apartment": "爱情公寓",
     "/toolbox/quests": "通关清单",

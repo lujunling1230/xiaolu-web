@@ -1122,6 +1122,7 @@ function formatPagePath(rawPath: string): string {
     "/zhiyong": "致用",
     "/mickey": "作品集页",
     "/toolbox": "工具箱",
+    "/healing": "森林疗愈室",
     "/toolbox/healing": "森林疗愈室",
     "/toolbox/apartment": "爱情公寓",
     "/toolbox/quests": "通关清单",

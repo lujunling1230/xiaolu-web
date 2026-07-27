@@ -1,8 +1,15 @@
 import { Outlet, NavLink, Link } from "react-router-dom";
+import { useEffect } from "react";
 import { useSolo } from "../../../context/StandaloneContext";
+import { track } from "../../../utils/track";
 
 export default function RoamingGuideLayout() {
   const { isSolo } = useSolo();
+
+  /* 页面进入埋点（原 RoamingGuidePage 中的埋点未被路由使用，在此补上） */
+  useEffect(() => {
+    track("tool_enter", { tool_name: "漫游指南" });
+  }, []);
   return (
     <div className="rg-layout">
       <style>{`

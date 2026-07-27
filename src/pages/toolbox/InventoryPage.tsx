@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { useAdminGuard } from "../../hooks/useAdminGuard";
+import { useSolo } from "../../context/StandaloneContext";
 import { track } from "../../utils/track";
 
 /**
@@ -795,6 +796,7 @@ const PhotoConfirmModal: React.FC<{
    主组件
    ============================================================ */
 const InventoryPage: React.FC = () => {
+  const { isSolo } = useSolo();
   const { isAdmin: adminMode, verifyAdmin, AdminGuardUI } = useAdminGuard();
   const [items, setItems] = useState<InventoryItem[]>(() => loadItems());
   const [filter, setFilter] = useState<FilterKey>("all");
@@ -1370,13 +1372,15 @@ const InventoryPage: React.FC = () => {
       {/* —— 顶栏 —— */}
       <header className="relative z-10 border-b border-white/40 bg-white/40 backdrop-blur-xl">
         <div className="mx-auto flex max-w-3xl items-center justify-between px-5 py-4">
-          <Link
-            to={`/mickey${fromQuery}`}
-            className="inline-flex items-center gap-1 text-sm text-gray-500 transition-all hover:text-[#6B9BD1] hover:translate-x-[-2px]"
-          >
-            <span>←</span>
-            <span>作品集</span>
-          </Link>
+          {!isSolo && (
+            <Link
+              to={`/mickey${fromQuery}`}
+              className="inline-flex items-center gap-1 text-sm text-gray-500 transition-all hover:text-[#6B9BD1] hover:translate-x-[-2px]"
+            >
+              <span>←</span>
+              <span>作品集</span>
+            </Link>
+          )}
           <div className="flex items-center gap-2">
             <span
               className="h-2 w-2 rounded-full shadow-[0_0_0_3px_rgba(107,155,209,0.2)]"

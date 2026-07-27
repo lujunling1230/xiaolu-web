@@ -14,6 +14,8 @@ export interface TrackEvent {
   session: string;
   anon_id: string;
   path: string;
+  /** 访问模式：full=全功能访问（HR/作品集内），solo=单作品独立访问 */
+  mode: "full" | "solo";
 }
 
 /* ---- P0 事件白名单 ---- */
@@ -88,6 +90,13 @@ function isCloudAvailable(): boolean {
     window.location.hostname !== "localhost" &&
     window.location.hostname !== "127.0.0.1"
   );
+}
+
+/* ---- 访问模式检测（solo 单作品 / full 全功能）---- */
+function getVisitMode(): "full" | "solo" {
+  if (typeof window === "undefined") return "full";
+  const params = new URLSearchParams(window.location.search);
+  return params.get("solo") === "1" ? "solo" : "full";
 }
 
 /* ---- 匿名访客 ID（持久化，用于 UV 去重） ---- */
@@ -208,13 +217,14 @@ export function track(eventName: string, props?: Record<string, unknown>) {
   }
 
   const evt: TrackEvent = {
-    id: `${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+    id: `${Date.now()}-${Math.random().toString(2, 6)}`,
     name: eventName,
     props,
     ts: Date.now(),
     session: getSessionId(),
     anon_id: getAnonId(),
     path: window.location.pathname + window.location.search,
+    mode: getVisitMode(),
   };
 
   // 1. 始终写本地

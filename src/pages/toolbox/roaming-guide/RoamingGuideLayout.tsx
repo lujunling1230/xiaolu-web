@@ -1,6 +1,8 @@
 import { Outlet, NavLink, Link } from "react-router-dom";
+import { useSolo } from "../../../context/StandaloneContext";
 
 export default function RoamingGuideLayout() {
+  const { isSolo } = useSolo();
   return (
     <div className="rg-layout">
       <style>{`
@@ -282,9 +284,11 @@ export default function RoamingGuideLayout() {
       {/* ===== 侧边栏 ===== */}
       <aside className="rg-sidebar">
         <div className="rg-sidebar-top">
-          <a href="https://www.xiaoluweb.com/mickey" className="rg-sidebar-back">
-            ← <span>回到作品集</span>
-          </a>
+          {!isSolo && (
+            <a href="https://www.xiaoluweb.com/mickey" className="rg-sidebar-back">
+              ← <span>回到作品集</span>
+            </a>
+          )}
           <h1 className="rg-sidebar-title">漫游指南</h1>
           <p className="rg-sidebar-subtitle">丙午年 · 启程</p>
         </div>
@@ -306,15 +310,17 @@ export default function RoamingGuideLayout() {
             <span className="rg-sidebar-link__icon">☁️</span>
             <span>关于它</span>
           </NavLink>
-          <a
-            href="https://www.xiaoluweb.com/mickey"
-            className="rg-sidebar-link rg-sidebar-link--external"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <span className="rg-sidebar-link__icon">🏠</span>
-            <span>回到作品集</span>
-          </a>
+          {!isSolo && (
+            <a
+              href="https://www.xiaoluweb.com/mickey"
+              className="rg-sidebar-link rg-sidebar-link--external"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <span className="rg-sidebar-link__icon">🏠</span>
+              <span>回到作品集</span>
+            </a>
+          )}
         </nav>
 
         <div className="rg-sidebar-footer">

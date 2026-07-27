@@ -20,6 +20,7 @@ import {
   MOOD_MODE_MAP,
   extractPreferenceKeywords,
 } from "./rechargeTags";
+import { useSolo } from "../../context/StandaloneContext";
 
 /**
  * 回血清单 · 微型能量站
@@ -1155,6 +1156,11 @@ function drawShareCard(data: {
 const MePage: React.FC = () => {
   const [aboutOpen, setAboutOpen] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
+  const [feedbackOpen, setFeedbackOpen] = useState(false);
+  const [feedbackMsg, setFeedbackMsg] = useState("");
+  const [feedbackContact, setFeedbackContact] = useState("");
+  const [feedbackSending, setFeedbackSending] = useState(false);
+  const [feedbackStatus, setFeedbackStatus] = useState<"" | "sent" | "error">("");
 
   const userData = useMemo(() => {
     const history = loadHistory();
@@ -1260,6 +1266,11 @@ const MePage: React.FC = () => {
           <button className="me-settings-btn" onClick={() => setAboutOpen(true)}>
             <span className="me-settings-icon">ℹ️</span>
             <span className="me-settings-text">关于</span>
+            <span className="me-settings-arrow">›</span>
+          </button>
+          <button className="me-settings-btn" onClick={() => { setFeedbackOpen(true); setFeedbackStatus(""); setFeedbackMsg(""); setFeedbackContact(""); }}>
+            <span className="me-settings-icon">💌</span>
+            <span className="me-settings-text">联系与反馈</span>
             <span className="me-settings-arrow">›</span>
           </button>
         </div>
@@ -1420,6 +1431,7 @@ const CompletionModal: React.FC<{
    主组件
    ============================================================ */
 const RechargePage: React.FC = () => {
+  const { isSolo } = useSolo();
   const [activeTab, setActiveTab] = useState<TabKey>("home");
   const [doneIds, setDoneIds] = useState<Set<number>>(loadDoneIds);
 
@@ -1510,9 +1522,11 @@ const RechargePage: React.FC = () => {
       {activeTab === "home" && (
         <>
           <header className="recharge-topbar">
-            <Link to="/mickey" className="recharge-back">
-              ← 回到作品集
-            </Link>
+            {!isSolo && (
+              <Link to="/mickey" className="recharge-back">
+                ← 回到作品集
+              </Link>
+            )}
             <span className="recharge-topbar-meta">Recharge Station</span>
           </header>
           <section className="recharge-hero">

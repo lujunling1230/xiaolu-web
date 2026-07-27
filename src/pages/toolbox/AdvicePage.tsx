@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Link } from "react-router-dom";
 import { track } from "../../utils/track";
 import { callAI } from "../../utils/aiClient";
+import { useSolo } from "../../context/StandaloneContext";
 
 /**
  * 解忧杂货店 · The Advice Shop
@@ -152,6 +153,7 @@ const AdviceMiao: React.FC<{
 
 /* ===== 主组件 ===== */
 const AdvicePage: React.FC = () => {
+  const { isSolo } = useSolo();
   const [question, setQuestion] = useState("");
   const [reply, setReply] = useState<string | null>(null);
 
@@ -462,9 +464,11 @@ const AdvicePage: React.FC = () => {
 
       {/* ===== 顶栏 ===== */}
       <header className="advice-topbar">
-        <Link to="/mickey" className="advice-back">
-          <span style={{ marginRight: 4 }}>←</span> 回到作品集
-        </Link>
+        {!isSolo && (
+          <Link to="/mickey" className="advice-back">
+            <span style={{ marginRight: 4 }}>←</span> 回到作品集
+          </Link>
+        )}
         <span className="advice-topbar-meta">The Advice Shop</span>
       </header>
 

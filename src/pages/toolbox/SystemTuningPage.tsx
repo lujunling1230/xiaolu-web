@@ -4,6 +4,7 @@ import { Link } from "react-router-dom";
 import { track } from "../../utils/track";
 import { callAI } from "../../utils/aiClient";
 import { CHARACTERS, getCharacter, resolveGroupChat, CHARACTER_FEEDS, type Character } from "../../data/characters";
+import { useSolo } from "../../context/StandaloneContext";
 
 /**
  * 爱情公寓·元宇宙客厅
@@ -405,6 +406,7 @@ const ChatBubble: React.FC<{
    主组件
    ============================================================ */
 const SystemTuningPage: React.FC = () => {
+  const { isSolo } = useSolo();
   const [view, setView] = useState<ViewMode>("lobby");
   const [selectedCharId, setSelectedCharId] = useState<string | null>(null);
   const [selectedProfileId, setSelectedProfileId] = useState<string | null>(null);
@@ -1231,9 +1233,11 @@ const SystemTuningPage: React.FC = () => {
     <div className="apt-page">
       {/* ===== 顶部导航 ===== */}
       <header className="apt-topbar">
-        <Link to="/mickey" className="apt-back">
-          ← 回到作品集
-        </Link>
+        {!isSolo && (
+          <Link to="/mickey" className="apt-back">
+            ← 回到作品集
+          </Link>
+        )}
         {view !== "lobby" && (
           <button className="apt-back apt-back-ghost" onClick={backToLobby}>
             ← 回到 3602

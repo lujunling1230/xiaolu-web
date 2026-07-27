@@ -4,6 +4,7 @@ import { Link } from "react-router-dom";
 import { track } from "../../utils/track";
 import { legacyLoad, legacySave } from "../../utils/siteData";
 import { useAdminGuard } from "../../hooks/useAdminGuard";
+import { useSolo } from "../../context/StandaloneContext";
 
 /**
  * 通关清单 · Quest Log
@@ -477,6 +478,7 @@ const BreakdownModal: React.FC<{
    主组件
    ============================================================ */
 const QuestLogPage: React.FC = () => {
+  const { isSolo } = useSolo();
   const { isAdmin: adminMode, verifyAdmin, AdminGuardUI } = useAdminGuard();
   const [quests, setQuests] = useState<Quest[]>(() => loadQuests());
 
@@ -575,9 +577,11 @@ const QuestLogPage: React.FC = () => {
     <div className="quest-page">
       {/* 顶部返回 */}
       <header className="quest-topbar">
-        <Link to="/mickey" className="quest-back">
-          ← 回到作品集
-        </Link>
+        {!isSolo && (
+          <Link to="/mickey" className="quest-back">
+            ← 回到作品集
+          </Link>
+        )}
         <span className="quest-topbar-meta">Quest Log</span>
       </header>
 

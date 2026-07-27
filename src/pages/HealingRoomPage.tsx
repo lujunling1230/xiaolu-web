@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { track } from "../utils/track";
+import { useSolo } from "../context/StandaloneContext";
 import GratitudeJournal from "../components/GratitudeJournal";
 import BreathingGuide from "../components/BreathingGuide";
 import MeditationTimer from "../components/MeditationTimer";
@@ -66,6 +67,7 @@ const WelcomeCard = () => (
 
 /* ===== 主组件 ===== */
 const HealingRoomPage: React.FC = () => {
+  const { isSolo } = useSolo();
   const [active, setActive] = useState<ModuleId>("welcome");
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
 
@@ -95,9 +97,11 @@ const HealingRoomPage: React.FC = () => {
         {/* ===== 左侧导航 ===== */}
       <aside className="hl-sidebar">
         {/* 回到作品集 */}
-        <Link to="/mickey" className="hl-back">
-          ← 回到作品集
-        </Link>
+        {!isSolo && (
+          <Link to="/mickey" className="hl-back">
+            ← 回到作品集
+          </Link>
+        )}
 
         {/* 标题 */}
         <div className="hl-sidebar-title">疗愈室</div>
@@ -169,7 +173,7 @@ const HealingRoomPage: React.FC = () => {
 
       {/* ===== 移动端顶部导航 ===== */}
       <div className="hl-mobile-header">
-        <Link to="/mickey" className="hl-mobile-back">← 回到作品集</Link>
+        {!isSolo && <Link to="/mickey" className="hl-mobile-back">← 回到作品集</Link>}
         <span className="hl-mobile-title">疗愈室</span>
         <button className="hl-mobile-menu-btn" onClick={() => setMobileNavOpen(!mobileNavOpen)}>
           {mobileNavOpen ? "×" : "☰"}

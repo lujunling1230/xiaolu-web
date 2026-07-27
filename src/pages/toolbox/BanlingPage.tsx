@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Link } from "react-router-dom";
 import { track } from "../../utils/track";
 import { callAI } from "../../utils/aiClient";
+import { useSolo } from "../../context/StandaloneContext";
 
 /**
  * 伴龄 · AI 养老规划伴侣
@@ -414,6 +415,7 @@ function BottomNav({ tab, onChange }: { tab: Tab; onChange: (t: Tab) => void }) 
  * 主组件
  * ============================================================ */
 export default function BanlingPage() {
+  const { isSolo } = useSolo();
   const [unlocked, setUnlocked] = useState(false);
   const [pwdInput, setPwdInput] = useState("");
   const [pwdError, setPwdError] = useState(false);
@@ -1517,10 +1519,12 @@ ${messages.map((m) => `${m.role === "user" ? "用户" : "伴龄"}: ${m.content}`
             <span>📋 查看所有规划报告</span>
             <span className="bl-arrow">›</span>
           </button>
-          <Link to="/mickey" className="bl-setting-item danger">
-            <span>🚪 退出伴龄</span>
-            <span className="bl-arrow">›</span>
-          </Link>
+          {!isSolo && (
+            <Link to="/mickey" className="bl-setting-item danger">
+              <span>🚪 退出伴龄</span>
+              <span className="bl-arrow">›</span>
+            </Link>
+          )}
         </div>
       </div>
 
@@ -1539,12 +1543,14 @@ ${messages.map((m) => `${m.role === "user" ? "用户" : "伴龄"}: ${m.content}`
     return (
       <div className="bl-lock-root">
         <div className="bl-lock-card">
-          <Link to="/mickey" className="bl-back-link">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M19 12H5M12 19l-7-7 7-7" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
-            返回作品集
-          </Link>
+          {!isSolo && (
+            <Link to="/mickey" className="bl-back-link">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M19 12H5M12 19l-7-7 7-7" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+              返回作品集
+            </Link>
+          )}
 
           <div className="bl-lock-icon">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" width={56} height={56} style={{ borderRadius: "50%", filter: "drop-shadow(0 0 10px rgba(255,184,77,0.4))" }}>
@@ -1614,12 +1620,14 @@ ${messages.map((m) => `${m.role === "user" ? "用户" : "伴龄"}: ${m.content}`
 
   return (
     <div className="bl-root">
-      <Link to="/mickey" className="bl-back-link">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-          <path d="M19 12H5M12 19l-7-7 7-7" strokeLinecap="round" strokeLinejoin="round" />
-        </svg>
-        返回作品集
-      </Link>
+      {!isSolo && (
+        <Link to="/mickey" className="bl-back-link">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <path d="M19 12H5M12 19l-7-7 7-7" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+          返回作品集
+        </Link>
+      )}
       <div className="bl-content">
         {tab === "home" && renderHome()}
         {tab === "ai" && renderAI()}

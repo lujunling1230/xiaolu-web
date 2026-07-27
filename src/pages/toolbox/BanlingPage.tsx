@@ -433,6 +433,7 @@ export default function BanlingPage() {
   const [adoptedActions, setAdoptedActions] = useState<boolean[]>([]);
   const [showNotice, setShowNotice] = useState(false);
   const [showAboutModal, setShowAboutModal] = useState(false);
+  const [aboutFlipped, setAboutFlipped] = useState(false);
   const [showCityPicker, setShowCityPicker] = useState(false);
   const [location, setLocation] = useState("上海市");
   const [weather, setWeather] = useState("default");
@@ -936,7 +937,7 @@ ${messages.map((m) => `${m.role === "user" ? "用户" : "伴龄"}: ${m.content}`
           )}
         </AnimatePresence>
 
-        {/* 关于弹窗（点击右上角问号，复刻爱情公寓同款居中模态框形式） */}
+        {/* 关于弹窗（点击右上角问号，翻转卡片：正面致每一位长辈，背面通知内容） */}
         <AnimatePresence>
           {showAboutModal && (
             <motion.div
@@ -945,7 +946,7 @@ ${messages.map((m) => `${m.role === "user" ? "用户" : "伴龄"}: ${m.content}`
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.2 }}
-              onClick={() => setShowAboutModal(false)}
+              onClick={() => { setShowAboutModal(false); setAboutFlipped(false); }}
             >
               <motion.div
                 className="bl-modal bl-modal-about"
@@ -955,30 +956,75 @@ ${messages.map((m) => `${m.role === "user" ? "用户" : "伴龄"}: ${m.content}`
                 transition={{ duration: 0.3 }}
                 onClick={(e) => e.stopPropagation()}
               >
-                <h2 className="bl-modal-title">🍵 致每一位长辈</h2>
-                <div className="bl-modal-body">
-                  <p>岁月渐长，养老的顾虑悄悄爬上心头。</p>
-                  <p>数字看不懂，规划无从下手，儿女又忙——</p>
-                  <p>这份说不出口的忐忑，我们都懂。</p>
-                  <br />
-                  <p>所以，我们做了一位贴心的伴龄助手。</p>
-                  <p>这里没有冰冷的数据表格，</p>
-                  <p>只有温暖的对话，一步步陪您理清未来。</p>
-                  <br />
-                  <p className="bl-modal-highlight">
-                    您不必独自焦虑，<br />
-                    伴龄始终陪在您身边。
-                  </p>
-                  <br />
-                  <p>想问就问，想聊就聊。</p>
-                  <p>这份养老规划，我们一起慢慢来。</p>
+                <div className="bl-flip-scene">
+                  <div className={`bl-flip-card ${aboutFlipped ? "flipped" : ""}`}>
+                    {/* 正面 */}
+                    <div className="bl-flip-face bl-flip-front">
+                      <h2 className="bl-modal-title">🍵 致每一位长辈</h2>
+                      <div className="bl-modal-body">
+                        <p>岁月渐长，养老的顾虑悄悄爬上心头。</p>
+                        <p>数字看不懂，规划无从下手，儿女又忙——</p>
+                        <p>这份说不出口的忐忑，我们都懂。</p>
+                        <br />
+                        <p>所以，我们做了一位贴心的伴龄助手。</p>
+                        <p>这里没有冰冷的数据表格，</p>
+                        <p>只有温暖的对话，一步步陪您理清未来。</p>
+                        <br />
+                        <p className="bl-modal-highlight">
+                          您不必独自焦虑，<br />
+                          伴龄始终陪在您身边。
+                        </p>
+                        <br />
+                        <p>想问就问，想聊就聊。</p>
+                        <p>这份养老规划，我们一起慢慢来。</p>
+                      </div>
+                      <button
+                        className="bl-modal-btn bl-modal-about-btn"
+                        onClick={() => setShowAboutModal(false)}
+                      >
+                        开始陪伴
+                      </button>
+                      <button
+                        className="bl-flip-hint"
+                        onClick={() => setAboutFlipped(true)}
+                      >
+                        ↻ 查看功能介绍
+                      </button>
+                    </div>
+                    {/* 背面 */}
+                    <div className="bl-flip-face bl-flip-back">
+                      <h2 className="bl-modal-title">📋 伴龄功能介绍</h2>
+                      <div className="bl-modal-body">
+                        <h3 style={{ fontSize: "13px", margin: "0 0 8px", color: "#5A5448" }}>为什么选择伴龄？</h3>
+                        <div className="bl-notice-features" style={{ marginBottom: "14px" }}>
+                          <div className="bl-notice-feature"><span>🤖</span> 智能AI测算</div>
+                          <div className="bl-notice-feature"><span>📋</span> 个性化规划</div>
+                          <div className="bl-notice-feature"><span>📊</span> 可视化分析</div>
+                          <div className="bl-notice-feature"><span>🎧</span> 专家1V1服务</div>
+                        </div>
+                        <h3 style={{ fontSize: "13px", margin: "0 0 8px", color: "#5A5448" }}>4步完成您的养老规划</h3>
+                        <div className="bl-notice-steps">
+                          <div className="bl-notice-step"><span className="bl-ns-num">01</span> 评估测算</div>
+                          <div className="bl-notice-step"><span className="bl-ns-num">02</span> 缺口分析</div>
+                          <div className="bl-notice-step"><span className="bl-ns-num">03</span> 定制方案</div>
+                          <div className="bl-notice-step"><span className="bl-ns-num">04</span> 长期陪伴</div>
+                        </div>
+                      </div>
+                      <button
+                        className="bl-modal-btn bl-modal-about-btn"
+                        onClick={() => setShowAboutModal(false)}
+                      >
+                        开始陪伴
+                      </button>
+                      <button
+                        className="bl-flip-hint"
+                        onClick={() => setAboutFlipped(false)}
+                      >
+                        ↻ 返回正面
+                      </button>
+                    </div>
+                  </div>
                 </div>
-                <button
-                  className="bl-modal-btn bl-modal-about-btn"
-                  onClick={() => setShowAboutModal(false)}
-                >
-                  开始陪伴
-                </button>
               </motion.div>
             </motion.div>
           )}
@@ -2017,6 +2063,48 @@ function BanlingStyles() {
         background: #F5F0E6;
         color: #3D3830;
         border-color: #C8B8A0;
+      }
+
+      /* 翻转卡片 */
+      .bl-flip-scene {
+        perspective: 800px;
+        width: 100%;
+      }
+      .bl-flip-card {
+        width: 100%;
+        position: relative;
+        transform-style: preserve-3d;
+        transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+      }
+      .bl-flip-card.flipped {
+        transform: rotateY(180deg);
+      }
+      .bl-flip-face {
+        width: 100%;
+        backface-visibility: hidden;
+      }
+      .bl-flip-back {
+        position: absolute;
+        top: 0;
+        left: 0;
+        transform: rotateY(180deg);
+      }
+      .bl-flip-hint {
+        display: block;
+        width: 100%;
+        margin-top: 10px;
+        padding: 6px;
+        font-size: 12px;
+        color: #A09078;
+        background: none;
+        border: none;
+        cursor: pointer;
+        text-align: center;
+        letter-spacing: 0.04em;
+        transition: color 0.2s ease;
+      }
+      .bl-flip-hint:hover {
+        color: #7A6A50;
       }
 
       /* ===== 顶部栏基础布局（flex 布局，叠加层样式由 bl-topbar-overlay 控制）===== */

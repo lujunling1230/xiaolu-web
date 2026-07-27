@@ -431,7 +431,6 @@ export default function BanlingPage() {
   const [toast, setToast] = useState<string | null>(null);
   const [viewingReport, setViewingReport] = useState<SavedReport | null>(null);
   const [adoptedActions, setAdoptedActions] = useState<boolean[]>([]);
-  const [showNotice, setShowNotice] = useState(false);
   const [showAboutModal, setShowAboutModal] = useState(false);
   const [aboutFlipped, setAboutFlipped] = useState(false);
   const [showCityPicker, setShowCityPicker] = useState(false);
@@ -856,12 +855,6 @@ ${messages.map((m) => `${m.role === "user" ? "用户" : "伴龄"}: ${m.content}`
                 <path d="M6 9l6 6 6-6" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
             </div>
-            <button className="bl-notice-btn" onClick={() => setShowNotice(!showNotice)}>
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 01-3.46 0" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-              <span className="bl-notice-dot" />
-            </button>
             <button
               className="bl-about-btn"
               onClick={() => setShowAboutModal(true)}
@@ -906,36 +899,6 @@ ${messages.map((m) => `${m.role === "user" ? "用户" : "伴龄"}: ${m.content}`
             <p className="bl-greeting-sub">我们一直在您身边。</p>
           </div>
         </div>
-
-        {/* 通知面板（点击展开） */}
-        <AnimatePresence>
-          {showNotice && (
-            <motion.div
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: "auto" }}
-              exit={{ opacity: 0, height: 0 }}
-              className="bl-notice-panel"
-            >
-              <div className="bl-notice-content">
-                <h3>为什么选择伴龄?</h3>
-                <div className="bl-notice-features">
-                  <div className="bl-notice-feature"><span>🤖</span> 智能AI测算</div>
-                  <div className="bl-notice-feature"><span>📋</span> 个性化规划</div>
-                  <div className="bl-notice-feature"><span>📊</span> 可视化分析</div>
-                  <div className="bl-notice-feature"><span>🎧</span> 专家1V1服务</div>
-                </div>
-
-                <h3>4步完成您的养老规划</h3>
-                <div className="bl-notice-steps">
-                  <div className="bl-notice-step"><span className="bl-ns-num">01</span> 评估测算</div>
-                  <div className="bl-notice-step"><span className="bl-ns-num">02</span> 缺口分析</div>
-                  <div className="bl-notice-step"><span className="bl-ns-num">03</span> 定制方案</div>
-                  <div className="bl-notice-step"><span className="bl-ns-num">04</span> 长期陪伴</div>
-                </div>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
 
         {/* 关于弹窗（点击右上角问号，翻转卡片：正面致每一位长辈，背面通知内容） */}
         <AnimatePresence>
@@ -1866,31 +1829,6 @@ function BanlingStyles() {
         color: var(--text-light);
       }
 
-      .bl-notice-btn {
-        position: relative;
-        background: none;
-        border: none;
-        cursor: pointer;
-        padding: 4px;
-        color: var(--text);
-      }
-
-      .bl-notice-btn svg {
-        width: 22px;
-        height: 22px;
-      }
-
-      .bl-notice-dot {
-        position: absolute;
-        top: 2px;
-        right: 2px;
-        width: 8px;
-        height: 8px;
-        background: #E57373;
-        border-radius: 50%;
-        border: 2px solid var(--card);
-      }
-
       /* 问号按钮（关于伴龄） */
       .bl-about-btn {
         width: 22px;
@@ -1915,28 +1853,6 @@ function BanlingStyles() {
         color: var(--sage-dark);
         border-color: var(--sage-dark);
         background: rgba(107,88,64,0.06);
-      }
-
-      /* 通知面板 */
-      .bl-notice-panel {
-        overflow: hidden;
-        background: var(--card);
-        border-bottom: 1px solid var(--border);
-      }
-
-      .bl-notice-content {
-        padding: 16px 20px;
-      }
-
-      .bl-notice-content h3 {
-        font-size: 15px;
-        font-weight: 600;
-        margin: 0 0 10px;
-        color: var(--text);
-      }
-
-      .bl-notice-content h3:not(:first-child) {
-        margin-top: 16px;
       }
 
       .bl-notice-features {

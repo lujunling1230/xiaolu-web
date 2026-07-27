@@ -172,7 +172,7 @@ export default function AnalyticsDashboard() {
         eventsByToolSessions("通关清单", events)
       ),
       healingFunnel: funnel(
-        ["tool_enter", "healing_breath", "healing_journal"],
+        ["tool_enter", "healing_breath", "healing_journal", "healing_meditation"],
         hours,
         eventsByToolSessions("森林疗愈室", events)
       ),
@@ -180,6 +180,18 @@ export default function AnalyticsDashboard() {
         ["tool_enter", "recharge_action"],
         hours,
         eventsByToolSessions("回血清单", events)
+      ),
+      /* 伴龄漏斗 */
+      banlingFunnel: funnel(
+        ["tool_enter", "banling_chat", "banling_report", "banling_action_adopt"],
+        hours,
+        eventsByToolSessions("伴龄", events)
+      ),
+      /* 小叶漏斗（全局浮窗，不通过 tool_enter） */
+      xiaoyeFunnel: funnel(
+        ["xiaoye_open", "xiaoye_chat"],
+        hours,
+        events
       ),
     };
   }, [hours, events, allEvents]);
@@ -394,7 +406,7 @@ export default function AnalyticsDashboard() {
           </h3>
           {/* 标签栏 */}
           <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 16 }}>
-            {["漫游指南", "解忧杂货店", "物资管家", "爱情公寓", "通关清单", "森林疗愈室", "回血清单"].map((tab) => (
+            {["漫游指南", "解忧杂货店", "物资管家", "爱情公寓", "通关清单", "森林疗愈室", "回血清单", "伴龄", "小叶"].map((tab) => (
               <button
                 key={tab}
                 onClick={() => setFunnelTab(tab)}
@@ -450,7 +462,7 @@ export default function AnalyticsDashboard() {
           )}
           {funnelTab === "森林疗愈室" && (
             <>
-              <div style={{ fontSize: 12, color: "#a8a39b", marginBottom: 8 }}>呼吸练习 → 感恩日记</div>
+              <div style={{ fontSize: 12, color: "#a8a39b", marginBottom: 8 }}>呼吸练习 → 感恩日记 → 冥想空间</div>
               <FunnelBars data={stats.healingFunnel} />
             </>
           )}
@@ -458,6 +470,18 @@ export default function AnalyticsDashboard() {
             <>
               <div style={{ fontSize: 12, color: "#a8a39b", marginBottom: 8 }}>完成回血行动</div>
               <FunnelBars data={stats.rechargeFunnel} />
+            </>
+          )}
+          {funnelTab === "伴龄" && (
+            <>
+              <div style={{ fontSize: 12, color: "#a8a39b", marginBottom: 8 }}>AI 对话 → 生成报告 → 采纳建议</div>
+              <FunnelBars data={stats.banlingFunnel} />
+            </>
+          )}
+          {funnelTab === "小叶" && (
+            <>
+              <div style={{ fontSize: 12, color: "#a8a39b", marginBottom: 8 }}>打开 → 发起对话</div>
+              <FunnelBars data={stats.xiaoyeFunnel} />
             </>
           )}
         </div>
@@ -761,6 +785,19 @@ function formatStepName(step: string): string {
     apartment_post: "发布动态",
     quest_complete: "完成任务",
     quest_level: "等级提升",
+    /* 森林疗愈室 */
+    healing_breath: "呼吸练习",
+    healing_journal: "感恩日记",
+    healing_meditation: "冥想空间",
+    /* 回血清单 */
+    recharge_action: "完成回血行动",
+    /* 伴龄 */
+    banling_chat: "AI 对话",
+    banling_report: "生成报告",
+    banling_action_adopt: "采纳建议",
+    /* 小叶 */
+    xiaoye_open: "打开小叶",
+    xiaoye_chat: "发起对话",
   };
   return map[step] || step;
 }
@@ -781,7 +818,8 @@ function formatPagePath(rawPath: string): string {
     "/toolbox/advice": "解忧杂货店",
     "/toolbox/travel": "漫游指南",
     "/toolbox/recharge": "回血清单",
-    "/toolbox/answer": "爱情公寓",
+    "/toolbox/banling": "伴龄",
+    "/toolbox/answer": "系统调频",
     "/contact": "联系页",
   };
   /* 精确匹配 */

@@ -1,0 +1,23 @@
+{
+  "name": "伴龄",
+  "short_name": "伴龄",
+  "description": "AI养老规划伴侣 —— 您不必独自焦虑，伴龄始终陪在您身边",
+  "start_url": "/toolbox/banling?solo=1",
+  "scope": "/toolbox/banling",
+  "display": "standalone",
+  "background_color": "#FDF8F3",
+  "theme_color": "#8B7355",
+  "lang": "zh-CN",
+  "icons": [
+    {
+      "src": "/pwa-icons/banling-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/pwa-icons/banling-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

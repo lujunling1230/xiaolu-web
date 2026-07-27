@@ -1,0 +1,23 @@
+{
+  "name": "森林疗愈室",
+  "short_name": "疗愈室",
+  "description": "呼吸·冥想·日记 —— 在森林中找到内心的平静",
+  "start_url": "/healing?solo=1",
+  "scope": "/healing",
+  "display": "standalone",
+  "background_color": "#F0F7F0",
+  "theme_color": "#5D8A6A",
+  "lang": "zh-CN",
+  "icons": [
+    {
+      "src": "/pwa-icons/healing-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/pwa-icons/healing-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

@@ -1,0 +1,23 @@
+{
+  "name": "爱情公寓",
+  "short_name": "公寓",
+  "description": "邻里社交模拟器 —— 最好的朋友就在身边，最爱的人就在对面",
+  "start_url": "/toolbox/answer?solo=1",
+  "scope": "/toolbox/answer",
+  "display": "standalone",
+  "background_color": "#FFF0E0",
+  "theme_color": "#E67E22",
+  "lang": "zh-CN",
+  "icons": [
+    {
+      "src": "/pwa-icons/apartment-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/pwa-icons/apartment-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

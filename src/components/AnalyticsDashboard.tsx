@@ -29,6 +29,11 @@ import {
   weekOverWeek,
   detectAnomalies,
   healthScore,
+  userPathFlow,
+  workComparisonMatrix,
+  type PathFlowNode,
+  type PathFlowLink,
+  type WorkMetrics,
 } from "../utils/track";
 
 /* ============================================================
@@ -39,6 +44,7 @@ import {
  * ============================================================ */
 
 type TimeRange = "24h" | "7d" | "30d" | "all";
+type SectionTab = "core" | "behavior" | "health";
 
 const RANGE_HOURS: Record<TimeRange, number | undefined> = {
   "24h": 24,
@@ -67,6 +73,7 @@ export default function AnalyticsDashboard() {
   const [clearingCloud, setClearingCloud] = useState(false);
   const [spinning, setSpinning] = useState(false);
   const [funnelTab, setFunnelTab] = useState<string>("漫游指南");
+  const [activeSection, setActiveSection] = useState<SectionTab>("core");
 
   const hours = RANGE_HOURS[range];
   const useCloud = isCloudEnv();
@@ -215,6 +222,8 @@ export default function AnalyticsDashboard() {
       weekCompare: weekOverWeek(allEvents),
       anomalies: detectAnomalies(allEvents),
       health: healthScore(allEvents),
+      pathFlow: userPathFlow(hours, events),
+      workMatrix: workComparisonMatrix(hours, events),
     };
   }, [hours, events, allEvents]);
 
@@ -337,518 +346,609 @@ export default function AnalyticsDashboard() {
         </div>
       </div>
 
-      {/* 异常告警横幅 */}
-      {stats.anomalies.length > 0 && (
-        <div style={{ marginBottom: 16 }}>
-          {stats.anomalies.map((alert, idx) => (
+      {/* 板块 Tab 导航 */}
+      <div style={{ display: "flex", gap: 8, marginBottom: 20, borderBottom: "1px solid #E8E6E1", paddingBottom: 12 }}>
+        {([
+          { key: "core" as SectionTab, label: "核心指标", desc: "流量与趋势概览" },
+          { key: "behavior" as SectionTab, label: "行为分析", desc: "用户路径与作品对比" },
+          { key: "health" as SectionTab, label: "系统健康", desc: "异常检测与评分" },
+        ]).map((tab) => (
+          <button
+            key={tab.key}
+            onClick={() => setActiveSection(tab.key)}
+            style={{
+              padding: "8px 18px",
+              borderRadius: 10,
+              border: "1.5px solid",
+              borderColor: activeSection === tab.key ? "#8D9A8B" : "transparent",
+              background: activeSection === tab.key ? "#FAF9F6" : "transparent",
+              color: activeSection === tab.key ? "#4a4038" : "#a8a39b",
+              fontSize: 13,
+              fontWeight: activeSection === tab.key ? 600 : 400,
+              cursor: "pointer",
+              transition: "all 0.2s ease",
+              textAlign: "left",
+            }}
+          >
+            <div>{tab.label}</div>
+            <div style={{ fontSize: 10, fontWeight: 400, marginTop: 2, opacity: 0.7 }}>{tab.desc}</div>
+          </button>
+        ))}
+      </div>
+
+      {/* ==================== 核心指标板块 ==================== */}
+      {activeSection === "core" && (
+        <>
+          {/* 流量概览卡片 - 5 格 */}
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(5, 1fr)",
+              gap: 14,
+              marginBottom: 14,
+            }}
+          >
+            <StatCard label="PV (浏览量)" value={stats.pv} sub={"累计 " + stats.totalAllTime + " 事件"} color="#8D9A8B" />
+            <StatCard label="UV (访客数)" value={stats.uv} color="#E8853A" />
+            <StatCard label="今日 PV" value={stats.todayPV} color="#7BA89E" />
+            <StatCard label="人均浏览" value={stats.pagesPerVisitor} sub="页/人" color="#C06A2E" />
+            <StatCard label="跳出率" value={stats.bounceRate} sub="%" color="#b06a6a" />
+          </div>
+
+          {/* 新增指标：DAU/MAU + 留存 + 会话时长 + 访问模式 */}
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(5, 1fr)",
+              gap: 14,
+              marginBottom: 20,
+            }}
+          >
+            <StatCard label="DAU / MAU" value={stats.dau} sub={`MAU ${stats.mau} · 比值 ${stats.dauMauRatio}%`} color="#4d8a82" />
+            <StatCard label="次日留存" value={stats.retention1d} sub="%" color="#7BA89E" />
+            <StatCard label="7 日留存" value={stats.retention7d} sub="%" color="#8a5f8a" />
+            <StatCard label="平均会话时长" value={stats.avgDuration} sub="秒" color="#a8814a" />
+            <StatCard label="访问模式" value={stats.modeDist.full} sub={`Full ${stats.modeDist.fullPct}% · Solo ${stats.modeDist.soloPct}%`} color="#5d7a8a" />
+          </div>
+
+          {/* 7 天趋势图 */}
+          <div
+            style={{
+              background: "#FAF9F6",
+              borderRadius: 14,
+              padding: 20,
+              border: "1px solid #E8E6E1",
+              marginBottom: 24,
+            }}
+          >
+            <h3 style={{ margin: "0 0 16px", fontSize: 14, fontWeight: 600, color: "#4a4038" }}>
+              近 7 天事件趋势
+            </h3>
+            <TrendChart data={stats.trend} />
+          </div>
+
+          {/* 页面 PV 分布 + 各作品使用排行 双栏 */}
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "1fr 1fr",
+              gap: 16,
+              marginBottom: 24,
+            }}
+          >
+            {/* 页面 PV 分布 */}
+            <div style={{ background: "#FAF9F6", borderRadius: 14, padding: 20, border: "1px solid #E8E6E1" }}>
+              <h3 style={{ margin: "0 0 16px", fontSize: 14, fontWeight: 600, color: "#4a4038" }}>
+                页面 PV 分布
+              </h3>
+              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                {stats.pageDist.length === 0 && (
+                  <p style={{ color: "#a8a39b", fontSize: 13, textAlign: "center", padding: 20 }}>
+                    暂无数据
+                  </p>
+                )}
+                {stats.pageDist.map((item, idx) => {
+                  const max = stats.pageDist[0]?.count || 1;
+                  const pct = Math.round((item.count / max) * 100);
+                  return (
+                    <div key={item.path} style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                      <span
+                        style={{
+                          width: 20,
+                          fontSize: 11,
+                          fontWeight: 700,
+                          color: idx < 3 ? "#E8853A" : "#a8a39b",
+                          textAlign: "center",
+                        }}
+                      >
+                        {idx + 1}
+                      </span>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div
+                          style={{
+                            display: "flex",
+                            justifyContent: "space-between",
+                            fontSize: 12,
+                            color: "#4a4038",
+                            marginBottom: 3,
+                          }}
+                        >
+                          <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                            {formatPagePath(item.path)}
+                          </span>
+                          <span style={{ fontWeight: 600, marginLeft: 8, flexShrink: 0 }}>{item.count}</span>
+                        </div>
+                        <div style={{ height: 5, borderRadius: 3, background: "#E8E6E1", overflow: "hidden" }}>
+                          <motion.div
+                            initial={{ width: 0 }}
+                            animate={{ width: `${pct}%` }}
+                            transition={{ duration: 0.6, ease: "easeOut" }}
+                            style={{
+                              height: "100%",
+                              borderRadius: 3,
+                              background:
+                                idx === 0
+                                  ? "#8D9A8B"
+                                  : idx === 1
+                                    ? "#7BA89E"
+                                    : idx === 2
+                                      ? "#C06A2E"
+                                      : "#a8a39b",
+                            }}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* 各作品使用排行 */}
+            <div style={{ background: "#FAF9F6", borderRadius: 14, padding: 20, border: "1px solid #E8E6E1" }}>
+              <h3 style={{ margin: "0 0 16px", fontSize: 14, fontWeight: 600, color: "#4a4038" }}>
+                各作品使用排行
+              </h3>
+              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                {stats.toolRanking.length === 0 && (
+                  <p style={{ color: "#a8a39b", fontSize: 13, textAlign: "center", padding: 20 }}>
+                    暂无数据
+                  </p>
+                )}
+                {stats.toolRanking.map((item, idx) => {
+                  const max = stats.toolRanking[0]?.count || 1;
+                  const pct = Math.round((item.count / max) * 100);
+                  return (
+                    <div key={item.tool_name} style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                      <span
+                        style={{
+                          width: 20,
+                          fontSize: 11,
+                          fontWeight: 700,
+                          color: idx < 3 ? "#E8853A" : "#a8a39b",
+                          textAlign: "center",
+                        }}
+                      >
+                        {idx + 1}
+                      </span>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div
+                          style={{
+                            display: "flex",
+                            justifyContent: "space-between",
+                            fontSize: 12,
+                            color: "#4a4038",
+                            marginBottom: 3,
+                          }}
+                        >
+                          <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                            {item.tool_name}
+                          </span>
+                          <span style={{ fontWeight: 600, marginLeft: 8, flexShrink: 0 }}>{item.count}</span>
+                        </div>
+                        <div style={{ height: 5, borderRadius: 3, background: "#E8E6E1", overflow: "hidden" }}>
+                          <motion.div
+                            initial={{ width: 0 }}
+                            animate={{ width: `${pct}%` }}
+                            transition={{ duration: 0.6, ease: "easeOut" }}
+                            style={{
+                              height: "100%",
+                              borderRadius: 3,
+                              background:
+                                idx === 0
+                                  ? "#E8853A"
+                                  : idx === 1
+                                    ? "#7BA89E"
+                                    : idx === 2
+                                      ? "#C06A2E"
+                                      : "#8D9A8B",
+                            }}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* ==================== 行为分析板块 ==================== */}
+      {activeSection === "behavior" && (
+        <>
+          {/* 用户路径分析 */}
+          <div
+            style={{
+              background: "#FAF9F6",
+              borderRadius: 14,
+              padding: 20,
+              border: "1px solid #E8E6E1",
+              marginBottom: 24,
+            }}
+          >
+            <h3 style={{ margin: "0 0 16px", fontSize: 14, fontWeight: 600, color: "#4a4038" }}>
+              用户路径流转
+            </h3>
+            <PathFlowChart nodes={stats.pathFlow.nodes} links={stats.pathFlow.links} />
+          </div>
+
+          {/* 作品对比矩阵 */}
+          <div
+            style={{
+              background: "#FAF9F6",
+              borderRadius: 14,
+              padding: 20,
+              border: "1px solid #E8E6E1",
+              marginBottom: 24,
+              overflowX: "auto",
+            }}
+          >
+            <h3 style={{ margin: "0 0 16px", fontSize: 14, fontWeight: 600, color: "#4a4038" }}>
+              作品对比矩阵
+            </h3>
+            <WorkComparisonTable data={stats.workMatrix} />
+          </div>
+
+          {/* 作品活跃度矩阵 */}
+          <div style={{ marginBottom: 24 }}>
+            <h3 style={{ margin: "0 0 12px", fontSize: 14, fontWeight: 600, color: "#4a4038" }}>
+              作品活跃度明细
+            </h3>
+            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+              <WorkStatRow label="森林疗愈室">
+                <StatCard label="呼吸练习" value={stats.healingBreath} color="#5d8a6a" compact />
+                <StatCard label="感恩日记" value={stats.healingJournal} color="#7BA89E" compact />
+                <StatCard label="冥想空间" value={stats.healingMeditation} color="#C06A2E" compact />
+              </WorkStatRow>
+              <WorkStatRow label="爱情公寓">
+                <StatCard label="AI 聊天" value={stats.apartmentChat} color="#b06a6a" compact />
+                <StatCard label="发布动态" value={stats.apartmentPost} color="#E8853A" compact />
+              </WorkStatRow>
+              <WorkStatRow label="通关清单">
+                <StatCard label="任务完成" value={stats.questComplete} color="#a8814a" compact />
+                <StatCard label="等级提升" value={stats.questLevel} color="#E8853A" compact />
+              </WorkStatRow>
+              <WorkStatRow label="物资管家">
+                <StatCard label="物资入库" value={stats.ivItemAdds} color="#8D9A8B" compact />
+                <StatCard label="AI 管家" value={stats.ivAiAsks} color="#C06A2E" compact />
+              </WorkStatRow>
+              <WorkStatRow label="解忧杂货店">
+                <StatCard label="写信" value={stats.adviceLetter} color="#4d8a82" compact />
+                <StatCard label="收到回信" value={stats.adviceReply} color="#7BA89E" compact />
+              </WorkStatRow>
+              <WorkStatRow label="漫游指南">
+                <StatCard label="AI 向导" value={stats.rgAiOpens} color="#7BA89E" compact />
+                <StatCard label="采纳城市" value={stats.rgAiAdopts} color="#E8853A" compact />
+              </WorkStatRow>
+              <WorkStatRow label="回血清单">
+                <StatCard label="回血行动" value={stats.rechargeAction} color="#8a5f8a" compact />
+              </WorkStatRow>
+              <WorkStatRow label="伴龄">
+                <StatCard label="AI 对话" value={stats.banlingChats} color="#C08020" compact />
+                <StatCard label="生成报告" value={stats.banlingReports} color="#FFB042" compact />
+                <StatCard label="采纳建议" value={stats.banlingAdopts} color="#8b7355" compact />
+              </WorkStatRow>
+              <WorkStatRow label="小叶">
+                <StatCard label="打开" value={stats.xiaoyeOpens} color="#5d8a6a" compact />
+                <StatCard label="对话" value={stats.xiaoyeChats} color="#7BA89E" compact />
+              </WorkStatRow>
+              <WorkStatRow label="联系留言">
+                <StatCard label="留言提交" value={stats.contactSubmits} color="#7BA89E" compact />
+              </WorkStatRow>
+            </div>
+          </div>
+
+          {/* 转化漏斗 */}
+          <div
+            style={{
+              background: "#FAF9F6",
+              borderRadius: 14,
+              padding: 20,
+              border: "1px solid #E8E6E1",
+              marginBottom: 24,
+            }}
+          >
+            <h3 style={{ margin: "0 0 12px", fontSize: 14, fontWeight: 600, color: "#4a4038" }}>
+              转化漏斗
+            </h3>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 16 }}>
+              {["漫游指南", "解忧杂货店", "物资管家", "爱情公寓", "通关清单", "森林疗愈室", "回血清单", "伴龄", "小叶"].map((tab) => (
+                <button
+                  key={tab}
+                  onClick={() => setFunnelTab(tab)}
+                  style={{
+                    padding: "4px 10px",
+                    borderRadius: 999,
+                    border: "1px solid",
+                    borderColor: funnelTab === tab ? "#8D9A8B" : "#E8E6E1",
+                    background: funnelTab === tab ? "#8D9A8B" : "transparent",
+                    color: funnelTab === tab ? "#fff" : "#7a7268",
+                    fontSize: 11,
+                    cursor: "pointer",
+                    transition: "all 0.2s ease",
+                    whiteSpace: "nowrap",
+                  }}
+                >
+                  {tab}
+                </button>
+              ))}
+            </div>
+            {funnelTab === "漫游指南" && (
+              <>
+                <div style={{ fontSize: 12, color: "#a8a39b", marginBottom: 8 }}>AI 推荐</div>
+                <FunnelBars data={stats.recommendFunnel} />
+                <div style={{ fontSize: 12, color: "#a8a39b", margin: "20px 0 8px" }}>攻略生成</div>
+                <FunnelBars data={stats.generateFunnel} />
+              </>
+            )}
+            {funnelTab === "解忧杂货店" && (
+              <>
+                <div style={{ fontSize: 12, color: "#a8a39b", marginBottom: 8 }}>写信 → 收到回信</div>
+                <FunnelBars data={stats.adviceFunnel} />
+              </>
+            )}
+            {funnelTab === "物资管家" && (
+              <>
+                <div style={{ fontSize: 12, color: "#a8a39b", marginBottom: 8 }}>入库 → 问 AI 管家</div>
+                <FunnelBars data={stats.inventoryFunnel} />
+              </>
+            )}
+            {funnelTab === "爱情公寓" && (
+              <>
+                <div style={{ fontSize: 12, color: "#a8a39b", marginBottom: 8 }}>AI 聊天 → 发布动态</div>
+                <FunnelBars data={stats.apartmentFunnel} />
+              </>
+            )}
+            {funnelTab === "通关清单" && (
+              <>
+                <div style={{ fontSize: 12, color: "#a8a39b", marginBottom: 8 }}>完成任务 → 等级提升</div>
+                <FunnelBars data={stats.questFunnel} />
+              </>
+            )}
+            {funnelTab === "森林疗愈室" && (
+              <>
+                <div style={{ fontSize: 12, color: "#a8a39b", marginBottom: 8 }}>呼吸练习 → 感恩日记 → 冥想空间</div>
+                <FunnelBars data={stats.healingFunnel} />
+              </>
+            )}
+            {funnelTab === "回血清单" && (
+              <>
+                <div style={{ fontSize: 12, color: "#a8a39b", marginBottom: 8 }}>完成回血行动</div>
+                <FunnelBars data={stats.rechargeFunnel} />
+              </>
+            )}
+            {funnelTab === "伴龄" && (
+              <>
+                <div style={{ fontSize: 12, color: "#a8a39b", marginBottom: 8 }}>AI 对话 → 生成报告 → 采纳建议</div>
+                <FunnelBars data={stats.banlingFunnel} />
+              </>
+            )}
+            {funnelTab === "小叶" && (
+              <>
+                <div style={{ fontSize: 12, color: "#a8a39b", marginBottom: 8 }}>打开 → 发起对话</div>
+                <FunnelBars data={stats.xiaoyeFunnel} />
+              </>
+            )}
+          </div>
+        </>
+      )}
+
+      {/* ==================== 系统健康板块 ==================== */}
+      {activeSection === "health" && (
+        <>
+          {/* 异常告警横幅 */}
+          {stats.anomalies.length > 0 && (
+            <div style={{ marginBottom: 16 }}>
+              {stats.anomalies.map((alert, idx) => (
+                <div
+                  key={idx}
+                  style={{
+                    background: alert.type === "danger" ? "#FDF2F2" : alert.type === "warning" ? "#FFF8ED" : "#EFF6FF",
+                    border: `1px solid ${alert.type === "danger" ? "#FECACA" : alert.type === "warning" ? "#FDE68A" : "#BFDBFE"}`,
+                    borderRadius: 10,
+                    padding: "10px 14px",
+                    marginBottom: 8,
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 8,
+                  }}
+                >
+                  <span
+                    style={{
+                      width: 8,
+                      height: 8,
+                      borderRadius: "50%",
+                      background: alert.type === "danger" ? "#EF4444" : alert.type === "warning" ? "#F59E0B" : "#3B82F6",
+                      flexShrink: 0,
+                    }}
+                  />
+                  <span style={{ fontSize: 12, color: "#4a4038", flex: 1 }}>{alert.message}</span>
+                </div>
+              ))}
+            </div>
+          )}
+          {stats.anomalies.length === 0 && (
             <div
-              key={idx}
               style={{
-                background: alert.type === "danger" ? "#FDF2F2" : alert.type === "warning" ? "#FFF8ED" : "#EFF6FF",
-                border: `1px solid ${alert.type === "danger" ? "#FECACA" : alert.type === "warning" ? "#FDE68A" : "#BFDBFE"}`,
+                background: "#F0FDF4",
+                border: "1px solid #BBF7D0",
                 borderRadius: 10,
                 padding: "10px 14px",
-                marginBottom: 8,
+                marginBottom: 16,
                 display: "flex",
                 alignItems: "center",
                 gap: 8,
               }}
             >
-              <span
-                style={{
-                  width: 8,
-                  height: 8,
-                  borderRadius: "50%",
-                  background: alert.type === "danger" ? "#EF4444" : alert.type === "warning" ? "#F59E0B" : "#3B82F6",
-                  flexShrink: 0,
-                }}
-              />
-              <span style={{ fontSize: 12, color: "#4a4038", flex: 1 }}>{alert.message}</span>
+              <span style={{ width: 8, height: 8, borderRadius: "50%", background: "#22C55E", flexShrink: 0 }} />
+              <span style={{ fontSize: 12, color: "#166534" }}>当前系统运行正常，未检测到异常</span>
             </div>
-          ))}
-        </div>
-      )}
-
-      {/* 流量概览卡片 - 5 格 */}
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(5, 1fr)",
-          gap: 14,
-          marginBottom: 14,
-        }}
-      >
-        <StatCard label="PV (浏览量)" value={stats.pv} sub={"累计 " + stats.totalAllTime + " 事件"} color="#8D9A8B" />
-        <StatCard label="UV (访客数)" value={stats.uv} color="#E8853A" />
-        <StatCard label="今日 PV" value={stats.todayPV} color="#7BA89E" />
-        <StatCard label="人均浏览" value={stats.pagesPerVisitor} sub="页/人" color="#C06A2E" />
-        <StatCard label="跳出率" value={stats.bounceRate} sub="%" color="#b06a6a" />
-      </div>
-
-      {/* 新增指标：DAU/MAU + 留存 + 会话时长 + 访问模式 */}
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(5, 1fr)",
-          gap: 14,
-          marginBottom: 20,
-        }}
-      >
-        <StatCard label="DAU / MAU" value={stats.dau} sub={`MAU ${stats.mau} · 比值 ${stats.dauMauRatio}%`} color="#4d8a82" />
-        <StatCard label="次日留存" value={stats.retention1d} sub="%" color="#7BA89E" />
-        <StatCard label="7 日留存" value={stats.retention7d} sub="%" color="#8a5f8a" />
-        <StatCard label="平均会话时长" value={stats.avgDuration} sub="秒" color="#a8814a" />
-        <StatCard label="访问模式" value={stats.modeDist.full} sub={`Full ${stats.modeDist.fullPct}% · Solo ${stats.modeDist.soloPct}%`} color="#5d7a8a" />
-      </div>
-
-      {/* 作品活跃度矩阵 */}
-      <div style={{ marginBottom: 24 }}>
-        <h3 style={{ margin: "0 0 12px", fontSize: 14, fontWeight: 600, color: "#4a4038" }}>
-          作品活跃度
-        </h3>
-        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-          {/* 森林疗愈室 */}
-          <WorkStatRow label="森林疗愈室">
-            <StatCard label="呼吸练习" value={stats.healingBreath} color="#5d8a6a" compact />
-            <StatCard label="感恩日记" value={stats.healingJournal} color="#7BA89E" compact />
-            <StatCard label="冥想空间" value={stats.healingMeditation} color="#C06A2E" compact />
-          </WorkStatRow>
-          {/* 爱情公寓 */}
-          <WorkStatRow label="爱情公寓">
-            <StatCard label="AI 聊天" value={stats.apartmentChat} color="#b06a6a" compact />
-            <StatCard label="发布动态" value={stats.apartmentPost} color="#E8853A" compact />
-          </WorkStatRow>
-          {/* 通关清单 */}
-          <WorkStatRow label="通关清单">
-            <StatCard label="任务完成" value={stats.questComplete} color="#a8814a" compact />
-            <StatCard label="等级提升" value={stats.questLevel} color="#E8853A" compact />
-          </WorkStatRow>
-          {/* 物资管家 */}
-          <WorkStatRow label="物资管家">
-            <StatCard label="物资入库" value={stats.ivItemAdds} color="#8D9A8B" compact />
-            <StatCard label="AI 管家" value={stats.ivAiAsks} color="#C06A2E" compact />
-          </WorkStatRow>
-          {/* 解忧杂货店 */}
-          <WorkStatRow label="解忧杂货店">
-            <StatCard label="写信" value={stats.adviceLetter} color="#4d8a82" compact />
-            <StatCard label="收到回信" value={stats.adviceReply} color="#7BA89E" compact />
-          </WorkStatRow>
-          {/* 漫游指南 */}
-          <WorkStatRow label="漫游指南">
-            <StatCard label="AI 向导" value={stats.rgAiOpens} color="#7BA89E" compact />
-            <StatCard label="采纳城市" value={stats.rgAiAdopts} color="#E8853A" compact />
-          </WorkStatRow>
-          {/* 回血清单 */}
-          <WorkStatRow label="回血清单">
-            <StatCard label="回血行动" value={stats.rechargeAction} color="#8a5f8a" compact />
-          </WorkStatRow>
-          {/* 伴龄 */}
-          <WorkStatRow label="伴龄">
-            <StatCard label="AI 对话" value={stats.banlingChats} color="#C08020" compact />
-            <StatCard label="生成报告" value={stats.banlingReports} color="#FFB042" compact />
-            <StatCard label="采纳建议" value={stats.banlingAdopts} color="#8b7355" compact />
-          </WorkStatRow>
-          {/* 小叶 */}
-          <WorkStatRow label="小叶">
-            <StatCard label="打开" value={stats.xiaoyeOpens} color="#5d8a6a" compact />
-            <StatCard label="对话" value={stats.xiaoyeChats} color="#7BA89E" compact />
-          </WorkStatRow>
-          {/* 留言 */}
-          <WorkStatRow label="联系留言">
-            <StatCard label="留言提交" value={stats.contactSubmits} color="#7BA89E" compact />
-          </WorkStatRow>
-        </div>
-      </div>
-
-      {/* 三栏布局 */}
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "1fr 1fr 1fr",
-          gap: 16,
-          marginBottom: 24,
-        }}
-      >
-        {/* 左栏：漏斗（标签切换） */}
-        <div style={{ background: "#FAF9F6", borderRadius: 14, padding: 20, border: "1px solid #E8E6E1" }}>
-          <h3 style={{ margin: "0 0 12px", fontSize: 14, fontWeight: 600, color: "#4a4038" }}>
-            转化漏斗
-          </h3>
-          {/* 标签栏 */}
-          <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 16 }}>
-            {["漫游指南", "解忧杂货店", "物资管家", "爱情公寓", "通关清单", "森林疗愈室", "回血清单", "伴龄", "小叶"].map((tab) => (
-              <button
-                key={tab}
-                onClick={() => setFunnelTab(tab)}
-                style={{
-                  padding: "4px 10px",
-                  borderRadius: 999,
-                  border: "1px solid",
-                  borderColor: funnelTab === tab ? "#8D9A8B" : "#E8E6E1",
-                  background: funnelTab === tab ? "#8D9A8B" : "transparent",
-                  color: funnelTab === tab ? "#fff" : "#7a7268",
-                  fontSize: 11,
-                  cursor: "pointer",
-                  transition: "all 0.2s ease",
-                  whiteSpace: "nowrap",
-                }}
-              >
-                {tab}
-              </button>
-            ))}
-          </div>
-          {/* 漏斗内容 */}
-          {funnelTab === "漫游指南" && (
-            <>
-              <div style={{ fontSize: 12, color: "#a8a39b", marginBottom: 8 }}>AI 推荐</div>
-              <FunnelBars data={stats.recommendFunnel} />
-              <div style={{ fontSize: 12, color: "#a8a39b", margin: "20px 0 8px" }}>攻略生成</div>
-              <FunnelBars data={stats.generateFunnel} />
-            </>
           )}
-          {funnelTab === "解忧杂货店" && (
-            <>
-              <div style={{ fontSize: 12, color: "#a8a39b", marginBottom: 8 }}>写信 → 收到回信</div>
-              <FunnelBars data={stats.adviceFunnel} />
-            </>
-          )}
-          {funnelTab === "物资管家" && (
-            <>
-              <div style={{ fontSize: 12, color: "#a8a39b", marginBottom: 8 }}>入库 → 问 AI 管家</div>
-              <FunnelBars data={stats.inventoryFunnel} />
-            </>
-          )}
-          {funnelTab === "爱情公寓" && (
-            <>
-              <div style={{ fontSize: 12, color: "#a8a39b", marginBottom: 8 }}>AI 聊天 → 发布动态</div>
-              <FunnelBars data={stats.apartmentFunnel} />
-            </>
-          )}
-          {funnelTab === "通关清单" && (
-            <>
-              <div style={{ fontSize: 12, color: "#a8a39b", marginBottom: 8 }}>完成任务 → 等级提升</div>
-              <FunnelBars data={stats.questFunnel} />
-            </>
-          )}
-          {funnelTab === "森林疗愈室" && (
-            <>
-              <div style={{ fontSize: 12, color: "#a8a39b", marginBottom: 8 }}>呼吸练习 → 感恩日记 → 冥想空间</div>
-              <FunnelBars data={stats.healingFunnel} />
-            </>
-          )}
-          {funnelTab === "回血清单" && (
-            <>
-              <div style={{ fontSize: 12, color: "#a8a39b", marginBottom: 8 }}>完成回血行动</div>
-              <FunnelBars data={stats.rechargeFunnel} />
-            </>
-          )}
-          {funnelTab === "伴龄" && (
-            <>
-              <div style={{ fontSize: 12, color: "#a8a39b", marginBottom: 8 }}>AI 对话 → 生成报告 → 采纳建议</div>
-              <FunnelBars data={stats.banlingFunnel} />
-            </>
-          )}
-          {funnelTab === "小叶" && (
-            <>
-              <div style={{ fontSize: 12, color: "#a8a39b", marginBottom: 8 }}>打开 → 发起对话</div>
-              <FunnelBars data={stats.xiaoyeFunnel} />
-            </>
-          )}
-        </div>
 
-        {/* 中栏：页面 PV 分布 */}
-        <div style={{ background: "#FAF9F6", borderRadius: 14, padding: 20, border: "1px solid #E8E6E1" }}>
-          <h3 style={{ margin: "0 0 16px", fontSize: 14, fontWeight: 600, color: "#4a4038" }}>
-            页面 PV 分布
-          </h3>
-          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-            {stats.pageDist.length === 0 && (
-              <p style={{ color: "#a8a39b", fontSize: 13, textAlign: "center", padding: 20 }}>
-                暂无数据
-              </p>
-            )}
-            {stats.pageDist.map((item, idx) => {
-              const max = stats.pageDist[0]?.count || 1;
-              const pct = Math.round((item.count / max) * 100);
-              return (
-                <div key={item.path} style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                  <span
-                    style={{
-                      width: 20,
-                      fontSize: 11,
-                      fontWeight: 700,
-                      color: idx < 3 ? "#E8853A" : "#a8a39b",
-                      textAlign: "center",
-                    }}
-                  >
-                    {idx + 1}
-                  </span>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div
-                      style={{
-                        display: "flex",
-                        justifyContent: "space-between",
-                        fontSize: 12,
-                        color: "#4a4038",
-                        marginBottom: 3,
-                      }}
-                    >
-                      <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                        {formatPagePath(item.path)}
-                      </span>
-                      <span style={{ fontWeight: 600, marginLeft: 8, flexShrink: 0 }}>{item.count}</span>
-                    </div>
-                    <div style={{ height: 5, borderRadius: 3, background: "#E8E6E1", overflow: "hidden" }}>
-                      <motion.div
-                        initial={{ width: 0 }}
-                        animate={{ width: `${pct}%` }}
-                        transition={{ duration: 0.6, ease: "easeOut" }}
-                        style={{
-                          height: "100%",
-                          borderRadius: 3,
-                          background:
-                            idx === 0
-                              ? "#8D9A8B"
-                              : idx === 1
-                                ? "#7BA89E"
-                                : idx === 2
-                                  ? "#C06A2E"
-                                  : "#a8a39b",
-                        }}
-                      />
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* 右栏：各作品使用排行 */}
-        <div style={{ background: "#FAF9F6", borderRadius: 14, padding: 20, border: "1px solid #E8E6E1" }}>
-          <h3 style={{ margin: "0 0 16px", fontSize: 14, fontWeight: 600, color: "#4a4038" }}>
-            各作品使用排行
-          </h3>
-          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-            {stats.toolRanking.length === 0 && (
-              <p style={{ color: "#a8a39b", fontSize: 13, textAlign: "center", padding: 20 }}>
-                暂无数据
-              </p>
-            )}
-            {stats.toolRanking.map((item, idx) => {
-              const max = stats.toolRanking[0]?.count || 1;
-              const pct = Math.round((item.count / max) * 100);
-              return (
-                <div key={item.tool_name} style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                  <span
-                    style={{
-                      width: 20,
-                      fontSize: 11,
-                      fontWeight: 700,
-                      color: idx < 3 ? "#E8853A" : "#a8a39b",
-                      textAlign: "center",
-                    }}
-                  >
-                    {idx + 1}
-                  </span>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div
-                      style={{
-                        display: "flex",
-                        justifyContent: "space-between",
-                        fontSize: 12,
-                        color: "#4a4038",
-                        marginBottom: 3,
-                      }}
-                    >
-                      <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                        {item.tool_name}
-                      </span>
-                      <span style={{ fontWeight: 600, marginLeft: 8, flexShrink: 0 }}>{item.count}</span>
-                    </div>
-                    <div style={{ height: 5, borderRadius: 3, background: "#E8E6E1", overflow: "hidden" }}>
-                      <motion.div
-                        initial={{ width: 0 }}
-                        animate={{ width: `${pct}%` }}
-                        transition={{ duration: 0.6, ease: "easeOut" }}
-                        style={{
-                          height: "100%",
-                          borderRadius: 3,
-                          background:
-                            idx === 0
-                              ? "#E8853A"
-                              : idx === 1
-                                ? "#7BA89E"
-                                : idx === 2
-                                  ? "#C06A2E"
-                                  : "#8D9A8B",
-                        }}
-                      />
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      </div>
-
-      {/* 7 天趋势图 */}
-      <div
-        style={{
-          background: "#FAF9F6",
-          borderRadius: 14,
-          padding: 20,
-          border: "1px solid #E8E6E1",
-          marginBottom: 24,
-        }}
-      >
-        <h3 style={{ margin: "0 0 16px", fontSize: 14, fontWeight: 600, color: "#4a4038" }}>
-          近 7 天事件趋势
-        </h3>
-        <TrendChart data={stats.trend} />
-      </div>
-
-      {/* 本周 vs 上周 + 健康评分 + 新用户分布 三栏 */}
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "1fr 1fr 1fr",
-          gap: 16,
-          marginBottom: 24,
-        }}
-      >
-        {/* 周对比 */}
-        <div style={{ background: "#FAF9F6", borderRadius: 14, padding: 20, border: "1px solid #E8E6E1" }}>
-          <h3 style={{ margin: "0 0 16px", fontSize: 14, fontWeight: 600, color: "#4a4038" }}>
-            本周 vs 上周
-          </h3>
-          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-            <WoWRow label="PV" current={stats.weekCompare.thisWeek.pv} prev={stats.weekCompare.lastWeek.pv} change={stats.weekCompare.changes.pv} />
-            <WoWRow label="UV" current={stats.weekCompare.thisWeek.uv} prev={stats.weekCompare.lastWeek.uv} change={stats.weekCompare.changes.uv} />
-            <WoWRow label="事件数" current={stats.weekCompare.thisWeek.events} prev={stats.weekCompare.lastWeek.events} change={stats.weekCompare.changes.events} />
-            <WoWRow label="会话时长" current={stats.weekCompare.thisWeek.avgDuration} prev={stats.weekCompare.lastWeek.avgDuration} change={stats.weekCompare.changes.avgDuration} unit="s" />
-          </div>
-        </div>
-
-        {/* 健康评分 */}
-        <div style={{ background: "#FAF9F6", borderRadius: 14, padding: 20, border: "1px solid #E8E6E1" }}>
-          <h3 style={{ margin: "0 0 16px", fontSize: 14, fontWeight: 600, color: "#4a4038" }}>
-            数据健康评分
-          </h3>
-          <div style={{ display: "flex", alignItems: "center", gap: 16, marginBottom: 16 }}>
-            <div
-              style={{
-                width: 64,
-                height: 64,
-                borderRadius: "50%",
-                background:
-                  stats.health.score >= 80
-                    ? "#E8F5E9"
-                    : stats.health.score >= 50
-                      ? "#FFF8ED"
-                      : "#FDF2F2",
-                border: `3px solid ${
-                  stats.health.score >= 80 ? "#4CAF50" : stats.health.score >= 50 ? "#F59E0B" : "#EF4444"
-                }`,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                fontSize: 22,
-                fontWeight: 700,
-                color:
-                  stats.health.score >= 80
-                    ? "#4CAF50"
-                    : stats.health.score >= 50
-                      ? "#F59E0B"
-                      : "#EF4444",
-                flexShrink: 0,
-              }}
-            >
-              {stats.health.score}
+          {/* 三栏：周对比 + 健康评分 + 用户构成 */}
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "1fr 1fr 1fr",
+              gap: 16,
+              marginBottom: 24,
+            }}
+          >
+            {/* 周对比 */}
+            <div style={{ background: "#FAF9F6", borderRadius: 14, padding: 20, border: "1px solid #E8E6E1" }}>
+              <h3 style={{ margin: "0 0 16px", fontSize: 14, fontWeight: 600, color: "#4a4038" }}>
+                本周 vs 上周
+              </h3>
+              <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                <WoWRow label="PV" current={stats.weekCompare.thisWeek.pv} prev={stats.weekCompare.lastWeek.pv} change={stats.weekCompare.changes.pv} />
+                <WoWRow label="UV" current={stats.weekCompare.thisWeek.uv} prev={stats.weekCompare.lastWeek.uv} change={stats.weekCompare.changes.uv} />
+                <WoWRow label="事件数" current={stats.weekCompare.thisWeek.events} prev={stats.weekCompare.lastWeek.events} change={stats.weekCompare.changes.events} />
+                <WoWRow label="会话时长" current={stats.weekCompare.thisWeek.avgDuration} prev={stats.weekCompare.lastWeek.avgDuration} change={stats.weekCompare.changes.avgDuration} unit="s" />
+              </div>
             </div>
-            <div>
-              <div style={{ fontSize: 16, fontWeight: 600, color: "#4a4038" }}>{stats.health.label}</div>
-              <div style={{ fontSize: 11, color: "#a8a39b", marginTop: 2 }}>综合四项核心指标</div>
-            </div>
-          </div>
-          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-            {stats.health.details.map((d) => (
-              <div key={d.metric} style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                <span
+
+            {/* 健康评分 */}
+            <div style={{ background: "#FAF9F6", borderRadius: 14, padding: 20, border: "1px solid #E8E6E1" }}>
+              <h3 style={{ margin: "0 0 16px", fontSize: 14, fontWeight: 600, color: "#4a4038" }}>
+                数据健康评分
+              </h3>
+              <div style={{ display: "flex", alignItems: "center", gap: 16, marginBottom: 16 }}>
+                <div
                   style={{
-                    width: 6,
-                    height: 6,
+                    width: 64,
+                    height: 64,
                     borderRadius: "50%",
-                    background: d.status === "good" ? "#4CAF50" : d.status === "fair" ? "#F59E0B" : "#EF4444",
+                    background:
+                      stats.health.score >= 80
+                        ? "#E8F5E9"
+                        : stats.health.score >= 50
+                          ? "#FFF8ED"
+                          : "#FDF2F2",
+                    border: `3px solid ${
+                      stats.health.score >= 80 ? "#4CAF50" : stats.health.score >= 50 ? "#F59E0B" : "#EF4444"
+                    }`,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    fontSize: 22,
+                    fontWeight: 700,
+                    color:
+                      stats.health.score >= 80
+                        ? "#4CAF50"
+                        : stats.health.score >= 50
+                          ? "#F59E0B"
+                          : "#EF4444",
                     flexShrink: 0,
                   }}
-                />
-                <span style={{ fontSize: 12, color: "#4a4038", flex: 1 }}>{d.metric}</span>
-                <span
-                  style={{
-                    fontSize: 12,
-                    fontWeight: 600,
-                    color:
-                      d.status === "good" ? "#4CAF50" : d.status === "fair" ? "#F59E0B" : "#EF4444",
-                  }}
                 >
-                  {d.score}分
-                </span>
+                  {stats.health.score}
+                </div>
+                <div>
+                  <div style={{ fontSize: 16, fontWeight: 600, color: "#4a4038" }}>{stats.health.label}</div>
+                  <div style={{ fontSize: 11, color: "#a8a39b", marginTop: 2 }}>综合四项核心指标</div>
+                </div>
               </div>
-            ))}
-          </div>
-        </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                {stats.health.details.map((d) => (
+                  <div key={d.metric} style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <span
+                      style={{
+                        width: 6,
+                        height: 6,
+                        borderRadius: "50%",
+                        background: d.status === "good" ? "#4CAF50" : d.status === "fair" ? "#F59E0B" : "#EF4444",
+                        flexShrink: 0,
+                      }}
+                    />
+                    <span style={{ fontSize: 12, color: "#4a4038", flex: 1 }}>{d.metric}</span>
+                    <span
+                      style={{
+                        fontSize: 12,
+                        fontWeight: 600,
+                        color:
+                          d.status === "good" ? "#4CAF50" : d.status === "fair" ? "#F59E0B" : "#EF4444",
+                      }}
+                    >
+                      {d.score}分
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
 
-        {/* 新用户 vs 回访用户 */}
-        <div style={{ background: "#FAF9F6", borderRadius: 14, padding: 20, border: "1px solid #E8E6E1" }}>
-          <h3 style={{ margin: "0 0 16px", fontSize: 14, fontWeight: 600, color: "#4a4038" }}>
-            用户构成
-          </h3>
-          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-            <div>
-              <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, color: "#4a4038", marginBottom: 4 }}>
-                <span>新用户</span>
-                <span style={{ fontWeight: 600 }}>{stats.newVsReturning.newUsers}</span>
-              </div>
-              <div style={{ height: 8, borderRadius: 4, background: "#E8E6E1", overflow: "hidden" }}>
-                <motion.div
-                  initial={{ width: 0 }}
-                  animate={{
-                    width: `${stats.newVsReturning.newUsers + stats.newVsReturning.returningUsers > 0 ? (stats.newVsReturning.newUsers / (stats.newVsReturning.newUsers + stats.newVsReturning.returningUsers)) * 100 : 0}%`,
-                  }}
-                  transition={{ duration: 0.6, ease: "easeOut" }}
-                  style={{ height: "100%", borderRadius: 4, background: "#7BA89E" }}
-                />
-              </div>
-            </div>
-            <div>
-              <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, color: "#4a4038", marginBottom: 4 }}>
-                <span>回访用户</span>
-                <span style={{ fontWeight: 600 }}>{stats.newVsReturning.returningUsers}</span>
-              </div>
-              <div style={{ height: 8, borderRadius: 4, background: "#E8E6E1", overflow: "hidden" }}>
-                <motion.div
-                  initial={{ width: 0 }}
-                  animate={{
-                    width: `${stats.newVsReturning.newUsers + stats.newVsReturning.returningUsers > 0 ? (stats.newVsReturning.returningUsers / (stats.newVsReturning.newUsers + stats.newVsReturning.returningUsers)) * 100 : 0}%`,
-                  }}
-                  transition={{ duration: 0.6, ease: "easeOut", delay: 0.1 }}
-                  style={{ height: "100%", borderRadius: 4, background: "#E8853A" }}
-                />
-              </div>
-            </div>
-            <div style={{ marginTop: 4, paddingTop: 10, borderTop: "1px solid #E8E6E1" }}>
-              <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, color: "#a8a39b" }}>
-                <span>总计活跃用户</span>
-                <span style={{ fontWeight: 600, color: "#4a4038" }}>
-                  {stats.newVsReturning.newUsers + stats.newVsReturning.returningUsers}
-                </span>
+            {/* 新用户 vs 回访用户 */}
+            <div style={{ background: "#FAF9F6", borderRadius: 14, padding: 20, border: "1px solid #E8E6E1" }}>
+              <h3 style={{ margin: "0 0 16px", fontSize: 14, fontWeight: 600, color: "#4a4038" }}>
+                用户构成
+              </h3>
+              <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+                <div>
+                  <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, color: "#4a4038", marginBottom: 4 }}>
+                    <span>新用户</span>
+                    <span style={{ fontWeight: 600 }}>{stats.newVsReturning.newUsers}</span>
+                  </div>
+                  <div style={{ height: 8, borderRadius: 4, background: "#E8E6E1", overflow: "hidden" }}>
+                    <motion.div
+                      initial={{ width: 0 }}
+                      animate={{
+                        width: `${stats.newVsReturning.newUsers + stats.newVsReturning.returningUsers > 0 ? (stats.newVsReturning.newUsers / (stats.newVsReturning.newUsers + stats.newVsReturning.returningUsers)) * 100 : 0}%`,
+                      }}
+                      transition={{ duration: 0.6, ease: "easeOut" }}
+                      style={{ height: "100%", borderRadius: 4, background: "#7BA89E" }}
+                    />
+                  </div>
+                </div>
+                <div>
+                  <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, color: "#4a4038", marginBottom: 4 }}>
+                    <span>回访用户</span>
+                    <span style={{ fontWeight: 600 }}>{stats.newVsReturning.returningUsers}</span>
+                  </div>
+                  <div style={{ height: 8, borderRadius: 4, background: "#E8E6E1", overflow: "hidden" }}>
+                    <motion.div
+                      initial={{ width: 0 }}
+                      animate={{
+                        width: `${stats.newVsReturning.newUsers + stats.newVsReturning.returningUsers > 0 ? (stats.newVsReturning.returningUsers / (stats.newVsReturning.newUsers + stats.newVsReturning.returningUsers)) * 100 : 0}%`,
+                      }}
+                      transition={{ duration: 0.6, ease: "easeOut", delay: 0.1 }}
+                      style={{ height: "100%", borderRadius: 4, background: "#E8853A" }}
+                    />
+                  </div>
+                </div>
+                <div style={{ marginTop: 4, paddingTop: 10, borderTop: "1px solid #E8E6E1" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, color: "#a8a39b" }}>
+                    <span>总计活跃用户</span>
+                    <span style={{ fontWeight: 600, color: "#4a4038" }}>
+                      {stats.newVsReturning.newUsers + stats.newVsReturning.returningUsers}
+                    </span>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
-        </div>
-      </div>
+        </>
+      )}
 
       {/* 底部操作 */}
       <div style={{ display: "flex", gap: 12, justifyContent: "flex-end", flexWrap: "wrap" }}>
@@ -1090,6 +1190,166 @@ function WoWRow({
         {change}%
       </span>
     </div>
+  );
+}
+
+function PathFlowChart({ nodes, links }: { nodes: PathFlowNode[]; links: PathFlowLink[] }) {
+  if (nodes.length === 0) {
+    return <p style={{ color: "#a8a39b", fontSize: 13, textAlign: "center", padding: 20 }}>暂无路径数据</p>;
+  }
+
+  /* 简化版：左侧入口节点 → 右侧目标节点，用连接线和流量标签 */
+  const maxCount = Math.max(...nodes.map((n) => n.count), 1);
+  const leftNodes = nodes.filter((n) => !links.some((l) => l.target === n.name) || links.some((l) => l.source === n.name));
+  const rightNodes = nodes.filter((n) => links.some((l) => l.target === n.name));
+
+  /* 去重 */
+  const sourceSet = new Set(links.map((l) => l.source));
+  const targetSet = new Set(links.map((l) => l.target));
+
+  const leftItems = Array.from(sourceSet)
+    .map((name) => nodes.find((n) => n.name === name))
+    .filter(Boolean) as PathFlowNode[];
+  const rightItems = Array.from(targetSet)
+    .map((name) => nodes.find((n) => n.name === name))
+    .filter(Boolean) as PathFlowNode[];
+
+  if (leftItems.length === 0 || rightItems.length === 0) {
+    return <p style={{ color: "#a8a39b", fontSize: 13, textAlign: "center", padding: 20 }}>路径数据不足</p>;
+  }
+
+  return (
+    <div style={{ overflowX: "auto" }}>
+      <div style={{ display: "flex", gap: 40, minWidth: 400, padding: "10px 0" }}>
+        {/* 左侧：入口页 */}
+        <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 8 }}>
+          <div style={{ fontSize: 11, color: "#a8a39b", marginBottom: 4, fontWeight: 600 }}>入口页</div>
+          {leftItems.map((node) => {
+            const pct = Math.round((node.count / maxCount) * 100);
+            return (
+              <div key={node.name} style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, color: "#4a4038", marginBottom: 2 }}>
+                    <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{node.name}</span>
+                    <span style={{ fontWeight: 600, marginLeft: 4, flexShrink: 0 }}>{node.count}</span>
+                  </div>
+                  <div style={{ height: 4, borderRadius: 2, background: "#E8E6E1", overflow: "hidden" }}>
+                    <div style={{ width: `${pct}%`, height: "100%", borderRadius: 2, background: "#7BA89E", transition: "width 0.6s ease" }} />
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* 中间：连接线与流量 */}
+        <div style={{ width: 120, display: "flex", flexDirection: "column", gap: 8, paddingTop: 20 }}>
+          {links.slice(0, 6).map((link, idx) => {
+            const maxLink = Math.max(...links.map((l) => l.count), 1);
+            const opacity = Math.max(0.3, link.count / maxLink);
+            return (
+              <div key={idx} style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11 }}>
+                <div style={{ flex: 1, height: 1, background: `rgba(125, 168, 158, ${opacity})`, position: "relative" }}>
+                  <div style={{
+                    position: "absolute",
+                    right: -4,
+                    top: -3,
+                    width: 0,
+                    height: 0,
+                    borderTop: "3px solid transparent",
+                    borderBottom: "3px solid transparent",
+                    borderLeft: `5px solid rgba(125, 168, 158, ${opacity})`,
+                  }} />
+                </div>
+                <span style={{ color: "#7a7268", fontWeight: 600, whiteSpace: "nowrap" }}>{link.count}</span>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* 右侧：流向页 */}
+        <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 8 }}>
+          <div style={{ fontSize: 11, color: "#a8a39b", marginBottom: 4, fontWeight: 600 }}>流向页</div>
+          {rightItems.map((node) => {
+            const pct = Math.round((node.count / maxCount) * 100);
+            return (
+              <div key={node.name} style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, color: "#4a4038", marginBottom: 2 }}>
+                    <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{node.name}</span>
+                    <span style={{ fontWeight: 600, marginLeft: 4, flexShrink: 0 }}>{node.count}</span>
+                  </div>
+                  <div style={{ height: 4, borderRadius: 2, background: "#E8E6E1", overflow: "hidden" }}>
+                    <div style={{ width: `${pct}%`, height: "100%", borderRadius: 2, background: "#E8853A", transition: "width 0.6s ease" }} />
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function WorkComparisonTable({ data }: { data: WorkMetrics[] }) {
+  if (data.length === 0) {
+    return <p style={{ color: "#a8a39b", fontSize: 13, textAlign: "center", padding: 20 }}>暂无数据</p>;
+  }
+
+  const maxEnters = Math.max(...data.map((d) => d.enters), 1);
+  const maxPV = Math.max(...data.map((d) => d.pv), 1);
+
+  return (
+    <table style={{ width: "100%", borderCollapse: "collapse", fontSize: 12 }}>
+      <thead>
+        <tr style={{ borderBottom: "1px solid #E8E6E1" }}>
+          <th style={{ textAlign: "left", padding: "8px 6px", color: "#a8a39b", fontWeight: 500 }}>作品</th>
+          <th style={{ textAlign: "center", padding: "8px 6px", color: "#a8a39b", fontWeight: 500 }}>进入次数</th>
+          <th style={{ textAlign: "center", padding: "8px 6px", color: "#a8a39b", fontWeight: 500 }}>PV</th>
+          <th style={{ textAlign: "center", padding: "8px 6px", color: "#a8a39b", fontWeight: 500 }}>UV</th>
+          <th style={{ textAlign: "center", padding: "8px 6px", color: "#a8a39b", fontWeight: 500 }}>均长</th>
+          <th style={{ textAlign: "center", padding: "8px 6px", color: "#a8a39b", fontWeight: 500 }}>跳出率</th>
+          <th style={{ textAlign: "left", padding: "8px 6px", color: "#a8a39b", fontWeight: 500 }}>最活跃功能</th>
+        </tr>
+      </thead>
+      <tbody>
+        {data.map((work, idx) => (
+          <tr key={work.name} style={{ borderBottom: "1px solid #F0EDE8" }}>
+            <td style={{ padding: "8px 6px", color: "#4a4038", fontWeight: 600 }}>{work.name}</td>
+            <td style={{ padding: "8px 6px", textAlign: "center" }}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
+                <span style={{ fontWeight: 600, color: "#4a4038" }}>{work.enters}</span>
+                <div style={{ width: 30, height: 3, background: "#E8E6E1", borderRadius: 2, overflow: "hidden" }}>
+                  <div style={{ width: `${(work.enters / maxEnters) * 100}%`, height: "100%", background: "#8D9A8B", borderRadius: 2 }} />
+                </div>
+              </div>
+            </td>
+            <td style={{ padding: "8px 6px", textAlign: "center" }}>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6 }}>
+                <span style={{ fontWeight: 600, color: "#4a4038" }}>{work.pv}</span>
+                <div style={{ width: 30, height: 3, background: "#E8E6E1", borderRadius: 2, overflow: "hidden" }}>
+                  <div style={{ width: `${(work.pv / maxPV) * 100}%`, height: "100%", background: "#7BA89E", borderRadius: 2 }} />
+                </div>
+              </div>
+            </td>
+            <td style={{ padding: "8px 6px", textAlign: "center", color: "#4a4038", fontWeight: 600 }}>{work.uv}</td>
+            <td style={{ padding: "8px 6px", textAlign: "center", color: "#7a7268" }}>{work.avgDuration}s</td>
+            <td style={{ padding: "8px 6px", textAlign: "center" }}>
+              <span style={{
+                color: work.bounceRate > 60 ? "#EF4444" : work.bounceRate > 40 ? "#F59E0B" : "#4CAF50",
+                fontWeight: 600,
+              }}>
+                {work.bounceRate}%
+              </span>
+            </td>
+            <td style={{ padding: "8px 6px", color: "#7a7268" }}>
+              {work.topEvent !== "-" ? `${work.topEvent} (${work.topEventCount})` : "-"}
+            </td>
+          </tr>
+        ))}
+      </tbody>
+    </table>
   );
 }
 

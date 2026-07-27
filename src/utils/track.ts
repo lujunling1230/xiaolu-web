@@ -915,6 +915,233 @@ export function healthScore(events?: TrackEvent[]): {
   return { score: totalScore, label, details };
 }
 
+/* ============================================================
+ * 用户路径分析（简化版 Sankey）
+ * 追踪用户从入口页到各作品的流转路径
+ * ============================================================ */
+
+export interface PathFlowNode {
+  name: string;
+  count: number;
+}
+
+export interface PathFlowLink {
+  source: string;
+  target: string;
+  count: number;
+}
+
+export function userPathFlow(
+  hours?: number,
+  events?: TrackEvent[]
+): { nodes: PathFlowNode[]; links: PathFlowLink[] } {
+  const src = hours ? getEventsLastHours(hours, events) : events || getAllEvents();
+
+  /* 按会话分组，提取每个会话的 page_view 路径序列 */
+  const sessionPaths = new Map<string, string[]>();
+  src
+    .filter((e) => e.name === "page_view")
+    .sort((a, b) => a.ts - b.ts)
+    .forEach((e) => {
+      const paths = sessionPaths.get(e.session) || [];
+      /* 简化路径：只保留页面名，去掉 query string */
+      const simplified = simplifyPath(e.path);
+      if (paths[paths.length - 1] !== simplified) {
+        paths.push(simplified);
+      }
+      sessionPaths.set(e.session, paths);
+    });
+
+  /* 统计节点和连接 */
+  const nodeCounts = new Map<string, number>();
+  const linkCounts = new Map<string, number>();
+
+  sessionPaths.forEach((paths) => {
+    if (paths.length === 0) return;
+    /* 只取前 3 步，避免路径过长 */
+    const steps = paths.slice(0, 3);
+    steps.forEach((p) => {
+      nodeCounts.set(p, (nodeCounts.get(p) || 0) + 1);
+    });
+    for (let i = 0; i < steps.length - 1; i++) {
+      const key = `${steps[i]}|${steps[i + 1]}`;
+      linkCounts.set(key, (linkCounts.get(key) || 0) + 1);
+    }
+  });
+
+  /* 只保留流量 >= 2 的节点和连接 */
+  const nodes = Array.from(nodeCounts.entries())
+    .filter(([, count]) => count >= 1)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 12)
+    .map(([name, count]) => ({ name, count }));
+
+  const nodeSet = new Set(nodes.map((n) => n.name));
+
+  const links = Array.from(linkCounts.entries())
+    .filter(([, count]) => count >= 1)
+    .map(([key, count]) => {
+      const [source, target] = key.split("|");
+      return { source, target, count };
+    })
+    .filter((l) => nodeSet.has(l.source) && nodeSet.has(l.target))
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 20);
+
+  return { nodes, links };
+}
+
+function simplifyPath(path: string): string {
+  const clean = path.split("?")[0];
+  const map: Record<string, string> = {
+    "/": "首页",
+    "/zhiyong": "致用",
+    "/mickey": "作品集",
+    "/toolbox": "工具箱",
+    "/toolbox/healing": "森林疗愈室",
+    "/toolbox/apartment": "爱情公寓",
+    "/toolbox/quests": "通关清单",
+    "/toolbox/inventory": "物资管家",
+    "/toolbox/advice": "解忧杂货店",
+    "/toolbox/travel": "漫游指南",
+    "/toolbox/recharge": "回血清单",
+    "/toolbox/banling": "伴龄",
+    "/toolbox/answer": "系统调频",
+    "/contact": "联系页",
+  };
+  if (map[clean]) return map[clean];
+  /* 前缀匹配 */
+  for (const [prefix, name] of Object.entries(map)) {
+    if (prefix !== "/" && clean.startsWith(prefix + "/")) {
+      return name;
+    }
+  }
+  return clean.replace(/^\//, "") || "首页";
+}
+
+/* ============================================================
+ * 作品对比矩阵
+ * 横向对比各作品的核心指标
+ * ============================================================ */
+
+export interface WorkMetrics {
+  name: string;
+  enters: number;
+  pv: number;
+  uv: number;
+  avgDuration: number;
+  bounceRate: number;
+  topEvent: string;
+  topEventCount: number;
+}
+
+export function workComparisonMatrix(
+  hours?: number,
+  events?: TrackEvent[]
+): WorkMetrics[] {
+  const src = hours ? getEventsLastHours(hours, events) : events || getAllEvents();
+
+  const works = [
+    { name: "森林疗愈室", path: "/toolbox/healing", events: ["healing_breath", "healing_journal", "healing_meditation"] },
+    { name: "爱情公寓", path: "/toolbox/apartment", events: ["apartment_chat", "apartment_post"] },
+    { name: "通关清单", path: "/toolbox/quests", events: ["quest_complete", "quest_level"] },
+    { name: "物资管家", path: "/toolbox/inventory", events: ["iv_item_add", "iv_ai_ask"] },
+    { name: "解忧杂货店", path: "/toolbox/advice", events: ["advice_letter", "advice_reply"] },
+    { name: "漫游指南", path: "/toolbox/travel", events: ["rg_ai_open", "rg_ai_adopt_city", "rg_ai_save_plan"] },
+    { name: "回血清单", path: "/toolbox/recharge", events: ["recharge_action"] },
+    { name: "伴龄", path: "/toolbox/banling", events: ["banling_chat", "banling_report", "banling_action_adopt"] },
+  ];
+
+  return works.map((work) => {
+    /* 该作品的会话 */
+    const workSessions = new Set(
+      src
+        .filter((e) => e.name === "tool_enter" && (e.props?.tool_name as string) === work.name)
+        .map((e) => e.session)
+    );
+
+    /* 该作品的所有事件 */
+    const workEvents = src.filter((e) => workSessions.has(e.session));
+
+    /* 该作品的 page_view */
+    const workPV = workEvents.filter((e) => e.name === "page_view").length;
+
+    /* 该作品的 UV */
+    const workUV = new Set(workEvents.map((e) => e.anon_id)).size;
+
+    /* 平均会话时长 */
+    const sessionMap = new Map<string, { min: number; max: number }>();
+    workEvents.forEach((e) => {
+      const existing = sessionMap.get(e.session);
+      if (!existing) {
+        sessionMap.set(e.session, { min: e.ts, max: e.ts });
+      } else {
+        existing.min = Math.min(existing.min, e.ts);
+        existing.max = Math.max(existing.max, e.ts);
+      }
+    });
+    let totalDur = 0;
+    let validSessions = 0;
+    sessionMap.forEach(({ min, max }) => {
+      const dur = (max - min) / 1000;
+      if (dur <= 1800) {
+        totalDur += dur;
+        validSessions++;
+      }
+    });
+    const avgDur = validSessions > 0 ? Math.round((totalDur / validSessions) * 10) / 10 : 0;
+
+    /* 跳出率（只看了一页的会话） */
+    const pageViewPerSession = new Map<string, number>();
+    workEvents.filter((e) => e.name === "page_view").forEach((e) => {
+      pageViewPerSession.set(e.session, (pageViewPerSession.get(e.session) || 0) + 1);
+    });
+    const bounced = Array.from(pageViewPerSession.values()).filter((c) => c === 1).length;
+    const br = pageViewPerSession.size > 0 ? Math.round((bounced / pageViewPerSession.size) * 1000) / 10 : 0;
+
+    /* 最活跃的事件 */
+    const eventCounts = new Map<string, number>();
+    workEvents.forEach((e) => {
+      if (work.events.includes(e.name)) {
+        eventCounts.set(e.name, (eventCounts.get(e.name) || 0) + 1);
+      }
+    });
+    const topEventEntry = Array.from(eventCounts.entries()).sort((a, b) => b[1] - a[1])[0] || ["-", 0];
+
+    const eventNameMap: Record<string, string> = {
+      healing_breath: "呼吸练习",
+      healing_journal: "感恩日记",
+      healing_meditation: "冥想空间",
+      apartment_chat: "AI 聊天",
+      apartment_post: "发布动态",
+      quest_complete: "完成任务",
+      quest_level: "等级提升",
+      iv_item_add: "物资入库",
+      iv_ai_ask: "问 AI 管家",
+      advice_letter: "写信",
+      advice_reply: "收到回信",
+      rg_ai_open: "AI 向导",
+      rg_ai_adopt_city: "采纳城市",
+      rg_ai_save_plan: "保存攻略",
+      recharge_action: "回血行动",
+      banling_chat: "AI 对话",
+      banling_report: "生成报告",
+      banling_action_adopt: "采纳建议",
+    };
+
+    return {
+      name: work.name,
+      enters: workSessions.size,
+      pv: workPV,
+      uv: workUV,
+      avgDuration: avgDur,
+      bounceRate: br,
+      topEvent: eventNameMap[topEventEntry[0]] || topEventEntry[0],
+      topEventCount: topEventEntry[1],
+    };
+  }).sort((a, b) => b.enters - a.enters);
+}
+
 /** 导出为 CSV */
 export function exportCSV(events?: TrackEvent[]): string {
   const src = events || getAllEvents();

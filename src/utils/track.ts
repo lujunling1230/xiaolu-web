@@ -508,6 +508,413 @@ export async function clearCloudAnalytics(password: string): Promise<boolean> {
   }
 }
 
+/* ============================================================
+ * DAU / MAU 指标
+ * ============================================================ */
+
+/** DAU：今日活跃用户数（今日有 page_view 的独立 anon_id） */
+export function countDAU(events?: TrackEvent[]): number {
+  const src = events || getAllEvents();
+  const todayStart = new Date();
+  todayStart.setHours(0, 0, 0, 0);
+  return new Set(
+    src.filter((e) => e.name === "page_view" && e.ts >= todayStart.getTime()).map((e) => e.anon_id)
+  ).size;
+}
+
+/** MAU：近 30 天活跃用户数 */
+export function countMAU(events?: TrackEvent[]): number {
+  const src = events || getAllEvents();
+  const thirtyDaysAgo = Date.now() - 30 * 24 * 3600_000;
+  return new Set(
+    src.filter((e) => e.name === "page_view" && e.ts >= thirtyDaysAgo).map((e) => e.anon_id)
+  ).size;
+}
+
+/** DAU/MAU 比值（百分比，保留一位小数） */
+export function dauMauRatio(dau: number, mau: number): number {
+  if (mau === 0) return 0;
+  return Math.round((dau / mau) * 1000) / 10;
+}
+
+/* ============================================================
+ * 留存率（次日 + 7 日）
+ * 定义：N 天前首次出现的 anon_id 中，今天有 page_view 的比例
+ * ============================================================ */
+
+/** 获取每个 anon_id 的首次出现日期（YYYY-MM-DD） */
+function getFirstSeenMap(events?: TrackEvent[]): Map<string, string> {
+  const src = events || getAllEvents();
+  const map = new Map<string, string>();
+  src.forEach((e) => {
+    const date = new Date(e.ts).toISOString().slice(0, 10);
+    const existing = map.get(e.anon_id);
+    if (!existing || date < existing) {
+      map.set(e.anon_id, date);
+    }
+  });
+  return map;
+}
+
+/** 留存率：days 天前首次出现的用户中，今天回访的比例 */
+export function retentionRate(days: number, events?: TrackEvent[]): number {
+  const src = events || getAllEvents();
+  const firstSeen = getFirstSeenMap(src);
+  const today = new Date().toISOString().slice(0, 10);
+  const targetDate = new Date();
+  targetDate.setDate(targetDate.getDate() - days);
+  const targetDateStr = targetDate.toISOString().slice(0, 10);
+
+  /* 找到 days 天前首次出现的用户 */
+  const newUsers = Array.from(firstSeen.entries())
+    .filter(([, date]) => date === targetDateStr)
+    .map(([id]) => id);
+
+  if (newUsers.length === 0) return 0;
+
+  /* 今天回访的用户 */
+  const todayUsers = new Set(
+    src
+      .filter((e) => e.name === "page_view" && new Date(e.ts).toISOString().slice(0, 10) === today)
+      .map((e) => e.anon_id)
+  );
+
+  const returned = newUsers.filter((id) => todayUsers.has(id)).length;
+  return Math.round((returned / newUsers.length) * 1000) / 10;
+}
+
+/* ============================================================
+ * 新用户 vs 回访用户分布
+ * ============================================================ */
+
+export function newVsReturning(
+  hours?: number,
+  events?: TrackEvent[]
+): { newUsers: number; returningUsers: number } {
+  const src = hours ? getEventsLastHours(hours, events) : events || getAllEvents();
+  const firstSeen = getFirstSeenMap(events || getAllEvents());
+
+  /* 在时间范围内活跃的独立用户 */
+  const activeUsers = new Set(src.filter((e) => e.name === "page_view").map((e) => e.anon_id));
+
+  let newUsers = 0;
+  let returningUsers = 0;
+
+  const rangeStart = hours ? Date.now() - hours * 3600_000 : 0;
+
+  activeUsers.forEach((id) => {
+    const firstDate = firstSeen.get(id);
+    if (!firstDate) return;
+    const firstTs = new Date(firstDate).getTime();
+    /* 如果首次出现时间在当前统计范围内，视为新用户 */
+    if (firstTs >= rangeStart) {
+      newUsers++;
+    } else {
+      returningUsers++;
+    }
+  });
+
+  return { newUsers, returningUsers };
+}
+
+/* ============================================================
+ * 平均会话时长（秒）
+ * ============================================================ */
+
+export function avgSessionDuration(hours?: number, events?: TrackEvent[]): number {
+  const src = hours ? getEventsLastHours(hours, events) : events || getAllEvents();
+  const sessionMap = new Map<string, { min: number; max: number }>();
+
+  src.forEach((e) => {
+    const existing = sessionMap.get(e.session);
+    if (!existing) {
+      sessionMap.set(e.session, { min: e.ts, max: e.ts });
+    } else {
+      existing.min = Math.min(existing.min, e.ts);
+      existing.max = Math.max(existing.max, e.ts);
+    }
+  });
+
+  if (sessionMap.size === 0) return 0;
+
+  let totalDuration = 0;
+  let validSessions = 0;
+
+  sessionMap.forEach(({ min, max }) => {
+    const duration = (max - min) / 1000;
+    /* 过滤异常值：超过 30 分钟视为异常 */
+    if (duration <= 1800) {
+      totalDuration += duration;
+      validSessions++;
+    }
+  });
+
+  if (validSessions === 0) return 0;
+  return Math.round((totalDuration / validSessions) * 10) / 10;
+}
+
+/* ============================================================
+ * 访问模式分布（full / solo）
+ * ============================================================ */
+
+export function modeDistribution(
+  hours?: number,
+  events?: TrackEvent[]
+): { full: number; solo: number; fullPct: number; soloPct: number } {
+  const src = hours ? getEventsLastHours(hours, events) : events || getAllEvents();
+  let full = 0;
+  let solo = 0;
+
+  src
+    .filter((e) => e.name === "page_view")
+    .forEach((e) => {
+      if (e.mode === "solo") solo++;
+      else full++;
+    });
+
+  const total = full + solo;
+  if (total === 0) return { full: 0, solo: 0, fullPct: 0, soloPct: 0 };
+
+  return {
+    full,
+    solo,
+    fullPct: Math.round((full / total) * 1000) / 10,
+    soloPct: Math.round((solo / total) * 1000) / 10,
+  };
+}
+
+/* ============================================================
+ * 周对比（本周 vs 上周）
+ * ============================================================ */
+
+export function weekOverWeek(events?: TrackEvent[]): {
+  thisWeek: { pv: number; uv: number; events: number; avgDuration: number };
+  lastWeek: { pv: number; uv: number; events: number; avgDuration: number };
+  changes: { pv: number; uv: number; events: number; avgDuration: number };
+} {
+  const src = events || getAllEvents();
+  const now = new Date();
+
+  /* 本周：今天往前 7 天 */
+  const thisWeekStart = new Date(now);
+  thisWeekStart.setDate(thisWeekStart.getDate() - 7);
+  const thisWeekStartTs = thisWeekStart.getTime();
+
+  /* 上周：今天往前 14 天到 7 天前 */
+  const lastWeekStart = new Date(now);
+  lastWeekStart.setDate(lastWeekStart.getDate() - 14);
+  const lastWeekStartTs = lastWeekStart.getTime();
+
+  const thisWeekEvents = src.filter((e) => e.ts >= thisWeekStartTs);
+  const lastWeekEvents = src.filter((e) => e.ts >= lastWeekStartTs && e.ts < thisWeekStartTs);
+
+  const thisWeekPV = thisWeekEvents.filter((e) => e.name === "page_view").length;
+  const lastWeekPV = lastWeekEvents.filter((e) => e.name === "page_view").length;
+
+  const thisWeekUV = new Set(thisWeekEvents.map((e) => e.anon_id)).size;
+  const lastWeekUV = new Set(lastWeekEvents.map((e) => e.anon_id)).size;
+
+  const thisWeekDuration = avgSessionDuration(undefined, thisWeekEvents);
+  const lastWeekDuration = avgSessionDuration(undefined, lastWeekEvents);
+
+  const calcChange = (curr: number, prev: number) => {
+    if (prev === 0) return curr > 0 ? 100 : 0;
+    return Math.round(((curr - prev) / prev) * 1000) / 10;
+  };
+
+  return {
+    thisWeek: {
+      pv: thisWeekPV,
+      uv: thisWeekUV,
+      events: thisWeekEvents.length,
+      avgDuration: thisWeekDuration,
+    },
+    lastWeek: {
+      pv: lastWeekPV,
+      uv: lastWeekUV,
+      events: lastWeekEvents.length,
+      avgDuration: lastWeekDuration,
+    },
+    changes: {
+      pv: calcChange(thisWeekPV, lastWeekPV),
+      uv: calcChange(thisWeekUV, lastWeekUV),
+      events: calcChange(thisWeekEvents.length, lastWeekEvents.length),
+      avgDuration: calcChange(thisWeekDuration, lastWeekDuration),
+    },
+  };
+}
+
+/* ============================================================
+ * 异常检测
+ * ============================================================ */
+
+export interface AnomalyAlert {
+  type: "warning" | "danger" | "info";
+  metric: string;
+  value: number;
+  threshold: number;
+  message: string;
+}
+
+export function detectAnomalies(events?: TrackEvent[]): AnomalyAlert[] {
+  const src = events || getAllEvents();
+  const alerts: AnomalyAlert[] = [];
+
+  /* 跳出率检测 */
+  const br = bounceRate(undefined, src);
+  if (br > 80) {
+    alerts.push({
+      type: "danger",
+      metric: "跳出率",
+      value: br,
+      threshold: 80,
+      message: `跳出率高达 ${br}%，用户几乎只看一页就离开，需优化首屏内容`,
+    });
+  } else if (br > 60) {
+    alerts.push({
+      type: "warning",
+      metric: "跳出率",
+      value: br,
+      threshold: 60,
+      message: `跳出率 ${br}%，略高于健康水平`,
+    });
+  }
+
+  /* 人均浏览页数检测 */
+  const ppv = pagesPerVisitor(undefined, src);
+  if (ppv < 1.2) {
+    alerts.push({
+      type: "warning",
+      metric: "人均浏览",
+      value: ppv,
+      threshold: 1.2,
+      message: `人均浏览仅 ${ppv} 页，用户探索深度不足`,
+    });
+  }
+
+  /* 今日 PV 检测 */
+  const tpv = countTodayPV(src);
+  if (tpv === 0) {
+    alerts.push({
+      type: "danger",
+      metric: "今日 PV",
+      value: 0,
+      threshold: 1,
+      message: "今日暂无访问，请检查网站是否正常",
+    });
+  }
+
+  /* 平均会话时长检测 */
+  const duration = avgSessionDuration(undefined, src);
+  if (duration < 15) {
+    alerts.push({
+      type: "warning",
+      metric: "平均会话时长",
+      value: duration,
+      threshold: 15,
+      message: `平均会话时长仅 ${duration} 秒，用户停留时间过短`,
+    });
+  }
+
+  /* UV 骤降检测（对比昨日） */
+  const todayStart = new Date();
+  todayStart.setHours(0, 0, 0, 0);
+  const yesterdayStart = new Date(todayStart);
+  yesterdayStart.setDate(yesterdayStart.getDate() - 1);
+
+  const todayUV = new Set(
+    src.filter((e) => e.ts >= todayStart.getTime()).map((e) => e.anon_id)
+  ).size;
+  const yesterdayUV = new Set(
+    src
+      .filter((e) => e.ts >= yesterdayStart.getTime() && e.ts < todayStart.getTime())
+      .map((e) => e.anon_id)
+  ).size;
+
+  if (yesterdayUV > 5 && todayUV < yesterdayUV * 0.5) {
+    alerts.push({
+      type: "danger",
+      metric: "UV 骤降",
+      value: todayUV,
+      threshold: yesterdayUV * 0.5,
+      message: `今日 UV（${todayUV}）较昨日（${yesterdayUV}）骤降超过 50%`,
+    });
+  }
+
+  return alerts;
+}
+
+/* ============================================================
+ * 指标健康评分（0-100）
+ * ============================================================ */
+
+export function healthScore(events?: TrackEvent[]): {
+  score: number;
+  label: string;
+  details: { metric: string; score: number; status: "good" | "fair" | "poor" }[];
+} {
+  const src = events || getAllEvents();
+  const details: { metric: string; score: number; status: "good" | "fair" | "poor" }[] = [];
+
+  /* 跳出率评分（越低越好） */
+  const br = bounceRate(undefined, src);
+  let brScore = 100;
+  if (br > 80) brScore = 30;
+  else if (br > 60) brScore = 60;
+  else if (br > 40) brScore = 80;
+  details.push({
+    metric: "跳出率",
+    score: brScore,
+    status: brScore >= 80 ? "good" : brScore >= 50 ? "fair" : "poor",
+  });
+
+  /* 人均浏览评分 */
+  const ppv = pagesPerVisitor(undefined, src);
+  let ppvScore = 100;
+  if (ppv < 1.2) ppvScore = 30;
+  else if (ppv < 2) ppvScore = 60;
+  else if (ppv < 3) ppvScore = 80;
+  details.push({
+    metric: "人均浏览",
+    score: ppvScore,
+    status: ppvScore >= 80 ? "good" : ppvScore >= 50 ? "fair" : "poor",
+  });
+
+  /* 会话时长评分 */
+  const duration = avgSessionDuration(undefined, src);
+  let durScore = 100;
+  if (duration < 15) durScore = 30;
+  else if (duration < 30) durScore = 60;
+  else if (duration < 60) durScore = 80;
+  details.push({
+    metric: "会话时长",
+    score: durScore,
+    status: durScore >= 80 ? "good" : durScore >= 50 ? "fair" : "poor",
+  });
+
+  /* DAU/MAU 活跃度评分 */
+  const dau = countDAU(src);
+  const mau = countMAU(src);
+  const ratio = dauMauRatio(dau, mau);
+  let ratioScore = 100;
+  if (ratio < 5) ratioScore = 30;
+  else if (ratio < 10) ratioScore = 60;
+  else if (ratio < 20) ratioScore = 80;
+  details.push({
+    metric: "DAU/MAU",
+    score: ratioScore,
+    status: ratioScore >= 80 ? "good" : ratioScore >= 50 ? "fair" : "poor",
+  });
+
+  const totalScore = Math.round(details.reduce((sum, d) => sum + d.score, 0) / details.length);
+
+  let label = "健康";
+  if (totalScore < 50) label = "需关注";
+  else if (totalScore < 70) label = "一般";
+
+  return { score: totalScore, label, details };
+}
+
 /** 导出为 CSV */
 export function exportCSV(events?: TrackEvent[]): string {
   const src = events || getAllEvents();

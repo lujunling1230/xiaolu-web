@@ -19,6 +19,16 @@ import {
   clearAnalytics,
   fetchCloudEvents,
   clearCloudAnalytics,
+  countDAU,
+  countMAU,
+  dauMauRatio,
+  retentionRate,
+  newVsReturning,
+  avgSessionDuration,
+  modeDistribution,
+  weekOverWeek,
+  detectAnomalies,
+  healthScore,
 } from "../utils/track";
 
 /* ============================================================
@@ -193,6 +203,18 @@ export default function AnalyticsDashboard() {
         hours,
         events
       ),
+      /* === 新增指标 === */
+      dau: countDAU(allEvents),
+      mau: countMAU(allEvents),
+      dauMauRatio: dauMauRatio(countDAU(allEvents), countMAU(allEvents)),
+      retention1d: retentionRate(1, allEvents),
+      retention7d: retentionRate(7, allEvents),
+      newVsReturning: newVsReturning(hours, events),
+      avgDuration: avgSessionDuration(hours, events),
+      modeDist: modeDistribution(hours, events),
+      weekCompare: weekOverWeek(allEvents),
+      anomalies: detectAnomalies(allEvents),
+      health: healthScore(allEvents),
     };
   }, [hours, events, allEvents]);
 
@@ -315,7 +337,55 @@ export default function AnalyticsDashboard() {
         </div>
       </div>
 
+      {/* 异常告警横幅 */}
+      {stats.anomalies.length > 0 && (
+        <div style={{ marginBottom: 16 }}>
+          {stats.anomalies.map((alert, idx) => (
+            <div
+              key={idx}
+              style={{
+                background: alert.type === "danger" ? "#FDF2F2" : alert.type === "warning" ? "#FFF8ED" : "#EFF6FF",
+                border: `1px solid ${alert.type === "danger" ? "#FECACA" : alert.type === "warning" ? "#FDE68A" : "#BFDBFE"}`,
+                borderRadius: 10,
+                padding: "10px 14px",
+                marginBottom: 8,
+                display: "flex",
+                alignItems: "center",
+                gap: 8,
+              }}
+            >
+              <span
+                style={{
+                  width: 8,
+                  height: 8,
+                  borderRadius: "50%",
+                  background: alert.type === "danger" ? "#EF4444" : alert.type === "warning" ? "#F59E0B" : "#3B82F6",
+                  flexShrink: 0,
+                }}
+              />
+              <span style={{ fontSize: 12, color: "#4a4038", flex: 1 }}>{alert.message}</span>
+            </div>
+          ))}
+        </div>
+      )}
+
       {/* 流量概览卡片 - 5 格 */}
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(5, 1fr)",
+          gap: 14,
+          marginBottom: 14,
+        }}
+      >
+        <StatCard label="PV (浏览量)" value={stats.pv} sub={"累计 " + stats.totalAllTime + " 事件"} color="#8D9A8B" />
+        <StatCard label="UV (访客数)" value={stats.uv} color="#E8853A" />
+        <StatCard label="今日 PV" value={stats.todayPV} color="#7BA89E" />
+        <StatCard label="人均浏览" value={stats.pagesPerVisitor} sub="页/人" color="#C06A2E" />
+        <StatCard label="跳出率" value={stats.bounceRate} sub="%" color="#b06a6a" />
+      </div>
+
+      {/* 新增指标：DAU/MAU + 留存 + 会话时长 + 访问模式 */}
       <div
         style={{
           display: "grid",
@@ -324,11 +394,11 @@ export default function AnalyticsDashboard() {
           marginBottom: 20,
         }}
       >
-        <StatCard label="PV (浏览量)" value={stats.pv} sub={"累计 " + stats.totalAllTime + " 事件"} color="#8D9A8B" />
-        <StatCard label="UV (访客数)" value={stats.uv} color="#E8853A" />
-        <StatCard label="今日 PV" value={stats.todayPV} color="#7BA89E" />
-        <StatCard label="人均浏览" value={stats.pagesPerVisitor} sub="页/人" color="#C06A2E" />
-        <StatCard label="跳出率" value={stats.bounceRate} sub="%" color="#b06a6a" />
+        <StatCard label="DAU / MAU" value={stats.dau} sub={`MAU ${stats.mau} · 比值 ${stats.dauMauRatio}%`} color="#4d8a82" />
+        <StatCard label="次日留存" value={stats.retention1d} sub="%" color="#7BA89E" />
+        <StatCard label="7 日留存" value={stats.retention7d} sub="%" color="#8a5f8a" />
+        <StatCard label="平均会话时长" value={stats.avgDuration} sub="秒" color="#a8814a" />
+        <StatCard label="访问模式" value={stats.modeDist.full} sub={`Full ${stats.modeDist.fullPct}% · Solo ${stats.modeDist.soloPct}%`} color="#5d7a8a" />
       </div>
 
       {/* 作品活跃度矩阵 */}
@@ -639,6 +709,147 @@ export default function AnalyticsDashboard() {
         <TrendChart data={stats.trend} />
       </div>
 
+      {/* 本周 vs 上周 + 健康评分 + 新用户分布 三栏 */}
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "1fr 1fr 1fr",
+          gap: 16,
+          marginBottom: 24,
+        }}
+      >
+        {/* 周对比 */}
+        <div style={{ background: "#FAF9F6", borderRadius: 14, padding: 20, border: "1px solid #E8E6E1" }}>
+          <h3 style={{ margin: "0 0 16px", fontSize: 14, fontWeight: 600, color: "#4a4038" }}>
+            本周 vs 上周
+          </h3>
+          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+            <WoWRow label="PV" current={stats.weekCompare.thisWeek.pv} prev={stats.weekCompare.lastWeek.pv} change={stats.weekCompare.changes.pv} />
+            <WoWRow label="UV" current={stats.weekCompare.thisWeek.uv} prev={stats.weekCompare.lastWeek.uv} change={stats.weekCompare.changes.uv} />
+            <WoWRow label="事件数" current={stats.weekCompare.thisWeek.events} prev={stats.weekCompare.lastWeek.events} change={stats.weekCompare.changes.events} />
+            <WoWRow label="会话时长" current={stats.weekCompare.thisWeek.avgDuration} prev={stats.weekCompare.lastWeek.avgDuration} change={stats.weekCompare.changes.avgDuration} unit="s" />
+          </div>
+        </div>
+
+        {/* 健康评分 */}
+        <div style={{ background: "#FAF9F6", borderRadius: 14, padding: 20, border: "1px solid #E8E6E1" }}>
+          <h3 style={{ margin: "0 0 16px", fontSize: 14, fontWeight: 600, color: "#4a4038" }}>
+            数据健康评分
+          </h3>
+          <div style={{ display: "flex", alignItems: "center", gap: 16, marginBottom: 16 }}>
+            <div
+              style={{
+                width: 64,
+                height: 64,
+                borderRadius: "50%",
+                background:
+                  stats.health.score >= 80
+                    ? "#E8F5E9"
+                    : stats.health.score >= 50
+                      ? "#FFF8ED"
+                      : "#FDF2F2",
+                border: `3px solid ${
+                  stats.health.score >= 80 ? "#4CAF50" : stats.health.score >= 50 ? "#F59E0B" : "#EF4444"
+                }`,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                fontSize: 22,
+                fontWeight: 700,
+                color:
+                  stats.health.score >= 80
+                    ? "#4CAF50"
+                    : stats.health.score >= 50
+                      ? "#F59E0B"
+                      : "#EF4444",
+                flexShrink: 0,
+              }}
+            >
+              {stats.health.score}
+            </div>
+            <div>
+              <div style={{ fontSize: 16, fontWeight: 600, color: "#4a4038" }}>{stats.health.label}</div>
+              <div style={{ fontSize: 11, color: "#a8a39b", marginTop: 2 }}>综合四项核心指标</div>
+            </div>
+          </div>
+          <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+            {stats.health.details.map((d) => (
+              <div key={d.metric} style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <span
+                  style={{
+                    width: 6,
+                    height: 6,
+                    borderRadius: "50%",
+                    background: d.status === "good" ? "#4CAF50" : d.status === "fair" ? "#F59E0B" : "#EF4444",
+                    flexShrink: 0,
+                  }}
+                />
+                <span style={{ fontSize: 12, color: "#4a4038", flex: 1 }}>{d.metric}</span>
+                <span
+                  style={{
+                    fontSize: 12,
+                    fontWeight: 600,
+                    color:
+                      d.status === "good" ? "#4CAF50" : d.status === "fair" ? "#F59E0B" : "#EF4444",
+                  }}
+                >
+                  {d.score}分
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* 新用户 vs 回访用户 */}
+        <div style={{ background: "#FAF9F6", borderRadius: 14, padding: 20, border: "1px solid #E8E6E1" }}>
+          <h3 style={{ margin: "0 0 16px", fontSize: 14, fontWeight: 600, color: "#4a4038" }}>
+            用户构成
+          </h3>
+          <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+            <div>
+              <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, color: "#4a4038", marginBottom: 4 }}>
+                <span>新用户</span>
+                <span style={{ fontWeight: 600 }}>{stats.newVsReturning.newUsers}</span>
+              </div>
+              <div style={{ height: 8, borderRadius: 4, background: "#E8E6E1", overflow: "hidden" }}>
+                <motion.div
+                  initial={{ width: 0 }}
+                  animate={{
+                    width: `${stats.newVsReturning.newUsers + stats.newVsReturning.returningUsers > 0 ? (stats.newVsReturning.newUsers / (stats.newVsReturning.newUsers + stats.newVsReturning.returningUsers)) * 100 : 0}%`,
+                  }}
+                  transition={{ duration: 0.6, ease: "easeOut" }}
+                  style={{ height: "100%", borderRadius: 4, background: "#7BA89E" }}
+                />
+              </div>
+            </div>
+            <div>
+              <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, color: "#4a4038", marginBottom: 4 }}>
+                <span>回访用户</span>
+                <span style={{ fontWeight: 600 }}>{stats.newVsReturning.returningUsers}</span>
+              </div>
+              <div style={{ height: 8, borderRadius: 4, background: "#E8E6E1", overflow: "hidden" }}>
+                <motion.div
+                  initial={{ width: 0 }}
+                  animate={{
+                    width: `${stats.newVsReturning.newUsers + stats.newVsReturning.returningUsers > 0 ? (stats.newVsReturning.returningUsers / (stats.newVsReturning.newUsers + stats.newVsReturning.returningUsers)) * 100 : 0}%`,
+                  }}
+                  transition={{ duration: 0.6, ease: "easeOut", delay: 0.1 }}
+                  style={{ height: "100%", borderRadius: 4, background: "#E8853A" }}
+                />
+              </div>
+            </div>
+            <div style={{ marginTop: 4, paddingTop: 10, borderTop: "1px solid #E8E6E1" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, color: "#a8a39b" }}>
+                <span>总计活跃用户</span>
+                <span style={{ fontWeight: 600, color: "#4a4038" }}>
+                  {stats.newVsReturning.newUsers + stats.newVsReturning.returningUsers}
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
       {/* 底部操作 */}
       <div style={{ display: "flex", gap: 12, justifyContent: "flex-end", flexWrap: "wrap" }}>
         <button
@@ -839,6 +1050,47 @@ function formatPagePath(rawPath: string): string {
   }
   /* 兜底显示路径 */
   return path.replace(/^\//, "") || "/";
+}
+
+function WoWRow({
+  label,
+  current,
+  prev,
+  change,
+  unit,
+}: {
+  label: string;
+  current: number;
+  prev: number;
+  change: number;
+  unit?: string;
+}) {
+  const isUp = change > 0;
+  const isDown = change < 0;
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+      <span style={{ fontSize: 12, color: "#a8a39b", width: 60, flexShrink: 0 }}>{label}</span>
+      <span style={{ fontSize: 14, fontWeight: 600, color: "#4a4038", flex: 1 }}>
+        {current}
+        {unit ? unit : ""}
+      </span>
+      <span style={{ fontSize: 11, color: "#a8a39b" }}>上周 {prev}</span>
+      <span
+        style={{
+          fontSize: 11,
+          fontWeight: 600,
+          color: isUp ? "#4CAF50" : isDown ? "#EF4444" : "#a8a39b",
+          background: isUp ? "#E8F5E9" : isDown ? "#FDF2F2" : "#F5F5F5",
+          padding: "2px 8px",
+          borderRadius: 999,
+          whiteSpace: "nowrap",
+        }}
+      >
+        {isUp ? "+" : ""}
+        {change}%
+      </span>
+    </div>
+  );
 }
 
 function TrendChart({ data }: { data: { date: string; count: number }[] }) {

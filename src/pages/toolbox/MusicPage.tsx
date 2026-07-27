@@ -1,6 +1,7 @@
 import { useState, useCallback, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useSearchParams, Link } from "react-router-dom";
+import { useSolo } from "../../context/StandaloneContext";
 
 /**
  * 枯木生歌 · 音乐/播客收藏馆
@@ -123,6 +124,7 @@ const NoteIcon = () => (
 
 const MusicPage: React.FC = () => {
   useEffect(() => { document.title = "时代回响"; }, []);
+  const { isSolo } = useSolo();
   const [searchParams] = useSearchParams();
   const isFromFull = searchParams.get("from") === "full";
   const backPath = isFromFull ? "/life?from=full" : "/mickey";
@@ -165,7 +167,7 @@ const MusicPage: React.FC = () => {
 
       {/* 顶部返回条 */}
       <header className="mp-topbar">
-        <Link to={backPath} className="mp-back">← 回到作品集</Link>
+        {!isSolo && <Link to={backPath} className="mp-back">← 回到作品集</Link>}
         <span className="mp-topbar-meta">Withered Wood Sings</span>
       </header>
 

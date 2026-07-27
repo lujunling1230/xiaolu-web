@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Link } from "react-router-dom";
+import { useSolo } from "../../context/StandaloneContext";
 
 /**
  * 漫游指南 · Travel Log
@@ -454,6 +455,7 @@ const BLANK_CITY = (): City => ({
    ============================================================ */
 const TravelPage: React.FC = () => {
   useEffect(() => { document.title = "漫游指南"; }, []);
+  const { isSolo } = useSolo();
   const [cities, setCities] = useState<City[]>(loadCities);
   const [hovered, setHovered] = useState<ProvinceArea | null>(null);
   const [tooltipPos, setTooltipPos] = useState({ x: 0, y: 0 });
@@ -687,9 +689,11 @@ const TravelPage: React.FC = () => {
         <div className="travel-dust" />
         <div className="travel-dust" />
         <div className="travel-dust" />
-        <Link to="/mickey" className="travel-back">
-          ← 返回作品集
-        </Link>
+        {!isSolo && (
+          <Link to="/mickey" className="travel-back">
+            ← 返回作品集
+          </Link>
+        )}
         <div className="travel-hero-content">
           <h1 className="travel-hero-title">漫游指南</h1>
           <div className="travel-hero-ornament" />

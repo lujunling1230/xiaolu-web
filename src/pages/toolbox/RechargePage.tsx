@@ -8,6 +8,7 @@ import {
   type Badge,
   type MoodType,
   type CompletionRecord,
+  type EnergyTag,
   TAGGED_NODES,
   TAG_MAP,
   getRecommendations,
@@ -21,6 +22,14 @@ import {
   extractPreferenceKeywords,
 } from "./rechargeTags";
 import { useSolo } from "../../context/StandaloneContext";
+import {
+  getPoints,
+  getCheckinData,
+  hasCheckedInToday,
+  doCheckin,
+  addTaskCompletePoints,
+  getTodayStr,
+} from "./rechargePoints";
 
 /**
  * 回血清单 · 微型能量站
@@ -1162,6 +1171,12 @@ const MePage: React.FC = () => {
   const [feedbackSending, setFeedbackSending] = useState(false);
   const [feedbackStatus, setFeedbackStatus] = useState<"" | "sent" | "error">("");
 
+  // 积分系统
+  const [points, setPoints] = useState(() => getPoints());
+  const [checkinData, setCheckinData] = useState(() => getCheckinData());
+  const [checkedInToday, setCheckedInToday] = useState(() => hasCheckedInToday());
+  const [checkinAnim, setCheckinAnim] = useState(false);
+
   const userData = useMemo(() => {
     const history = loadHistory();
     const totalCount = history.length;
@@ -1196,11 +1211,14 @@ const MePage: React.FC = () => {
   }, []);
 
   const handleReset = useCallback(() => {
-    if (window.confirm("确定要重置所有数据吗？这将清除所有打卡记录和历史数据，无法恢复。")) {
+    if (window.confirm("确定要重置所有数据吗？这将清除所有打卡记录、历史数据和积分，无法恢复。")) {
       localStorage.removeItem("recharge_count_ts");
       localStorage.removeItem(DONE_KEY);
       localStorage.removeItem("recharge_history");
       localStorage.removeItem("recharge_user_state");
+      localStorage.removeItem("recharge_points");
+      localStorage.removeItem("recharge_points_history");
+      localStorage.removeItem("recharge_checkin");
       window.location.reload();
     }
   }, []);
@@ -1232,6 +1250,47 @@ const MePage: React.FC = () => {
             <span className="me-user-stat-label">今日</span>
           </div>
         </div>
+
+        {/* 积分与签到 */}
+        <div className="me-points-card">
+          <div className="me-points-info">
+            <span className="me-points-icon">⭐</span>
+            <div className="me-points-text">
+              <span className="me-points-value">{points}</span>
+              <span className="me-points-label">积分</span>
+            </div>
+          </div>
+          <button
+            className={`me-checkin-btn ${checkedInToday ? "done" : ""} ${checkinAnim ? "anim" : ""}`}
+            onClick={() => {
+              if (checkedInToday) return;
+              const result = doCheckin();
+              if (result.success) {
+                setPoints(result.totalPoints);
+                setCheckinData({ lastDate: getTodayStr(), streak: result.streak });
+                setCheckedInToday(true);
+                setCheckinAnim(true);
+                setTimeout(() => setCheckinAnim(false), 600);
+              }
+            }}
+            disabled={checkedInToday}
+          >
+            {checkedInToday ? (
+              <>✓ 已签到</>
+            ) : (
+              <>+5 签到</>
+            )}
+          </button>
+        </div>
+
+        {/* 连续签到提示 */}
+        {checkinData.streak > 0 && (
+          <p className="me-checkin-streak">
+            {checkedInToday ? "🎉" : "🔥"} 已连续签到 {checkinData.streak} 天
+            {checkinData.streak >= 7 && checkinData.streak < 30 && " · 再坚持 " + (30 - checkinData.streak) + " 天获得大额奖励"}
+            {checkinData.streak >= 30 && " · 签到达人！"}
+          </p>
+        )}
       </div>
 
       {/* 回血偏好 */}
@@ -1551,6 +1610,9 @@ const RechargePage: React.FC = () => {
       const next = new Set(prev);
       next.add(id);
       saveCompletion(id);
+      // 完成任务获得积分
+      const node = nodes.find(n => n.id === id);
+      if (node) addTaskCompletePoints(node.text);
       try {
         localStorage.setItem(DONE_KEY, JSON.stringify([...next]));
       } catch { /* ignore */ }
@@ -2472,6 +2534,56 @@ const RechargePage: React.FC = () => {
         }
         .me-user-stat-label {
           font-size: 9px; color: rgba(255,255,255,0.6); letter-spacing: 0.04em;
+        }
+
+        /* 积分卡片 */
+        .me-points-card {
+          display: flex; align-items: center; justify-content: space-between;
+          width: 100%; padding: 14px 18px; border-radius: 14px; margin-top: 8px;
+          background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.15);
+        }
+        .me-points-info {
+          display: flex; align-items: center; gap: 10px;
+        }
+        .me-points-icon { font-size: 22px; }
+        .me-points-text {
+          display: flex; align-items: baseline; gap: 4px;
+        }
+        .me-points-value {
+          font-family: "Noto Serif SC", Georgia, serif;
+          font-size: 20px; font-weight: 700; color: #FFD93D;
+        }
+        .me-points-label {
+          font-size: 11px; color: rgba(255,255,255,0.6); letter-spacing: 0.04em;
+        }
+        .me-checkin-btn {
+          padding: 8px 16px; border-radius: 20px; border: none;
+          font-family: "Noto Sans SC", system-ui, sans-serif;
+          font-size: 13px; font-weight: 600; color: #3a3356;
+          background: linear-gradient(135deg, #FFD93D, #FFC107);
+          cursor: pointer; transition: all 0.3s ease;
+          letter-spacing: 0.04em; box-shadow: 0 2px 8px rgba(255,217,61,0.3);
+        }
+        .me-checkin-btn:hover:not(:disabled) {
+          transform: translateY(-1px);
+          box-shadow: 0 4px 14px rgba(255,217,61,0.45);
+        }
+        .me-checkin-btn:disabled {
+          background: rgba(255,255,255,0.15); color: rgba(255,255,255,0.5);
+          cursor: default; box-shadow: none;
+        }
+        .me-checkin-btn.anim {
+          animation: checkinPulse 0.6s ease;
+        }
+        @keyframes checkinPulse {
+          0% { transform: scale(1); }
+          40% { transform: scale(1.1); }
+          60% { transform: scale(0.95); }
+          100% { transform: scale(1); }
+        }
+        .me-checkin-streak {
+          font-size: 11px; color: rgba(255,255,255,0.55); margin: 8px 0 0;
+          letter-spacing: 0.03em; text-align: center;
         }
 
         .me-section { margin-bottom: 24px; }

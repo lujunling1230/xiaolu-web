@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Link } from "react-router-dom";
+import { useSolo } from "../../context/StandaloneContext";
 import Match3Game from "./games/Match3Game";
 import FruitSliceGame from "./games/FruitSliceGame";
 import ZombieJuiceGame from "./games/ZombieJuiceGame";
@@ -80,6 +81,7 @@ const GAMES: {
 
 const StressReliefPage: React.FC = () => {
   useEffect(() => { document.title = "解压馆"; }, []);
+  const { isSolo } = useSolo();
   const [active, setActive] = useState<GameKey | null>(null);
 
   // 游戏进度数据
@@ -137,9 +139,11 @@ const StressReliefPage: React.FC = () => {
     <div className="sr-page">
       {/* 顶部返回 */}
       <header className="sr-topbar">
-        <Link to="/mickey" className="sr-back">
-          ← 回到作品集
-        </Link>
+        {!isSolo && (
+          <Link to="/mickey" className="sr-back">
+            ← 回到作品集
+          </Link>
+        )}
         <span className="sr-topbar-meta">Stress Relief Room</span>
       </header>
 

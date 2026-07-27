@@ -429,6 +429,7 @@ export default function BanlingPage() {
   const [viewingReport, setViewingReport] = useState<SavedReport | null>(null);
   const [adoptedActions, setAdoptedActions] = useState<boolean[]>([]);
   const [showNotice, setShowNotice] = useState(false);
+  const [showAboutModal, setShowAboutModal] = useState(false);
   const [showCityPicker, setShowCityPicker] = useState(false);
   const [location, setLocation] = useState("上海市");
   const [weather, setWeather] = useState("default");
@@ -857,6 +858,13 @@ ${messages.map((m) => `${m.role === "user" ? "用户" : "伴龄"}: ${m.content}`
               </svg>
               <span className="bl-notice-dot" />
             </button>
+            <button
+              className="bl-about-btn"
+              onClick={() => setShowAboutModal(true)}
+              aria-label="关于伴龄"
+            >
+              ?
+            </button>
           </div>
 
           {/* 城市选择面板 */}
@@ -921,6 +929,54 @@ ${messages.map((m) => `${m.role === "user" ? "用户" : "伴龄"}: ${m.content}`
                   <div className="bl-notice-step"><span className="bl-ns-num">04</span> 长期陪伴</div>
                 </div>
               </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* 关于弹窗（点击右上角问号，复刻爱情公寓同款居中模态框形式） */}
+        <AnimatePresence>
+          {showAboutModal && (
+            <motion.div
+              className="bl-modal-overlay"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.2 }}
+              onClick={() => setShowAboutModal(false)}
+            >
+              <motion.div
+                className="bl-modal bl-modal-about"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: 10 }}
+                transition={{ duration: 0.3 }}
+                onClick={(e) => e.stopPropagation()}
+              >
+                <h2 className="bl-modal-title">🍵 致每一位长辈</h2>
+                <div className="bl-modal-body">
+                  <p>岁月渐长，养老的顾虑悄悄爬上心头。</p>
+                  <p>数字看不懂，规划无从下手，儿女又忙——</p>
+                  <p>这份说不出口的忐忑，我们都懂。</p>
+                  <br />
+                  <p>所以，我们做了一位贴心的伴龄助手。</p>
+                  <p>这里没有冰冷的数据表格，</p>
+                  <p>只有温暖的对话，一步步陪您理清未来。</p>
+                  <br />
+                  <p className="bl-modal-highlight">
+                    您不必独自焦虑，<br />
+                    伴龄始终陪在您身边。
+                  </p>
+                  <br />
+                  <p>想问就问，想聊就聊。</p>
+                  <p>这份养老规划，我们一起慢慢来。</p>
+                </div>
+                <button
+                  className="bl-modal-btn bl-modal-about-btn"
+                  onClick={() => setShowAboutModal(false)}
+                >
+                  开始陪伴
+                </button>
+              </motion.div>
             </motion.div>
           )}
         </AnimatePresence>
@@ -1780,6 +1836,32 @@ function BanlingStyles() {
         border: 2px solid var(--card);
       }
 
+      /* 问号按钮（关于伴龄） */
+      .bl-about-btn {
+        width: 22px;
+        height: 22px;
+        margin-left: 6px;
+        border-radius: 50%;
+        font-size: 13px;
+        color: var(--text);
+        background: none;
+        border: 1px solid rgba(90,74,58,0.25);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        font-weight: 500;
+        line-height: 1;
+        padding: 0;
+        flex-shrink: 0;
+        transition: color 0.2s ease, border-color 0.2s ease, background 0.2s ease;
+      }
+      .bl-about-btn:hover {
+        color: var(--sage-dark);
+        border-color: var(--sage-dark);
+        background: rgba(107,88,64,0.06);
+      }
+
       /* 通知面板 */
       .bl-notice-panel {
         overflow: hidden;
@@ -1834,6 +1916,98 @@ function BanlingStyles() {
         font-size: 14px;
         font-weight: 700;
         color: var(--sage-dark);
+      }
+
+      /* 关于弹窗（复刻爱情公寓同款居中模态框形式） */
+      .bl-modal-overlay {
+        position: fixed;
+        inset: 0;
+        z-index: 300;
+        background: rgba(0,0,0,0.45);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+      }
+      .bl-modal {
+        background: #fff;
+        border-radius: 8px;
+        padding: 20px;
+        max-width: 280px;
+        width: 100%;
+        box-shadow: 0 8px 32px rgba(0,0,0,0.15);
+      }
+      .bl-modal-title {
+        font-size: 16px;
+        font-weight: 600;
+        color: #3D3830;
+        margin: 0 0 14px;
+        text-align: center;
+      }
+      .bl-modal-body {
+        font-size: 14px;
+        line-height: 1.6;
+        color: #4A453D;
+        margin: 0 0 18px;
+        text-align: justify;
+      }
+      .bl-modal-btn {
+        display: block;
+        width: 100%;
+        padding: 10px;
+        font-size: 14px;
+        color: #5A5448;
+        background: none;
+        border: 1px solid #ccc;
+        border-radius: 6px;
+        cursor: pointer;
+        font-family: inherit;
+        transition: background-color 0.15s ease, border-color 0.15s ease;
+      }
+
+      /* 关于弹窗（暖米色手写信风格，与爱情公寓视觉一致） */
+      .bl-modal-about {
+        background: #FFF8E7;
+        border: 1px solid #E0D5C5;
+        border-radius: 12px;
+        padding: 24px;
+        max-width: 300px;
+      }
+      .bl-modal-about .bl-modal-title {
+        font-size: 18px;
+        font-weight: 700;
+        color: #3D3830;
+        margin: 0 0 18px;
+        letter-spacing: 0.04em;
+      }
+      .bl-modal-about .bl-modal-body {
+        font-size: 14px;
+        line-height: 1.75;
+        color: #4A453D;
+        margin: 0 0 20px;
+        text-align: left;
+      }
+      .bl-modal-about .bl-modal-body p {
+        margin: 0;
+      }
+      .bl-modal-highlight {
+        font-weight: 600;
+        color: #2C2820;
+      }
+      .bl-modal-about-btn {
+        border: 1px solid #D5C8B0;
+        color: #5A5448;
+        background: #FFF8E7;
+        border-radius: 8px;
+        padding: 12px;
+        font-size: 15px;
+        font-weight: 500;
+        transition: background-color 0.2s ease, color 0.2s ease;
+      }
+      .bl-modal-about-btn:hover {
+        background: #F5F0E6;
+        color: #3D3830;
+        border-color: #C8B8A0;
       }
 
       /* ===== 顶部栏基础布局（flex 布局，叠加层样式由 bl-topbar-overlay 控制）===== */

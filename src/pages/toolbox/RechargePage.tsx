@@ -24,6 +24,7 @@ import {
 import { useSolo } from "../../context/StandaloneContext";
 import { useAppManifest } from "../../hooks/useAppManifest";
 import PWAInstallPrompt from "../../components/PWAInstallPrompt";
+import WeChatGuide from "../../components/WeChatGuide";
 import {
   getPoints,
   getCheckinData,
@@ -2943,6 +2944,7 @@ const RechargePage: React.FC = () => {
         }
       `}</style>
       <PWAInstallPrompt />
+      <WeChatGuide />
     </div>
   );
 };

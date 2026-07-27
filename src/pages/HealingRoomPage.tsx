@@ -9,6 +9,7 @@ import BreathingGuide from "../components/BreathingGuide";
 import MeditationTimer from "../components/MeditationTimer";
 import HealingCompanion from "../components/HealingCompanion";
 import AchievementPage from "../components/AchievementPage";
+import WeChatGuide from "../components/WeChatGuide";
 
 /* ===== 图标 ===== */
 const JournalIcon = () => (
@@ -587,6 +588,7 @@ const HealingRoomPage: React.FC = () => {
         }
       `}</style>
       <PWAInstallPrompt />
+      <WeChatGuide />
     </div>
   );
 };

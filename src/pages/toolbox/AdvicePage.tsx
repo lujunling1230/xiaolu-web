@@ -6,6 +6,7 @@ import { callAI } from "../../utils/aiClient";
 import { useSolo } from "../../context/StandaloneContext";
 import { useAppManifest } from "../../hooks/useAppManifest";
 import PWAInstallPrompt from "../../components/PWAInstallPrompt";
+import WeChatGuide from "../../components/WeChatGuide";
 
 /**
  * 解忧杂货店 · The Advice Shop
@@ -1658,6 +1659,7 @@ const AdvicePage: React.FC = () => {
         }
       `}</style>
       <PWAInstallPrompt />
+      <WeChatGuide />
     </div>
   );
 };

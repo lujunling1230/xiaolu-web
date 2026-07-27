@@ -7,6 +7,7 @@ import { CHARACTERS, getCharacter, resolveGroupChat, CHARACTER_FEEDS, type Chara
 import { useSolo } from "../../context/StandaloneContext";
 import { useAppManifest } from "../../hooks/useAppManifest";
 import PWAInstallPrompt from "../../components/PWAInstallPrompt";
+import WeChatGuide from "../../components/WeChatGuide";
 
 /**
  * 爱情公寓·元宇宙客厅
@@ -4358,6 +4359,7 @@ const SystemTuningPage: React.FC = () => {
         }
       `}</style>
       <PWAInstallPrompt />
+      <WeChatGuide />
     </div>
   );
 };

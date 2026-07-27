@@ -12,6 +12,31 @@
     color: #3D3830;
     min-height: 100vh;
   }
+  /* 微信检测提示条 */
+  #wx-guide {
+    display: none;
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    z-index: 99999;
+    background: rgba(0,0,0,0.78);
+    color: #fff;
+    padding: 14px 20px;
+    font-size: 14px;
+    text-align: center;
+    line-height: 1.7;
+  }
+  #wx-guide.show { display: block; }
+  #wx-guide button {
+    background: rgba(255,255,255,0.2);
+    border: none;
+    color: #fff;
+    padding: 6px 14px;
+    border-radius: 14px;
+    font-size: 13px;
+    cursor: pointer;
+    margin-left: 8px;
+    white-space: nowrap;
+  }
   header {
     text-align: center;
     padding: 48px 20px 32px;
@@ -141,8 +166,19 @@
     <div class="hint">📷 扫描二维码安装</div>
   </div>
 </div>
+<div id="wx-guide">
+  👆 点击右上角 <strong>···</strong> 菜单，选择<strong>"在浏览器中打开"</strong>，即可安装到桌面
+  <button onclick="this.parentElement.classList.remove('show')">知道了</button>
+</div>
 <footer>
   扫码后浏览器将自动打开，点击"安装到桌面"即可获得独立应用
 </footer>
+<script>
+  (function() {
+    if (/micromessenger/i.test(navigator.userAgent)) {
+      document.getElementById('wx-guide').classList.add('show');
+    }
+  })();
+</script>
 </body>
 </html>

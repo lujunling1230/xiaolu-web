@@ -4,6 +4,7 @@ import { Link } from "react-router-dom";
 import { useSolo } from "../../context/StandaloneContext";
 import { useAppManifest } from "../../hooks/useAppManifest";
 import PWAInstallPrompt from "../../components/PWAInstallPrompt";
+import WeChatGuide from "../../components/WeChatGuide";
 
 /**
  * 漫游指南 · Travel Log
@@ -2162,6 +2163,7 @@ const TravelPage: React.FC = () => {
         }
       `}</style>
       <PWAInstallPrompt />
+      <WeChatGuide />
     </div>
   );
 };

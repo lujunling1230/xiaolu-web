@@ -7,6 +7,7 @@ import { useAdminGuard } from "../../hooks/useAdminGuard";
 import { useSolo } from "../../context/StandaloneContext";
 import { useAppManifest } from "../../hooks/useAppManifest";
 import PWAInstallPrompt from "../../components/PWAInstallPrompt";
+import WeChatGuide from "../../components/WeChatGuide";
 
 /**
  * 通关清单 · Quest Log
@@ -963,6 +964,7 @@ const QuestLogPage: React.FC = () => {
 
       <AdminGuardUI />
       <PWAInstallPrompt />
+      <WeChatGuide />
     </div>
   );
 };

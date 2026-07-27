@@ -4,6 +4,7 @@ import { useAdminGuard } from "../../hooks/useAdminGuard";
 import { useSolo } from "../../context/StandaloneContext";
 import { useAppManifest } from "../../hooks/useAppManifest";
 import PWAInstallPrompt from "../../components/PWAInstallPrompt";
+import WeChatGuide from "../../components/WeChatGuide";
 import { track } from "../../utils/track";
 
 /**
@@ -2077,6 +2078,7 @@ const InventoryPage: React.FC = () => {
         </div>
       )}
       <PWAInstallPrompt />
+      <WeChatGuide />
     </div>
   );
 };

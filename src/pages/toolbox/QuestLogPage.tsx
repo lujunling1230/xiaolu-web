@@ -37,6 +37,44 @@ const XP_PER_LEVEL = 100;
 // 各难度完成后获得的经验值（风险越高、收益越高）
 const XP_REWARD: Record<Difficulty, number> = { easy: 5, normal: 60, hard: 100 };
 
+/* ========== 金币积分体系 ========== */
+const COINS_KEY = "quest_log_coins";
+const COINS_HISTORY_KEY = "quest_log_coins_history";
+const CHECKIN_KEY = "quest_log_checkin";
+const STREAK_KEY = "quest_log_streak";
+
+interface CoinRecord {
+  amount: number;
+  reason: string;
+  ts: number;
+}
+
+// 金币奖励配置
+const COIN_REWARD = {
+  easy: 2,
+  normal: 5,
+  hard: 10,
+  daily: 5,
+  levelup: 15,
+  streak7: 20,
+};
+
+// 称号梯度
+const TITLES = [
+  { min: 0, label: "新手冒险者", color: "#9ca3af" },
+  { min: 50, label: "见习勇者", color: "#34d399" },
+  { min: 150, label: "资深探险家", color: "#60a5fa" },
+  { min: 300, label: "传说英雄", color: "#f472b6" },
+  { min: 500, label: "不朽传奇", color: "#fde047" },
+];
+
+function getTitle(coins: number): { label: string; color: string } {
+  for (let i = TITLES.length - 1; i >= 0; i--) {
+    if (coins >= TITLES[i].min) return TITLES[i];
+  }
+  return TITLES[0];
+}
+
 const DIFF_LABEL: Record<Difficulty, string> = {
   easy: "先做 5 分钟",
   normal: "只要 60 分",
@@ -69,6 +107,42 @@ function loadQuests(): Quest[] {
 function loadXP(): number {
   const raw = legacyLoad<string>(XP_KEY, "0");
   return raw ? Math.max(0, Number(raw) || 0) : 0;
+}
+
+function loadCoins(): number {
+  const raw = legacyLoad<string>(COINS_KEY, "0");
+  return raw ? Math.max(0, Number(raw) || 0) : 0;
+}
+
+function loadCoinsHistory(): CoinRecord[] {
+  return legacyLoad<CoinRecord[]>(COINS_HISTORY_KEY, []) || [];
+}
+
+function saveCoins(coins: number, history: CoinRecord[]) {
+  legacySave(COINS_KEY, String(coins));
+  legacySave(COINS_HISTORY_KEY, history);
+}
+
+function loadCheckin(): string {
+  return legacyLoad<string>(CHECKIN_KEY, "") || "";
+}
+
+function loadStreak(): number {
+  const raw = legacyLoad<string>(STREAK_KEY, "0");
+  return raw ? Math.max(0, Number(raw) || 0) : 0;
+}
+
+function getTodayStr(): string {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
+function isYesterday(checkinStr: string): boolean {
+  if (!checkinStr) return false;
+  const d = new Date();
+  d.setDate(d.getDate() - 1);
+  const yesterday = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  return checkinStr === yesterday;
 }
 
 /* 预设数据 */
@@ -156,6 +230,93 @@ const XpBar: React.FC<{ xp: number }> = ({ xp }) => {
           transition={{ type: "spring", stiffness: 120, damping: 14 }}
         />
       </div>
+    </div>
+  );
+};
+
+/* ============================================================
+   子组件：金币与称号面板
+   ============================================================ */
+const CoinBar: React.FC<{
+  coins: number;
+  streak: number;
+  checkedInToday: boolean;
+  onCheckin: () => void;
+}> = ({ coins, streak, checkedInToday, onCheckin }) => {
+  const title = getTitle(coins);
+  const nextTitle = TITLES.find((t) => t.min > coins);
+  const progress = nextTitle
+    ? Math.min(100, ((coins - title.min) / (nextTitle.min - title.min)) * 100)
+    : 100;
+
+  return (
+    <div className="quest-coin-wrap">
+      <div className="quest-coin-head">
+        <div className="quest-coin-left">
+          <span className="quest-coin-icon">◆</span>
+          <motion.span
+            className="quest-coin-value"
+            key={coins}
+            initial={{ scale: 1.3, color: "#fde047" }}
+            animate={{ scale: 1, color: "#f3f4f6" }}
+            transition={{ type: "spring", stiffness: 200, damping: 12 }}
+          >
+            {coins}
+          </motion.span>
+          <span className="quest-coin-label">金币</span>
+        </div>
+        <div className="quest-coin-right">
+          <span
+            className="quest-title-badge"
+            style={{ color: title.color, borderColor: title.color }}
+          >
+            {title.label}
+          </span>
+          {streak > 0 && (
+            <span className="quest-streak-badge">
+              <span className="quest-streak-fire">🔥</span>
+              <span>连续 {streak} 天</span>
+            </span>
+          )}
+        </div>
+      </div>
+
+      {/* 称号进度 */}
+      {nextTitle && (
+        <div className="quest-title-progress">
+          <div className="quest-title-progress-track">
+            <motion.div
+              className="quest-title-progress-fill"
+              initial={false}
+              animate={{ width: `${progress}%` }}
+              transition={{ type: "spring", stiffness: 120, damping: 14 }}
+              style={{ background: title.color }}
+            />
+          </div>
+          <span className="quest-title-progress-text">
+            距「{nextTitle.label}」还需 {nextTitle.min - coins} 金币
+          </span>
+        </div>
+      )}
+
+      {/* 每日签到 */}
+      <button
+        className={cn("quest-checkin-btn", checkedInToday && "quest-checkin-done")}
+        onClick={onCheckin}
+        disabled={checkedInToday}
+      >
+        {checkedInToday ? (
+          <>
+            <span>✓</span>
+            <span>今日已签到</span>
+          </>
+        ) : (
+          <>
+            <span className="quest-checkin-gift">🎁</span>
+            <span>每日签到 +{COIN_REWARD.daily} 金币</span>
+          </>
+        )}
+      </button>
     </div>
   );
 };
@@ -494,6 +655,13 @@ const QuestLogPage: React.FC = () => {
   // 编辑任务
   const [editingQuest, setEditingQuest] = useState<Quest | null>(null);
 
+  /* ========== 金币积分体系状态 ========== */
+  const [coins, setCoins] = useState<number>(() => loadCoins());
+  const [coinsHistory, setCoinsHistory] = useState<CoinRecord[]>(() => loadCoinsHistory());
+  const [checkinDate, setCheckinDate] = useState<string>(() => loadCheckin());
+  const [streak, setStreak] = useState<number>(() => loadStreak());
+  const checkedInToday = checkinDate === getTodayStr();
+
   // 持久化
   useEffect(() => {
     legacySave(STORAGE_KEY, quests);
@@ -502,6 +670,15 @@ const QuestLogPage: React.FC = () => {
   useEffect(() => {
     legacySave(XP_KEY, String(xp));
   }, [xp]);
+
+  useEffect(() => {
+    saveCoins(coins, coinsHistory);
+  }, [coins, coinsHistory]);
+
+  useEffect(() => {
+    legacySave(CHECKIN_KEY, checkinDate);
+    legacySave(STREAK_KEY, String(streak));
+  }, [checkinDate, streak]);
 
   /* 等级变化追踪 */
   const prevLevelRef = useRef(Math.floor(xp / XP_PER_LEVEL) + 1);
@@ -513,13 +690,48 @@ const QuestLogPage: React.FC = () => {
     }
   }, [xp]);
 
+  /* 添加金币工具函数 */
+  const addCoins = (amount: number, reason: string) => {
+    setCoins((c) => c + amount);
+    setCoinsHistory((h) => [...h, { amount, reason, ts: Date.now() }]);
+  };
+
+  /* 每日签到 */
+  const handleCheckin = () => {
+    if (checkedInToday) return;
+    const today = getTodayStr();
+    let newStreak = streak;
+    if (isYesterday(checkinDate)) {
+      newStreak = streak + 1;
+    } else {
+      newStreak = 1;
+    }
+    setCheckinDate(today);
+    setStreak(newStreak);
+
+    let reward = COIN_REWARD.daily;
+    let reason = "每日签到";
+    if (newStreak >= 7) {
+      reward += COIN_REWARD.streak7;
+      reason = `连续签到 ${newStreak} 天（含周奖励）`;
+    }
+    addCoins(reward, reason);
+    track("quest_checkin", { streak: newStreak, reward });
+
+    // 签到音效
+    playCoinSound();
+  };
+
   // 完成回调
   const handleComplete = (id: string) => {
     setQuests((prev) => {
       const target = prev.find((q) => q.id === id);
       if (target && !target.completed) {
         setXp((x) => x + XP_REWARD[target.difficulty]);
-        track("quest_complete", { difficulty: target.difficulty });
+        // 发放金币奖励
+        const coinReward = COIN_REWARD[target.difficulty];
+        addCoins(coinReward, `完成任务「${target.text}」`);
+        track("quest_complete", { difficulty: target.difficulty, coins: coinReward });
       }
       return prev.filter((q) => q.id !== id);
     });
@@ -592,6 +804,12 @@ const QuestLogPage: React.FC = () => {
       {/* 玩家状态 */}
       <section className="quest-status">
         <XpBar xp={xp} />
+        <CoinBar
+          coins={coins}
+          streak={streak}
+          checkedInToday={checkedInToday}
+          onCheckin={handleCheckin}
+        />
         <div className="quest-stats-pills">
           <span className="quest-pill">⚔️ 进行中 {stats.active}</span>
           <span className="quest-pill quest-pill-done">✓ 已通关 {stats.done}</span>
@@ -729,6 +947,83 @@ const QuestLogPage: React.FC = () => {
           background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.08);
         }
         .quest-pill-done { color: #34d399; border-color: rgba(52, 211, 153, 0.3); }
+
+        /* 金币面板 */
+        .quest-coin-wrap {
+          margin: 16px 0 14px;
+          padding: 14px 16px;
+          border-radius: 14px;
+          background: rgba(255,255,255,0.04);
+          border: 1px solid rgba(255,255,255,0.08);
+        }
+        .quest-coin-head {
+          display: flex; align-items: center; justify-content: space-between;
+          margin-bottom: 10px;
+        }
+        .quest-coin-left {
+          display: flex; align-items: center; gap: 8px;
+        }
+        .quest-coin-icon {
+          font-size: 16px; color: #fde047;
+        }
+        .quest-coin-value {
+          font-size: 22px; font-weight: 800; color: #f3f4f6;
+          font-variant-numeric: tabular-nums;
+        }
+        .quest-coin-label {
+          font-size: 12px; color: #9ca3af; margin-left: 2px;
+        }
+        .quest-coin-right {
+          display: flex; align-items: center; gap: 8px;
+        }
+        .quest-title-badge {
+          font-size: 11px; font-weight: 700;
+          padding: 3px 10px; border-radius: 6px;
+          border: 1.5px solid;
+          background: rgba(0,0,0,0.2);
+        }
+        .quest-streak-badge {
+          font-size: 11px; color: #fb923c;
+          display: flex; align-items: center; gap: 3px;
+          padding: 3px 8px; border-radius: 6px;
+          background: rgba(251, 146, 60, 0.12);
+          border: 1px solid rgba(251, 146, 60, 0.25);
+        }
+        .quest-streak-fire { font-size: 13px; }
+
+        .quest-title-progress { margin-bottom: 12px; }
+        .quest-title-progress-track {
+          height: 6px; border-radius: 999px; overflow: hidden;
+          background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.06);
+          margin-bottom: 6px;
+        }
+        .quest-title-progress-fill {
+          height: 100%; border-radius: 999px;
+          box-shadow: 0 0 8px rgba(255,255,255,0.15);
+        }
+        .quest-title-progress-text {
+          font-size: 11px; color: #6b7280;
+        }
+
+        .quest-checkin-btn {
+          width: 100%; display: flex; align-items: center; justify-content: center; gap: 6px;
+          padding: 10px; border-radius: 10px; border: 1.5px solid rgba(253, 224, 71, 0.4);
+          background: rgba(253, 224, 71, 0.08);
+          color: #fde047; font-size: 13px; font-weight: 600;
+          font-family: inherit; cursor: pointer;
+          transition: all 0.2s ease;
+        }
+        .quest-checkin-btn:hover:not(:disabled) {
+          background: rgba(253, 224, 71, 0.18);
+          border-color: rgba(253, 224, 71, 0.6);
+          transform: translateY(-1px);
+        }
+        .quest-checkin-btn:disabled {
+          opacity: 0.5; cursor: not-allowed; border-color: rgba(255,255,255,0.1);
+          background: rgba(255,255,255,0.04); color: #9ca3af;
+        }
+        .quest-checkin-gift { font-size: 14px; }
+        .quest-checkin-done { color: #34d399; border-color: rgba(52, 211, 153, 0.3); background: rgba(52, 211, 153, 0.08); }
 
         /* 标题 */
         .quest-title-area { max-width: 720px; margin: 0 auto; padding: 28px 4px 20px; }

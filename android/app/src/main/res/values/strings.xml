@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">回血清单</string>
+    <string name="title_activity_main">回血清单</string>
+    <string name="package_name">com.xiaolu.recharge</string>
+    <string name="custom_url_scheme">com.xiaolu.recharge</string>
+</resources>

@@ -26,3 +26,21 @@ npm-debug.log*
 
 # Disabled git repo
 .git_disabled/
+
+# Local Android SDK
+android-sdk/
+android-sdk-new/
+android-sdk-v2/
+
+# Gradle local
+.gradle/
+local.properties
+
+# Capacitor build outputs
+android/app/build/
+android/.gradle/
+android/local.properties
+
+# Misc
+*.zip
+*.apk

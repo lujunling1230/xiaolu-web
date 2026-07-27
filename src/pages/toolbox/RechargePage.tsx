@@ -1531,7 +1531,7 @@ const RechargePage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<TabKey>("home");
   const [doneIds, setDoneIds] = useState<Set<number>>(loadDoneIds);
 
-  useEffect(() => { track("tool_enter", { tool_name: "回血清单" }); }, []);
+  useEffect(() => { document.title = "回血清单"; track("tool_enter", { tool_name: "回血清单" }); }, []);
   const [hiddenFound, setHiddenFound] = useState(false);
   const [catState, setCatState] = useState<"sleep" | "stare" | "yawn">("sleep");
   const [newBadge, setNewBadge] = useState<Badge | null>(null);

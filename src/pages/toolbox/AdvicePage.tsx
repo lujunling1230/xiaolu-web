@@ -157,7 +157,7 @@ const AdvicePage: React.FC = () => {
   const [question, setQuestion] = useState("");
   const [reply, setReply] = useState<string | null>(null);
 
-  useEffect(() => { track("tool_enter", { tool_name: "解忧杂货店" }); }, []);
+  useEffect(() => { document.title = "解忧杂货店"; track("tool_enter", { tool_name: "解忧杂货店" }); }, []);
   const [phase, setPhase] = useState<Phase>("idle");
   const [loading, setLoading] = useState(false);
 

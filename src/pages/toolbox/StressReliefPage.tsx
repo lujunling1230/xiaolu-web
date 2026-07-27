@@ -79,6 +79,7 @@ const GAMES: {
 ];
 
 const StressReliefPage: React.FC = () => {
+  useEffect(() => { document.title = "解压馆"; }, []);
   const [active, setActive] = useState<GameKey | null>(null);
 
   // 游戏进度数据

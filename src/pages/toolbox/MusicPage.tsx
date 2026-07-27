@@ -122,6 +122,7 @@ const NoteIcon = () => (
 );
 
 const MusicPage: React.FC = () => {
+  useEffect(() => { document.title = "时代回响"; }, []);
   const [searchParams] = useSearchParams();
   const isFromFull = searchParams.get("from") === "full";
   const backPath = isFromFull ? "/life?from=full" : "/mickey";

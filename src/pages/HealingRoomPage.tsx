@@ -71,7 +71,7 @@ const HealingRoomPage: React.FC = () => {
   const [active, setActive] = useState<ModuleId>("welcome");
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
 
-  useEffect(() => { track("tool_enter", { tool_name: "森林疗愈室" }); }, []);
+  useEffect(() => { document.title = "森林疗愈室"; track("tool_enter", { tool_name: "森林疗愈室" }); }, []);
 
   const renderModule = () => {
     switch (active) {

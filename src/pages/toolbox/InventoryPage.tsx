@@ -807,6 +807,7 @@ const InventoryPage: React.FC = () => {
 
   // 页面进入埋点
   useEffect(() => {
+    document.title = "物资管家";
     track("tool_enter", { tool_name: "物资管家" });
   }, []);
 

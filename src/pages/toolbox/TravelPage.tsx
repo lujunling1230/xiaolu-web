@@ -453,6 +453,7 @@ const BLANK_CITY = (): City => ({
    主组件
    ============================================================ */
 const TravelPage: React.FC = () => {
+  useEffect(() => { document.title = "漫游指南"; }, []);
   const [cities, setCities] = useState<City[]>(loadCities);
   const [hovered, setHovered] = useState<ProvinceArea | null>(null);
   const [tooltipPos, setTooltipPos] = useState({ x: 0, y: 0 });

@@ -4,7 +4,35 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>解忧回信局</title>
+    <title>小鹿作品集</title>
+    <!-- 根据 URL 路径在 React 加载前预设置标题，避免加载过程中显示默认标题 -->
+    <script>
+      (function() {
+        const path = window.location.pathname;
+        const titles = {
+          '/toolbox/recharge': '回血清单',
+          '/toolbox/advice': '解忧杂货店',
+          '/toolbox/inventory': '物资管家',
+          '/toolbox/supplies': '物资管家',
+          '/toolbox/quests': '通关清单',
+          '/toolbox/answer': '系统调频',
+          '/toolbox/travel': '漫游指南',
+          '/toolbox/roaming-guide': '漫游指南',
+          '/toolbox/games': '解压馆',
+          '/toolbox/banling': '伴龄',
+          '/music': '时代回响',
+          '/healing': '森林疗愈室',
+          '/forest': '森林疗愈室',
+          '/mickey': '米奇妙妙屋',
+        };
+        for (const [prefix, title] of Object.entries(titles)) {
+          if (path === prefix || path.startsWith(prefix + '/')) {
+            document.title = title;
+            return;
+          }
+        }
+      })();
+    </script>
     <!-- 引入日系字体：Noto Serif SC（标题衬线）+ Noto Sans SC（正文无衬线） -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />

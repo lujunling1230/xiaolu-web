@@ -417,7 +417,7 @@ function BottomNav({ tab, onChange }: { tab: Tab; onChange: (t: Tab) => void }) 
 export default function BanlingPage() {
   const { isSolo } = useSolo();
   useEffect(() => { document.title = "伴龄"; }, []);
-  const [unlocked, setUnlocked] = useState(false);
+  const [unlocked, setUnlocked] = useState(true);
   const [pwdInput, setPwdInput] = useState("");
   const [pwdError, setPwdError] = useState(false);
   const [tab, setTab] = useState<Tab>("home");

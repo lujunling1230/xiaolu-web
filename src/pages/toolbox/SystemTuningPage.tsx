@@ -853,8 +853,7 @@ const SystemTuningPage: React.FC = () => {
   const selectedChar = selectedCharId ? getCharacter(selectedCharId) : undefined;
 
   /** 关于弹窗 */
-  const openAboutModal = () => setShowAboutModal(true);
-  const closeAboutModal = () => setShowAboutModal(false);
+  // 关于面板：点击右上角问号 toggle 展开（复刻伴龄通知面板形式）
 
   /* ===== 微信风格聊天列表数据 ===== */
   const chatList = [
@@ -1256,56 +1255,42 @@ const SystemTuningPage: React.FC = () => {
             <header className="wx-header">
               <div className="wx-header-left" />
               <h1 className="wx-header-title">爱情公寓</h1>
-              <button className="wx-header-easter" onClick={openAboutModal}>?</button>
+              <button
+                className={`wx-header-easter ${showAboutModal ? "wx-header-easter-active" : ""}`}
+                onClick={() => setShowAboutModal(!showAboutModal)}
+                aria-label="关于爱情公寓"
+              >
+                ?
+              </button>
             </header>
 
-            {/* 关于弹窗 */}
+            {/* 关于面板（点击右上角问号展开，复刻伴龄通知面板形式） */}
             <AnimatePresence>
               {showAboutModal && (
                 <motion.div
-                  className="wx-modal-overlay"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  transition={{ duration: 0.2 }}
-                  onClick={closeAboutModal}
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: "auto" }}
+                  exit={{ opacity: 0, height: 0 }}
+                  transition={{ duration: 0.3 }}
+                  className="wx-notice-panel"
                 >
-                  <motion.div
-                    className="wx-modal wx-modal-about"
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: 10 }}
-                    transition={{ duration: 0.3 }}
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    <h2 className="wx-modal-title">📜 致第 8 位房客</h2>
-                    <div className="wx-modal-body">
-                      <p>一个人面对AI，总觉得少了点温度。</p>
-                      <p>怕打扰别人，又不想一个人自言自语——</p>
-                      <p>这种说不清道不明的孤独，我们都懂。</p>
-                      <br />
-                      <p>所以，我们把爱情公寓搬进了屏幕。</p>
-                      <p>这里没有冰冷的对话框，</p>
-                      <p>只有七位熟悉的室友，随时在线，随时接话。</p>
-                      <br />
-                      <p className="wx-modal-highlight">
-                        你不再是第8位房客，<br />
-                        你是这个客厅的主人。
-                      </p>
-                      <br />
-                      <p>想吐槽就吐槽，想安静就安静。</p>
-                      <p>这个公寓，永远为你亮着灯。</p>
+                  <div className="wx-notice-content">
+                    <h3>为什么选择爱情公寓?</h3>
+                    <div className="wx-notice-features">
+                      <div className="wx-notice-feature"><span>🎭</span> 七位个性室友</div>
+                      <div className="wx-notice-feature"><span>💬</span> 随时接话陪伴</div>
+                      <div className="wx-notice-feature"><span>🕐</span> 真实时间感知</div>
+                      <div className="wx-notice-feature"><span>🎉</span> 群聊元宇宙</div>
                     </div>
-                    <button
-                      className="wx-modal-btn wx-modal-about-btn"
-                      onClick={() => {
-                        closeAboutModal();
-                        console.log("🏠 第8位房客已入住 LeafBook");
-                      }}
-                    >
-                      推门进屋
-                    </button>
-                  </motion.div>
+
+                    <h3>4步开启你的公寓生活</h3>
+                    <div className="wx-notice-steps">
+                      <div className="wx-notice-step"><span className="wx-ns-num">01</span> 选择室友</div>
+                      <div className="wx-notice-step"><span className="wx-ns-num">02</span> 推门入住</div>
+                      <div className="wx-notice-step"><span className="wx-ns-num">03</span> 畅聊心事</div>
+                      <div className="wx-notice-step"><span className="wx-ns-num">04</span> 解锁群聊</div>
+                    </div>
+                  </div>
                 </motion.div>
               )}
             </AnimatePresence>
@@ -2535,8 +2520,69 @@ const SystemTuningPage: React.FC = () => {
           color: #666;
           border-color: #999;
         }
+        .wx-header-easter-active {
+          color: #07c160;
+          border-color: #07c160;
+          background: rgba(7,193,96,0.08);
+        }
 
-        /* 关于弹窗 */
+        /* 关于面板（问号展开，复刻伴龄通知面板形式） */
+        .wx-notice-panel {
+          overflow: hidden;
+          background: #f7f7f7;
+          border-bottom: 1px solid #d6d6d6;
+        }
+        .wx-notice-content {
+          padding: 14px 16px;
+        }
+        .wx-notice-content h3 {
+          font-size: 14px;
+          font-weight: 600;
+          margin: 0 0 10px;
+          color: #191919;
+        }
+        .wx-notice-content h3:not(:first-child) {
+          margin-top: 14px;
+        }
+        .wx-notice-features {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 8px;
+        }
+        .wx-notice-feature {
+          font-size: 13px;
+          color: #353535;
+          padding: 8px 10px;
+          background: #fff;
+          border-radius: 6px;
+          border: 1px solid #ececec;
+        }
+        .wx-notice-feature span {
+          margin-right: 4px;
+        }
+        .wx-notice-steps {
+          display: flex;
+          flex-direction: column;
+          gap: 6px;
+        }
+        .wx-notice-step {
+          font-size: 13px;
+          color: #353535;
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          padding: 6px 10px;
+          background: #fff;
+          border-radius: 6px;
+          border: 1px solid #ececec;
+        }
+        .wx-ns-num {
+          font-size: 14px;
+          font-weight: 700;
+          color: #07c160;
+        }
+
+        /* 关于弹窗（已废弃，保留样式以防回退） */
         .wx-modal-overlay {
           position: fixed;
           inset: 0;

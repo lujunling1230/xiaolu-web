@@ -32,7 +32,14 @@ import {
   doCheckin,
   addTaskCompletePoints,
   getTodayStr,
+  addPoints,
 } from "./rechargePoints";
+import {
+  type RewardCard,
+  checkAndGrantCard,
+  getPendingCards,
+  claimCard,
+} from "./crossReward";
 
 /**
  * 回血清单 · 微型能量站
@@ -1180,6 +1187,10 @@ const MePage: React.FC = () => {
   const [checkedInToday, setCheckedInToday] = useState(() => hasCheckedInToday());
   const [checkinAnim, setCheckinAnim] = useState(false);
 
+  // 跨产品体验卡
+  const [pendingCards, setPendingCards] = useState<RewardCard[]>(() => getPendingCards("recharge"));
+  const [cardClaimAnim, setCardClaimAnim] = useState<string | null>(null);
+
   const userData = useMemo(() => {
     const history = loadHistory();
     const totalCount = history.length;
@@ -1212,6 +1223,21 @@ const MePage: React.FC = () => {
 
     return { totalCount, streak, todayCount, level, avatar, topTags };
   }, []);
+
+  /* 领取跨产品体验卡 */
+  const handleClaimCard = (card: RewardCard) => {
+    const claimed = claimCard(card.id);
+    if (!claimed) return;
+    setCardClaimAnim(card.id);
+    setTimeout(() => {
+      setCardClaimAnim(null);
+      setPendingCards((prev) => prev.filter((c) => c.id !== card.id));
+    }, 800);
+    // 发放积分奖励
+    const newTotal = addPoints("other", card.rewardAmount, `领取「${card.title}」`);
+    setPoints(newTotal);
+    track("recharge_claim_card", { cardId: card.id, reward: card.rewardAmount });
+  };
 
   const handleReset = useCallback(() => {
     if (window.confirm("确定要重置所有数据吗？这将清除所有打卡记录、历史数据和积分，无法恢复。")) {
@@ -1274,6 +1300,11 @@ const MePage: React.FC = () => {
                 setCheckedInToday(true);
                 setCheckinAnim(true);
                 setTimeout(() => setCheckinAnim(false), 600);
+                // 检测跨产品体验卡（通关清单连续7天 → 回血清单得卡）
+                const newCard = checkAndGrantCard("quest");
+                if (newCard) {
+                  setPendingCards((prev) => [...prev, newCard]);
+                }
               }
             }}
             disabled={checkedInToday}
@@ -1294,6 +1325,44 @@ const MePage: React.FC = () => {
             {checkinData.streak >= 30 && " · 签到达人！"}
           </p>
         )}
+
+        {/* 跨产品体验卡 */}
+        <AnimatePresence>
+          {pendingCards.length > 0 && (
+            <motion.div
+              className="me-reward-cards"
+              initial={{ opacity: 0, y: -8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -8 }}
+            >
+              <p className="me-reward-cards-title">联动礼券</p>
+              {pendingCards.map((card) => (
+                <motion.div
+                  key={card.id}
+                  className={`me-reward-card ${cardClaimAnim === card.id ? "claiming" : ""}`}
+                  layout
+                  exit={{ opacity: 0, scale: 0.85, x: 40 }}
+                  transition={{ duration: 0.35 }}
+                >
+                  <div className="me-reward-card-left">
+                    <span className="me-reward-card-icon">🎫</span>
+                    <div className="me-reward-card-info">
+                      <span className="me-reward-card-name">{card.title}</span>
+                      <span className="me-reward-card-desc">{card.desc}</span>
+                    </div>
+                  </div>
+                  <button
+                    className="me-reward-card-btn"
+                    onClick={() => handleClaimCard(card)}
+                    disabled={cardClaimAnim === card.id}
+                  >
+                    {cardClaimAnim === card.id ? "领取中..." : `+${card.rewardAmount} 积分`}
+                  </button>
+                </motion.div>
+              ))}
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
 
       {/* 回血偏好 */}
@@ -2588,6 +2657,57 @@ const RechargePage: React.FC = () => {
         .me-checkin-streak {
           font-size: 11px; color: rgba(255,255,255,0.55); margin: 8px 0 0;
           letter-spacing: 0.03em; text-align: center;
+        }
+
+        /* 跨产品体验卡 */
+        .me-reward-cards { margin-top: 14px; }
+        .me-reward-cards-title {
+          font-size: 11px; color: rgba(255,255,255,0.5); margin: 0 0 8px;
+          letter-spacing: 0.1em; text-transform: uppercase;
+        }
+        .me-reward-card {
+          display: flex; align-items: center; justify-content: space-between;
+          padding: 10px 12px; border-radius: 10px;
+          background: rgba(124,106,154,0.18);
+          border: 1.5px solid rgba(184,169,217,0.35);
+          margin-bottom: 8px;
+          transition: all 0.25s ease;
+        }
+        .me-reward-card:hover {
+          background: rgba(124,106,154,0.28);
+          border-color: rgba(184,169,217,0.5);
+          transform: translateX(2px);
+        }
+        .me-reward-card.claiming {
+          opacity: 0.5; transform: scale(0.97);
+        }
+        .me-reward-card-left {
+          display: flex; align-items: center; gap: 8px;
+        }
+        .me-reward-card-icon { font-size: 20px; flex-shrink: 0; }
+        .me-reward-card-info {
+          display: flex; flex-direction: column; gap: 1px;
+        }
+        .me-reward-card-name {
+          font-size: 13px; font-weight: 700; color: #B8A9D9;
+        }
+        .me-reward-card-desc {
+          font-size: 10px; color: rgba(255,255,255,0.55);
+        }
+        .me-reward-card-btn {
+          padding: 5px 12px; border-radius: 8px; border: none;
+          background: rgba(184,169,217,0.35);
+          color: #fff; font-size: 11px; font-weight: 700;
+          font-family: inherit; cursor: pointer;
+          transition: all 0.2s ease;
+          white-space: nowrap;
+        }
+        .me-reward-card-btn:hover:not(:disabled) {
+          background: rgba(184,169,217,0.55);
+          transform: scale(1.06);
+        }
+        .me-reward-card-btn:disabled {
+          opacity: 0.5; cursor: not-allowed;
         }
 
         .me-section { margin-bottom: 24px; }

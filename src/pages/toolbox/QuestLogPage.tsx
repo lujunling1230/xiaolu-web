@@ -8,6 +8,12 @@ import { useSolo } from "../../context/StandaloneContext";
 import { useAppManifest } from "../../hooks/useAppManifest";
 import PWAInstallPrompt from "../../components/PWAInstallPrompt";
 import WeChatGuide from "../../components/WeChatGuide";
+import {
+  type RewardCard,
+  checkAndGrantCard,
+  getPendingCards,
+  claimCard,
+} from "./crossReward";
 
 /**
  * 通关清单 · Quest Log
@@ -662,6 +668,10 @@ const QuestLogPage: React.FC = () => {
   const [streak, setStreak] = useState<number>(() => loadStreak());
   const checkedInToday = checkinDate === getTodayStr();
 
+  /* ========== 跨产品体验卡 ========== */
+  const [pendingCards, setPendingCards] = useState<RewardCard[]>(() => getPendingCards("quest"));
+  const [cardClaimAnim, setCardClaimAnim] = useState<string | null>(null);
+
   // 持久化
   useEffect(() => {
     legacySave(STORAGE_KEY, quests);
@@ -718,8 +728,29 @@ const QuestLogPage: React.FC = () => {
     addCoins(reward, reason);
     track("quest_checkin", { streak: newStreak, reward });
 
+    // 检测跨产品体验卡（回血清单连续7天 → 通关清单得卡）
+    const newCard = checkAndGrantCard("recharge");
+    if (newCard) {
+      setPendingCards((prev) => [...prev, newCard]);
+    }
+
     // 签到音效
     playCoinSound();
+  };
+
+  /* 领取体验卡 */
+  const handleClaimCard = (card: RewardCard) => {
+    const claimed = claimCard(card.id);
+    if (!claimed) return;
+    setCardClaimAnim(card.id);
+    setTimeout(() => {
+      setCardClaimAnim(null);
+      setPendingCards((prev) => prev.filter((c) => c.id !== card.id));
+    }, 800);
+    // 发放金币奖励
+    addCoins(card.rewardAmount, `领取「${card.title}」`);
+    playCoinSound();
+    track("quest_claim_card", { cardId: card.id, reward: card.rewardAmount });
   };
 
   // 完成回调
@@ -815,6 +846,52 @@ const QuestLogPage: React.FC = () => {
           <span className="quest-pill quest-pill-done">✓ 已通关 {stats.done}</span>
         </div>
       </section>
+
+      {/* 跨产品体验卡 */}
+      <AnimatePresence>
+        {pendingCards.length > 0 && (
+          <motion.div
+            className="quest-reward-cards"
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+          >
+            <p className="quest-reward-cards-title">联动礼券</p>
+            <div className="quest-reward-cards-list">
+              {pendingCards.map((card) => (
+                <motion.div
+                  key={card.id}
+                  className={cn(
+                    "quest-reward-card",
+                    cardClaimAnim === card.id && "quest-reward-card-claiming"
+                  )}
+                  layout
+                  exit={{ opacity: 0, scale: 0.8, x: 60 }}
+                  transition={{ duration: 0.4 }}
+                >
+                  <div className="quest-reward-card-left">
+                    <span className="quest-reward-card-icon">🎫</span>
+                    <div className="quest-reward-card-info">
+                      <span className="quest-reward-card-name">{card.title}</span>
+                      <span className="quest-reward-card-desc">{card.desc}</span>
+                    </div>
+                  </div>
+                  <div className="quest-reward-card-right">
+                    <span className="quest-reward-card-amount">+{card.rewardAmount} 金币</span>
+                    <button
+                      className="quest-reward-card-btn"
+                      onClick={() => handleClaimCard(card)}
+                      disabled={cardClaimAnim === card.id}
+                    >
+                      {cardClaimAnim === card.id ? "领取中..." : "领取"}
+                    </button>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* 标题 */}
       <div className="quest-title-area">
@@ -1024,6 +1101,68 @@ const QuestLogPage: React.FC = () => {
         }
         .quest-checkin-gift { font-size: 14px; }
         .quest-checkin-done { color: #34d399; border-color: rgba(52, 211, 153, 0.3); background: rgba(52, 211, 153, 0.08); }
+
+        /* 跨产品体验卡 */
+        .quest-reward-cards {
+          max-width: 720px; margin: 0 auto 16px; padding: 0 4px;
+        }
+        .quest-reward-cards-title {
+          font-size: 12px; color: #9ca3af; margin: 0 0 8px;
+          letter-spacing: 0.1em; text-transform: uppercase;
+        }
+        .quest-reward-cards-list {
+          display: flex; flex-direction: column; gap: 8px;
+        }
+        .quest-reward-card {
+          display: flex; align-items: center; justify-content: space-between;
+          padding: 12px 14px; border-radius: 12px;
+          background: rgba(253, 224, 71, 0.06);
+          border: 1.5px solid rgba(253, 224, 71, 0.25);
+          transition: all 0.3s ease;
+        }
+        .quest-reward-card:hover {
+          background: rgba(253, 224, 71, 0.1);
+          border-color: rgba(253, 224, 71, 0.4);
+          transform: translateX(2px);
+        }
+        .quest-reward-card-claiming {
+          opacity: 0.5; transform: scale(0.98);
+        }
+        .quest-reward-card-left {
+          display: flex; align-items: center; gap: 10px;
+        }
+        .quest-reward-card-icon {
+          font-size: 22px; flex-shrink: 0;
+        }
+        .quest-reward-card-info {
+          display: flex; flex-direction: column; gap: 2px;
+        }
+        .quest-reward-card-name {
+          font-size: 14px; font-weight: 700; color: #fde047;
+        }
+        .quest-reward-card-desc {
+          font-size: 11px; color: #9ca3af;
+        }
+        .quest-reward-card-right {
+          display: flex; align-items: center; gap: 10px; flex-shrink: 0;
+        }
+        .quest-reward-card-amount {
+          font-size: 13px; font-weight: 700; color: #fde047;
+        }
+        .quest-reward-card-btn {
+          padding: 6px 14px; border-radius: 8px; border: none;
+          background: linear-gradient(135deg, #fde047, #f59e0b);
+          color: #06281f; font-size: 12px; font-weight: 700;
+          font-family: inherit; cursor: pointer;
+          transition: all 0.2s ease;
+        }
+        .quest-reward-card-btn:hover:not(:disabled) {
+          transform: scale(1.08);
+          box-shadow: 0 0 14px rgba(253, 224, 71, 0.5);
+        }
+        .quest-reward-card-btn:disabled {
+          opacity: 0.5; cursor: not-allowed;
+        }
 
         /* 标题 */
         .quest-title-area { max-width: 720px; margin: 0 auto; padding: 28px 4px 20px; }

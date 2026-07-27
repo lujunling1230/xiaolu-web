@@ -22,10 +22,12 @@ jobs:
         run: npm ci
 
       - name: Build web app
-        run: npx vite build
+        run: |
+          # 使用本地安装的 vite，避免 npx 查找问题
+          ./node_modules/.bin/vite build
 
       - name: Sync Capacitor Android
-        run: npx cap sync android
+        run: ./node_modules/.bin/cap sync android
 
       - name: Setup Java
         uses: actions/setup-java@v4

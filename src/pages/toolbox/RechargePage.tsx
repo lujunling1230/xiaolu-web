@@ -1307,6 +1307,102 @@ const MePage: React.FC = () => {
         )}
       </AnimatePresence>
 
+      {/* 联系与反馈弹窗 */}
+      <AnimatePresence>
+        {feedbackOpen && (
+          <motion.div
+            className="feedback-overlay"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setFeedbackOpen(false)}
+          >
+            <motion.div
+              className="feedback-popup"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 20 }}
+              transition={{ duration: 0.4 }}
+              onClick={e => e.stopPropagation()}
+            >
+              <button className="feedback-close" onClick={() => setFeedbackOpen(false)}>✕</button>
+              <h2 className="feedback-title">留言板</h2>
+              {feedbackStatus === "sent" ? (
+                <div className="feedback-sent">
+                  <span className="feedback-sent-icon">✨</span>
+                  <p className="feedback-sent-text">留言已发送，感谢你的反馈</p>
+                  <button
+                    className="feedback-btn"
+                    onClick={() => setFeedbackOpen(false)}
+                  >
+                    好的
+                  </button>
+                </div>
+              ) : (
+                <form
+                  className="feedback-form"
+                  onSubmit={async e => {
+                    e.preventDefault();
+                    if (!feedbackMsg.trim() || feedbackSending) return;
+                    setFeedbackSending(true);
+                    try {
+                      const res = await fetch("/api/send-message", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({
+                          message: feedbackMsg.trim(),
+                          contactInfo: feedbackContact.trim() || "未填写",
+                        }),
+                      });
+                      const data = await res.json();
+                      if (data.ok) {
+                        setFeedbackStatus("sent");
+                        setFeedbackMsg("");
+                        setFeedbackContact("");
+                      } else {
+                        setFeedbackStatus("error");
+                      }
+                    } catch {
+                      setFeedbackStatus("error");
+                    } finally {
+                      setFeedbackSending(false);
+                    }
+                  }}
+                >
+                  <textarea
+                    className="feedback-textarea"
+                    placeholder="写下你想说的话……"
+                    rows={4}
+                    value={feedbackMsg}
+                    onChange={e => setFeedbackMsg(e.target.value)}
+                    maxLength={500}
+                    required
+                  />
+                  <input
+                    className="feedback-input"
+                    type="text"
+                    placeholder="你的联系方式（选填）"
+                    value={feedbackContact}
+                    onChange={e => setFeedbackContact(e.target.value)}
+                    maxLength={100}
+                  />
+                  {feedbackStatus === "error" && (
+                    <p className="feedback-error">发送失败，请稍后重试</p>
+                  )}
+                  <button
+                    type="submit"
+                    className="feedback-btn"
+                    disabled={feedbackSending || !feedbackMsg.trim()}
+                  >
+                    {feedbackSending ? "发送中……" : "发送留言"}
+                  </button>
+                </form>
+              )}
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* 分享卡片弹窗 */}
       <AnimatePresence>
         {shareOpen && (
@@ -2446,6 +2542,78 @@ const RechargePage: React.FC = () => {
         .about-deco {
           width: 40px; height: 1px; margin: 20px auto 0;
           background: linear-gradient(90deg, transparent, rgba(180, 220, 190, 0.6), transparent);
+        }
+
+        /* ===== 联系与反馈弹窗 ===== */
+        .feedback-overlay {
+          position: fixed; inset: 0; z-index: 200;
+          display: flex; align-items: center; justify-content: center; padding: 24px;
+          background: rgba(200, 195, 185, 0.3);
+        }
+        .feedback-popup {
+          position: relative; max-width: 380px; width: 100%;
+          padding: 36px 28px 28px; border-radius: 20px;
+          background: rgba(245, 250, 247, 0.95);
+          border: 1px solid rgba(180, 220, 190, 0.4);
+          box-shadow: 0 2px 8px rgba(160, 180, 150, 0.06), 0 8px 28px rgba(0,0,0,0.03), 0 0 24px rgba(180, 220, 190, 0.12);
+        }
+        .feedback-close {
+          position: absolute; top: 16px; right: 20px;
+          font-size: 14px; color: #9aaa9a; background: none; border: none;
+          padding: 4px 8px; cursor: pointer; transition: color 0.3s ease;
+          font-family: "Noto Sans SC", system-ui, sans-serif;
+        }
+        .feedback-close:hover { color: #5a5048; }
+        .feedback-title {
+          font-family: "Noto Serif SC", Georgia, serif;
+          font-size: 20px; font-weight: 600; color: #3a3a3a;
+          margin: 0 0 20px; letter-spacing: 0.1em;
+        }
+        .feedback-form { display: flex; flex-direction: column; gap: 12px; }
+        .feedback-textarea {
+          width: 100%; padding: 12px 14px;
+          border: 1px solid rgba(180, 170, 160, 0.2); border-radius: 12px;
+          background: #FFFFFF; font-family: inherit; font-size: 14px; color: #5a5048;
+          line-height: 1.6; resize: none; outline: none;
+          transition: border-color 0.3s ease;
+        }
+        .feedback-textarea::placeholder { color: #c0b8a8; font-size: 13px; }
+        .feedback-textarea:focus { border-color: rgba(140, 200, 140, 0.5); }
+        .feedback-input {
+          width: 100%; padding: 10px 14px;
+          border: 1px solid rgba(180, 170, 160, 0.2); border-radius: 12px;
+          background: #FFFFFF; font-family: inherit; font-size: 14px; color: #5a5048;
+          outline: none; transition: border-color 0.3s ease;
+        }
+        .feedback-input::placeholder { color: #c0b8a8; font-size: 13px; }
+        .feedback-input:focus { border-color: rgba(140, 200, 140, 0.5); }
+        .feedback-btn {
+          align-self: flex-start;
+          padding: 10px 28px; border-radius: 24px; border: none;
+          background: linear-gradient(135deg, #8BC34A 0%, #7CB342 100%);
+          color: #fff; font-family: inherit; font-size: 14px; font-weight: 500;
+          letter-spacing: 0.06em; cursor: pointer;
+          box-shadow: 0 2px 8px rgba(139, 195, 74, 0.25);
+          transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+        .feedback-btn:hover:not(:disabled) {
+          transform: translateY(-1px);
+          box-shadow: 0 4px 12px rgba(139, 195, 74, 0.35);
+        }
+        .feedback-btn:disabled {
+          opacity: 0.6; cursor: not-allowed;
+        }
+        .feedback-error {
+          font-size: 12px; color: #e57373; margin: 0;
+        }
+        .feedback-sent {
+          display: flex; flex-direction: column; align-items: center;
+          gap: 12px; padding: 12px 0;
+        }
+        .feedback-sent-icon { font-size: 32px; }
+        .feedback-sent-text {
+          font-size: 14px; color: #6b5e50; margin: 0;
+          letter-spacing: 0.03em;
         }
 
         /* ===== 完成弹窗 ===== */

@@ -21,13 +21,16 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Build web app
+      - name: Verify vite installation
         run: |
-          # 使用本地安装的 vite，避免 npx 查找问题
-          ./node_modules/.bin/vite build
+          ls -la node_modules/.bin/ | grep vite || true
+          ./node_modules/.bin/vite --version || true
+
+      - name: Build web app
+        run: npm run build
 
       - name: Sync Capacitor Android
-        run: ./node_modules/.bin/cap sync android
+        run: npx cap sync android
 
       - name: Setup Java
         uses: actions/setup-java@v4

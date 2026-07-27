@@ -586,6 +586,7 @@ const HealingRoomPage: React.FC = () => {
           .hr-leaf { display: none; }
         }
       `}</style>
+      <PWAInstallPrompt />
     </div>
   );
 };

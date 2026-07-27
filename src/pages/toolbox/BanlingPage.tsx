@@ -5,6 +5,7 @@ import { track } from "../../utils/track";
 import { callAI } from "../../utils/aiClient";
 import { useSolo } from "../../context/StandaloneContext";
 import { useAppManifest } from "../../hooks/useAppManifest";
+import PWAInstallPrompt from "../../components/PWAInstallPrompt";
 
 /**
  * 伴龄 · AI 养老规划伴侣
@@ -1656,6 +1657,7 @@ ${messages.map((m) => `${m.role === "user" ? "用户" : "伴龄"}: ${m.content}`
       }} />
       <BanlingStyles />
       {toast && <div className="bl-toast">{toast}</div>}
+      <PWAInstallPrompt />
     </div>
   );
 }

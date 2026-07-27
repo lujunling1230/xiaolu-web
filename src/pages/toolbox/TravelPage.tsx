@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Link } from "react-router-dom";
 import { useSolo } from "../../context/StandaloneContext";
 import { useAppManifest } from "../../hooks/useAppManifest";
+import PWAInstallPrompt from "../../components/PWAInstallPrompt";
 
 /**
  * 漫游指南 · Travel Log
@@ -2160,6 +2161,7 @@ const TravelPage: React.FC = () => {
           .travel-edit-footer { padding: 16px 20px 20px; }
         }
       `}</style>
+      <PWAInstallPrompt />
     </div>
   );
 };

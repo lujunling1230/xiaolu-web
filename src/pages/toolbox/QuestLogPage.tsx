@@ -6,6 +6,7 @@ import { legacyLoad, legacySave } from "../../utils/siteData";
 import { useAdminGuard } from "../../hooks/useAdminGuard";
 import { useSolo } from "../../context/StandaloneContext";
 import { useAppManifest } from "../../hooks/useAppManifest";
+import PWAInstallPrompt from "../../components/PWAInstallPrompt";
 
 /**
  * 通关清单 · Quest Log
@@ -961,6 +962,7 @@ const QuestLogPage: React.FC = () => {
       </button>
 
       <AdminGuardUI />
+      <PWAInstallPrompt />
     </div>
   );
 };

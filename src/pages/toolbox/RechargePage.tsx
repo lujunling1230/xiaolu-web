@@ -23,6 +23,7 @@ import {
 } from "./rechargeTags";
 import { useSolo } from "../../context/StandaloneContext";
 import { useAppManifest } from "../../hooks/useAppManifest";
+import PWAInstallPrompt from "../../components/PWAInstallPrompt";
 import {
   getPoints,
   getCheckinData,
@@ -2941,6 +2942,7 @@ const RechargePage: React.FC = () => {
           .me-user-stat-value { font-size: 14px; }
         }
       `}</style>
+      <PWAInstallPrompt />
     </div>
   );
 };

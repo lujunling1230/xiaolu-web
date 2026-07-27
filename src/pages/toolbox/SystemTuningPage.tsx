@@ -6,6 +6,7 @@ import { callAI } from "../../utils/aiClient";
 import { CHARACTERS, getCharacter, resolveGroupChat, CHARACTER_FEEDS, type Character } from "../../data/characters";
 import { useSolo } from "../../context/StandaloneContext";
 import { useAppManifest } from "../../hooks/useAppManifest";
+import PWAInstallPrompt from "../../components/PWAInstallPrompt";
 
 /**
  * 爱情公寓·元宇宙客厅
@@ -4356,6 +4357,7 @@ const SystemTuningPage: React.FC = () => {
           .wx-moment-actions { font-size: 12px; }
         }
       `}</style>
+      <PWAInstallPrompt />
     </div>
   );
 };

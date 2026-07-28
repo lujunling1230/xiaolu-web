@@ -66,6 +66,7 @@ export default function CityDetailModal({
   onDelete,
 }: CityDetailModalProps) {
   const [carouselIndex, setCarouselIndex] = useState(0);
+  const isVideoUrl = (url: string) => url.startsWith("data:video") || /\.(mp4|mov|webm)(\?.*)?$/i.test(url);
   if (!city) return null;
 
   return (
@@ -115,11 +116,15 @@ export default function CityDetailModal({
             {/* 轮播图 */}
             <div className="rg-detail-carousel">
               <div className="rg-detail-carousel-track" style={{ transform: `translateX(-${carouselIndex * 100}%)` }}>
-                {(city.images?.length ? city.images : ["https://images.unsplash.com/photo-1506744038136-46273834b3fb?w=800&h=600&fit=crop"]).map((img, i) => (
+                {(city.images?.length ? city.images : ["https://images.unsplash.com/photo-1506744038136-46273834b3fb?w=800&h=600&fit=crop"]).map((item, i) => (
                   <div key={i} className="rg-detail-carousel-slide rg-film-slide">
                     <div className="rg-film-frame">
                       <div className="rg-film-holes rg-film-holes--top" />
-                      <img src={img} alt={`${city.name} ${i + 1}`} />
+                      {isVideoUrl(item) ? (
+                        <video src={item} autoPlay muted loop playsInline preload="auto" style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }} />
+                      ) : (
+                        <img src={item} alt={`${city.name} ${i + 1}`} />
+                      )}
                       <div className="rg-film-holes rg-film-holes--bottom" />
                     </div>
                   </div>

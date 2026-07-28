@@ -419,6 +419,9 @@ export default function CityEditModal({
   const [form, setForm] = useState<City>(BLANK_CITY);
   const [uploadMode, setUploadMode] = useState<"single" | "multi">("multi");
 
+  const isVideo = (url: string) =>
+    url.startsWith("data:video") || url.match(/\.(mp4|mov|webm)(\?.*)?$/i);
+
   useEffect(() => {
     if (city) {
       setForm({ ...city });
@@ -625,23 +628,27 @@ export default function CityEditModal({
               {/* 图片上传 + 天数 */}
               <div className="rg-edit-row rg-two-col">
                 <label className="rg-edit-field rg-image-field">
-                  <span>城市照片</span>
+                  <span>照片 & 视频</span>
                   <div className="rg-image-upload-mode">
                     <button
                       type="button"
                       className={`rg-upload-mode-btn ${uploadMode === "single" ? "active" : ""}`}
                       onClick={() => setUploadMode("single")}
-                    >单张上传</button>
+                    >单张</button>
                     <button
                       type="button"
                       className={`rg-upload-mode-btn ${uploadMode === "multi" ? "active" : ""}`}
                       onClick={() => setUploadMode("multi")}
-                    >多张上传</button>
+                    >多张</button>
                   </div>
                   <div className="rg-image-grid">
-                    {(form.images || []).map((img, idx) => (
+                    {(form.images || []).map((item, idx) => (
                       <div key={idx} className="rg-image-thumb">
-                        <img src={img} alt={`照片 ${idx + 1}`} />
+                        {isVideo(item) ? (
+                          <video src={item} muted playsInline preload="metadata" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+                        ) : (
+                          <img src={item} alt={`照片 ${idx + 1}`} />
+                        )}
                         <button
                           className="rg-image-del"
                           onClick={() => removeImage(idx)}
@@ -658,12 +665,12 @@ export default function CityEditModal({
                         onClick={() => document.getElementById("city-image-upload")?.click()}
                       >
                         <span style={{ fontSize: 20, opacity: 0.4 }}>+</span>
-                        <span style={{ fontSize: 11, color: "#aaa", marginTop: 2 }}>点击上传</span>
+                        <span style={{ fontSize: 11, color: "#aaa", marginTop: 2 }}>上传照片/视频</span>
                       </div>
                     )}
                     <input
                       type="file"
-                      accept="image/*"
+                      accept="image/*,video/*"
                       multiple={uploadMode === "multi"}
                       id="city-image-upload"
                       style={{ display: "none" }}
@@ -1060,6 +1067,13 @@ export default function CityEditModal({
         height: 100%;
         object-fit: cover;
         border-radius: 2px;
+      }
+      .rg-image-thumb video {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        display: block;
+        border-radius: 8px;
       }
       /* 胶片齿孔 */
       .rg-image-thumb::before,

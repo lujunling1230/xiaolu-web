@@ -78,6 +78,7 @@ export default function CityCardGallery({
                     c.play.reduce((s, x) => s + x.rating, 0) / c.play.length
                   )
                 : 3;
+            const firstImage = c.images?.find(u => !u.startsWith("data:video") && !/\.(mp4|mov|webm)(\?.*)?$/i.test(u)) || c.images?.[0] || "https://images.unsplash.com/photo-1506744038136-46273834b3fb?w=800&h=600&fit=crop";
             return (
               <motion.div
                 key={c.id}
@@ -90,10 +91,7 @@ export default function CityCardGallery({
                 <button className="rg-card-main" onClick={() => onSelect(c)}>
                   <div className="rg-card-img-wrap">
                     <img
-                      src={
-                        (c.images?.[0]) ||
-                        "https://images.unsplash.com/photo-1506744038136-46273834b3fb?w=800&h=600&fit=crop"
-                      }
+                      src={firstImage}
                       alt={c.name}
                       loading="lazy"
                     />

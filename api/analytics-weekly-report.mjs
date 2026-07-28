@@ -1,9 +1,9 @@
 /*
- * 每日数据分析报告 API
- * GET /api/analytics-daily-report?secret=xxx&test=1
+ * 每周数据分析报告 API
+ * GET /api/analytics-weekly-report?secret=xxx&test=1
  *
  * 用法：
- *   1. Vercel Cron 每天定时触发（见 vercel.json）
+ *   1. Vercel Cron 每周一 09:00 定时触发（见 vercel.json）
  *   2. 也可手动 GET 调用（加 ?test=1 可测试发送）
  *
  * 环境变量：
@@ -97,16 +97,10 @@ function dailyCounts(events, days) {
   return result;
 }
 
-/* ---- 提升建议生成 ---- */
+/* ---- 周报指标计算 ---- */
 
-/* ---- 新增指标计算 ---- */
-
-function getDAU(events) {
-  const todayStart = new Date();
-  todayStart.setHours(0, 0, 0, 0);
-  return new Set(
-    events.filter((e) => e.name === "page_view" && e.ts >= todayStart.getTime()).map((e) => e.anon_id)
-  ).size;
+function getWAU(events) {
+  return uniqueCount(events.filter((e) => e.name === "page_view"), "anon_id");
 }
 
 function getMAU(events) {
@@ -114,26 +108,6 @@ function getMAU(events) {
   return new Set(
     events.filter((e) => e.name === "page_view" && e.ts >= thirtyDaysAgo).map((e) => e.anon_id)
   ).size;
-}
-
-function getRetentionRate(days, events) {
-  const firstSeen = new Map();
-  events.forEach((e) => {
-    const date = new Date(e.ts).toISOString().slice(0, 10);
-    const existing = firstSeen.get(e.anon_id);
-    if (!existing || date < existing) firstSeen.set(e.anon_id, date);
-  });
-  const today = new Date().toISOString().slice(0, 10);
-  const targetDate = new Date();
-  targetDate.setDate(targetDate.getDate() - days);
-  const targetDateStr = targetDate.toISOString().slice(0, 10);
-  const newUsers = Array.from(firstSeen.entries()).filter(([, d]) => d === targetDateStr).map(([id]) => id);
-  if (newUsers.length === 0) return 0;
-  const todayUsers = new Set(
-    events.filter((e) => e.name === "page_view" && new Date(e.ts).toISOString().slice(0, 10) === today).map((e) => e.anon_id)
-  );
-  const returned = newUsers.filter((id) => todayUsers.has(id)).length;
-  return Math.round((returned / newUsers.length) * 1000) / 10;
 }
 
 function getAvgSessionDuration(events) {
@@ -151,7 +125,7 @@ function getAvgSessionDuration(events) {
   let valid = 0;
   sessionMap.forEach(({ min, max }) => {
     const dur = (max - min) / 1000;
-    if (dur <= 1800) { total += dur; valid++; }
+    if (dur <= 3600) { total += dur; valid++; }
   });
   return valid > 0 ? Math.round((total / valid) * 10) / 10 : 0;
 }
@@ -169,7 +143,7 @@ function getModeDistribution(events) {
   };
 }
 
-function getNewVsReturning(events) {
+function getNewVsReturning(events, weekStartTs) {
   const firstSeen = new Map();
   events.forEach((e) => {
     const date = new Date(e.ts).toISOString().slice(0, 10);
@@ -182,10 +156,7 @@ function getNewVsReturning(events) {
     const firstDate = firstSeen.get(id);
     if (!firstDate) return;
     const firstTs = new Date(firstDate).getTime();
-    const yesterdayStart = new Date();
-    yesterdayStart.setDate(yesterdayStart.getDate() - 1);
-    yesterdayStart.setHours(0, 0, 0, 0);
-    if (firstTs >= yesterdayStart.getTime()) newUsers++;
+    if (firstTs >= weekStartTs) newUsers++;
     else returning++;
   });
   return { newUsers, returning };
@@ -203,71 +174,68 @@ function getHealthScore(events) {
   const dur = getAvgSessionDuration(events);
   let durScore = 100;
   if (dur < 15) durScore = 30; else if (dur < 30) durScore = 60; else if (dur < 60) durScore = 80;
-  const dau = getDAU(events);
+  const wau = getWAU(events);
   const mau = getMAU(events);
-  const ratio = mau > 0 ? Math.round((dau / mau) * 1000) / 10 : 0;
+  const ratio = mau > 0 ? Math.round((wau / mau) * 1000) / 10 : 0;
   let ratioScore = 100;
-  if (ratio < 5) ratioScore = 30; else if (ratio < 10) ratioScore = 60; else if (ratio < 20) ratioScore = 80;
+  if (ratio < 10) ratioScore = 30; else if (ratio < 20) ratioScore = 60; else if (ratio < 30) ratioScore = 80;
   const score = Math.round((brScore + ppvScore + durScore + ratioScore) / 4);
   let label = "健康";
   if (score < 50) label = "需关注"; else if (score < 70) label = "一般";
   return { score, label };
 }
 
-/* ---- 提升建议生成 ---- */
+/* ---- 周报提升建议生成 ---- */
 
-function generateSuggestions(yesterday, twoDaysAgo) {
+function generateSuggestions(thisWeek, lastWeek) {
   const suggestions = [];
 
-  // PV 变化
-  const pvToday = yesterday.filter((e) => e.name === "page_view").length;
-  const pvYesterday = twoDaysAgo.filter((e) => e.name === "page_view").length;
-  const uvToday = uniqueCount(yesterday, "anon_id");
-  const uvYesterday = uniqueCount(twoDaysAgo, "anon_id");
+  const pvThis = countByName(thisWeek, "page_view");
+  const pvLast = countByName(lastWeek, "page_view");
+  const uvThis = uniqueCount(thisWeek, "anon_id");
+  const uvLast = uniqueCount(lastWeek, "anon_id");
 
-  if (pvYesterday > 0) {
-    const pvChange = ((pvToday - pvYesterday) / pvYesterday * 100).toFixed(1);
+  if (pvLast > 0) {
+    const pvChange = ((pvThis - pvLast) / pvLast * 100).toFixed(1);
     if (pvChange < -20) {
-      suggestions.push({ type: "down", text: `PV 环比下降 ${pvChange}%，建议检查是否有 SEO 排名波动或站点可访问性问题` });
+      suggestions.push({ type: "down", text: `本周 PV 环比下降 ${pvChange}%（${pvLast} → ${pvThis}），建议检查是否有 SEO 排名波动、外链失效或站点可访问性问题` });
     } else if (pvChange > 20) {
-      suggestions.push({ type: "up", text: `PV 环比增长 ${pvChange}%，表现优秀！可以分析哪个渠道带来的流量增长，加大投入` });
+      suggestions.push({ type: "up", text: `本周 PV 环比增长 ${pvChange}%（${pvLast} → ${pvThis}），表现优秀！建议分析流量来源，加大优质渠道投入` });
     }
   }
 
-  if (uvYesterday > 0) {
-    const uvChange = ((uvToday - uvYesterday) / uvYesterday * 100).toFixed(1);
+  if (uvLast > 0) {
+    const uvChange = ((uvThis - uvLast) / uvLast * 100).toFixed(1);
     if (uvChange < -15) {
-      suggestions.push({ type: "down", text: `UV 环比下降 ${uvChange}%，新访客减少，建议检查外链、社交媒体引流是否正常` });
+      suggestions.push({ type: "down", text: `本周 UV 环比下降 ${uvChange}%（${uvLast} → ${uvThis}），新访客减少，建议检查外链、社交媒体引流是否正常，或考虑增加内容营销` });
+    } else if (uvChange > 20) {
+      suggestions.push({ type: "up", text: `本周 UV 环比增长 ${uvChange}%（${uvLast} → ${uvThis}），用户规模在扩大，建议关注新用户留存` });
     }
   }
 
-  // 跳出率
-  const bounceToday = getBounceRate(yesterday);
-  if (bounceToday > 70) {
-    suggestions.push({ type: "warn", text: `跳出率 ${bounceToday}% 偏高，建议优化首页内容吸引力，或增加引导用户进入工具箱的入口` });
+  const bounceThis = getBounceRate(thisWeek);
+  if (bounceThis > 70) {
+    suggestions.push({ type: "warn", text: `本周跳出率 ${bounceThis}% 偏高，用户进入后快速离开，建议优化首页内容吸引力、加载速度，或增加引导用户进入工具箱的入口` });
   }
 
-  // 人均浏览页数
-  const ppv = uvToday > 0 ? (pvToday / uvToday).toFixed(1) : 0;
-  if (ppv < 1.5 && pvToday > 5) {
-    suggestions.push({ type: "warn", text: `人均浏览 ${ppv} 页偏低，用户停留时间短，建议增加作品间互相推荐的引导` });
+  const ppv = uvThis > 0 ? (pvThis / uvThis).toFixed(1) : 0;
+  if (ppv < 1.5 && pvThis > 10) {
+    suggestions.push({ type: "warn", text: `人均浏览 ${ppv} 页偏低，用户停留时间短，建议增加作品间互相推荐的引导，或优化内容深度` });
   }
 
-  // 会话时长
-  const dur = getAvgSessionDuration(yesterday);
-  if (dur < 15 && pvToday > 5) {
-    suggestions.push({ type: "warn", text: `平均会话时长仅 ${dur} 秒，用户停留时间过短，建议优化页面加载速度或增加内容吸引力` });
+  const dur = getAvgSessionDuration(thisWeek);
+  if (dur < 30 && pvThis > 10) {
+    suggestions.push({ type: "warn", text: `平均会话时长仅 ${dur} 秒，用户停留时间过短，建议优化页面加载速度、增加互动元素或内容吸引力` });
   }
 
-  // DAU/MAU 活跃度
-  const dau = getDAU(yesterday);
-  const mau = getMAU(yesterday);
-  const ratio = mau > 0 ? ((dau / mau) * 100).toFixed(1) : 0;
-  if (ratio < 5 && mau > 10) {
-    suggestions.push({ type: "warn", text: `DAU/MAU 比值仅 ${ratio}%，用户粘性较低，建议增加每日签到或积分等留存激励` });
+  const wau = getWAU(thisWeek);
+  const mau = getMAU(thisWeek);
+  const ratio = mau > 0 ? ((wau / mau) * 100).toFixed(1) : 0;
+  if (ratio < 10 && mau > 20) {
+    suggestions.push({ type: "warn", text: `WAU/MAU 比值仅 ${ratio}%（周活 ${wau} / 月活 ${mau}），用户粘性较低，建议增加打卡签到、积分等留存激励机制（已上线的跨产品打卡系统可加强引导）` });
   }
 
-  // 作品转化漏斗分析
+  /* 作品转化漏斗分析 */
   const funnels = [
     { name: "伴龄", steps: ["tool_enter", "banling_chat", "banling_report", "banling_action_adopt"] },
     { name: "漫游指南", steps: ["tool_enter", "rg_ai_open", "rg_ai_recommend_submit", "rg_ai_adopt_city"] },
@@ -280,7 +248,7 @@ function generateSuggestions(yesterday, twoDaysAgo) {
   ];
 
   for (const f of funnels) {
-    const data = calcFunnel(yesterday, f.name, f.steps);
+    const data = calcFunnel(thisWeek, f.name, f.steps);
     if (data[0].count < 3) continue;
     const lastStep = data[data.length - 1];
     const finalRate = data[0].count > 0
@@ -290,7 +258,7 @@ function generateSuggestions(yesterday, twoDaysAgo) {
     if (finalRate < 10 && data.length >= 3) {
       suggestions.push({
         type: "warn",
-        text: `${f.name}最终转化率仅 ${finalRate}%（${data[0].count}人进入 → ${lastStep.count}人完成最后一步），建议分析用户在"${data[data.length - 2].step.replace(/_/g, " ")}"步骤流失原因，优化交互流程或降低操作门槛`,
+        text: `${f.name}本周最终转化率仅 ${finalRate}%（${data[0].count}人进入 → ${lastStep.count}人完成最后一步），建议分析用户在"${data[data.length - 2].step.replace(/_/g, " ")}"步骤流失原因，优化交互流程或降低操作门槛`,
       });
     }
 
@@ -298,17 +266,17 @@ function generateSuggestions(yesterday, twoDaysAgo) {
       if (data[i].rate < 20 && data[i - 1].count >= 5) {
         suggestions.push({
           type: "warn",
-          text: `${f.name}在"${data[i].step.replace(/_/g, " ")}"步骤转化仅 ${data[i].rate}%，是主要流失节点，建议重点优化此环节`,
+          text: `${f.name}在"${data[i].step.replace(/_/g, " ")}"步骤转化仅 ${data[i].rate}%（${data[i - 1].count} → ${data[i].count}），是主要流失节点，建议本周重点优化此环节`,
         });
       }
     }
   }
 
   if (suggestions.length === 0) {
-    if (pvToday > 0) {
-      suggestions.push({ type: "good", text: "各项指标表现正常，继续保持！" });
+    if (pvThis > 0) {
+      suggestions.push({ type: "good", text: "本周各项指标表现正常，继续保持！" });
     } else {
-      suggestions.push({ type: "info", text: "昨日暂无访问数据，可能是低流量日" });
+      suggestions.push({ type: "info", text: "本周暂无访问数据，可能是低流量周，建议检查站点是否正常部署" });
     }
   }
 
@@ -317,49 +285,50 @@ function generateSuggestions(yesterday, twoDaysAgo) {
 
 /* ---- 邮件 HTML 生成 ---- */
 
-function buildReportHTML(yesterday, twoDaysAgo, suggestions) {
-  const pv = countByName(yesterday, "page_view");
-  const uv = uniqueCount(yesterday, "anon_id");
+function buildReportHTML(thisWeek, lastWeek, suggestions) {
+  const pv = countByName(thisWeek, "page_view");
+  const uv = uniqueCount(thisWeek, "anon_id");
   const ppv = uv > 0 ? (pv / uv).toFixed(1) : "0";
-  const bounce = getBounceRate(yesterday);
-  const totalEvents = yesterday.length;
-  const dau = getDAU(yesterday);
-  const mau = getMAU(yesterday);
-  const dauMau = mau > 0 ? ((dau / mau) * 100).toFixed(1) : "0";
-  const retention1d = getRetentionRate(1, yesterday);
-  const retention7d = getRetentionRate(7, yesterday);
-  const avgDur = getAvgSessionDuration(yesterday);
-  const modeDist = getModeDistribution(yesterday);
-  const newVsRet = getNewVsReturning(yesterday);
-  const health = getHealthScore(yesterday);
+  const bounce = getBounceRate(thisWeek);
+  const totalEvents = thisWeek.length;
+  const wau = getWAU(thisWeek);
+  const mau = getMAU(thisWeek);
+  const wauMau = mau > 0 ? ((wau / mau) * 100).toFixed(1) : "0";
+  const avgDur = getAvgSessionDuration(thisWeek);
+  const modeDist = getModeDistribution(thisWeek);
 
-  // 环比
-  const pvPrev = countByName(twoDaysAgo, "page_view");
-  const uvPrev = uniqueCount(twoDaysAgo, "anon_id");
+  /* 本周起始时间 */
+  const now = new Date();
+  const weekStart = new Date(now);
+  weekStart.setDate(weekStart.getDate() - 7);
+  const newVsRet = getNewVsReturning(thisWeek, weekStart.getTime());
+  const health = getHealthScore(thisWeek);
+
+  /* 环比 */
+  const pvPrev = countByName(lastWeek, "page_view");
+  const uvPrev = uniqueCount(lastWeek, "anon_id");
   const pvChange = pvPrev > 0 ? ((pv - pvPrev) / pvPrev * 100).toFixed(1) : "--";
   const uvChange = uvPrev > 0 ? ((uv - uvPrev) / uvPrev * 100).toFixed(1) : "--";
 
-  // 近 3 天趋势
-  const last48h = [...twoDaysAgo, ...yesterday];
-  const trend = dailyCounts(last48h, 3);
+  /* 近 7 天趋势 */
+  const trend = dailyCounts(thisWeek, 7);
   const maxTrend = Math.max(...trend.map((d) => d.count), 1);
 
-  // 各作品使用排行
+  /* 各作品使用排行 */
   const toolEnters = {};
-  yesterday.filter((e) => e.name === "tool_enter").forEach((e) => {
+  thisWeek.filter((e) => e.name === "tool_enter").forEach((e) => {
     const name = e.props?.tool_name || "未命名";
     toolEnters[name] = (toolEnters[name] || 0) + 1;
   });
   const toolRanking = Object.entries(toolEnters).sort((a, b) => b[1] - a[1]);
   const maxTool = toolRanking[0]?.[1] || 1;
 
-  // 核心指标卡片（7 格）
   const metrics = [
     { label: "PV", value: pv, change: pvChange, color: "#8D9A8B" },
     { label: "UV", value: uv, change: uvChange, color: "#E8853A" },
     { label: "人均浏览", value: ppv, sub: "页", color: "#7BA89E" },
     { label: "跳出率", value: bounce, sub: "%", color: bounce > 70 ? "#b06a6a" : "#C06A2E" },
-    { label: "DAU/MAU", value: dau, sub: `MAU ${mau} · ${dauMau}%`, color: "#4d8a82" },
+    { label: "WAU/MAU", value: wau, sub: `MAU ${mau} · ${wauMau}%`, color: "#4d8a82" },
     { label: "会话时长", value: avgDur, sub: "秒", color: "#a8814a" },
     { label: "事件总数", value: totalEvents, color: "#8b7355" },
   ];
@@ -384,14 +353,28 @@ function buildReportHTML(yesterday, twoDaysAgo, suggestions) {
     return `<span style="display:inline-block;padding:2px 8px;border-radius:999px;background:${c.bg};color:${c.text};font-size:11px;font-weight:600;margin-right:8px;">${c.label}</span>`;
   }
 
-  const yesterdayStr = new Date(Date.now() - 86400_000).toISOString().slice(0, 10);
+  const weekStartStr = weekStart.toISOString().slice(0, 10);
+  const todayStr = now.toISOString().slice(0, 10);
+
+  /* 趋势柱状图 */
+  const trendBars = trend.map((d) => {
+    const pct = Math.round((d.count / maxTrend) * 100);
+    const dayLabel = d.date.slice(5);
+    return `
+      <div style="display:flex;flex-direction:column;align-items:center;gap:4px;flex:1;">
+        <div style="font-size:10px;color:#a8a39b;">${d.count}</div>
+        <div style="width:100%;max-width:40px;height:${Math.max(pct * 1.2, 4)}px;background:linear-gradient(to top, #8D9A8B, #7BA89E);border-radius:3px 3px 0 0;"></div>
+        <div style="font-size:10px;color:#a8a39b;">${dayLabel}</div>
+      </div>
+    `;
+  }).join("");
 
   return `
     <div style="font-family: -apple-system, 'Segoe UI', 'PingFang SC', sans-serif; max-width: 620px; margin: 0 auto; padding: 32px; background: #FAF9F6; border-radius: 16px; border: 1px solid #E8E6E1;">
       <!-- 标题 -->
       <div style="margin-bottom: 28px;">
-        <h1 style="margin: 0 0 6px; font-size: 22px; color: #4a4038; letter-spacing: 0.04em;">每日数据分析报告</h1>
-        <p style="margin: 0; font-size: 13px; color: #a8a39b;">${yesterdayStr} · luro.site</p>
+        <h1 style="margin: 0 0 6px; font-size: 22px; color: #4a4038; letter-spacing: 0.04em;">每周数据分析周报</h1>
+        <p style="margin: 0; font-size: 13px; color: #a8a39b;">${weekStartStr} ~ ${todayStr} · luro.site</p>
       </div>
 
       <!-- 健康评分 -->
@@ -401,33 +384,41 @@ function buildReportHTML(yesterday, twoDaysAgo, suggestions) {
         </div>
         <div>
           <div style="font-size: 15px; font-weight: 600; color: #4a4038;">数据健康评分：${health.label}</div>
-          <div style="font-size: 12px; color: #a8a39b; margin-top: 2px;">综合跳出率、人均浏览、会话时长、DAU/MAU 四项指标</div>
+          <div style="font-size: 12px; color: #a8a39b; margin-top: 2px;">综合跳出率、人均浏览、会话时长、WAU/MAU 四项指标</div>
         </div>
       </div>
 
       <!-- 核心指标 -->
-      <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 28px;">
+      <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 24px;">
         ${metrics.map((m) => `
           <div style="background: #fff; border-radius: 10px; padding: 14px 10px; text-align: center; border: 1px solid #E8E6E1;">
             <div style="font-size: 11px; color: #a8a39b; margin-bottom: 6px;">${m.label}</div>
             <div style="font-size: 22px; font-weight: 700; color: ${m.color}; line-height: 1;">${m.value}${m.sub && !m.sub.includes("MAU") ? `<span style="font-size:12px;font-weight:400;margin-left:2px;">${m.sub}</span>` : ""}</div>
-            ${m.change ? `<div style="font-size: 11px; margin-top: 4px;">${changeTag(m.change)} 环比</div>` : ""}
+            ${m.change ? `<div style="font-size: 11px; margin-top: 4px;">${changeTag(m.change)} 周环比</div>` : ""}
             ${m.sub && m.sub.includes("MAU") ? `<div style="font-size: 11px; color: #a8a39b; margin-top: 4px;">${m.sub}</div>` : ""}
           </div>
         `).join("")}
       </div>
 
-      <!-- 留存率 + 访问模式 + 用户构成 三栏 -->
-      <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 28px;">
+      <!-- 7 天趋势 -->
+      <div style="background: #fff; border-radius: 12px; padding: 20px; border: 1px solid #E8E6E1; margin-bottom: 24px;">
+        <div style="font-size: 13px; color: #4a4038; font-weight: 600; margin-bottom: 16px;">近 7 天事件趋势</div>
+        <div style="display: flex; align-items: flex-end; gap: 6px; height: 100px;">
+          ${trendBars}
+        </div>
+      </div>
+
+      <!-- 用户构成 + 访问模式 两栏 -->
+      <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 24px;">
         <div style="background: #fff; border-radius: 10px; padding: 16px; border: 1px solid #E8E6E1;">
-          <div style="font-size: 11px; color: #a8a39b; margin-bottom: 10px;">留存率</div>
+          <div style="font-size: 11px; color: #a8a39b; margin-bottom: 10px;">本周用户构成</div>
           <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
-            <span style="font-size: 12px; color: #4a4038;">次日留存</span>
-            <span style="font-size: 14px; font-weight: 700; color: #7BA89E;">${retention1d}%</span>
+            <span style="font-size: 12px; color: #4a4038;">新用户</span>
+            <span style="font-size: 14px; font-weight: 700; color: #7BA89E;">${newVsRet.newUsers}</span>
           </div>
           <div style="display: flex; justify-content: space-between;">
-            <span style="font-size: 12px; color: #4a4038;">7 日留存</span>
-            <span style="font-size: 14px; font-weight: 700; color: #8a5f8a;">${retention7d}%</span>
+            <span style="font-size: 12px; color: #4a4038;">回访用户</span>
+            <span style="font-size: 14px; font-weight: 700; color: #E8853A;">${newVsRet.returning}</span>
           </div>
         </div>
         <div style="background: #fff; border-radius: 10px; padding: 16px; border: 1px solid #E8E6E1;">
@@ -441,27 +432,16 @@ function buildReportHTML(yesterday, twoDaysAgo, suggestions) {
             <span style="font-size: 14px; font-weight: 700; color: #C06A2E;">${modeDist.soloPct}%</span>
           </div>
         </div>
-        <div style="background: #fff; border-radius: 10px; padding: 16px; border: 1px solid #E8E6E1;">
-          <div style="font-size: 11px; color: #a8a39b; margin-bottom: 10px;">用户构成</div>
-          <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
-            <span style="font-size: 12px; color: #4a4038;">新用户</span>
-            <span style="font-size: 14px; font-weight: 700; color: #7BA89E;">${newVsRet.newUsers}</span>
-          </div>
-          <div style="display: flex; justify-content: space-between;">
-            <span style="font-size: 12px; color: #4a4038;">回访用户</span>
-            <span style="font-size: 14px; font-weight: 700; color: #E8853A;">${newVsRet.returning}</span>
-          </div>
-        </div>
       </div>
 
       ${toolRanking.length > 0 ? `
       <!-- 作品使用排行 -->
-      <div style="margin-bottom: 28px;">
-        <h2 style="margin: 0 0 14px; font-size: 15px; color: #4a4038; font-weight: 600;">昨日作品使用排行</h2>
+      <div style="margin-bottom: 24px;">
+        <h2 style="margin: 0 0 14px; font-size: 15px; color: #4a4038; font-weight: 600;">本周作品使用排行</h2>
         <div style="display: flex; flex-direction: column; gap: 8px;">
-          ${toolRanking.slice(0, 6).map(([name, count], i) => {
+          ${toolRanking.slice(0, 8).map(([name, count], i) => {
             const pct = Math.round((count / maxTool) * 100);
-            const colors = ["#8D9A8B", "#7BA89E", "#C06A2E", "#E8853A", "#8b7355", "#a8a39b"];
+            const colors = ["#8D9A8B", "#7BA89E", "#C06A2E", "#E8853A", "#8b7355", "#a8a39b", "#5d7a8a", "#a8814a"];
             return `
               <div style="display: flex; align-items: center; gap: 8px;">
                 <span style="width: 18px; font-size: 11px; font-weight: 700; color: ${i < 3 ? "#E8853A" : "#a8a39b"}; text-align: center;">${i + 1}</span>
@@ -471,7 +451,7 @@ function buildReportHTML(yesterday, twoDaysAgo, suggestions) {
                     <span style="font-weight: 600;">${count}</span>
                   </div>
                   <div style="height: 6px; border-radius: 3px; background: #E8E6E1; overflow: hidden;">
-                    <div style="height: 100%; width: ${pct}%; background: ${colors[i] || colors[5]}; border-radius: 3px;"></div>
+                    <div style="height: 100%; width: ${pct}%; background: ${colors[i] || colors[7]}; border-radius: 3px;"></div>
                   </div>
                 </div>
               </div>
@@ -481,9 +461,9 @@ function buildReportHTML(yesterday, twoDaysAgo, suggestions) {
       </div>
       ` : ""}
 
-      <!-- 提升建议 -->
+      <!-- 优化建议 -->
       <div style="margin-bottom: 24px;">
-        <h2 style="margin: 0 0 14px; font-size: 15px; color: #4a4038; font-weight: 600;">提升建议</h2>
+        <h2 style="margin: 0 0 14px; font-size: 15px; color: #4a4038; font-weight: 600;">本周优化建议</h2>
         <div style="display: flex; flex-direction: column; gap: 10px;">
           ${suggestions.map((s) => `
             <div style="background: #fff; border-radius: 10px; padding: 14px 16px; border: 1px solid #E8E6E1; font-size: 13px; color: #4a4038; line-height: 1.6;">
@@ -494,7 +474,7 @@ function buildReportHTML(yesterday, twoDaysAgo, suggestions) {
       </div>
 
       <!-- 页脚 -->
-      <p style="margin: 0; color: #ccc; font-size: 11px; text-align: center; letter-spacing: 0.04em;">— luro.site 每日数据分析报告 · 自动生成 —</p>
+      <p style="margin: 0; color: #ccc; font-size: 11px; text-align: center; letter-spacing: 0.04em;">— luro.site 每周数据周报 · 每周一自动生成 —</p>
       <p style="margin: 8px 0 0; text-align: center;"><a href="${SITE_URL}" style="color: #8D9A8B; font-size: 12px; text-decoration: none;">查看数据面板 &rarr;</a></p>
     </div>
   `;
@@ -510,23 +490,24 @@ export default async function handler(req, res) {
       return res.status(403).json({ error: "密钥错误" });
     }
 
-    // 获取数据：昨天 0~24 点 + 前天 0~24 点（用于环比）
+    // 获取数据：本周 7 天 + 上周 7 天（用于环比）
     const now = new Date();
     const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
-    const yesterdayStart = todayStart - 86400_000;
-    const twoDaysAgoStart = yesterdayStart - 86400_000;
+    const weekStart = todayStart - 7 * 86400_000;       // 本周起始（7天前）
+    const lastWeekStart = weekStart - 7 * 86400_000;     // 上周起始（14天前）
 
-    // 查询最近 48 小时事件，再按时间分割
-    const allRecent = await queryEvents(48);
-    const yesterday = allRecent.filter((e) => e.ts >= yesterdayStart && e.ts < todayStart);
-    const twoDaysAgo = allRecent.filter((e) => e.ts >= twoDaysAgoStart && e.ts < yesterdayStart);
+    // 查询最近 14 天事件，再按时间分割
+    const allRecent = await queryEvents(14 * 24 + 1); // 14天+1小时余量
+    const thisWeek = allRecent.filter((e) => e.ts >= weekStart && e.ts < todayStart);
+    const lastWeek = allRecent.filter((e) => e.ts >= lastWeekStart && e.ts < weekStart);
 
     // 生成建议
-    const suggestions = generateSuggestions(yesterday, twoDaysAgo);
+    const suggestions = generateSuggestions(thisWeek, lastWeek);
 
     // 构建邮件
-    const html = buildReportHTML(yesterday, twoDaysAgo, suggestions);
-    const yesterdayStr = new Date(yesterdayStart).toISOString().slice(0, 10);
+    const html = buildReportHTML(thisWeek, lastWeek, suggestions);
+    const weekStartStr = new Date(weekStart).toISOString().slice(0, 10);
+    const todayStr = now.toISOString().slice(0, 10);
 
     const transporter = nodemailer.createTransport({
       host: process.env.SMTP_HOST,
@@ -540,22 +521,22 @@ export default async function handler(req, res) {
     await transporter.sendMail({
       from: `luro.site 数据报告 <${process.env.SMTP_USER}>`,
       to: toEmail,
-      subject: `【luro.site】每日数据报告 · ${yesterdayStr}`,
+      subject: `【luro.site】每周数据周报 · ${weekStartStr} ~ ${todayStr}`,
       html,
     });
 
-    console.log(`[analytics-daily-report] 报告已发送至 ${toEmail}，昨日 PV=${countByName(yesterday, "page_view")}, UV=${uniqueCount(yesterday, "anon_id")}`);
+    console.log(`[analytics-weekly-report] 周报已发送至 ${toEmail}，本周 PV=${countByName(thisWeek, "page_view")}, UV=${uniqueCount(thisWeek, "anon_id")}`);
 
     return res.status(200).json({
       ok: true,
-      date: yesterdayStr,
-      pv: countByName(yesterday, "page_view"),
-      uv: uniqueCount(yesterday, "anon_id"),
-      events: yesterday.length,
+      period: `${weekStartStr} ~ ${todayStr}`,
+      pv: countByName(thisWeek, "page_view"),
+      uv: uniqueCount(thisWeek, "anon_id"),
+      events: thisWeek.length,
       sentTo: toEmail,
     });
   } catch (err) {
-    console.error("[analytics-daily-report] error:", err.message, err.stack);
+    console.error("[analytics-weekly-report] error:", err.message, err.stack);
     return res.status(500).json({ error: err.message });
   }
 }

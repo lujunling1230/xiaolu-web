@@ -5,8 +5,8 @@
   ],
   "crons": [
     {
-      "path": "/api/analytics-daily-report",
-      "schedule": "0 9 * * *"
+      "path": "/api/analytics-weekly-report",
+      "schedule": "0 9 * * 1"
     }
   ]
 }

@@ -32,6 +32,7 @@ const PROJECTS = [
   { name: "回血清单", path: "/toolbox/recharge", tag: "自研", desc: "情绪疗愈 · 极小行动 · 心情标签 · AI 推荐" },
   { name: "漫游指南", path: "/toolbox/travel/map", tag: "自研", desc: "地图标记 · 旅行记录 · AI 推荐" },
   { name: "系统调频", path: "/toolbox/answer", tag: "自研", desc: "5% 微改变认知" },
+  { name: "伴龄", path: "/toolbox/banling", tag: "自研", desc: "AI 对话 · 养老规划 · 报告生成 · 计算器" },
   { name: "作品集", path: "/toolbox", tag: "总览", desc: "九维作品全景图" },
 ];
 
@@ -43,6 +44,7 @@ const TOOLS = [
   { name: "回血清单", icon: "🔋", desc: "情绪疗愈 · 极小行动 · 心情标签 · AI 推荐", path: "/toolbox/recharge" },
   { name: "漫游指南", icon: "🧳", desc: "地图标记 · 旅行记录 · AI 推荐", path: "/toolbox/travel/map" },
   { name: "系统调频", icon: "📡", desc: "5% 微改变认知", path: "/toolbox/answer" },
+  { name: "伴龄", icon: "🌿", desc: "AI 对话 · 养老规划 · 报告生成 · 计算器", path: "/toolbox/banling" },
   { name: "项目总览", icon: "🍃", desc: "九维作品全景图", path: "/toolbox" },
 ];
 

@@ -8,6 +8,7 @@ import { useSolo } from "../../context/StandaloneContext";
 import { useAppManifest } from "../../hooks/useAppManifest";
 import PWAInstallPrompt from "../../components/PWAInstallPrompt";
 import WeChatGuide from "../../components/WeChatGuide";
+import UniversalCheckinPanel from "../../components/UniversalCheckinPanel";
 
 /**
  * 爱情公寓·元宇宙客厅
@@ -1248,6 +1249,11 @@ const SystemTuningPage: React.FC = () => {
           </button>
         )}
       </header>
+
+      {/* 签到打卡 */}
+      <div style={{ maxWidth: 720, margin: '0 auto 16px', padding: '0 16px' }}>
+        <UniversalCheckinPanel productId="system_tuning" accentColor="#b06a6a" />
+      </div>
 
       <AnimatePresence mode="wait">
         {/* ===== 微信风格聊天列表页 ===== */}

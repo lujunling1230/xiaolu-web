@@ -5,6 +5,7 @@ import { useSolo } from "../../context/StandaloneContext";
 import { useAppManifest } from "../../hooks/useAppManifest";
 import PWAInstallPrompt from "../../components/PWAInstallPrompt";
 import WeChatGuide from "../../components/WeChatGuide";
+import UniversalCheckinPanel from "../../components/UniversalCheckinPanel";
 
 /**
  * 漫游指南 · Travel Log
@@ -722,6 +723,11 @@ const TravelPage: React.FC = () => {
           </button>
         </div>
       </header>
+
+      {/* 签到打卡 */}
+      <div style={{ maxWidth: 960, margin: '0 auto', padding: '24px 24px 0' }}>
+        <UniversalCheckinPanel productId="travel" accentColor="#4d8a82" />
+      </div>
 
       {/* ===== 足迹地图 ===== */}
       <section className="travel-section">

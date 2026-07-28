@@ -46,7 +46,7 @@ export default function WeChatGuide() {
     >
       <span style={{ fontSize: 20 }}>👆</span>
       <span>
-        点击右上角 <strong>···</strong> 菜单，选择<strong>"在浏览器中打开"</strong>，即可安装到桌面
+        点击右上角 <strong>···</strong> 菜单，选择<strong>"在浏览器中打开"</strong>，即可添加到桌面
       </span>
       <button
         onClick={() => {

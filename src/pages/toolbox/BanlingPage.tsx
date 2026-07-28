@@ -7,6 +7,7 @@ import { useSolo } from "../../context/StandaloneContext";
 import { useAppManifest } from "../../hooks/useAppManifest";
 import PWAInstallPrompt from "../../components/PWAInstallPrompt";
 import WeChatGuide from "../../components/WeChatGuide";
+import UniversalCheckinPanel from "../../components/UniversalCheckinPanel";
 
 /**
  * 伴龄 · AI 养老规划伴侣
@@ -1642,6 +1643,10 @@ ${messages.map((m) => `${m.role === "user" ? "用户" : "伴龄"}: ${m.content}`
           返回作品集
         </Link>
       )}
+      {/* 签到打卡 */}
+      <div style={{ maxWidth: 960, margin: '0 auto 16px', padding: '0 16px' }}>
+        <UniversalCheckinPanel productId="banling" accentColor="#87A96B" />
+      </div>
       <div className="bl-content">
         {tab === "home" && renderHome()}
         {tab === "ai" && renderAI()}

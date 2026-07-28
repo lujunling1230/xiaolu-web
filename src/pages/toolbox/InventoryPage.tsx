@@ -5,6 +5,7 @@ import { useSolo } from "../../context/StandaloneContext";
 import { useAppManifest } from "../../hooks/useAppManifest";
 import PWAInstallPrompt from "../../components/PWAInstallPrompt";
 import WeChatGuide from "../../components/WeChatGuide";
+import UniversalCheckinPanel from "../../components/UniversalCheckinPanel";
 import { track } from "../../utils/track";
 
 /**
@@ -1397,6 +1398,11 @@ const InventoryPage: React.FC = () => {
           </div>
         </div>
       </header>
+
+      {/* 签到打卡 */}
+      <div className="relative z-10 mx-auto max-w-3xl px-5 pb-2">
+        <UniversalCheckinPanel productId="inventory" accentColor="#5f76a0" />
+      </div>
 
       {/* —— 标题区 —— */}
       <div className="relative z-10 mx-auto max-w-3xl px-5 pb-4 pt-6">

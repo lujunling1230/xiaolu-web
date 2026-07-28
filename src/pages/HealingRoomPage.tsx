@@ -10,6 +10,7 @@ import MeditationTimer from "../components/MeditationTimer";
 import HealingCompanion from "../components/HealingCompanion";
 import AchievementPage from "../components/AchievementPage";
 import WeChatGuide from "../components/WeChatGuide";
+import UniversalCheckinPanel from "../components/UniversalCheckinPanel";
 
 /* ===== 图标 ===== */
 const JournalIcon = () => (
@@ -181,6 +182,11 @@ const HealingRoomPage: React.FC = () => {
         <button className="hl-mobile-menu-btn" onClick={() => setMobileNavOpen(!mobileNavOpen)}>
           {mobileNavOpen ? "×" : "☰"}
         </button>
+      </div>
+
+      {/* 签到打卡（仅移动端显示） */}
+      <div className="hl-mobile-checkin">
+        <UniversalCheckinPanel productId="healing" accentColor="#5d8a6a" />
       </div>
 
       {/* ===== 移动端下拉导航 ===== */}
@@ -572,11 +578,22 @@ const HealingRoomPage: React.FC = () => {
           color: rgba(200, 230, 200, 0.95);
         }
 
+        /* ===== 签到打卡面板（默认隐藏，移动端显示） ===== */
+        .hl-mobile-checkin {
+          display: none;
+          position: relative;
+          z-index: 5;
+          max-width: 720px;
+          margin: 0 auto 16px;
+          padding: 64px 16px 0;
+        }
+
         /* ===== 响应式 ===== */
         @media (max-width: 768px) {
           .hl-sidebar { display: none; }
           .hl-mobile-header { display: flex; }
           .hl-mobile-nav { display: flex; }
+          .hl-mobile-checkin { display: block; }
           .hl-main {
             margin-left: 0;
             padding: 72px 16px 32px;

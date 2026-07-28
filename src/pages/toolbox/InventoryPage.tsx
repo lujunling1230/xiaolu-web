@@ -1399,22 +1399,22 @@ const InventoryPage: React.FC = () => {
         </div>
       </header>
 
-      {/* 签到打卡 */}
-      <div className="relative z-10 mx-auto max-w-3xl px-5 pb-2">
-        <UniversalCheckinPanel productId="inventory" accentColor="#5f76a0" />
-      </div>
-
-      {/* —— 标题区 —— */}
+      {/* —— 标题区（含轻量签到） —— */}
       <div className="relative z-10 mx-auto max-w-3xl px-5 pb-4 pt-6">
-        <h1
-          className="text-2xl font-semibold text-gray-900"
-          style={{ fontFamily: '"Noto Serif SC", Georgia, serif' }}
-        >
-          物资管家
-        </h1>
-        <p className="mt-1.5 text-sm text-gray-500 leading-relaxed">
-          资源管理与反浪费 · 把每一件物品用在它最好的时候
-        </p>
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <h1
+              className="text-2xl font-semibold text-gray-900"
+              style={{ fontFamily: '"Noto Serif SC", Georgia, serif' }}
+            >
+              物资管家
+            </h1>
+            <p className="mt-1.5 text-sm text-gray-500 leading-relaxed">
+              资源管理与反浪费 · 把每一件物品用在它最好的时候
+            </p>
+          </div>
+          <UniversalCheckinPanel productId="inventory" accentColor="#6B9BD1" variant="lite" />
+        </div>
       </div>
 
       {/* —— Tab 内容区 —— */}

@@ -263,9 +263,9 @@ const CoinBar: React.FC<{
           <motion.span
             className="quest-coin-value"
             key={coins}
-            initial={{ scale: 1.3, color: "#fde047" }}
-            animate={{ scale: 1, color: "#f3f4f6" }}
-            transition={{ type: "spring", stiffness: 200, damping: 12 }}
+            initial={{ scale: 1.1, color: "#b0b8c4" }}
+            animate={{ scale: 1, color: "#9ca3af" }}
+            transition={{ type: "spring", stiffness: 300, damping: 20 }}
           >
             {coins}
           </motion.span>
@@ -274,7 +274,7 @@ const CoinBar: React.FC<{
         <div className="quest-coin-right">
           <span
             className="quest-title-badge"
-            style={{ color: title.color, borderColor: title.color }}
+            style={{ color: "#9ca3af", borderColor: "rgba(255,255,255,0.15)" }}
           >
             {title.label}
           </span>
@@ -1027,8 +1027,8 @@ const QuestLogPage: React.FC = () => {
 
         /* 金币面板 */
         .quest-coin-wrap {
-          margin: 16px 0 14px;
-          padding: 14px 16px;
+          margin: 12px 0 10px;
+          padding: 10px 14px;
           border-radius: 14px;
           background: rgba(255,255,255,0.04);
           border: 1px solid rgba(255,255,255,0.08);
@@ -1041,10 +1041,10 @@ const QuestLogPage: React.FC = () => {
           display: flex; align-items: center; gap: 8px;
         }
         .quest-coin-icon {
-          font-size: 16px; color: #fde047;
+          font-size: 13px; color: #9ca3af;
         }
         .quest-coin-value {
-          font-size: 22px; font-weight: 800; color: #f3f4f6;
+          font-size: 16px; font-weight: 600; color: #9ca3af;
           font-variant-numeric: tabular-nums;
         }
         .quest-coin-label {
@@ -1060,11 +1060,11 @@ const QuestLogPage: React.FC = () => {
           background: rgba(0,0,0,0.2);
         }
         .quest-streak-badge {
-          font-size: 11px; color: #fb923c;
+          font-size: 11px; color: #9ca3af;
           display: flex; align-items: center; gap: 3px;
           padding: 3px 8px; border-radius: 6px;
-          background: rgba(251, 146, 60, 0.12);
-          border: 1px solid rgba(251, 146, 60, 0.25);
+          background: rgba(255,255,255,0.04);
+          border: 1px solid rgba(255,255,255,0.08);
         }
         .quest-streak-fire { font-size: 13px; }
 
@@ -1084,15 +1084,15 @@ const QuestLogPage: React.FC = () => {
 
         .quest-checkin-btn {
           width: 100%; display: flex; align-items: center; justify-content: center; gap: 6px;
-          padding: 10px; border-radius: 10px; border: 1.5px solid rgba(253, 224, 71, 0.4);
-          background: rgba(253, 224, 71, 0.08);
-          color: #fde047; font-size: 13px; font-weight: 600;
+          padding: 10px; border-radius: 10px; border: 1.5px solid rgba(255,255,255,0.1);
+          background: rgba(255,255,255,0.04);
+          color: #9ca3af; font-size: 13px; font-weight: 500;
           font-family: inherit; cursor: pointer;
           transition: all 0.2s ease;
         }
         .quest-checkin-btn:hover:not(:disabled) {
-          background: rgba(253, 224, 71, 0.18);
-          border-color: rgba(253, 224, 71, 0.6);
+          background: rgba(255,255,255,0.08);
+          border-color: rgba(255,255,255,0.18);
           transform: translateY(-1px);
         }
         .quest-checkin-btn:disabled {

@@ -2442,7 +2442,7 @@ const RechargePage: React.FC = () => {
           display: flex; flex-direction: column; gap: 4px;
         }
         .stats-card-green { background: linear-gradient(135deg, rgba(76,186,76,0.12), rgba(76,186,76,0.04)); }
-        .stats-card-gold { background: linear-gradient(135deg, rgba(255,217,61,0.15), rgba(255,217,61,0.04)); }
+        .stats-card-gold { background: linear-gradient(135deg, rgba(196,168,71,0.1), rgba(196,168,71,0.03)); }
         .stats-card-purple { background: linear-gradient(135deg, rgba(124,106,154,0.15), rgba(184,169,217,0.06)); }
         .stats-card-pink { background: linear-gradient(135deg, rgba(255,143,163,0.15), rgba(255,143,163,0.04)); }
         .stats-card-value {
@@ -2567,7 +2567,7 @@ const RechargePage: React.FC = () => {
           transition: all 0.25s ease;
         }
         .stats-badge-item.unlocked {
-          border-color: rgba(255,217,61,0.3);
+          border-color: rgba(196,168,71,0.2);
           background: rgba(255,253,248,0.95);
         }
         .stats-badge-item.locked { opacity: 0.5; }
@@ -2592,7 +2592,7 @@ const RechargePage: React.FC = () => {
         }
         .me-user-level {
           font-size: 12px; padding: 2px 10px; border-radius: 10px;
-          background: rgba(255,217,61,0.2); color: #FFD93D;
+          background: rgba(196,168,71,0.1); color: #C4A847;
           letter-spacing: 0.04em; font-weight: 500;
         }
         .me-user-stats {
@@ -2624,22 +2624,23 @@ const RechargePage: React.FC = () => {
         }
         .me-points-value {
           font-family: "Noto Serif SC", Georgia, serif;
-          font-size: 20px; font-weight: 700; color: #FFD93D;
+          font-size: 20px; font-weight: 700; color: #C4A847;
         }
         .me-points-label {
           font-size: 11px; color: rgba(255,255,255,0.6); letter-spacing: 0.04em;
         }
         .me-checkin-btn {
-          padding: 8px 16px; border-radius: 20px; border: none;
+          padding: 8px 16px; border-radius: 20px;
+          border: 1px solid rgba(196,168,71,0.3);
           font-family: "Noto Sans SC", system-ui, sans-serif;
-          font-size: 13px; font-weight: 600; color: #3a3356;
-          background: linear-gradient(135deg, #FFD93D, #FFC107);
+          font-size: 13px; font-weight: 600; color: #C4A847;
+          background: transparent;
           cursor: pointer; transition: all 0.3s ease;
-          letter-spacing: 0.04em; box-shadow: 0 2px 8px rgba(255,217,61,0.3);
+          letter-spacing: 0.04em; box-shadow: none;
         }
         .me-checkin-btn:hover:not(:disabled) {
           transform: translateY(-1px);
-          box-shadow: 0 4px 14px rgba(255,217,61,0.45);
+          box-shadow: none;
         }
         .me-checkin-btn:disabled {
           background: rgba(255,255,255,0.15); color: rgba(255,255,255,0.5);
@@ -2876,7 +2877,7 @@ const RechargePage: React.FC = () => {
         .completion-elapsed {
           display: inline-flex; align-items: center; gap: 4px;
           padding: 4px 14px; border-radius: 20px;
-          background: rgba(255,217,61,0.12); color: #B8860B;
+          background: rgba(196,168,71,0.08); color: #B8960B;
           font-size: 13px; font-weight: 500; margin-bottom: 12px;
         }
         .completion-name {

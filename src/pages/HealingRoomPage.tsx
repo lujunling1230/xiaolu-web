@@ -10,6 +10,7 @@ import MeditationTimer from "../components/MeditationTimer";
 import HealingCompanion from "../components/HealingCompanion";
 import AchievementPage from "../components/AchievementPage";
 import WeChatGuide from "../components/WeChatGuide";
+import PWAInstallPrompt from "../components/PWAInstallPrompt";
 import UniversalCheckinPanel from "../components/UniversalCheckinPanel";
 
 /* ===== 图标 ===== */

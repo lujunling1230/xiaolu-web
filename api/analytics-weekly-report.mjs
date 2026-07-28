@@ -484,10 +484,16 @@ function buildReportHTML(thisWeek, lastWeek, suggestions) {
 
 export default async function handler(req, res) {
   try {
-    // 密钥校验
-    const secret = req.query?.secret || req.headers["x-report-secret"];
-    if (secret !== process.env.REPORT_SECRET) {
-      return res.status(403).json({ error: "密钥错误" });
+    // 鉴权：支持 Vercel Cron 自动调用 + 手动密钥调用
+    // Vercel Cron 设置 CRON_SECRET 后会自动带 Authorization: Bearer <secret>
+    const authHeader = req.headers["authorization"];
+    const cronSecret = process.env.CRON_SECRET;
+    const isCronCall = cronSecret && authHeader === `Bearer ${cronSecret}`;
+    const manualSecret = req.query?.secret || req.headers["x-report-secret"];
+    const isManualCall = manualSecret && manualSecret === process.env.REPORT_SECRET;
+
+    if (!isCronCall && !isManualCall) {
+      return res.status(403).json({ error: "密钥错误，请通过 Vercel Cron 或携带正确密钥调用" });
     }
 
     // 获取数据：本周 7 天 + 上周 7 天（用于环比）

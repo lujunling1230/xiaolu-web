@@ -1645,7 +1645,7 @@ ${messages.map((m) => `${m.role === "user" ? "用户" : "伴龄"}: ${m.content}`
       )}
       {/* 签到打卡 */}
       <div style={{ maxWidth: 960, margin: '0 auto 16px', padding: '0 16px' }}>
-        <UniversalCheckinPanel productId="banling" accentColor="#87A96B" />
+        <UniversalCheckinPanel productId="banling" accentColor="#87A96B" variant="lite" />
       </div>
       <div className="bl-content">
         {tab === "home" && renderHome()}

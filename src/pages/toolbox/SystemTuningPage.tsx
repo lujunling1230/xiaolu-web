@@ -1252,7 +1252,7 @@ const SystemTuningPage: React.FC = () => {
 
       {/* 签到打卡 */}
       <div style={{ maxWidth: 720, margin: '0 auto 16px', padding: '0 16px' }}>
-        <UniversalCheckinPanel productId="system_tuning" accentColor="#b06a6a" />
+        <UniversalCheckinPanel productId="system_tuning" accentColor="#b06a6a" variant="lite" />
       </div>
 
       <AnimatePresence mode="wait">

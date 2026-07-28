@@ -479,7 +479,7 @@ const AdvicePage: React.FC = () => {
 
       {/* 签到打卡 */}
       <div className="advice-checkin">
-        <UniversalCheckinPanel productId="advice" accentColor="#a8814a" />
+        <UniversalCheckinPanel productId="advice" accentColor="#a8814a" variant="lite" />
       </div>
 
       {/* ===== 标题区（隐藏，由开场动画 & 顶栏承担） ===== */}

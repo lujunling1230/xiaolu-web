@@ -12,13 +12,21 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # dist 目录已预构建提交，跳过 npm 安装和构建
+      # dist 目录已预构建提交，无需重新构建前端
+      # 但需要安装 npm 依赖，因为 capacitor.settings.gradle 引用了 node_modules/@capacitor/android
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install dependencies
+        run: npm install --ignore-scripts
 
       - name: Setup Java
         uses: actions/setup-java@v4
         with:
           distribution: 'temurin'
-          java-version: '17'
+          java-version: '21'
 
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
@@ -28,7 +36,7 @@ jobs:
 
       - name: Install Android platforms and build-tools
         run: |
-          sdkmanager "platforms;android-33" "build-tools;33.0.1"
+          sdkmanager "platforms;android-36" "build-tools;36.0.0"
 
       - name: Build Debug APK
         run: |

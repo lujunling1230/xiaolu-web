@@ -773,7 +773,7 @@ const StatsPage: React.FC = () => {
         latestMap.set(r.id, r);
       }
     }
-    const uniqueRecords = [...latestMap.values()].sort((a, b) => b.timestamp - a.timestamp).slice(0, 8);
+    const uniqueRecords = [...latestMap.values()].sort((a, b) => b.timestamp - a.timestamp).slice(0, 20);
 
     // 读取感受记录
     const notesMap = new Map<number, { note: string; img: string | null; date: string }>();

@@ -763,6 +763,7 @@ const ListPage: React.FC<{
    ============================================================ */
 const StatsPage: React.FC = () => {
   const [expandedId, setExpandedId] = useState<number | null>(null);
+  const [timelineCollapsed, setTimelineCollapsed] = useState(true);
 
   const stats = useMemo(() => {
     const history = loadHistory();
@@ -773,7 +774,7 @@ const StatsPage: React.FC = () => {
         latestMap.set(r.id, r);
       }
     }
-    const uniqueRecords = [...latestMap.values()].sort((a, b) => b.timestamp - a.timestamp).slice(0, 20);
+    const uniqueRecords = [...latestMap.values()].sort((a, b) => b.timestamp - a.timestamp);
 
     // 读取感受记录
     const notesMap = new Map<number, { note: string; img: string | null; date: string }>();
@@ -793,6 +794,11 @@ const StatsPage: React.FC = () => {
     return { recentRecords: uniqueRecords, badges, notesMap };
   }, []);
 
+  const COLLAPSED_COUNT = 5;
+  const visibleRecords = timelineCollapsed
+    ? stats.recentRecords.slice(0, COLLAPSED_COUNT)
+    : stats.recentRecords;
+
   return (
     <div className="tab-stats">
       {/* 最近完成 */}
@@ -807,7 +813,7 @@ const StatsPage: React.FC = () => {
           {stats.recentRecords.length === 0 && (
             <p className="stats-timeline-empty">还没有完成记录，去清单里打卡吧</p>
           )}
-          {stats.recentRecords.map((rec, i) => {
+          {visibleRecords.map((rec, i) => {
             const node = TAGGED_NODES.find(n => n.id === rec.id);
             const d = new Date(rec.timestamp);
             const timeStr = `${d.getMonth() + 1}/${d.getDate()} ${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
@@ -817,7 +823,7 @@ const StatsPage: React.FC = () => {
             return (
               <div key={rec.id} className={`stats-timeline-item ${isExpanded ? "expanded" : ""} ${hasNote ? "has-record" : ""}`}>
                 <div className={`stats-timeline-dot ${hasNote ? "has-record" : ""}`} />
-                {i < stats.recentRecords.length - 1 && <div className="stats-timeline-line" />}
+                {i < visibleRecords.length - 1 && <div className="stats-timeline-line" />}
                 <div className="stats-timeline-content" onClick={() => setExpandedId(isExpanded ? null : rec.id)}>
                   <span className="stats-timeline-icon">{node?.icon || "📝"}</span>
                   <span className="stats-timeline-text">
@@ -842,6 +848,16 @@ const StatsPage: React.FC = () => {
             );
           })}
         </div>
+        {stats.recentRecords.length > COLLAPSED_COUNT && (
+          <button
+            className="stats-timeline-toggle"
+            onClick={() => setTimelineCollapsed(c => !c)}
+          >
+            {timelineCollapsed
+              ? `展开全部 (${stats.recentRecords.length} 条)`
+              : "收起"}
+          </button>
+        )}
       </div>
 
       {/* 徽章墙 */}
@@ -2553,6 +2569,28 @@ const RechargePage: React.FC = () => {
         }
         .stats-timeline-date {
           font-size: 11px; color: #b8aa9a; letter-spacing: 0.02em;
+        }
+
+        .stats-timeline-toggle {
+          display: block;
+          width: 100%;
+          margin-top: 12px;
+          padding: 8px 0;
+          border: none;
+          border-radius: 10px;
+          background: rgba(180, 166, 154, 0.1);
+          color: #8a7a6a;
+          font-size: 13px;
+          cursor: pointer;
+          transition: all 0.2s;
+          font-family: inherit;
+        }
+        .stats-timeline-toggle:hover {
+          background: rgba(180, 166, 154, 0.18);
+          color: #5A4A3A;
+        }
+        .stats-timeline-toggle:active {
+          transform: scale(0.98);
         }
 
         /* 徽章墙 */

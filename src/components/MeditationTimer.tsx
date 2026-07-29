@@ -537,6 +537,18 @@ function ensureVoicesLoaded(): Promise<void> {
   });
 }
 
+/** 检测浏览器语音合成是否可用 */
+function checkVoiceAvailable(): { available: boolean; hasZh: boolean; voiceCount: number } {
+  if (typeof window === "undefined" || !window.speechSynthesis) {
+    return { available: false, hasZh: false, voiceCount: 0 };
+  }
+  const voices = window.speechSynthesis.getVoices();
+  const hasZh = voices.some((v) =>
+    v.lang.startsWith("zh") || v.lang.startsWith("cmn") || v.lang.includes("CN")
+  );
+  return { available: voices.length > 0, hasZh, voiceCount: voices.length };
+}
+
 /** 播放语音引导 */
 function speakGuide(text: string, onEnd?: () => void): SpeechSynthesisUtterance | null {
   if (typeof window === "undefined" || !window.speechSynthesis) return null;
@@ -546,11 +558,13 @@ function speakGuide(text: string, onEnd?: () => void): SpeechSynthesisUtterance 
     u.voice = voice;
     u.lang = voice.lang || "zh-CN";
   } else {
+    // 无匹配语音时，仍尝试用默认语音 + 中文语言标记
     u.lang = "zh-CN";
+    console.warn("[Meditation] 未找到中文语音，尝试使用默认语音播放");
   }
   u.rate = 0.78;
   u.pitch = 0.88;
-  u.volume = 0.9;
+  u.volume = 0.95;
   if (onEnd) u.onend = onEnd;
   u.onerror = (e) => {
     console.warn("[Meditation] speechSynthesis error:", e.error, "text:", text.slice(0, 20));
@@ -653,6 +667,7 @@ const MeditationTimer: React.FC = () => {
   const [running, setRunning] = useState(false);
   const [completed, setCompleted] = useState(false);
   const [showToast, setShowToast] = useState(false);
+  const [voiceStatus, setVoiceStatus] = useState<{ available: boolean; hasZh: boolean } | null>(null);
   const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
 
@@ -686,9 +701,11 @@ const MeditationTimer: React.FC = () => {
     };
   }, [stopAmbient]);
 
-  // 组件挂载时预加载语音列表（移动端 getVoices() 异步，不预加载会导致 speak 静默失败）
+  // 组件挂载时预加载语音列表并检测可用性
   useEffect(() => {
-    ensureVoicesLoaded();
+    ensureVoicesLoaded().then(() => {
+      setVoiceStatus(checkVoiceAvailable());
+    });
   }, []);
 
   // 倒计时 + 语音引导调度
@@ -768,31 +785,26 @@ const MeditationTimer: React.FC = () => {
     setSeconds(duration * 60);
     setRunning(true);
     guideStageRef.current.clear();
+    // 清掉旧的开场定时器
+    if (startGuideTimerRef.current) {
+      clearTimeout(startGuideTimerRef.current);
+      startGuideTimerRef.current = null;
+    }
     // 只停环境音，不调 cancel()（cancel 会干扰紧接着的 speak，导致 iOS 静默失败）
     if (ambientRef.current) {
       ambientRef.current.stop();
       ambientRef.current = null;
     }
     ambientRef.current = startAmbientSound(selectedSound);
-    // 语音引导：延迟 3 秒后开始（让环境音先淡入，用户进入状态后再引导）
+    // 语音引导：必须在用户点击手势内立即触发 speak()，延迟会导致浏览器阻止播放
     if (voiceGuide && typeof window !== "undefined" && window.speechSynthesis) {
-      // 在用户手势内先播放一个极短的静音语音，解锁语音引擎（iOS / Chrome 自动播放策略）
-      try {
-        window.speechSynthesis.cancel();
-        const unlockU = new SpeechSynthesisUtterance(" ");
-        unlockU.volume = 0;
-        unlockU.rate = 2;
-        window.speechSynthesis.speak(unlockU);
-      } catch { /* ignore */ }
-      // 清掉旧的开场定时器
-      if (startGuideTimerRef.current) clearTimeout(startGuideTimerRef.current);
-      startGuideTimerRef.current = setTimeout(() => {
-        startGuideTimerRef.current = null;
-        // 确保语音列表已加载
-        ensureVoicesLoaded().then(() => {
-          voiceRef.current = speakGuide(GUIDE_LIBRARY.start);
-        });
-      }, 3000);
+      // 先强制触发语音引擎加载（某些浏览器首次 speak 后才会加载 voices）
+      const dummy = new SpeechSynthesisUtterance("开始");
+      dummy.volume = 0.01;
+      dummy.rate = 3;
+      window.speechSynthesis.speak(dummy);
+      // 立即播放开场引导（不延迟，保持在用户手势上下文内）
+      voiceRef.current = speakGuide(GUIDE_LIBRARY.start);
     }
   };
 
@@ -952,6 +964,16 @@ const MeditationTimer: React.FC = () => {
                 />
               </button>
             </div>
+            {voiceStatus && !voiceStatus.available && (
+              <p className="ms-voice-hint" style={{ color: "#C0392B", fontSize: 11, marginTop: 4 }}>
+                当前浏览器不支持语音合成，请更换浏览器（推荐 Edge / Chrome）
+              </p>
+            )}
+            {voiceStatus && voiceStatus.available && !voiceStatus.hasZh && (
+              <p className="ms-voice-hint" style={{ color: "#E67E22", fontSize: 11, marginTop: 4 }}>
+                未检测到中文语音包，引导可能无法朗读中文
+              </p>
+            )}
 
             {/* ── 开始按钮 ── */}
             <motion.button

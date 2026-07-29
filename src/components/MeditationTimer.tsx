@@ -18,7 +18,7 @@ import { track } from "../utils/track";
  */
 
 /* ─── 常量 ─── */
-const DURATIONS = [1, 3, 5, 10]; // 分钟
+const DURATIONS = [1, 3, 5, 10, 15]; // 分钟
 
 const SOUND_OPTIONS = [
   { id: "ocean", icon: "\uD83C\uDF0A", label: "海浪", sub: "Ocean" },
@@ -410,12 +410,12 @@ function startAmbientSound(soundId: SoundId): { stop: () => void } {
 
 /* ─── 语音引导 ─── */
 
-/** 引导词库：多个段落的短句，按进度穿插播放，避免长时间纯白噪音 */
+/** 引导词库：丰富短句，按时长动态选取，避免短时间内重复 */
 const GUIDE_LIBRARY = {
   // 开场（固定，仅1次）
   start:
     "你好，欢迎来到冥想空间。找一个舒适的姿势，轻轻闭上双眼。让我们跟随呼吸的节律，让身心慢慢沉入这片宁静之中。",
-  // 呼吸引导类（短句，循环使用）
+  // 呼吸引导（18条，由浅入深）
   breath: [
     "吸气，感受空气充满胸腔。呼气，让肩膀自然下沉。",
     "再来一次。吸气，新鲜。呼气，释放。",
@@ -423,8 +423,20 @@ const GUIDE_LIBRARY = {
     "注意呼吸的间隙，那个短暂的停顿，是最安静的片刻。",
     "气息像潮汐，来了又走，你只需要跟随它的节奏。",
     "深吸一口气，想象清新的空气流遍全身。缓缓呼出，带走所有的疲惫。",
+    "不必刻意控制呼吸，只是感受它自然的流动，像溪水穿过石头。",
+    "试着让吸气和呼气的时间一样长，在平衡中找到安定。",
+    "把注意力放在鼻尖，感受空气进出的温度，凉凉的进来，暖暖的出去。",
+    "想象每次吸气都把月光吸进身体，每次呼气都把浊气还给大地。",
+    "数自己的呼吸，一吸一呼为一次，数到十就重新开始。",
+    "如果呼吸变浅了，没关系，给它一点时间，它会自己找到节奏。",
+    "感受胸腔的扩张与收缩，那是生命最原始的节奏。",
+    "吸气时，想象身体像气球一样慢慢鼓起。呼气时，轻轻放掉所有的空气。",
+    "把注意力从鼻尖慢慢移到腹部，感受腹式呼吸的深沉与平稳。",
+    "试着延长呼气，比吸气多停留两秒，让身体更深地放松。",
+    "呼吸不需要完美，每一次进出都是对身体最好的礼物。",
+    "想象自己坐在森林深处，呼吸与树木一起，一呼一吸都是自然的韵律。",
   ],
-  // 身体放松类（短句，循环使用）
+  // 身体放松（18条，从头到脚）
   body: [
     "放松你的额头，舒展眉心。让脸部肌肉变得柔软。",
     "放松肩膀和手臂，让它们自然垂落，不再紧绷。",
@@ -432,8 +444,20 @@ const GUIDE_LIBRARY = {
     "放松腹部，让它随着呼吸自然起伏。",
     "放松双腿和双脚，它们承载了你一整天的重量，现在可以休息了。",
     "从头顶到脚趾，全身都在放松，越来越轻，越来越温暖。",
+    "感受头皮的放松，像有人用温暖的手轻轻抚过你的头顶。",
+    "让眼睛周围的肌肉松弛下来，眼皮变得沉重而舒适。",
+    "放松下颌，让牙齿微微分开，舌头轻轻贴住上颚。",
+    "感受脖子和喉咙的放松，像融化的蜡烛一样柔软。",
+    "让胸腔和肋骨随着呼吸自由扩张，没有任何束缚。",
+    "感受腰部的放松，那里常常藏着紧张，现在让它全部流走。",
+    "放松臀部和骨盆，它们是身体的根基，此刻稳稳地托住你。",
+    "感受大腿前侧和后侧的放松，肌肉像棉花一样柔软。",
+    "放松膝盖和小腿，让它们沉下去，被大地稳稳地承接。",
+    "感受脚踝的灵活，脚底的每一寸皮肤都在放松。",
+    "想象一道温暖的光从头顶缓缓流过全身，所到之处肌肉都变得柔软。",
+    "全身上下像浸在温水中，每一个细胞都在说谢谢。",
   ],
-  // 正念觉察类（短句，循环使用）
+  // 正念觉察（18条）
   mindfulness: [
     "如果思绪飘走了，没关系，温柔地把注意力带回呼吸。",
     "不必评判此刻的感受，只是观察，允许一切如其所是。",
@@ -441,6 +465,36 @@ const GUIDE_LIBRARY = {
     "此刻你不需要做任何事，不需要去往任何地方，只是在这里。",
     "每一个念头都是天上的云，你看着它来，看着它走，自己始终是那片天空。",
     "允许自己什么都不想，也允许自己想着什么，不苛责，不催促。",
+    "如果心里有不舒服的感觉，不要推开它，只是看着它，像看窗外的一场雨。",
+    "觉察此刻身体最舒服的部位，把注意力停留在那里，感受那份舒适。",
+    "如果有焦虑，试着给它命名：这是紧张，这是担忧。命名之后，它就不那么可怕了。",
+    "你不需要改变任何东西，此刻的你就足够好。",
+    "注意此刻的情绪，它是什么颜色？什么形状？只是观察，不评判。",
+    "把此刻当作一个礼物，拆开它，看看里面有什么。",
+    "如果心里有很多声音，没关系，让它们像合唱团一样各自歌唱。",
+    "觉察自己此刻是紧张还是放松，只是知道，不需要做什么。",
+    "想象你的心是一个湖，念头是湖面的涟漪，而你只是湖底静静观望的石头。",
+    "无论此刻感受到什么，都是真实的，都是值得被接纳的。",
+    "把注意力收回到当下，回到呼吸，回到身体，回到此刻。",
+    "你拥有暂停的权利，此刻就是属于你的暂停键。",
+  ],
+  // 意象引导（15条，适合中长时冥想）
+  imagery: [
+    "想象你站在一片开满野花的草地上，风轻轻吹过，带来泥土和青草的香气。",
+    "想象自己是一棵古老的树，根深深扎入大地，枝叶伸向天空，风吹过，你只是轻轻摇曳。",
+    "想象你坐在山顶，看着云海在脚下缓缓流动，太阳慢慢升起，金色的光芒洒满全身。",
+    "想象自己是一条小溪，清澈的水流过石头，绕过树根，向远方奔去，不回头，不犹豫。",
+    "想象你走进一片竹林，阳光透过竹叶洒下斑驳的光影，风吹过，竹叶沙沙作响。",
+    "想象自己躺在一片铺满落叶的森林里，头顶是金色的树冠，落叶轻轻飘落到身上。",
+    "想象你站在海边，海浪一次次拍打着沙滩，又退回去，带走你所有的烦恼。",
+    "想象自己是一只鸟，展开翅膀飞翔在蓝天白云之间，风从羽毛间穿过，自由而轻盈。",
+    "想象你走进一间温暖的小木屋，壁炉里的火轻轻燃烧，外面下着雪，你安全而温暖。",
+    "想象自己是一颗种子，在黑暗的土壤里安静地等待，感受周围湿润的泥土，等待春天的到来。",
+    "想象你漂浮在星空之中，周围是闪烁的星星，你变得很小很小，又变得很大很大。",
+    "想象自己是一朵云，在蓝天上慢慢移动，时而遮住太阳，时而让阳光穿透身体。",
+    "想象你坐在一条小船上，河水缓缓流淌，两岸是垂柳和野花，你什么都不用想。",
+    "想象自己是一块被溪水冲刷的石头，表面光滑圆润，水流过身体，带走所有棱角。",
+    "想象你站在雨后的森林里，空气里弥漫着泥土和松针的味道，每一口呼吸都充满生命力。",
   ],
   // 结束语（固定，仅1次）
   end:
@@ -517,6 +571,79 @@ function stopVoiceGuide() {
   }
 }
 
+/** 根据冥想时长构建引导队列和触发时间
+ *  - 1min: start + end（无中间段）
+ *  - 3min: start + 2段 + end
+ *  - 5min: start + 4段 + end
+ *  - 10min: start + 8段 + end
+ *  - 15min: start + 12段 + end
+ *  段与段之间均匀分布，避免密集和稀疏
+ */
+function buildGuideQueue(duration: number): { queue: string[]; triggers: number[] } {
+  const total = duration * 60;
+  const START_DURATION = 10; // 开场语音约10秒
+  const END_DURATION = 20;   // 结束语音约20秒，需提前触发
+
+  // 1分钟：只播 start + end
+  if (duration <= 1) {
+    return { queue: [], triggers: [] };
+  }
+
+  // 根据时长确定中间段数
+  let segmentCount: number;
+  let gapSeconds: number;
+  if (duration <= 3) {
+    segmentCount = 2;
+    gapSeconds = 25;
+  } else if (duration <= 5) {
+    segmentCount = 4;
+    gapSeconds = 30;
+  } else if (duration <= 10) {
+    segmentCount = 8;
+    gapSeconds = 35;
+  } else {
+    segmentCount = 12;
+    gapSeconds = 40;
+  }
+
+  // 实际可用窗口（start 结束后 ~ end 开始前）
+  const availableWindow = total - START_DURATION - END_DURATION;
+  // 如果按 gap 算放不下，减少段数
+  const maxByGap = Math.floor(availableWindow / gapSeconds);
+  segmentCount = Math.min(segmentCount, maxByGap);
+
+  // 选取内容：按类别轮换，从每个类别顺序取，不循环重复
+  const categories: (keyof typeof GUIDE_LIBRARY)[] = ["breath", "body", "mindfulness", "imagery"];
+  const queue: string[] = [];
+  // 用当前日期作为随机种子偏移，每天不同顺序起点
+  const dayOffset = new Date().getDate() % categories.length;
+  for (let i = 0; i < segmentCount; i++) {
+    const catIdx = (i + dayOffset) % categories.length;
+    const cat = categories[catIdx];
+    const itemIdx = Math.floor(i / categories.length); // 每个类别顺序取
+    const arr = GUIDE_LIBRARY[cat] as string[];
+    if (itemIdx < arr.length) {
+      queue.push(arr[itemIdx]);
+    } else {
+      // 超出范围时回退到 mindfulness（最多条）
+      queue.push(GUIDE_LIBRARY.mindfulness[itemIdx % GUIDE_LIBRARY.mindfulness.length]);
+    }
+  }
+
+  // 计算触发时间：均匀分布在 start 结束后到 end 开始前
+  const triggers: number[] = [];
+  if (queue.length > 0) {
+    const windowStart = total - START_DURATION;
+    const windowEnd = END_DURATION;
+    const step = (windowStart - windowEnd) / (queue.length + 1);
+    for (let i = 0; i < queue.length; i++) {
+      triggers.push(Math.round(windowStart - step * (i + 1)));
+    }
+  }
+
+  return { queue, triggers };
+}
+
 /* ─── 主组件 ─── */
 const MeditationTimer: React.FC = () => {
   const [selectedSound, setSelectedSound] = useState<SoundId>("ocean");
@@ -569,38 +696,9 @@ const MeditationTimer: React.FC = () => {
     if (!running) return;
     const total = duration * 60;
 
-    // ── 语音引导调度策略 ──
-    // 每段短句约 6-8 秒播放（rate=0.78，约 3.5 字/秒，每句 ~25 字）
-    // 结束语约 18 秒，需在剩余 20 秒时触发
-    const END_TRIGGER_REMAINING = 20;
-    const SEGMENT_DURATION = 8; // 每段引导间的间隔秒数（含播放+安静）
-
-    // 1 分钟冥想只播 start + end
-    const skipMid = duration <= 1;
-
-    // 构建中间引导队列：呼吸 → 身体 → 正念 交替循环
-    const midGuideQueue: string[] = [];
-    if (!skipMid) {
-      const maxMidSegments = Math.floor((total - 19 - END_TRIGGER_REMAINING) / SEGMENT_DURATION);
-      for (let i = 0; i < maxMidSegments; i++) {
-        const category = i % 3; // 0=breath, 1=body, 2=mindfulness
-        if (category === 0) midGuideQueue.push(GUIDE_LIBRARY.breath[i % GUIDE_LIBRARY.breath.length]);
-        else if (category === 1) midGuideQueue.push(GUIDE_LIBRARY.body[i % GUIDE_LIBRARY.body.length]);
-        else midGuideQueue.push(GUIDE_LIBRARY.mindfulness[i % GUIDE_LIBRARY.mindfulness.length]);
-      }
-    }
-
-    // 计算每段中间引导的触发剩余秒数（均匀分布在 start 结束后到 end 开始前）
-    const midTriggerTimes: number[] = [];
-    if (midGuideQueue.length > 0) {
-      const windowStart = total - 19; // start 语音结束时的剩余秒数
-      const windowEnd = END_TRIGGER_REMAINING; // end 开始时的剩余秒数
-      const windowSize = windowStart - windowEnd;
-      const step = windowSize / midGuideQueue.length;
-      for (let i = 0; i < midGuideQueue.length; i++) {
-        midTriggerTimes.push(Math.round(windowStart - step * (i + 0.5)));
-      }
-    }
+    // ── 语音引导调度策略（按时长动态构建队列）──
+    const END_TRIGGER_REMAINING = 20; // 结束语需提前 20 秒触发
+    const { queue: midGuideQueue, triggers: midTriggerTimes } = buildGuideQueue(duration);
 
     // Chrome 安卓端 bug：speechSynthesis 运行 15 秒后会自动暂停
     const resumeTimer = voiceGuide

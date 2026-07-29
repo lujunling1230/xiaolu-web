@@ -452,13 +452,15 @@ function getFriendlyVoice(): SpeechSynthesisVoice | undefined {
   if (typeof window === "undefined" || !window.speechSynthesis) return undefined;
   const voices = window.speechSynthesis.getVoices();
   if (!voices.length) return undefined;
-  const zh = voices.filter((v) => v.lang.startsWith("zh"));
+  const zh = voices.filter((v) => v.lang.startsWith("zh") || v.lang.startsWith("cmn") || v.lang.includes("CN") || v.lang.includes("HK") || v.lang.includes("TW"));
+  if (!zh.length) return voices[0];
+  // 优先匹配温柔女声
   const prefer = zh.find(
     (v) =>
-      /xiaoxiao|xiaoyi|yunxi|yunjian|晓晓|晓伊|云希|云健|meijia|meiyan|佳|燕/i.test(v.name) ||
-      (v.name.includes("Female") && v.lang.startsWith("zh"))
+      /xiaoxiao|xiaoyi|yunxi|yunjian|晓晓|晓伊|云希|云健|meijia|meiyan|佳|燕|Tingting|tingting|Sinji|sinji/i.test(v.name) ||
+      (v.name.includes("Female") && (v.lang.startsWith("zh") || v.lang.includes("CN")))
   );
-  return prefer || zh[0] || voices[0];
+  return prefer || zh[0];
 }
 
 /** 预加载语音列表（解决 getVoices() 异步加载问题） */
@@ -488,19 +490,24 @@ function speakGuide(text: string, onEnd?: () => void): SpeechSynthesisUtterance 
   const voice = getFriendlyVoice();
   if (voice) {
     u.voice = voice;
+    u.lang = voice.lang || "zh-CN";
+  } else {
+    u.lang = "zh-CN";
   }
-  u.lang = "zh-CN";
   u.rate = 0.78;
   u.pitch = 0.88;
-  u.volume = 0.85;
+  u.volume = 0.9;
   if (onEnd) u.onend = onEnd;
   u.onerror = (e) => {
-    console.warn("[Meditation] speechSynthesis error:", e.error);
+    console.warn("[Meditation] speechSynthesis error:", e.error, "text:", text.slice(0, 20));
   };
   try {
     window.speechSynthesis.speak(u);
-  } catch { /* ignore */ }
-  return u;
+    return u;
+  } catch (e) {
+    console.warn("[Meditation] speechSynthesis speak failed:", e);
+    return null;
+  }
 }
 
 /** 停止语音 */
@@ -514,7 +521,7 @@ function stopVoiceGuide() {
 const MeditationTimer: React.FC = () => {
   const [selectedSound, setSelectedSound] = useState<SoundId>("ocean");
   const [duration, setDuration] = useState(5);
-  const [voiceGuide, setVoiceGuide] = useState(false);
+  const [voiceGuide, setVoiceGuide] = useState(true);
   const [seconds, setSeconds] = useState(0);
   const [running, setRunning] = useState(false);
   const [completed, setCompleted] = useState(false);
@@ -671,13 +678,22 @@ const MeditationTimer: React.FC = () => {
     ambientRef.current = startAmbientSound(selectedSound);
     // 语音引导：延迟 3 秒后开始（让环境音先淡入，用户进入状态后再引导）
     if (voiceGuide && typeof window !== "undefined" && window.speechSynthesis) {
-      // 同步解锁语音引擎（iOS Safari 首次需在用户手势内触发）
-      try { window.speechSynthesis.resume(); } catch { /* ignore */ }
+      // 在用户手势内先播放一个极短的静音语音，解锁语音引擎（iOS / Chrome 自动播放策略）
+      try {
+        window.speechSynthesis.cancel();
+        const unlockU = new SpeechSynthesisUtterance(" ");
+        unlockU.volume = 0;
+        unlockU.rate = 2;
+        window.speechSynthesis.speak(unlockU);
+      } catch { /* ignore */ }
       // 清掉旧的开场定时器
       if (startGuideTimerRef.current) clearTimeout(startGuideTimerRef.current);
       startGuideTimerRef.current = setTimeout(() => {
         startGuideTimerRef.current = null;
-        voiceRef.current = speakGuide(GUIDE_LIBRARY.start);
+        // 确保语音列表已加载
+        ensureVoicesLoaded().then(() => {
+          voiceRef.current = speakGuide(GUIDE_LIBRARY.start);
+        });
       }, 3000);
     }
   };

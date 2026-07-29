@@ -8,7 +8,11 @@
  * - uc_checkin_{productId}: 签到数据 { lastDate, streak, totalDays }
  * - uc_points_{productId}: 总积分
  * - uc_points_history_{productId}: 积分变动记录
+ *
+ * 通过 userStorage 实现用户隔离。
  */
+
+import { userGetItem, userSetItem } from "../../utils/userStorage";
 
 export interface CheckinData {
   lastDate: string; // YYYY-MM-DD
@@ -40,8 +44,7 @@ function isConsecutive(prevDate: string, today: string): boolean {
 
 function load<T>(key: string, fallback: T): T {
   try {
-    const raw = localStorage.getItem(key);
-    return raw ? JSON.parse(raw) : fallback;
+    return userGetItem<T>(key) ?? fallback;
   } catch {
     return fallback;
   }
@@ -49,7 +52,7 @@ function load<T>(key: string, fallback: T): T {
 
 function save(key: string, value: unknown): void {
   try {
-    localStorage.setItem(key, typeof value === "string" ? value : JSON.stringify(value));
+    userSetItem(key, value);
   } catch { /* ignore */ }
 }
 

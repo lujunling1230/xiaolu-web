@@ -5,6 +5,8 @@
  * 推荐引擎根据用户当前状态 + 历史偏好 + 场景预设做加权筛选。
  */
 
+import { userGetItem, userSetItem } from "../../utils/userStorage";
+
 /* ============================================================
    类型定义
    ============================================================ */
@@ -511,8 +513,7 @@ export interface CompletionRecord {
 /** 加载历史记录 */
 export function loadHistory(): CompletionRecord[] {
   try {
-    const raw = localStorage.getItem(HISTORY_KEY);
-    return raw ? JSON.parse(raw) : [];
+    return userGetItem<CompletionRecord[]>(HISTORY_KEY) || [];
   } catch {
     return [];
   }
@@ -533,7 +534,7 @@ export function saveCompletion(id: number): CompletionRecord | null {
   // 只保留最近 200 条
   if (history.length > 200) history.splice(0, history.length - 200);
   try {
-    localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
+    userSetItem(HISTORY_KEY, history);
   } catch {
     // noop
   }
@@ -559,8 +560,7 @@ export function extractPreferenceKeywords(history: CompletionRecord[]): string[]
 /** 加载上次用户状态 */
 export function loadUserState(): UserState | null {
   try {
-    const raw = localStorage.getItem(STATE_KEY);
-    return raw ? JSON.parse(raw) : null;
+    return userGetItem<UserState>(STATE_KEY) || null;
   } catch {
     return null;
   }
@@ -569,7 +569,7 @@ export function loadUserState(): UserState | null {
 /** 保存用户状态 */
 export function saveUserState(state: UserState): void {
   try {
-    localStorage.setItem(STATE_KEY, JSON.stringify(state));
+    userSetItem(STATE_KEY, state);
   } catch {
     // noop
   }

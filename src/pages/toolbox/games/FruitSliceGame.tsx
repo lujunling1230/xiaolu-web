@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { AnimatePresence, motion } from "framer-motion";
+import { userGetItem, userSetItem } from "../../../utils/userStorage";
 
 /* ============================================================
    切水果 · Fruit Slice
@@ -128,17 +129,11 @@ function fruitConfig(shape: Exclude<Fruit["shape"], "bomb">): Pick<Fruit, "color
 
 /* ---------- 存档读写 ---------- */
 function loadSaveData(): FruitSaveData {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw) return JSON.parse(raw) as FruitSaveData;
-  } catch { /* ignore */ }
-  return { highestLevel: 0, badges: [], bestScore: 0 };
+  return userGetItem<FruitSaveData>(STORAGE_KEY, { highestLevel: 0, badges: [], bestScore: 0 });
 }
 
 function writeSaveData(data: FruitSaveData) {
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-  } catch { /* ignore */ }
+  userSetItem(STORAGE_KEY, data);
 }
 
 /* ---------- 音效 ---------- */

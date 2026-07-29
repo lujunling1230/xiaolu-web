@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Link, useParams } from "react-router-dom";
+import { userGetItem } from "../../../utils/userStorage";
 
 /**
  * 徽章墙页面
@@ -140,14 +141,9 @@ const BadgeWallPage: React.FC = () => {
 
   useEffect(() => {
     if (!config) return;
-    try {
-      const raw = localStorage.getItem(config.saveKey);
-      if (raw) {
-        const data = JSON.parse(raw);
-        setEarned(config.getBadges(data));
-      }
-    } catch {
-      setEarned([]);
+    const data = userGetItem<unknown>(config.saveKey);
+    if (data) {
+      try { setEarned(config.getBadges(data)); } catch { setEarned([]); }
     }
   }, [config]);
 

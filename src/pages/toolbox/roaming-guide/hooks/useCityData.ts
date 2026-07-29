@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { City, Coord, STORAGE_KEYS } from "../types";
 import { DEFAULT_CITIES, cityToProvince } from "../constants";
+import { userGetItem, userSetItem } from "../../../../utils/userStorage";
 
 interface UseCityDataReturn {
   cities: City[];
@@ -23,9 +24,8 @@ interface UseCityDataReturn {
 export function useCityData(): UseCityDataReturn {
   const [cities, setCities] = useState<City[]>(() => {
     try {
-      const raw = localStorage.getItem(STORAGE_KEYS.CITIES);
-      if (raw) {
-        const parsed = JSON.parse(raw);
+      const parsed = userGetItem<City[]>(STORAGE_KEYS.CITIES);
+      if (parsed) {
         // 兼容旧数据：没有 status 字段的默认为 visited（已去）
         return parsed.map((c: City) => ({
           ...c,
@@ -46,9 +46,9 @@ export function useCityData(): UseCityDataReturn {
   const [detailOpen, setDetailOpen] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
 
-  // 持久化
+  // 持久化（用户隔离）
   useEffect(() => {
-    try { localStorage.setItem(STORAGE_KEYS.CITIES, JSON.stringify(cities)); } catch { /* ignore */ }
+    try { userSetItem(STORAGE_KEYS.CITIES, cities); } catch { /* ignore */ }
   }, [cities]);
 
   const addCity = useCallback((partial: Omit<City, "id" | "created_at" | "updated_at">) => {

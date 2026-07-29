@@ -7,6 +7,7 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { AnimatePresence, motion } from "framer-motion";
+import { userGetItem, userSetItem } from "../../../utils/userStorage";
 
 /* ============================================================
    Types
@@ -101,9 +102,8 @@ function formatDate(ts: string): string {
 
 function loadItems(): PrivateItem[] {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return [];
-    const data = JSON.parse(raw) as any[];
+    const data = userGetItem<any[]>(STORAGE_KEY);
+    if (!data) return [];
     if (!Array.isArray(data)) return [];
     const colors: PrivateItem["color"][] = ["blue", "red", "yellow", "green", "cream"];
     const decorations: PrivateItem["decoration"][] = ["flower", "star", "leaf", "heart", "none"];
@@ -130,11 +130,7 @@ function loadItems(): PrivateItem[] {
 }
 
 function saveItems(items: PrivateItem[]): void {
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
-  } catch {
-    // ignore
-  }
+  userSetItem(STORAGE_KEY, items);
 }
 
 /* ============================================================

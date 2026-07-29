@@ -9,6 +9,7 @@ import { useAppManifest } from "../../hooks/useAppManifest";
 import PWAInstallPrompt from "../../components/PWAInstallPrompt";
 import WeChatGuide from "../../components/WeChatGuide";
 import UniversalCheckinPanel from "../../components/UniversalCheckinPanel";
+import { userGetItem, userSetItem } from "../../utils/userStorage";
 
 /**
  * 爱情公寓·元宇宙客厅
@@ -430,14 +431,15 @@ const SystemTuningPage: React.FC = () => {
     timestamp: number;
   }
   const [likedSet, setLikedSet] = useState<Set<string>>(() => {
-    try { return new Set(JSON.parse(localStorage.getItem("wx_liked") || "[]")); } catch { return new Set(); }
+    const data = userGetItem<string[]>("wx_liked");
+    return data ? new Set(data) : new Set();
   });
   const [favList, setFavList] = useState<FavItem[]>(() => {
-    try { return JSON.parse(localStorage.getItem("wx_favorites") || "[]"); } catch { return []; }
+    return userGetItem<FavItem[]>("wx_favorites", []);
   });
   const [leafAnimations, setLeafAnimations] = useState<string[]>([]);
-  const saveLiked = (s: Set<string>) => { setLikedSet(s); localStorage.setItem("wx_liked", JSON.stringify([...s])); };
-  const saveFav = (l: FavItem[]) => { setFavList(l); localStorage.setItem("wx_favorites", JSON.stringify(l)); };
+  const saveLiked = (s: Set<string>) => { setLikedSet(s); userSetItem("wx_liked", [...s]); };
+  const saveFav = (l: FavItem[]) => { setFavList(l); userSetItem("wx_favorites", l); };
 
   const handleLike = (feedId: string) => {
     const next = new Set(likedSet);
@@ -495,18 +497,16 @@ const SystemTuningPage: React.FC = () => {
     isMine: boolean;
   }
   const [moments, setMoments] = useState<MomentItem[]>(() => {
-    try {
-      const raw = JSON.parse(localStorage.getItem("wx_moments") || "[]");
-      return (Array.isArray(raw) ? raw : []).map((m: any) => ({
-        ...m,
-        images: Array.isArray(m.images) ? m.images : [],
-        tags: Array.isArray(m.tags) ? m.tags : [],
-        comments: Array.isArray(m.comments) ? m.comments : [],
-        likedBy: Array.isArray(m.likedBy) ? m.likedBy : [],
-        likes: typeof m.likes === "number" ? m.likes : 0,
-        likedByMe: !!m.likedByMe,
-      }));
-    } catch { return []; }
+    const raw = userGetItem<any[]>("wx_moments", []);
+    return (Array.isArray(raw) ? raw : []).map((m: any) => ({
+      ...m,
+      images: Array.isArray(m.images) ? m.images : [],
+      tags: Array.isArray(m.tags) ? m.tags : [],
+      comments: Array.isArray(m.comments) ? m.comments : [],
+      likedBy: Array.isArray(m.likedBy) ? m.likedBy : [],
+      likes: typeof m.likes === "number" ? m.likes : 0,
+      likedByMe: !!m.likedByMe,
+    }));
   });
 
   // 朋友圈数据仅保存在用户浏览器本地，不进行云端同步
@@ -532,12 +532,12 @@ const SystemTuningPage: React.FC = () => {
   type WorkItem = { id: string; title: string; content: string; chapterId: string; link: string; createdAt: number };
 
   const [works, setWorks] = useState<WorkItem[]>(() => {
-    try { return JSON.parse(localStorage.getItem("leafbook_works") || "[]"); } catch { return []; }
+    return userGetItem<WorkItem[]>("leafbook_works", []);
   });
 
   const saveWorkToast = (list: WorkItem[]) => {
     setWorks(list);
-    localStorage.setItem("leafbook_works", JSON.stringify(list));
+    userSetItem("leafbook_works", list);
   };
 
   const handleSaveWork = () => {
@@ -604,7 +604,7 @@ const SystemTuningPage: React.FC = () => {
 
   const saveMoments = (list: MomentItem[]) => {
     setMoments(list);
-    localStorage.setItem("wx_moments", JSON.stringify(list));
+    userSetItem("wx_moments", list);
   };
   const handlePublish = () => {
     if (!publishText.trim() && publishImages.length === 0) return;
@@ -651,9 +651,9 @@ const SystemTuningPage: React.FC = () => {
 
     // 先标记此 moment 需要反应（防止刷新丢失）
     try {
-      const pending = JSON.parse(localStorage.getItem("wx_pending_reactions") || "{}");
+      const pending = userGetItem<Record<string, boolean>>("wx_pending_reactions", {});
       pending[momentId] = true;
-      localStorage.setItem("wx_pending_reactions", JSON.stringify(pending));
+      userSetItem("wx_pending_reactions", pending);
     } catch { /* ignore */ }
 
     // 分配：部分点赞，部分评论，部分两者都做
@@ -672,13 +672,13 @@ const SystemTuningPage: React.FC = () => {
                 if (m.likedBy.some(l => l.name === char.name)) return m;
                 return { ...m, likes: m.likes + 1, likedBy: [...m.likedBy, { name: char.name, avatar: char.emoji }] };
               });
-              localStorage.setItem("wx_moments", JSON.stringify(updated));
+              userSetItem("wx_moments", updated);
               return updated;
             });
             // 清除 pending 标记
             try {
-              const p = JSON.parse(localStorage.getItem("wx_pending_reactions") || "{}");
-              if (p[momentId]) { delete p[momentId]; localStorage.setItem("wx_pending_reactions", JSON.stringify(p)); }
+              const p = userGetItem<Record<string, boolean>>("wx_pending_reactions", {});
+              if (p[momentId]) { delete p[momentId]; userSetItem("wx_pending_reactions", p); }
             } catch { /* ignore */ }
           } catch (e) { console.warn("[moments] 点赞更新失败:", e); }
         };
@@ -732,7 +732,7 @@ const SystemTuningPage: React.FC = () => {
                   }],
                 };
               });
-              localStorage.setItem("wx_moments", JSON.stringify(updated));
+              userSetItem("wx_moments", updated);
               return updated;
             });
           } catch (e) {
@@ -754,7 +754,7 @@ const SystemTuningPage: React.FC = () => {
   // 页面加载时恢复 pending 的 AI 反应（防止刷新丢失）
   useEffect(() => {
     try {
-      const pending = JSON.parse(localStorage.getItem("wx_pending_reactions") || "{}");
+      const pending = userGetItem<Record<string, boolean>>("wx_pending_reactions", {});
       const pendingIds = Object.keys(pending);
       if (pendingIds.length === 0) return;
 
@@ -764,7 +764,7 @@ const SystemTuningPage: React.FC = () => {
         const target = currentMoments.find(m => m.id === momentId);
         if (!target || target.likedBy.length > 0 || target.comments.length > 0) {
           delete pending[momentId];
-          try { localStorage.setItem("wx_pending_reactions", JSON.stringify(pending)); } catch { /* ignore */ }
+          try { userSetItem("wx_pending_reactions", pending); } catch { /* ignore */ }
           return;
         }
         setTimeout(() => {
@@ -837,7 +837,7 @@ const SystemTuningPage: React.FC = () => {
               }],
             };
           });
-          localStorage.setItem("wx_moments", JSON.stringify(updated));
+          userSetItem("wx_moments", updated);
           return updated;
         });
       } catch { /* AI 调用失败静默处理 */ }
@@ -907,38 +907,25 @@ const SystemTuningPage: React.FC = () => {
     return `${String(t.getMonth() + 1).padStart(2, "0")}/${String(t.getDate()).padStart(2, "0")}`;
   };
 
-  /* ===== localStorage 持久化 ===== */
+  /* ===== 用户隔离持久化 ===== */
   const LS_KEY_PREFIX = "apt_chat_";
   const LS_PROFILE_KEY = "apt_user_profile";
   const saveChatHistory = (charId: string, msgs: ChatMessage[]) => {
-    try {
-      localStorage.setItem(`${LS_KEY_PREFIX}${charId}`, JSON.stringify(msgs));
-    } catch { /* ignore */ }
+    userSetItem(`${LS_KEY_PREFIX}${charId}`, msgs);
   };
   const loadChatHistory = (charId: string): ChatMessage[] => {
-    try {
-      const raw = localStorage.getItem(`${LS_KEY_PREFIX}${charId}`);
-      if (!raw) return [];
-      const parsed = JSON.parse(raw);
-      return Array.isArray(parsed) ? parsed : [];
-    } catch { return []; }
+    return userGetItem<ChatMessage[]>(`${LS_KEY_PREFIX}${charId}`, []);
   };
 
   /* ===== 用户画像（可选） ===== */
   const [userProfile] = useState<{ tags: string[] }>(() => {
-    try {
-      const raw = localStorage.getItem(LS_PROFILE_KEY);
-      return raw ? JSON.parse(raw) : { tags: ["失眠", "省钱"] };
-    } catch { return { tags: ["失眠", "省钱"] }; }
+    return userGetItem<{ tags: string[] }>(LS_PROFILE_KEY, { tags: ["失眠", "省钱"] });
   });
 
   /* ===== 个人中心状态 ===== */
   const LS_ME_KEY = "apt_me_profile";
   const [meProfile, setMeProfile] = useState(() => {
-    try {
-      const raw = localStorage.getItem(LS_ME_KEY);
-      return raw ? JSON.parse(raw) : {};
-    } catch { return {}; }
+    return userGetItem<Record<string, unknown>>(LS_ME_KEY, {});
   });
   const [meAvatar, setMeAvatar] = useState<string>(meProfile.avatar || "");
   const [meNickname, setMeNickname] = useState<string>(meProfile.nickname || "新晋房客");
@@ -957,7 +944,7 @@ const SystemTuningPage: React.FC = () => {
 
   /* ===== 聊天背景系统（按会话保存） ===== */
   const [sessionBgs, setSessionBgs] = useState<Record<string, string>>(() => {
-    try { return JSON.parse(localStorage.getItem("wx_session_bg") || "{}"); } catch { return {}; }
+    return userGetItem<Record<string, string>>("wx_session_bg", {});
   });
   const [bgFileInputRef] = useState<{ current: HTMLInputElement | null }>({ current: null });
 
@@ -969,7 +956,7 @@ const SystemTuningPage: React.FC = () => {
 
   const saveSessionBgs = (bgs: Record<string, string>) => {
     setSessionBgs(bgs);
-    localStorage.setItem("wx_session_bg", JSON.stringify(bgs));
+    userSetItem("wx_session_bg", bgs);
   };
   const handleBgUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -986,7 +973,7 @@ const SystemTuningPage: React.FC = () => {
   const saveMeProfile = (updates: Partial<{ avatar: string; nickname: string; signature: string; mood: string }>) => {
     const next = { ...meProfile, ...updates };
     setMeProfile(next);
-    try { localStorage.setItem(LS_ME_KEY, JSON.stringify(next)); } catch { /* ignore */ }
+    userSetItem(LS_ME_KEY, next);
   };
 
   const handleAvatarUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -1037,7 +1024,7 @@ const SystemTuningPage: React.FC = () => {
 
   /* ===== 个人主页背景图 ===== */
   const [meBgUrl, setMeBgUrl] = useState<string>(() => {
-    try { return JSON.parse(localStorage.getItem("leafbook_profile") || "{}").bg_url || ""; } catch { return ""; }
+    return userGetItem<{ bg_url?: string }>("leafbook_profile", {}).bg_url || "";
   });
   const handleMeBgUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -1047,9 +1034,9 @@ const SystemTuningPage: React.FC = () => {
     const url = URL.createObjectURL(file);
     setMeBgUrl(url);
     try {
-      const p = JSON.parse(localStorage.getItem("leafbook_profile") || "{}");
+      const p = userGetItem<Record<string, string>>("leafbook_profile", {});
       p.bg_url = url;
-      localStorage.setItem("leafbook_profile", JSON.stringify(p));
+      userSetItem("leafbook_profile", p);
     } catch {}
   };
 

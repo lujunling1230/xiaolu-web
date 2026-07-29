@@ -1,0 +1,73 @@
+{
+  "timestamp": "20260729_110326",
+  "average_score": 82.7,
+  "ranking": [
+    {
+      "rank": 1,
+      "work_name": "解忧杂货店",
+      "work_id": "advice",
+      "score": 86.0,
+      "grade": "A"
+    },
+    {
+      "rank": 2,
+      "work_name": "爱情公寓 · AI 朋友圈",
+      "work_id": "apartment",
+      "score": 85.7,
+      "grade": "A"
+    },
+    {
+      "rank": 3,
+      "work_name": "伴龄 · AI 养老规划伴侣",
+      "work_id": "banling",
+      "score": 84.5,
+      "grade": "A"
+    },
+    {
+      "rank": 4,
+      "work_name": "森林疗愈室",
+      "work_id": "healing",
+      "score": 84.3,
+      "grade": "A"
+    },
+    {
+      "rank": 5,
+      "work_name": "回血清单",
+      "work_id": "recharge",
+      "score": 84.3,
+      "grade": "A"
+    },
+    {
+      "rank": 6,
+      "work_name": "漫游指南",
+      "work_id": "travel",
+      "score": 81.1,
+      "grade": "A"
+    },
+    {
+      "rank": 7,
+      "work_name": "网站助手（小叶）",
+      "work_id": "xiaoye",
+      "score": 80.1,
+      "grade": "A"
+    },
+    {
+      "rank": 8,
+      "work_name": "通关清单",
+      "work_id": "quests",
+      "score": 79.4,
+      "grade": "B"
+    },
+    {
+      "rank": 9,
+      "work_name": "物资管家",
+      "work_id": "inventory",
+      "score": 79.2,
+      "grade": "B"
+    }
+  ],
+  "grade_distribution": {
+    "A": 7,
+    "B": 2
+  }
+}

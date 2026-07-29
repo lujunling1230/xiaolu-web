@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Link, useSearchParams } from "react-router-dom";
 import { siteLoad, legacyLoad, legacySave, publishDrafts, pushSiteData } from "../../utils/siteData";
+import { userGetItem, userSetItem } from "../../utils/userStorage";
 import { useAdminGuard } from "../../hooks/useAdminGuard";
 import { callAI } from "../../utils/aiClient";
 import CuratorChatPanel from "./museum/CuratorChatPanel";
@@ -38,6 +39,12 @@ function genId(): string {
 
 function loadData<T extends { id: string; imageUrl?: string }>(key: string, fallback: T[]): T[] {
   try {
+    // 优先读取用户隔离数据
+    const userData = userGetItem<T[]>(key);
+    if (userData !== undefined && Array.isArray(userData)) {
+      return userData;
+    }
+    // 兼容旧数据：尝试从 legacy 读取并迁移
     const parsed = legacyLoad<T[]>(key);
     if (parsed === undefined || parsed === null) return fallback;
     if (!Array.isArray(parsed)) return fallback;
@@ -51,8 +58,8 @@ function loadData<T extends { id: string; imageUrl?: string }>(key: string, fall
       }
       return item;
     });
-    // 同步回写 localStorage
-    if (migrated) saveData(key, merged);
+    // 迁移到用户存储
+    if (migrated || userData === undefined) saveData(key, merged);
     return merged as T[];
   } catch {
     return fallback;
@@ -61,7 +68,7 @@ function loadData<T extends { id: string; imageUrl?: string }>(key: string, fall
 
 function saveData<T>(key: string, data: T[]): void {
   try {
-    legacySave(key, data);
+    userSetItem(key, data);
   } catch {
     // ignore
   }
@@ -1121,13 +1128,13 @@ const MuseumPage: React.FC = () => {
   // 环境光鼠标追踪
   const [mousePos, setMousePos] = useState({ x: 50, y: 30 });
 
-  // 迁移：如果旧 key 不存在，尝试从 life_film_site_seed 读取
+  // 迁移：如果用户存储为空，尝试从旧数据读取并迁移
   useEffect(() => {
     Object.values(SEED_KEYS).forEach(key => {
-      if (localStorage.getItem(key) === null) {
+      if (userGetItem(key) === undefined) {
         const seedVal = siteLoad(key);
         if (seedVal !== undefined) {
-          localStorage.setItem(key, JSON.stringify(seedVal));
+          userSetItem(key, seedVal);
         }
       }
     });

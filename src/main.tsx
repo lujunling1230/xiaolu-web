@@ -21,6 +21,7 @@ import AboutPage from "./pages/toolbox/roaming-guide/AboutPage";
 import { RoamingGuideProvider } from "./pages/toolbox/roaming-guide/RoamingGuideContext";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { StandaloneProvider } from "./context/StandaloneContext";
+import { UserAuthProvider } from "./context/UserAuthContext";
 import SystemTuningPage from "./pages/toolbox/SystemTuningPage";
 import BanlingPage from "./pages/toolbox/BanlingPage";
 // LifeFilmPage removed - module deleted
@@ -51,6 +52,7 @@ createRoot(document.getElementById("root")!).render(
   <StrictMode>
     <BrowserRouter>
       <ScrollToTop />
+      <UserAuthProvider>
       <StandaloneProvider>
       <Routes>
         {/* 首页：原作品集 + 小鹿书局三书陈列 */}
@@ -127,6 +129,7 @@ createRoot(document.getElementById("root")!).render(
         <Route path="/toolbox/:title" element={<ToolboxDetail />} />
       </Routes>
       </StandaloneProvider>
+      </UserAuthProvider>
     </BrowserRouter>
   </StrictMode>
 );

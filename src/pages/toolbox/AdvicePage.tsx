@@ -8,6 +8,8 @@ import { useAppManifest } from "../../hooks/useAppManifest";
 import PWAInstallPrompt from "../../components/PWAInstallPrompt";
 import WeChatGuide from "../../components/WeChatGuide";
 import UniversalCheckinPanel from "../../components/UniversalCheckinPanel";
+import UserAuthBar from "../../components/UserAuthBar";
+import { userGetItem, userSetItem } from "../../utils/userStorage";
 
 /**
  * 解忧杂货店 · The Advice Shop
@@ -34,10 +36,10 @@ const STICKIES = [
   "心之所向，便是阳关大道。",
 ];
 const loadLetters = (): Letter[] => {
-  try { const r = localStorage.getItem(STORAGE_KEY); return r ? JSON.parse(r) : []; }
+  try { return userGetItem<Letter[]>(STORAGE_KEY) || []; }
   catch { return []; }
 };
-const saveLetters = (ls: Letter[]) => localStorage.setItem(STORAGE_KEY, JSON.stringify(ls));
+const saveLetters = (ls: Letter[]) => userSetItem(STORAGE_KEY, ls);
 const formatTime = (ts: number) => {
   const d = new Date(ts);
   const p = (n: number) => String(n).padStart(2, "0");
@@ -475,6 +477,7 @@ const AdvicePage: React.FC = () => {
           </Link>
         )}
         <span className="advice-topbar-meta">The Advice Shop</span>
+        <UserAuthBar style={{ marginLeft: "auto" }} />
       </header>
 
       {/* 签到打卡 */}

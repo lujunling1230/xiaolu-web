@@ -8,11 +8,11 @@
  * - 连续签到 30 天：额外 +50 积分
  * - 获得徽章：+10 积分
  *
- * 数据存储在 localStorage 中：
- * - recharge_points: 总积分
- * - recharge_points_history: 积分变动记录
- * - recharge_checkin: 签到记录 { lastDate: string, streak: number }
+ * 数据存储在 localStorage 中（key: recharge_points 等），
+ * 通过 userStorage 实现用户隔离。
  */
+
+import { userGetItem, userSetItem } from "../../utils/userStorage";
 
 export interface PointRecord {
   id: string;
@@ -34,7 +34,7 @@ const CHECKIN_KEY = "recharge_checkin";
 /** 获取当前总积分 */
 export function getPoints(): number {
   try {
-    const raw = localStorage.getItem(POINTS_KEY);
+    const raw = userGetItem<string>(POINTS_KEY);
     return raw ? parseInt(raw, 10) || 0 : 0;
   } catch {
     return 0;
@@ -44,15 +44,14 @@ export function getPoints(): number {
 /** 设置总积分 */
 function setPoints(points: number): void {
   try {
-    localStorage.setItem(POINTS_KEY, String(Math.max(0, points)));
+    userSetItem(POINTS_KEY, String(Math.max(0, points)));
   } catch { /* ignore */ }
 }
 
 /** 获取积分变动历史 */
 export function getPointsHistory(): PointRecord[] {
   try {
-    const raw = localStorage.getItem(HISTORY_KEY);
-    return raw ? JSON.parse(raw) : [];
+    return userGetItem<PointRecord[]>(HISTORY_KEY) || [];
   } catch {
     return [];
   }
@@ -65,7 +64,7 @@ function addPointRecord(record: PointRecord): void {
     history.unshift(record);
     // 只保留最近 100 条
     if (history.length > 100) history.length = 100;
-    localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
+    userSetItem(HISTORY_KEY, history);
   } catch { /* ignore */ }
 }
 
@@ -97,8 +96,7 @@ export function getTodayStr(): string {
 /** 获取签到数据 */
 export function getCheckinData(): CheckinData {
   try {
-    const raw = localStorage.getItem(CHECKIN_KEY);
-    if (raw) return JSON.parse(raw);
+    return userGetItem<CheckinData>(CHECKIN_KEY) || { lastDate: "", streak: 0 };
   } catch { /* ignore */ }
   return { lastDate: "", streak: 0 };
 }
@@ -106,7 +104,7 @@ export function getCheckinData(): CheckinData {
 /** 保存签到数据 */
 function setCheckinData(data: CheckinData): void {
   try {
-    localStorage.setItem(CHECKIN_KEY, JSON.stringify(data));
+    userSetItem(CHECKIN_KEY, data);
   } catch { /* ignore */ }
 }
 

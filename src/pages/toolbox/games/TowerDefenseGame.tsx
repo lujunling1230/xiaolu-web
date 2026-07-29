@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { userGetItem, userSetItem } from "../../../utils/userStorage";
 
 /**
  * 守卫小萝卜
@@ -185,17 +186,11 @@ interface TowerSaveData {
 const TD_SAVE_KEY = "tower_defense_save";
 
 const loadTDSave = (): TowerSaveData => {
-  try {
-    const raw = localStorage.getItem(TD_SAVE_KEY);
-    if (raw) return JSON.parse(raw);
-  } catch { /* ignore */ }
-  return { highestWave: 0, badges: [] };
+  return userGetItem<TowerSaveData>(TD_SAVE_KEY, { highestWave: 0, badges: [] });
 };
 
 const saveTDSave = (data: TowerSaveData) => {
-  try {
-    localStorage.setItem(TD_SAVE_KEY, JSON.stringify(data));
-  } catch { /* ignore */ }
+  userSetItem(TD_SAVE_KEY, data);
 };
 
 /** 在Canvas上绘制徽章图标 */

@@ -8,6 +8,8 @@ import { useAppManifest } from "../../hooks/useAppManifest";
 import PWAInstallPrompt from "../../components/PWAInstallPrompt";
 import WeChatGuide from "../../components/WeChatGuide";
 import UniversalCheckinPanel from "../../components/UniversalCheckinPanel";
+import UserAuthBar from "../../components/UserAuthBar";
+import { userGetItem, userSetItem, userRemoveItem } from "../../utils/userStorage";
 
 /**
  * 伴龄 · AI 养老规划伴侣
@@ -64,8 +66,7 @@ const SESSIONS_KEY = "banling_sessions";
 
 const loadReports = (): SavedReport[] => {
   try {
-    const r = localStorage.getItem(REPORTS_KEY);
-    return r ? JSON.parse(r) : [];
+    return userGetItem<SavedReport[]>(REPORTS_KEY) || [];
   } catch {
     return [];
   }
@@ -73,7 +74,7 @@ const loadReports = (): SavedReport[] => {
 
 const saveReports = (reports: SavedReport[]) => {
   try {
-    localStorage.setItem(REPORTS_KEY, JSON.stringify(reports));
+    userSetItem(REPORTS_KEY, reports);
   } catch {
     /* 静默处理 */
   }
@@ -81,8 +82,7 @@ const saveReports = (reports: SavedReport[]) => {
 
 const loadProfile = (): UserProfile | null => {
   try {
-    const r = localStorage.getItem(PROFILE_KEY);
-    return r ? JSON.parse(r) : null;
+    return userGetItem<UserProfile>(PROFILE_KEY) || null;
   } catch {
     return null;
   }
@@ -90,8 +90,8 @@ const loadProfile = (): UserProfile | null => {
 
 const saveProfile = (p: UserProfile | null) => {
   try {
-    if (p) localStorage.setItem(PROFILE_KEY, JSON.stringify(p));
-    else localStorage.removeItem(PROFILE_KEY);
+    if (p) userSetItem(PROFILE_KEY, p);
+    else userRemoveItem(PROFILE_KEY);
   } catch {
     /* 静默处理 */
   }
@@ -99,8 +99,7 @@ const saveProfile = (p: UserProfile | null) => {
 
 const loadSessions = (): ChatSession[] => {
   try {
-    const r = localStorage.getItem(SESSIONS_KEY);
-    return r ? JSON.parse(r) : [];
+    return userGetItem<ChatSession[]>(SESSIONS_KEY) || [];
   } catch {
     return [];
   }
@@ -108,7 +107,7 @@ const loadSessions = (): ChatSession[] => {
 
 const saveSessions = (sessions: ChatSession[]) => {
   try {
-    localStorage.setItem(SESSIONS_KEY, JSON.stringify(sessions));
+    userSetItem(SESSIONS_KEY, sessions);
   } catch {
     /* 静默处理 */
   }
@@ -860,6 +859,7 @@ ${messages.map((m) => `${m.role === "user" ? "用户" : "伴龄"}: ${m.content}`
                 <path d="M6 9l6 6 6-6" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
             </div>
+            <UserAuthBar />
             <button
               className="bl-about-btn"
               onClick={() => setShowAboutModal(true)}

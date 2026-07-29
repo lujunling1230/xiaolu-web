@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from "react";
+import { userGetItem, userSetItem } from "../../../utils/userStorage";
 
 /**
  * 消散 · Dissolve
@@ -222,17 +223,11 @@ const levelMoves = (level: number) => getLevelConfig(level).moves;
    徽章系统
    ============================================================ */
 const loadBadges = (): number[] => {
-  try {
-    const raw = localStorage.getItem(BADGE_STORAGE_KEY);
-    if (raw) return JSON.parse(raw);
-  } catch { /* ignore */ }
-  return [];
+  return userGetItem<number[]>(BADGE_STORAGE_KEY, []);
 };
 
 const saveBadges = (badges: number[]) => {
-  try {
-    localStorage.setItem(BADGE_STORAGE_KEY, JSON.stringify(badges));
-  } catch { /* ignore */ }
+  userSetItem(BADGE_STORAGE_KEY, badges);
 };
 
 const BADGE_NAMES: Record<number, string> = {
@@ -256,23 +251,15 @@ const MATCH3_BADGE_NAMES = [
   "冰消瓦解", "坚壁清野", "纵横捭阖", "万物归零"
 ];
 
-/** 从 localStorage 读取关卡 */
+/** 从用户存储读取关卡 */
 const loadLevel = (): number => {
-  try {
-    const v = localStorage.getItem(STORAGE_KEY);
-    return v ? Math.min(MAX_UNLOCKED_LEVEL, Math.max(1, parseInt(v, 10) || 1)) : 1;
-  } catch {
-    return 1;
-  }
+  const v = userGetItem<string>(STORAGE_KEY);
+  return v ? Math.min(MAX_UNLOCKED_LEVEL, Math.max(1, parseInt(v, 10) || 1)) : 1;
 };
 
-/** 保存关卡到 localStorage */
+/** 保存关卡到用户存储 */
 const saveLevel = (level: number) => {
-  try {
-    localStorage.setItem(STORAGE_KEY, String(level));
-  } catch {
-    /* ignore */
-  }
+  userSetItem(STORAGE_KEY, String(level));
 };
 
 /* ============================================================

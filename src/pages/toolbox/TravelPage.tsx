@@ -6,6 +6,7 @@ import { useAppManifest } from "../../hooks/useAppManifest";
 import PWAInstallPrompt from "../../components/PWAInstallPrompt";
 import WeChatGuide from "../../components/WeChatGuide";
 import UniversalCheckinPanel from "../../components/UniversalCheckinPanel";
+import { userGetItem, userSetItem } from "../../utils/userStorage";
 
 /**
  * 漫游指南 · Travel Log
@@ -169,15 +170,12 @@ const DEFAULT_CITIES: City[] = [
 ];
 
 function loadCities(): City[] {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw) return JSON.parse(raw);
-  } catch { /* ignore */ }
-  return [...DEFAULT_CITIES];
+  const data = userGetItem<City[]>(STORAGE_KEY);
+  return data || [...DEFAULT_CITIES];
 }
 
 function saveCities(list: City[]) {
-  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(list)); } catch { /* ignore */ }
+  userSetItem(STORAGE_KEY, list);
 }
 
 /* ============================================================
@@ -468,12 +466,10 @@ const TravelPage: React.FC = () => {
   const [editingCity, setEditingCity] = useState<City | null>(null);
   const [hoverCardId, setHoverCardId] = useState<number | null>(null);
   const [toast, setToast] = useState<string | null>(null);
-  /* 手动标记去过/未去过的省份（点击切换），持久化到 localStorage */
+  /* 手动标记去过/未去过的省份（点击切换），持久化到用户存储 */
   const [manualVisited, setManualVisited] = useState<Set<string>>(() => {
-    try {
-      const raw = localStorage.getItem("travel_manual_visited");
-      return raw ? new Set<string>(JSON.parse(raw)) : new Set<string>();
-    } catch { return new Set<string>(); }
+    const data = userGetItem<string[]>("travel_manual_visited");
+    return data ? new Set<string>(data) : new Set<string>();
   });
 
   /* 卷轴展开动画 */
@@ -487,10 +483,7 @@ const TravelPage: React.FC = () => {
   const [editMode, setEditMode] = useState(false);
   const [dragging, setDragging] = useState<string | null>(null);
   const [provinceTransforms, setProvinceTransforms] = useState<Record<string, { dx: number; dy: number; sx: number; sy: number }>>(() => {
-    try {
-      const raw = localStorage.getItem("travel_province_transforms");
-      return raw ? JSON.parse(raw) : {};
-    } catch { return {}; }
+    return userGetItem<Record<string, { dx: number; dy: number; sx: number; sy: number }>>("travel_province_transforms", {});
   });
 
   /** 对 SVG path 应用平移+缩放变换（以原始中心为基准缩放后再平移） */
@@ -516,7 +509,7 @@ const TravelPage: React.FC = () => {
 
   /* 持久化省份变换 */
   useEffect(() => {
-    try { localStorage.setItem("travel_province_transforms", JSON.stringify(provinceTransforms)); } catch { /* ignore */ }
+    userSetItem("travel_province_transforms", provinceTransforms);
   }, [provinceTransforms]);
 
   const isNew = useMemo(() => editingCity ? !cities.some((c) => c.id === editingCity.id) : false, [editingCity, cities]);
@@ -524,9 +517,9 @@ const TravelPage: React.FC = () => {
   // 保存到 localStorage
   useEffect(() => { saveCities(cities); }, [cities]);
 
-  ///* 保存手动标记到 localStorage */
+  /* 保存手动标记到用户存储 */
   useEffect(() => {
-    try { localStorage.setItem("travel_manual_visited", JSON.stringify([...manualVisited])); } catch { /* ignore */ }
+    userSetItem("travel_manual_visited", [...manualVisited]);
   }, [manualVisited]);
 
   /* 动态计算省份状态（合并手动标记） */

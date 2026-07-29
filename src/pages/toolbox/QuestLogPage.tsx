@@ -2,12 +2,13 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Link } from "react-router-dom";
 import { track } from "../../utils/track";
-import { legacyLoad, legacySave } from "../../utils/siteData";
 import { useAdminGuard } from "../../hooks/useAdminGuard";
 import { useSolo } from "../../context/StandaloneContext";
 import { useAppManifest } from "../../hooks/useAppManifest";
 import PWAInstallPrompt from "../../components/PWAInstallPrompt";
 import WeChatGuide from "../../components/WeChatGuide";
+import UserAuthBar from "../../components/UserAuthBar";
+import { userGetItem, userSetItem } from "../../utils/userStorage";
 import {
   type RewardCard,
   checkAndGrantCard,
@@ -20,7 +21,7 @@ import {
  *
  * 游戏化 To-Do —— 把人生变成一场 RPG。
  * 智能拆解降低启动阻力，完成时粒子爆炸 + 金币音效提供即时爽感。
- * 数据持久化于 localStorage（key: quest_log_data）。
+ * 数据持久化于 localStorage（key: quest_log_data），通过 userStorage 隔离。
  */
 
 /* ============================================================
@@ -107,34 +108,34 @@ function genId(): string {
 }
 
 function loadQuests(): Quest[] {
-  return legacyLoad<Quest[]>(STORAGE_KEY, DEFAULT_QUESTS) || DEFAULT_QUESTS;
+  return userGetItem<Quest[]>(STORAGE_KEY, DEFAULT_QUESTS) || DEFAULT_QUESTS;
 }
 
 function loadXP(): number {
-  const raw = legacyLoad<string>(XP_KEY, "0");
+  const raw = userGetItem<string>(XP_KEY, "0");
   return raw ? Math.max(0, Number(raw) || 0) : 0;
 }
 
 function loadCoins(): number {
-  const raw = legacyLoad<string>(COINS_KEY, "0");
+  const raw = userGetItem<string>(COINS_KEY, "0");
   return raw ? Math.max(0, Number(raw) || 0) : 0;
 }
 
 function loadCoinsHistory(): CoinRecord[] {
-  return legacyLoad<CoinRecord[]>(COINS_HISTORY_KEY, []) || [];
+  return userGetItem<CoinRecord[]>(COINS_HISTORY_KEY, []) || [];
 }
 
 function saveCoins(coins: number, history: CoinRecord[]) {
-  legacySave(COINS_KEY, String(coins));
-  legacySave(COINS_HISTORY_KEY, history);
+  userSetItem(COINS_KEY, String(coins));
+  userSetItem(COINS_HISTORY_KEY, history);
 }
 
 function loadCheckin(): string {
-  return legacyLoad<string>(CHECKIN_KEY, "") || "";
+  return userGetItem<string>(CHECKIN_KEY, "") || "";
 }
 
 function loadStreak(): number {
-  const raw = legacyLoad<string>(STREAK_KEY, "0");
+  const raw = userGetItem<string>(STREAK_KEY, "0");
   return raw ? Math.max(0, Number(raw) || 0) : 0;
 }
 
@@ -674,11 +675,11 @@ const QuestLogPage: React.FC = () => {
 
   // 持久化
   useEffect(() => {
-    legacySave(STORAGE_KEY, quests);
+    userSetItem(STORAGE_KEY, quests);
   }, [quests]);
 
   useEffect(() => {
-    legacySave(XP_KEY, String(xp));
+    userSetItem(XP_KEY, String(xp));
   }, [xp]);
 
   useEffect(() => {
@@ -686,8 +687,8 @@ const QuestLogPage: React.FC = () => {
   }, [coins, coinsHistory]);
 
   useEffect(() => {
-    legacySave(CHECKIN_KEY, checkinDate);
-    legacySave(STREAK_KEY, String(streak));
+    userSetItem(CHECKIN_KEY, checkinDate);
+    userSetItem(STREAK_KEY, String(streak));
   }, [checkinDate, streak]);
 
   /* 等级变化追踪 */
@@ -830,6 +831,7 @@ const QuestLogPage: React.FC = () => {
           </Link>
         )}
         <span className="quest-topbar-meta">Quest Log</span>
+        <UserAuthBar style={{ marginLeft: "auto" }} />
       </header>
 
       {/* 玩家状态 */}

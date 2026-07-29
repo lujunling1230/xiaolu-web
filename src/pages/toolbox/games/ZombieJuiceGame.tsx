@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { userGetItem, userSetItem } from "../../../utils/userStorage";
 
 /**
  * ZombieJuice - 僵尸榨汁机
@@ -341,17 +342,11 @@ const defaultState = (): GameState => ({
    Save / Load
    ============================================================ */
 const saveGame = (s: GameState) => {
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(s));
-  } catch { /* silent */ }
+  userSetItem(STORAGE_KEY, s);
 };
 
 const loadGame = (): GameState | null => {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return null;
-    return JSON.parse(raw) as GameState;
-  } catch { return null; }
+  return userGetItem<GameState>(STORAGE_KEY, null);
 };
 
 /* ============================================================

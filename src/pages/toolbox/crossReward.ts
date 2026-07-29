@@ -5,8 +5,10 @@
  * - 通关清单连续 7 天 → 回血清单获得「通关勇士礼券」（+20 积分）
  * - 回血清单连续 7 天 → 通关清单获得「回血达人礼券」（+30 金币）
  *
- * 数据存储在 localStorage：cross_reward_cards
+ * 数据存储在 localStorage：cross_reward_cards，通过 userStorage 隔离。
  */
+
+import { userGetItem, userSetItem } from "../../utils/userStorage";
 
 export interface RewardCard {
   id: string;
@@ -33,8 +35,7 @@ const CARDS_KEY = "cross_reward_cards";
 /** 读取所有体验卡 */
 function loadCards(): RewardCard[] {
   try {
-    const raw = localStorage.getItem(CARDS_KEY);
-    return raw ? JSON.parse(raw) : [];
+    return userGetItem<RewardCard[]>(CARDS_KEY) || [];
   } catch {
     return [];
   }
@@ -43,7 +44,7 @@ function loadCards(): RewardCard[] {
 /** 保存体验卡 */
 function saveCards(cards: RewardCard[]): void {
   try {
-    localStorage.setItem(CARDS_KEY, JSON.stringify(cards));
+    userSetItem(CARDS_KEY, cards);
   } catch { /* ignore */ }
 }
 
@@ -56,7 +57,7 @@ function getTodayStr(): string {
 /** 读取通关清单的连续签到天数 */
 function getQuestStreak(): number {
   try {
-    const raw = localStorage.getItem("quest_log_streak");
+    const raw = userGetItem<string>("quest_log_streak");
     return raw ? parseInt(raw, 10) || 0 : 0;
   } catch {
     return 0;
@@ -66,9 +67,9 @@ function getQuestStreak(): number {
 /** 读取回血清单的连续签到天数 */
 function getRechargeStreak(): number {
   try {
-    const raw = localStorage.getItem("recharge_checkin");
+    const raw = userGetItem<"recharge_checkin">("recharge_checkin");
     if (raw) {
-      const data = JSON.parse(raw);
+      const data = raw as unknown as { streak?: number };
       return data.streak || 0;
     }
   } catch { /* ignore */ }
@@ -76,7 +77,7 @@ function getRechargeStreak(): number {
 }
 
 /** 检查是否已为本周期发放过体验卡 */
-function hasGrantedThisCycle(source: "quest" | "recharge", target: "quest" | "recharge", streak: number): boolean {
+function hasGrantedThisCycle(source: "quest" | "recharge", target: "quest" | "recharge", _streak: number): boolean {
   const cards = loadCards();
   // 查找同一来源、同一目标、未领取且是最近发放的卡
   // 简单策略：如果已有未领取的同源同目标卡，不再重复发放

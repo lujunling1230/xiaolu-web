@@ -25,6 +25,8 @@ import { useSolo } from "../../context/StandaloneContext";
 import { useAppManifest } from "../../hooks/useAppManifest";
 import PWAInstallPrompt from "../../components/PWAInstallPrompt";
 import WeChatGuide from "../../components/WeChatGuide";
+import UserAuthBar from "../../components/UserAuthBar";
+import { userGetItem, userSetItem, userRemoveItem } from "../../utils/userStorage";
 import {
   getPoints,
   getCheckinData,
@@ -197,7 +199,7 @@ const DONE_KEY = "recharge_done_ids";
 
 function loadDoneIds(): Set<number> {
   try {
-    const raw = localStorage.getItem(DONE_KEY);
+    const raw = userGetItem<string>(DONE_KEY);
     return raw ? new Set(JSON.parse(raw)) : new Set();
   } catch {
     return new Set();
@@ -463,6 +465,7 @@ const HomePage: React.FC<{
   const [streak, setStreak] = useState(0);
   const [detailRec, setDetailRec] = useState<Recommendation | null>(null);
   const [timer, setTimer] = useState<{ active: boolean; seconds: number; recId: number } | null>(null);
+  const [showUnlockCard, setShowUnlockCard] = useState(false);
 
   const historyKeywords = useMemo(() => {
     const history = loadHistory();
@@ -477,6 +480,16 @@ const HomePage: React.FC<{
     setStreak(sd);
     setBadges(getBadges(history, sd, tc));
   }, [doneIds.size]);
+
+  // 连续打卡满7天，弹出解锁通关清单卡片
+  useEffect(() => {
+    if (streak >= 7) {
+      const dismissed = userGetItem<string>("recharge_unlock_quests_dismissed");
+      if (!dismissed) {
+        setShowUnlockCard(true);
+      }
+    }
+  }, [streak]);
 
   useEffect(() => {
     if (!timer || !timer.active) return;
@@ -512,6 +525,86 @@ const HomePage: React.FC<{
         <span className="home-healing-text">{healingText}</span>
         {streak > 0 && <span className="home-streak">连续 {streak} 天</span>}
       </div>
+
+      {/* 解锁通关清单卡片 */}
+      <AnimatePresence>
+        {showUnlockCard && (
+          <motion.div
+            className="unlock-quests-card"
+            initial={{ opacity: 0, y: 20, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -20, scale: 0.95 }}
+            transition={{ duration: 0.5, ease: "easeOut" }}
+          >
+            <button
+              className="unlock-quests-close"
+              onClick={() => {
+                setShowUnlockCard(false);
+                userSetItem("recharge_unlock_quests_dismissed", "1");
+              }}
+              aria-label="关闭"
+            >
+              ×
+            </button>
+            <div className="unlock-quests-glow" />
+            <div className="unlock-quests-content">
+              <motion.div
+                className="unlock-quests-icon-wrap"
+                initial={{ rotate: -10, scale: 0 }}
+                animate={{ rotate: 0, scale: 1 }}
+                transition={{ delay: 0.3, type: "spring", stiffness: 200, damping: 14 }}
+              >
+                <span className="unlock-quests-icon">🔑</span>
+              </motion.div>
+              <motion.h3
+                className="unlock-quests-title"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.45 }}
+              >
+                恭喜你坚持了连续七天打卡
+              </motion.h3>
+              <motion.p
+                className="unlock-quests-desc"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.55 }}
+              >
+                解锁了下一款产品——<strong>通关清单</strong>
+              </motion.p>
+              <motion.p
+                className="unlock-quests-subtitle"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.65 }}
+              >
+                这款产品是拖延人的救星。把那些拖了很久的小事列成清单，一件件打勾完成，找回对生活的掌控感。
+              </motion.p>
+              <motion.div
+                className="unlock-quests-btn-wrap"
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.75 }}
+              >
+                <a
+                  href="https://www.xiaoluweb.com/toolbox/quests?solo=1"
+                  className="unlock-quests-btn"
+                  onClick={() => {
+                    track("recharge_action");
+                    setShowUnlockCard(false);
+                    userSetItem("recharge_unlock_quests_dismissed", "1");
+                  }}
+                >
+                  <span>前往通关清单</span>
+                  <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                    <path d="M6 3L11 8L6 13" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                </a>
+              </motion.div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* 状态选择器 */}
       <div className="home-state-section">
@@ -779,8 +872,7 @@ const StatsPage: React.FC = () => {
     // 读取感受记录
     const notesMap = new Map<number, { note: string; img: string | null; date: string }>();
     try {
-      const raw = localStorage.getItem("recharge_notes");
-      const notesArr: any[] = raw ? JSON.parse(raw) : [];
+      const notesArr = userGetItem<any[]>("recharge_notes") || [];
       for (const n of notesArr) {
         if (!notesMap.has(n.id) || n.timestamp > (notesMap.get(n.id) as any)?._ts) {
           notesMap.set(n.id, { note: n.note, img: n.img, date: n.date, _ts: n.timestamp } as any);
@@ -881,8 +973,8 @@ const StatsPage: React.FC = () => {
    ============================================================ */
 const ShareCard: React.FC<{ totalCount: number; streak: number; onClose: () => void }> = ({ totalCount, streak, onClose }) => {
   const buildDataJson = useCallback(() => {
-    const history: CompletionRecord[] = JSON.parse(localStorage.getItem("recharge_history") || "[]");
-    const doneIds: string[] = JSON.parse(localStorage.getItem("recharge_done_ids") || "[]");
+    const history: CompletionRecord[] = userGetItem<CompletionRecord[]>("recharge_history") || [];
+    const doneIds: string[] = userGetItem<string[]>("recharge_done_ids") || [];
 
     // 按时间倒序去重取最近5条
     const seen = new Set<string>();
@@ -1257,13 +1349,13 @@ const MePage: React.FC = () => {
 
   const handleReset = useCallback(() => {
     if (window.confirm("确定要重置所有数据吗？这将清除所有打卡记录、历史数据和积分，无法恢复。")) {
-      localStorage.removeItem("recharge_count_ts");
-      localStorage.removeItem(DONE_KEY);
-      localStorage.removeItem("recharge_history");
-      localStorage.removeItem("recharge_user_state");
-      localStorage.removeItem("recharge_points");
-      localStorage.removeItem("recharge_points_history");
-      localStorage.removeItem("recharge_checkin");
+      userRemoveItem("recharge_count_ts");
+      userRemoveItem(DONE_KEY);
+      userRemoveItem("recharge_history");
+      userRemoveItem("recharge_user_state");
+      userRemoveItem("recharge_points");
+      userRemoveItem("recharge_points_history");
+      userRemoveItem("recharge_checkin");
       window.location.reload();
     }
   }, []);
@@ -1703,7 +1795,7 @@ const RechargePage: React.FC = () => {
       const node = nodes.find(n => n.id === id);
       if (node) addTaskCompletePoints(node.text);
       try {
-        localStorage.setItem(DONE_KEY, JSON.stringify([...next]));
+        userSetItem(DONE_KEY, [...next]);
       } catch { /* ignore */ }
       return next;
     });
@@ -1715,7 +1807,7 @@ const RechargePage: React.FC = () => {
         const next = new Set(prev);
         next.delete(id);
         try {
-          localStorage.setItem(DONE_KEY, JSON.stringify([...next]));
+          userSetItem(DONE_KEY, [...next]);
         } catch { /* ignore */ }
         return next;
       });
@@ -1731,8 +1823,7 @@ const RechargePage: React.FC = () => {
     const { id } = completionModal;
 
     try {
-      const raw = localStorage.getItem("recharge_notes");
-      const notes = raw ? JSON.parse(raw) : [];
+      const notes = userGetItem<any[]>("recharge_notes") || [];
       notes.push({
         id,
         note: completionNote,
@@ -1740,7 +1831,7 @@ const RechargePage: React.FC = () => {
         date: completionDate,
         timestamp: Date.now(),
       });
-      localStorage.setItem("recharge_notes", JSON.stringify(notes));
+      userSetItem("recharge_notes", notes);
     } catch { /* ignore */ }
 
     doCompleteCore(id);
@@ -1775,6 +1866,7 @@ const RechargePage: React.FC = () => {
               </Link>
             )}
             <span className="recharge-topbar-meta">Recharge Station</span>
+            <UserAuthBar style={{ marginLeft: "auto" }} />
           </header>
           <section className="recharge-hero">
             <motion.h1
@@ -3100,6 +3192,98 @@ const RechargePage: React.FC = () => {
           .me-user-name { font-size: 16px; }
           .me-user-stats { gap: 16px; }
           .me-user-stat-value { font-size: 14px; }
+        }
+
+        /* ===== 解锁通关清单卡片 ===== */
+        .unlock-quests-card {
+          position: relative;
+          margin-bottom: 20px;
+          padding: 28px 24px 24px;
+          border-radius: 16px;
+          background: linear-gradient(135deg, #FFFDF7 0%, #FFF9EC 40%, #FFFBF0 100%);
+          border: 1px solid rgba(200,160,100,0.2);
+          box-shadow: 0 4px 24px rgba(160,130,90,0.08), 0 1px 3px rgba(160,130,90,0.06);
+          overflow: hidden;
+        }
+        .unlock-quests-glow {
+          position: absolute;
+          top: -40px; right: -40px;
+          width: 120px; height: 120px;
+          border-radius: 50%;
+          background: radial-gradient(circle, rgba(244,211,94,0.18) 0%, transparent 70%);
+          pointer-events: none;
+        }
+        .unlock-quests-close {
+          position: absolute;
+          top: 12px; right: 14px;
+          width: 28px; height: 28px;
+          display: flex; align-items: center; justify-content: center;
+          border: none; background: none;
+          font-size: 18px; color: #c8b898;
+          cursor: pointer; border-radius: 50%;
+          transition: all 0.2s ease;
+          z-index: 2;
+        }
+        .unlock-quests-close:hover {
+          color: #8b7355;
+          background: rgba(160,130,90,0.08);
+        }
+        .unlock-quests-content {
+          position: relative; z-index: 1;
+          text-align: center;
+        }
+        .unlock-quests-icon-wrap {
+          display: inline-flex; align-items: center; justify-content: center;
+          width: 56px; height: 56px;
+          border-radius: 50%;
+          background: linear-gradient(135deg, rgba(244,211,94,0.2), rgba(200,160,100,0.12));
+          margin-bottom: 16px;
+        }
+        .unlock-quests-icon {
+          font-size: 28px;
+        }
+        .unlock-quests-title {
+          font-family: "Noto Serif SC", Georgia, serif;
+          font-size: 17px; font-weight: 600;
+          color: #5a4a3a; margin: 0 0 10px;
+          letter-spacing: 0.06em; line-height: 1.5;
+        }
+        .unlock-quests-desc {
+          font-family: "Noto Serif SC", Georgia, serif;
+          font-size: 15px; color: #6b5c4a;
+          margin: 0 0 10px; letter-spacing: 0.04em;
+          line-height: 1.5;
+        }
+        .unlock-quests-desc strong {
+          color: #c8924a; font-weight: 600;
+        }
+        .unlock-quests-subtitle {
+          font-size: 13px; color: #9a8a7e;
+          margin: 0 0 20px; letter-spacing: 0.03em;
+          line-height: 1.7; max-width: 320px;
+          margin-left: auto; margin-right: auto;
+        }
+        .unlock-quests-btn-wrap {
+          display: flex; justify-content: center;
+        }
+        .unlock-quests-btn {
+          display: inline-flex; align-items: center; gap: 6px;
+          padding: 10px 24px; border-radius: 24px;
+          background: linear-gradient(135deg, #c8924a, #b07d3a);
+          color: #FFFFFF; font-size: 14px; font-weight: 500;
+          text-decoration: none; letter-spacing: 0.05em;
+          box-shadow: 0 2px 12px rgba(200,146,74,0.25);
+          transition: all 0.25s ease;
+          font-family: inherit;
+        }
+        .unlock-quests-btn:hover {
+          background: linear-gradient(135deg, #d4a05a, #c08a44);
+          box-shadow: 0 4px 16px rgba(200,146,74,0.35);
+          transform: translateY(-1px);
+        }
+        .unlock-quests-btn:active {
+          transform: translateY(0);
+          box-shadow: 0 2px 8px rgba(200,146,74,0.2);
         }
       `}</style>
       <PWAInstallPrompt />

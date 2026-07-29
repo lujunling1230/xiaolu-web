@@ -2,6 +2,8 @@ import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Link } from "react-router-dom";
 import { useSolo } from "../../context/StandaloneContext";
+import UserAuthBar from "../../components/UserAuthBar";
+import { userGetItem } from "../../utils/userStorage";
 import Match3Game from "./games/Match3Game";
 import FruitSliceGame from "./games/FruitSliceGame";
 import ZombieJuiceGame from "./games/ZombieJuiceGame";
@@ -91,9 +93,8 @@ const StressReliefPage: React.FC = () => {
     const progress: Record<string, { level: number; badges: number }> = {};
     for (const g of GAMES) {
       try {
-        const raw = localStorage.getItem(g.saveKey);
-        if (raw) {
-          const data = JSON.parse(raw);
+        const data = userGetItem<Record<string, unknown>>(g.saveKey);
+        if (data) {
           if (g.gameCode === "towerdefense") {
             progress[g.gameCode] = {
               level: data.highestWave || 0,
@@ -145,6 +146,7 @@ const StressReliefPage: React.FC = () => {
           </Link>
         )}
         <span className="sr-topbar-meta">Stress Relief Room</span>
+        <UserAuthBar style={{ marginLeft: "auto" }} />
       </header>
 
       {/* 标题区 */}

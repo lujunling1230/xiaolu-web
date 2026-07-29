@@ -6,7 +6,9 @@ import { useAppManifest } from "../../hooks/useAppManifest";
 import PWAInstallPrompt from "../../components/PWAInstallPrompt";
 import WeChatGuide from "../../components/WeChatGuide";
 import UniversalCheckinPanel from "../../components/UniversalCheckinPanel";
+import UserAuthBar from "../../components/UserAuthBar";
 import { track } from "../../utils/track";
+import { userGetItem, userSetItem } from "../../utils/userStorage";
 
 /**
  * 物资管家 · Inventory Prophet
@@ -75,14 +77,13 @@ function genId(): string {
   return `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 }
 
-/** 从 localStorage 读取物品列表 */
+/** 从 localStorage 读取物品列表（用户隔离） */
 function loadItems(): InventoryItem[] {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
+    const raw = userGetItem<InventoryItem[]>(STORAGE_KEY);
     if (!raw) return [];
-    const parsed = JSON.parse(raw);
-    if (!Array.isArray(parsed)) return [];
-    return parsed as InventoryItem[];
+    if (!Array.isArray(raw)) return [];
+    return raw;
   } catch {
     return [];
   }
@@ -873,10 +874,10 @@ const InventoryPage: React.FC = () => {
   const [photoPreviewUrl, setPhotoPreviewUrl] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  /** 数据变更即持久化 */
+  /** 数据变更即持久化（用户隔离） */
   useEffect(() => {
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
+      userSetItem(STORAGE_KEY, items);
     } catch {
       /* 写入失败（隐私模式等）则静默忽略 */
     }
@@ -1396,6 +1397,7 @@ const InventoryPage: React.FC = () => {
               Inventory Prophet
             </span>
           </div>
+          <UserAuthBar />
         </div>
       </header>
 

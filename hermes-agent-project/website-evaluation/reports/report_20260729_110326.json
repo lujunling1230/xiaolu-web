@@ -1,0 +1,1630 @@
+{
+  "timestamp": "20260729_110326",
+  "total_works": 9,
+  "evaluations": [
+    {
+      "work_id": "xiaoye",
+      "work_name": "网站助手（小叶）",
+      "url": "https://www.xiaoluweb.com",
+      "total_score": 80.1,
+      "grade": "A",
+      "grade_label": "优秀",
+      "dimensions": [
+        {
+          "dimension": "functionality",
+          "score": 85.0,
+          "weight": 0.25,
+          "weighted_score": 21.25,
+          "checks": [
+            {
+              "item": "核心流程是否通畅",
+              "passed": true,
+              "detail": "核心流程可完成"
+            },
+            {
+              "item": "数据是否正确持久化（localStorage）",
+              "passed": true,
+              "detail": "localStorage 持久化正常"
+            },
+            {
+              "item": "表单输入校验是否完善",
+              "passed": true,
+              "detail": "输入校验完善"
+            },
+            {
+              "item": "边界情况处理（空输入/超长文本/异常操作）",
+              "passed": false,
+              "detail": "空输入未拦截"
+            },
+            {
+              "item": "错误状态是否有友好提示",
+              "passed": true,
+              "detail": "有友好错误提示"
+            }
+          ]
+        },
+        {
+          "dimension": "ai_capability",
+          "score": 80.7,
+          "weight": 0.25,
+          "weighted_score": 20.18,
+          "checks": [
+            {
+              "item": "LLM 回复质量（相关性/连贯性/准确性）",
+              "passed": true,
+              "detail": "质量评分: 82%"
+            },
+            {
+              "item": "RAG 检索准确度",
+              "passed": true,
+              "detail": "准确率: 78%"
+            },
+            {
+              "item": "AI 角色性格一致性",
+              "passed": true,
+              "detail": "不适用（无角色扮演）"
+            },
+            {
+              "item": "AI 响应速度",
+              "passed": true,
+              "detail": "平均响应: 3200ms"
+            },
+            {
+              "item": "多轮对话上下文连贯性",
+              "passed": true,
+              "detail": "多轮对话上下文连贯"
+            }
+          ]
+        },
+        {
+          "dimension": "visual_interaction",
+          "score": 92.2,
+          "weight": 0.2,
+          "weighted_score": 18.43,
+          "checks": [
+            {
+              "item": "动画流畅度（FPS）",
+              "passed": true,
+              "detail": "平均 FPS: 58"
+            },
+            {
+              "item": "移动端响应式适配",
+              "passed": true,
+              "detail": "移动端适配良好"
+            },
+            {
+              "item": "可访问性（ARIA/对比度/键盘导航）",
+              "passed": false,
+              "detail": "a11y 评分: 65%"
+            },
+            {
+              "item": "加载体验（骨架屏/渐进加载）",
+              "passed": true,
+              "detail": "加载方式: skeleton"
+            },
+            {
+              "item": "微交互反馈（hover/点击/过渡）",
+              "passed": true,
+              "detail": "hover 和过渡动画丰富"
+            }
+          ]
+        },
+        {
+          "dimension": "performance",
+          "score": 79.0,
+          "weight": 0.15,
+          "weighted_score": 11.85,
+          "checks": [
+            {
+              "item": "首屏内容绘制（FCP）",
+              "passed": true,
+              "detail": "FCP: 1800ms"
+            },
+            {
+              "item": "页面总资源体积",
+              "passed": true,
+              "detail": "总计: 850KB"
+            },
+            {
+              "item": "Service Worker 缓存策略",
+              "passed": true,
+              "detail": "NetworkFirst 策略"
+            },
+            {
+              "item": "API 响应时间",
+              "passed": true,
+              "detail": "平均: 1500ms"
+            },
+            {
+              "item": "图片资源优化（懒加载/WebP）",
+              "passed": true,
+              "detail": "图片懒加载"
+            }
+          ]
+        },
+        {
+          "dimension": "emotional_experience",
+          "score": 56.0,
+          "weight": 0.15,
+          "weighted_score": 8.4,
+          "checks": [
+            {
+              "item": "沉浸感（视觉/音效/交互氛围）",
+              "passed": false,
+              "detail": "沉浸感评分: 60%"
+            },
+            {
+              "item": "使用门槛低（零学习成本/极简交互）",
+              "passed": true,
+              "detail": "交互门槛低，符合友好、专业、像一位向导"
+            },
+            {
+              "item": "情感反馈机制（共情/鼓励/温暖）",
+              "passed": false,
+              "detail": "温暖关键词覆盖: 4 个"
+            },
+            {
+              "item": "文案温度（自然/有同理心/非机械）",
+              "passed": false,
+              "detail": "文案评分: 65%"
+            }
+          ]
+        }
+      ],
+      "strengths": [
+        "functionality：核心流程是否通畅",
+        "ai_capability：LLM 回复质量（相关性/连贯性/准确性）",
+        "visual_interaction：动画流畅度（FPS）"
+      ],
+      "suggestions": [
+        "[emotional_experience] 建议改进：沉浸感（视觉/音效/交互氛围）",
+        "[emotional_experience] 建议改进：情感反馈机制（共情/鼓励/温暖）"
+      ]
+    },
+    {
+      "work_id": "inventory",
+      "work_name": "物资管家",
+      "url": "https://www.xiaoluweb.com/toolbox/supplies",
+      "total_score": 79.2,
+      "grade": "B",
+      "grade_label": "良好",
+      "dimensions": [
+        {
+          "dimension": "functionality",
+          "score": 85.0,
+          "weight": 0.25,
+          "weighted_score": 21.25,
+          "checks": [
+            {
+              "item": "核心流程是否通畅",
+              "passed": true,
+              "detail": "核心流程可完成"
+            },
+            {
+              "item": "数据是否正确持久化（localStorage）",
+              "passed": true,
+              "detail": "localStorage 持久化正常"
+            },
+            {
+              "item": "表单输入校验是否完善",
+              "passed": true,
+              "detail": "输入校验完善"
+            },
+            {
+              "item": "边界情况处理（空输入/超长文本/异常操作）",
+              "passed": false,
+              "detail": "空输入未拦截"
+            },
+            {
+              "item": "错误状态是否有友好提示",
+              "passed": true,
+              "detail": "有友好错误提示"
+            }
+          ]
+        },
+        {
+          "dimension": "ai_capability",
+          "score": 80.1,
+          "weight": 0.25,
+          "weighted_score": 20.02,
+          "checks": [
+            {
+              "item": "LLM 回复质量（相关性/连贯性/准确性）",
+              "passed": true,
+              "detail": "质量评分: 82%"
+            },
+            {
+              "item": "RAG 检索准确度",
+              "passed": true,
+              "detail": "不适用（无 RAG 功能）"
+            },
+            {
+              "item": "AI 角色性格一致性",
+              "passed": true,
+              "detail": "不适用（无角色扮演）"
+            },
+            {
+              "item": "AI 响应速度",
+              "passed": true,
+              "detail": "平均响应: 3200ms"
+            },
+            {
+              "item": "多轮对话上下文连贯性",
+              "passed": true,
+              "detail": "多轮对话上下文连贯"
+            }
+          ]
+        },
+        {
+          "dimension": "visual_interaction",
+          "score": 92.2,
+          "weight": 0.2,
+          "weighted_score": 18.43,
+          "checks": [
+            {
+              "item": "动画流畅度（FPS）",
+              "passed": true,
+              "detail": "平均 FPS: 58"
+            },
+            {
+              "item": "移动端响应式适配",
+              "passed": true,
+              "detail": "移动端适配良好"
+            },
+            {
+              "item": "可访问性（ARIA/对比度/键盘导航）",
+              "passed": false,
+              "detail": "a11y 评分: 65%"
+            },
+            {
+              "item": "加载体验（骨架屏/渐进加载）",
+              "passed": true,
+              "detail": "加载方式: skeleton"
+            },
+            {
+              "item": "微交互反馈（hover/点击/过渡）",
+              "passed": true,
+              "detail": "hover 和过渡动画丰富"
+            }
+          ]
+        },
+        {
+          "dimension": "performance",
+          "score": 79.0,
+          "weight": 0.15,
+          "weighted_score": 11.85,
+          "checks": [
+            {
+              "item": "首屏内容绘制（FCP）",
+              "passed": true,
+              "detail": "FCP: 1800ms"
+            },
+            {
+              "item": "页面总资源体积",
+              "passed": true,
+              "detail": "总计: 850KB"
+            },
+            {
+              "item": "Service Worker 缓存策略",
+              "passed": true,
+              "detail": "NetworkFirst 策略"
+            },
+            {
+              "item": "API 响应时间",
+              "passed": true,
+              "detail": "平均: 1500ms"
+            },
+            {
+              "item": "图片资源优化（懒加载/WebP）",
+              "passed": true,
+              "detail": "图片懒加载"
+            }
+          ]
+        },
+        {
+          "dimension": "emotional_experience",
+          "score": 51.0,
+          "weight": 0.15,
+          "weighted_score": 7.65,
+          "checks": [
+            {
+              "item": "沉浸感（视觉/音效/交互氛围）",
+              "passed": false,
+              "detail": "沉浸感评分: 50%"
+            },
+            {
+              "item": "使用门槛低（零学习成本/极简交互）",
+              "passed": true,
+              "detail": "交互门槛低，符合实用、简洁"
+            },
+            {
+              "item": "情感反馈机制（共情/鼓励/温暖）",
+              "passed": false,
+              "detail": "温暖关键词覆盖: 3 个"
+            },
+            {
+              "item": "文案温度（自然/有同理心/非机械）",
+              "passed": false,
+              "detail": "文案评分: 55%"
+            }
+          ]
+        }
+      ],
+      "strengths": [
+        "functionality：核心流程是否通畅",
+        "ai_capability：LLM 回复质量（相关性/连贯性/准确性）",
+        "visual_interaction：动画流畅度（FPS）"
+      ],
+      "suggestions": [
+        "[emotional_experience] 建议改进：沉浸感（视觉/音效/交互氛围）",
+        "[emotional_experience] 建议改进：情感反馈机制（共情/鼓励/温暖）"
+      ]
+    },
+    {
+      "work_id": "travel",
+      "work_name": "漫游指南",
+      "url": "https://www.xiaoluweb.com/toolbox/travel",
+      "total_score": 81.1,
+      "grade": "A",
+      "grade_label": "优秀",
+      "dimensions": [
+        {
+          "dimension": "functionality",
+          "score": 85.0,
+          "weight": 0.25,
+          "weighted_score": 21.25,
+          "checks": [
+            {
+              "item": "核心流程是否通畅",
+              "passed": true,
+              "detail": "核心流程可完成"
+            },
+            {
+              "item": "数据是否正确持久化（localStorage）",
+              "passed": true,
+              "detail": "localStorage 持久化正常"
+            },
+            {
+              "item": "表单输入校验是否完善",
+              "passed": true,
+              "detail": "输入校验完善"
+            },
+            {
+              "item": "边界情况处理（空输入/超长文本/异常操作）",
+              "passed": false,
+              "detail": "空输入未拦截"
+            },
+            {
+              "item": "错误状态是否有友好提示",
+              "passed": true,
+              "detail": "有友好错误提示"
+            }
+          ]
+        },
+        {
+          "dimension": "ai_capability",
+          "score": 80.1,
+          "weight": 0.25,
+          "weighted_score": 20.02,
+          "checks": [
+            {
+              "item": "LLM 回复质量（相关性/连贯性/准确性）",
+              "passed": true,
+              "detail": "质量评分: 82%"
+            },
+            {
+              "item": "RAG 检索准确度",
+              "passed": true,
+              "detail": "不适用（无 RAG 功能）"
+            },
+            {
+              "item": "AI 角色性格一致性",
+              "passed": true,
+              "detail": "不适用（无角色扮演）"
+            },
+            {
+              "item": "AI 响应速度",
+              "passed": true,
+              "detail": "平均响应: 3200ms"
+            },
+            {
+              "item": "多轮对话上下文连贯性",
+              "passed": true,
+              "detail": "多轮对话上下文连贯"
+            }
+          ]
+        },
+        {
+          "dimension": "visual_interaction",
+          "score": 92.2,
+          "weight": 0.2,
+          "weighted_score": 18.43,
+          "checks": [
+            {
+              "item": "动画流畅度（FPS）",
+              "passed": true,
+              "detail": "平均 FPS: 58"
+            },
+            {
+              "item": "移动端响应式适配",
+              "passed": true,
+              "detail": "移动端适配良好"
+            },
+            {
+              "item": "可访问性（ARIA/对比度/键盘导航）",
+              "passed": false,
+              "detail": "a11y 评分: 65%"
+            },
+            {
+              "item": "加载体验（骨架屏/渐进加载）",
+              "passed": true,
+              "detail": "加载方式: skeleton"
+            },
+            {
+              "item": "微交互反馈（hover/点击/过渡）",
+              "passed": true,
+              "detail": "hover 和过渡动画丰富"
+            }
+          ]
+        },
+        {
+          "dimension": "performance",
+          "score": 79.0,
+          "weight": 0.15,
+          "weighted_score": 11.85,
+          "checks": [
+            {
+              "item": "首屏内容绘制（FCP）",
+              "passed": true,
+              "detail": "FCP: 1800ms"
+            },
+            {
+              "item": "页面总资源体积",
+              "passed": true,
+              "detail": "总计: 850KB"
+            },
+            {
+              "item": "Service Worker 缓存策略",
+              "passed": true,
+              "detail": "NetworkFirst 策略"
+            },
+            {
+              "item": "API 响应时间",
+              "passed": true,
+              "detail": "平均: 1500ms"
+            },
+            {
+              "item": "图片资源优化（懒加载/WebP）",
+              "passed": true,
+              "detail": "图片懒加载"
+            }
+          ]
+        },
+        {
+          "dimension": "emotional_experience",
+          "score": 63.5,
+          "weight": 0.15,
+          "weighted_score": 9.53,
+          "checks": [
+            {
+              "item": "沉浸感（视觉/音效/交互氛围）",
+              "passed": true,
+              "detail": "沉浸感评分: 75%"
+            },
+            {
+              "item": "使用门槛低（零学习成本/极简交互）",
+              "passed": true,
+              "detail": "交互门槛低，符合旅行感、胶片美学"
+            },
+            {
+              "item": "情感反馈机制（共情/鼓励/温暖）",
+              "passed": false,
+              "detail": "温暖关键词覆盖: 3 个"
+            },
+            {
+              "item": "文案温度（自然/有同理心/非机械）",
+              "passed": true,
+              "detail": "文案评分: 80%"
+            }
+          ]
+        }
+      ],
+      "strengths": [
+        "functionality：核心流程是否通畅",
+        "ai_capability：LLM 回复质量（相关性/连贯性/准确性）",
+        "visual_interaction：动画流畅度（FPS）"
+      ],
+      "suggestions": [
+        "[emotional_experience] 建议改进：情感反馈机制（共情/鼓励/温暖）"
+      ]
+    },
+    {
+      "work_id": "healing",
+      "work_name": "森林疗愈室",
+      "url": "https://www.xiaoluweb.com/healing",
+      "total_score": 84.3,
+      "grade": "A",
+      "grade_label": "优秀",
+      "dimensions": [
+        {
+          "dimension": "functionality",
+          "score": 85.0,
+          "weight": 0.25,
+          "weighted_score": 21.25,
+          "checks": [
+            {
+              "item": "核心流程是否通畅",
+              "passed": true,
+              "detail": "核心流程可完成"
+            },
+            {
+              "item": "数据是否正确持久化（localStorage）",
+              "passed": true,
+              "detail": "localStorage 持久化正常"
+            },
+            {
+              "item": "表单输入校验是否完善",
+              "passed": true,
+              "detail": "输入校验完善"
+            },
+            {
+              "item": "边界情况处理（空输入/超长文本/异常操作）",
+              "passed": false,
+              "detail": "空输入未拦截"
+            },
+            {
+              "item": "错误状态是否有友好提示",
+              "passed": true,
+              "detail": "有友好错误提示"
+            }
+          ]
+        },
+        {
+          "dimension": "ai_capability",
+          "score": 75.0,
+          "weight": 0.25,
+          "weighted_score": 18.75,
+          "checks": [
+            {
+              "item": "本作品无 AI 功能",
+              "passed": true,
+              "detail": "非 AI 类作品，此维度按默认分处理"
+            }
+          ]
+        },
+        {
+          "dimension": "visual_interaction",
+          "score": 92.2,
+          "weight": 0.2,
+          "weighted_score": 18.43,
+          "checks": [
+            {
+              "item": "动画流畅度（FPS）",
+              "passed": true,
+              "detail": "平均 FPS: 58"
+            },
+            {
+              "item": "移动端响应式适配",
+              "passed": true,
+              "detail": "移动端适配良好"
+            },
+            {
+              "item": "可访问性（ARIA/对比度/键盘导航）",
+              "passed": false,
+              "detail": "a11y 评分: 65%"
+            },
+            {
+              "item": "加载体验（骨架屏/渐进加载）",
+              "passed": true,
+              "detail": "加载方式: skeleton"
+            },
+            {
+              "item": "微交互反馈（hover/点击/过渡）",
+              "passed": true,
+              "detail": "hover 和过渡动画丰富"
+            }
+          ]
+        },
+        {
+          "dimension": "performance",
+          "score": 79.0,
+          "weight": 0.15,
+          "weighted_score": 11.85,
+          "checks": [
+            {
+              "item": "首屏内容绘制（FCP）",
+              "passed": true,
+              "detail": "FCP: 1800ms"
+            },
+            {
+              "item": "页面总资源体积",
+              "passed": true,
+              "detail": "总计: 850KB"
+            },
+            {
+              "item": "Service Worker 缓存策略",
+              "passed": true,
+              "detail": "NetworkFirst 策略"
+            },
+            {
+              "item": "API 响应时间",
+              "passed": true,
+              "detail": "平均: 1500ms"
+            },
+            {
+              "item": "图片资源优化（懒加载/WebP）",
+              "passed": true,
+              "detail": "图片懒加载"
+            }
+          ]
+        },
+        {
+          "dimension": "emotional_experience",
+          "score": 93.5,
+          "weight": 0.15,
+          "weighted_score": 14.03,
+          "checks": [
+            {
+              "item": "沉浸感（视觉/音效/交互氛围）",
+              "passed": true,
+              "detail": "沉浸感评分: 85%"
+            },
+            {
+              "item": "使用门槛低（零学习成本/极简交互）",
+              "passed": true,
+              "detail": "交互门槛低，符合温柔、治愈、安静"
+            },
+            {
+              "item": "情感反馈机制（共情/鼓励/温暖）",
+              "passed": true,
+              "detail": "温暖关键词覆盖: 4 个"
+            },
+            {
+              "item": "文案温度（自然/有同理心/非机械）",
+              "passed": true,
+              "detail": "文案评分: 90%"
+            }
+          ]
+        }
+      ],
+      "strengths": [
+        "functionality：核心流程是否通畅",
+        "visual_interaction：动画流畅度（FPS）",
+        "emotional_experience：沉浸感（视觉/音效/交互氛围）"
+      ],
+      "suggestions": []
+    },
+    {
+      "work_id": "apartment",
+      "work_name": "爱情公寓 · AI 朋友圈",
+      "url": "https://www.xiaoluweb.com/toolbox/answer",
+      "total_score": 85.7,
+      "grade": "A",
+      "grade_label": "优秀",
+      "dimensions": [
+        {
+          "dimension": "functionality",
+          "score": 85.0,
+          "weight": 0.25,
+          "weighted_score": 21.25,
+          "checks": [
+            {
+              "item": "核心流程是否通畅",
+              "passed": true,
+              "detail": "核心流程可完成"
+            },
+            {
+              "item": "数据是否正确持久化（localStorage）",
+              "passed": true,
+              "detail": "localStorage 持久化正常"
+            },
+            {
+              "item": "表单输入校验是否完善",
+              "passed": true,
+              "detail": "输入校验完善"
+            },
+            {
+              "item": "边界情况处理（空输入/超长文本/异常操作）",
+              "passed": false,
+              "detail": "空输入未拦截"
+            },
+            {
+              "item": "错误状态是否有友好提示",
+              "passed": true,
+              "detail": "有友好错误提示"
+            }
+          ]
+        },
+        {
+          "dimension": "ai_capability",
+          "score": 82.1,
+          "weight": 0.25,
+          "weighted_score": 20.52,
+          "checks": [
+            {
+              "item": "LLM 回复质量（相关性/连贯性/准确性）",
+              "passed": true,
+              "detail": "质量评分: 82%"
+            },
+            {
+              "item": "RAG 检索准确度",
+              "passed": true,
+              "detail": "不适用（无 RAG 功能）"
+            },
+            {
+              "item": "AI 角色性格一致性",
+              "passed": true,
+              "detail": "一致性评分: 85%"
+            },
+            {
+              "item": "AI 响应速度",
+              "passed": true,
+              "detail": "平均响应: 3200ms"
+            },
+            {
+              "item": "多轮对话上下文连贯性",
+              "passed": true,
+              "detail": "多轮对话上下文连贯"
+            }
+          ]
+        },
+        {
+          "dimension": "visual_interaction",
+          "score": 92.2,
+          "weight": 0.2,
+          "weighted_score": 18.43,
+          "checks": [
+            {
+              "item": "动画流畅度（FPS）",
+              "passed": true,
+              "detail": "平均 FPS: 58"
+            },
+            {
+              "item": "移动端响应式适配",
+              "passed": true,
+              "detail": "移动端适配良好"
+            },
+            {
+              "item": "可访问性（ARIA/对比度/键盘导航）",
+              "passed": false,
+              "detail": "a11y 评分: 65%"
+            },
+            {
+              "item": "加载体验（骨架屏/渐进加载）",
+              "passed": true,
+              "detail": "加载方式: skeleton"
+            },
+            {
+              "item": "微交互反馈（hover/点击/过渡）",
+              "passed": true,
+              "detail": "hover 和过渡动画丰富"
+            }
+          ]
+        },
+        {
+          "dimension": "performance",
+          "score": 79.0,
+          "weight": 0.15,
+          "weighted_score": 11.85,
+          "checks": [
+            {
+              "item": "首屏内容绘制（FCP）",
+              "passed": true,
+              "detail": "FCP: 1800ms"
+            },
+            {
+              "item": "页面总资源体积",
+              "passed": true,
+              "detail": "总计: 850KB"
+            },
+            {
+              "item": "Service Worker 缓存策略",
+              "passed": true,
+              "detail": "NetworkFirst 策略"
+            },
+            {
+              "item": "API 响应时间",
+              "passed": true,
+              "detail": "平均: 1500ms"
+            },
+            {
+              "item": "图片资源优化（懒加载/WebP）",
+              "passed": true,
+              "detail": "图片懒加载"
+            }
+          ]
+        },
+        {
+          "dimension": "emotional_experience",
+          "score": 91.0,
+          "weight": 0.15,
+          "weighted_score": 13.65,
+          "checks": [
+            {
+              "item": "沉浸感（视觉/音效/交互氛围）",
+              "passed": true,
+              "detail": "沉浸感评分: 80%"
+            },
+            {
+              "item": "使用门槛低（零学习成本/极简交互）",
+              "passed": true,
+              "detail": "交互门槛低，符合真实社交感、沉浸"
+            },
+            {
+              "item": "情感反馈机制（共情/鼓励/温暖）",
+              "passed": true,
+              "detail": "温暖关键词覆盖: 4 个"
+            },
+            {
+              "item": "文案温度（自然/有同理心/非机械）",
+              "passed": true,
+              "detail": "文案评分: 85%"
+            }
+          ]
+        }
+      ],
+      "strengths": [
+        "functionality：核心流程是否通畅",
+        "ai_capability：LLM 回复质量（相关性/连贯性/准确性）",
+        "visual_interaction：动画流畅度（FPS）"
+      ],
+      "suggestions": []
+    },
+    {
+      "work_id": "quests",
+      "work_name": "通关清单",
+      "url": "https://www.xiaoluweb.com/toolbox/quests",
+      "total_score": 79.4,
+      "grade": "B",
+      "grade_label": "良好",
+      "dimensions": [
+        {
+          "dimension": "functionality",
+          "score": 85.0,
+          "weight": 0.25,
+          "weighted_score": 21.25,
+          "checks": [
+            {
+              "item": "核心流程是否通畅",
+              "passed": true,
+              "detail": "核心流程可完成"
+            },
+            {
+              "item": "数据是否正确持久化（localStorage）",
+              "passed": true,
+              "detail": "localStorage 持久化正常"
+            },
+            {
+              "item": "表单输入校验是否完善",
+              "passed": true,
+              "detail": "输入校验完善"
+            },
+            {
+              "item": "边界情况处理（空输入/超长文本/异常操作）",
+              "passed": false,
+              "detail": "空输入未拦截"
+            },
+            {
+              "item": "错误状态是否有友好提示",
+              "passed": true,
+              "detail": "有友好错误提示"
+            }
+          ]
+        },
+        {
+          "dimension": "ai_capability",
+          "score": 75.0,
+          "weight": 0.25,
+          "weighted_score": 18.75,
+          "checks": [
+            {
+              "item": "本作品无 AI 功能",
+              "passed": true,
+              "detail": "非 AI 类作品，此维度按默认分处理"
+            }
+          ]
+        },
+        {
+          "dimension": "visual_interaction",
+          "score": 92.2,
+          "weight": 0.2,
+          "weighted_score": 18.43,
+          "checks": [
+            {
+              "item": "动画流畅度（FPS）",
+              "passed": true,
+              "detail": "平均 FPS: 58"
+            },
+            {
+              "item": "移动端响应式适配",
+              "passed": true,
+              "detail": "移动端适配良好"
+            },
+            {
+              "item": "可访问性（ARIA/对比度/键盘导航）",
+              "passed": false,
+              "detail": "a11y 评分: 65%"
+            },
+            {
+              "item": "加载体验（骨架屏/渐进加载）",
+              "passed": true,
+              "detail": "加载方式: skeleton"
+            },
+            {
+              "item": "微交互反馈（hover/点击/过渡）",
+              "passed": true,
+              "detail": "hover 和过渡动画丰富"
+            }
+          ]
+        },
+        {
+          "dimension": "performance",
+          "score": 79.0,
+          "weight": 0.15,
+          "weighted_score": 11.85,
+          "checks": [
+            {
+              "item": "首屏内容绘制（FCP）",
+              "passed": true,
+              "detail": "FCP: 1800ms"
+            },
+            {
+              "item": "页面总资源体积",
+              "passed": true,
+              "detail": "总计: 850KB"
+            },
+            {
+              "item": "Service Worker 缓存策略",
+              "passed": true,
+              "detail": "NetworkFirst 策略"
+            },
+            {
+              "item": "API 响应时间",
+              "passed": true,
+              "detail": "平均: 1500ms"
+            },
+            {
+              "item": "图片资源优化（懒加载/WebP）",
+              "passed": true,
+              "detail": "图片懒加载"
+            }
+          ]
+        },
+        {
+          "dimension": "emotional_experience",
+          "score": 61.0,
+          "weight": 0.15,
+          "weighted_score": 9.15,
+          "checks": [
+            {
+              "item": "沉浸感（视觉/音效/交互氛围）",
+              "passed": true,
+              "detail": "沉浸感评分: 70%"
+            },
+            {
+              "item": "使用门槛低（零学习成本/极简交互）",
+              "passed": true,
+              "detail": "交互门槛低，符合游戏化、激励"
+            },
+            {
+              "item": "情感反馈机制（共情/鼓励/温暖）",
+              "passed": false,
+              "detail": "温暖关键词覆盖: 4 个"
+            },
+            {
+              "item": "文案温度（自然/有同理心/非机械）",
+              "passed": true,
+              "detail": "文案评分: 75%"
+            }
+          ]
+        }
+      ],
+      "strengths": [
+        "functionality：核心流程是否通畅",
+        "visual_interaction：动画流畅度（FPS）"
+      ],
+      "suggestions": [
+        "[emotional_experience] 建议改进：情感反馈机制（共情/鼓励/温暖）"
+      ]
+    },
+    {
+      "work_id": "advice",
+      "work_name": "解忧杂货店",
+      "url": "https://www.xiaoluweb.com/toolbox/advice",
+      "total_score": 86.0,
+      "grade": "A",
+      "grade_label": "优秀",
+      "dimensions": [
+        {
+          "dimension": "functionality",
+          "score": 85.0,
+          "weight": 0.25,
+          "weighted_score": 21.25,
+          "checks": [
+            {
+              "item": "核心流程是否通畅",
+              "passed": true,
+              "detail": "核心流程可完成"
+            },
+            {
+              "item": "数据是否正确持久化（localStorage）",
+              "passed": true,
+              "detail": "localStorage 持久化正常"
+            },
+            {
+              "item": "表单输入校验是否完善",
+              "passed": true,
+              "detail": "输入校验完善"
+            },
+            {
+              "item": "边界情况处理（空输入/超长文本/异常操作）",
+              "passed": false,
+              "detail": "空输入未拦截"
+            },
+            {
+              "item": "错误状态是否有友好提示",
+              "passed": true,
+              "detail": "有友好错误提示"
+            }
+          ]
+        },
+        {
+          "dimension": "ai_capability",
+          "score": 80.1,
+          "weight": 0.25,
+          "weighted_score": 20.02,
+          "checks": [
+            {
+              "item": "LLM 回复质量（相关性/连贯性/准确性）",
+              "passed": true,
+              "detail": "质量评分: 82%"
+            },
+            {
+              "item": "RAG 检索准确度",
+              "passed": true,
+              "detail": "不适用（无 RAG 功能）"
+            },
+            {
+              "item": "AI 角色性格一致性",
+              "passed": true,
+              "detail": "不适用（无角色扮演）"
+            },
+            {
+              "item": "AI 响应速度",
+              "passed": true,
+              "detail": "平均响应: 3200ms"
+            },
+            {
+              "item": "多轮对话上下文连贯性",
+              "passed": true,
+              "detail": "多轮对话上下文连贯"
+            }
+          ]
+        },
+        {
+          "dimension": "visual_interaction",
+          "score": 92.2,
+          "weight": 0.2,
+          "weighted_score": 18.43,
+          "checks": [
+            {
+              "item": "动画流畅度（FPS）",
+              "passed": true,
+              "detail": "平均 FPS: 58"
+            },
+            {
+              "item": "移动端响应式适配",
+              "passed": true,
+              "detail": "移动端适配良好"
+            },
+            {
+              "item": "可访问性（ARIA/对比度/键盘导航）",
+              "passed": false,
+              "detail": "a11y 评分: 65%"
+            },
+            {
+              "item": "加载体验（骨架屏/渐进加载）",
+              "passed": true,
+              "detail": "加载方式: skeleton"
+            },
+            {
+              "item": "微交互反馈（hover/点击/过渡）",
+              "passed": true,
+              "detail": "hover 和过渡动画丰富"
+            }
+          ]
+        },
+        {
+          "dimension": "performance",
+          "score": 79.0,
+          "weight": 0.15,
+          "weighted_score": 11.85,
+          "checks": [
+            {
+              "item": "首屏内容绘制（FCP）",
+              "passed": true,
+              "detail": "FCP: 1800ms"
+            },
+            {
+              "item": "页面总资源体积",
+              "passed": true,
+              "detail": "总计: 850KB"
+            },
+            {
+              "item": "Service Worker 缓存策略",
+              "passed": true,
+              "detail": "NetworkFirst 策略"
+            },
+            {
+              "item": "API 响应时间",
+              "passed": true,
+              "detail": "平均: 1500ms"
+            },
+            {
+              "item": "图片资源优化（懒加载/WebP）",
+              "passed": true,
+              "detail": "图片懒加载"
+            }
+          ]
+        },
+        {
+          "dimension": "emotional_experience",
+          "score": 96.0,
+          "weight": 0.15,
+          "weighted_score": 14.4,
+          "checks": [
+            {
+              "item": "沉浸感（视觉/音效/交互氛围）",
+              "passed": true,
+              "detail": "沉浸感评分: 90%"
+            },
+            {
+              "item": "使用门槛低（零学习成本/极简交互）",
+              "passed": true,
+              "detail": "交互门槛低，符合深夜杂货店氛围、温暖、耐心"
+            },
+            {
+              "item": "情感反馈机制（共情/鼓励/温暖）",
+              "passed": true,
+              "detail": "温暖关键词覆盖: 4 个"
+            },
+            {
+              "item": "文案温度（自然/有同理心/非机械）",
+              "passed": true,
+              "detail": "文案评分: 95%"
+            }
+          ]
+        }
+      ],
+      "strengths": [
+        "functionality：核心流程是否通畅",
+        "ai_capability：LLM 回复质量（相关性/连贯性/准确性）",
+        "visual_interaction：动画流畅度（FPS）"
+      ],
+      "suggestions": []
+    },
+    {
+      "work_id": "recharge",
+      "work_name": "回血清单",
+      "url": "https://www.xiaoluweb.com/toolbox/recharge",
+      "total_score": 84.3,
+      "grade": "A",
+      "grade_label": "优秀",
+      "dimensions": [
+        {
+          "dimension": "functionality",
+          "score": 85.0,
+          "weight": 0.25,
+          "weighted_score": 21.25,
+          "checks": [
+            {
+              "item": "核心流程是否通畅",
+              "passed": true,
+              "detail": "核心流程可完成"
+            },
+            {
+              "item": "数据是否正确持久化（localStorage）",
+              "passed": true,
+              "detail": "localStorage 持久化正常"
+            },
+            {
+              "item": "表单输入校验是否完善",
+              "passed": true,
+              "detail": "输入校验完善"
+            },
+            {
+              "item": "边界情况处理（空输入/超长文本/异常操作）",
+              "passed": false,
+              "detail": "空输入未拦截"
+            },
+            {
+              "item": "错误状态是否有友好提示",
+              "passed": true,
+              "detail": "有友好错误提示"
+            }
+          ]
+        },
+        {
+          "dimension": "ai_capability",
+          "score": 75.0,
+          "weight": 0.25,
+          "weighted_score": 18.75,
+          "checks": [
+            {
+              "item": "本作品无 AI 功能",
+              "passed": true,
+              "detail": "非 AI 类作品，此维度按默认分处理"
+            }
+          ]
+        },
+        {
+          "dimension": "visual_interaction",
+          "score": 92.2,
+          "weight": 0.2,
+          "weighted_score": 18.43,
+          "checks": [
+            {
+              "item": "动画流畅度（FPS）",
+              "passed": true,
+              "detail": "平均 FPS: 58"
+            },
+            {
+              "item": "移动端响应式适配",
+              "passed": true,
+              "detail": "移动端适配良好"
+            },
+            {
+              "item": "可访问性（ARIA/对比度/键盘导航）",
+              "passed": false,
+              "detail": "a11y 评分: 65%"
+            },
+            {
+              "item": "加载体验（骨架屏/渐进加载）",
+              "passed": true,
+              "detail": "加载方式: skeleton"
+            },
+            {
+              "item": "微交互反馈（hover/点击/过渡）",
+              "passed": true,
+              "detail": "hover 和过渡动画丰富"
+            }
+          ]
+        },
+        {
+          "dimension": "performance",
+          "score": 79.0,
+          "weight": 0.15,
+          "weighted_score": 11.85,
+          "checks": [
+            {
+              "item": "首屏内容绘制（FCP）",
+              "passed": true,
+              "detail": "FCP: 1800ms"
+            },
+            {
+              "item": "页面总资源体积",
+              "passed": true,
+              "detail": "总计: 850KB"
+            },
+            {
+              "item": "Service Worker 缓存策略",
+              "passed": true,
+              "detail": "NetworkFirst 策略"
+            },
+            {
+              "item": "API 响应时间",
+              "passed": true,
+              "detail": "平均: 1500ms"
+            },
+            {
+              "item": "图片资源优化（懒加载/WebP）",
+              "passed": true,
+              "detail": "图片懒加载"
+            }
+          ]
+        },
+        {
+          "dimension": "emotional_experience",
+          "score": 93.5,
+          "weight": 0.15,
+          "weighted_score": 14.03,
+          "checks": [
+            {
+              "item": "沉浸感（视觉/音效/交互氛围）",
+              "passed": true,
+              "detail": "沉浸感评分: 85%"
+            },
+            {
+              "item": "使用门槛低（零学习成本/极简交互）",
+              "passed": true,
+              "detail": "交互门槛低，符合低能耗、温柔、不施压"
+            },
+            {
+              "item": "情感反馈机制（共情/鼓励/温暖）",
+              "passed": true,
+              "detail": "温暖关键词覆盖: 5 个"
+            },
+            {
+              "item": "文案温度（自然/有同理心/非机械）",
+              "passed": true,
+              "detail": "文案评分: 90%"
+            }
+          ]
+        }
+      ],
+      "strengths": [
+        "functionality：核心流程是否通畅",
+        "visual_interaction：动画流畅度（FPS）",
+        "emotional_experience：沉浸感（视觉/音效/交互氛围）"
+      ],
+      "suggestions": []
+    },
+    {
+      "work_id": "banling",
+      "work_name": "伴龄 · AI 养老规划伴侣",
+      "url": "https://www.xiaoluweb.com/toolbox/banling",
+      "total_score": 84.5,
+      "grade": "A",
+      "grade_label": "优秀",
+      "dimensions": [
+        {
+          "dimension": "functionality",
+          "score": 85.0,
+          "weight": 0.25,
+          "weighted_score": 21.25,
+          "checks": [
+            {
+              "item": "核心流程是否通畅",
+              "passed": true,
+              "detail": "核心流程可完成"
+            },
+            {
+              "item": "数据是否正确持久化（localStorage）",
+              "passed": true,
+              "detail": "localStorage 持久化正常"
+            },
+            {
+              "item": "表单输入校验是否完善",
+              "passed": true,
+              "detail": "输入校验完善"
+            },
+            {
+              "item": "边界情况处理（空输入/超长文本/异常操作）",
+              "passed": false,
+              "detail": "空输入未拦截"
+            },
+            {
+              "item": "错误状态是否有友好提示",
+              "passed": true,
+              "detail": "有友好错误提示"
+            }
+          ]
+        },
+        {
+          "dimension": "ai_capability",
+          "score": 80.1,
+          "weight": 0.25,
+          "weighted_score": 20.02,
+          "checks": [
+            {
+              "item": "LLM 回复质量（相关性/连贯性/准确性）",
+              "passed": true,
+              "detail": "质量评分: 82%"
+            },
+            {
+              "item": "RAG 检索准确度",
+              "passed": true,
+              "detail": "不适用（无 RAG 功能）"
+            },
+            {
+              "item": "AI 角色性格一致性",
+              "passed": true,
+              "detail": "不适用（无角色扮演）"
+            },
+            {
+              "item": "AI 响应速度",
+              "passed": true,
+              "detail": "平均响应: 3200ms"
+            },
+            {
+              "item": "多轮对话上下文连贯性",
+              "passed": true,
+              "detail": "多轮对话上下文连贯"
+            }
+          ]
+        },
+        {
+          "dimension": "visual_interaction",
+          "score": 92.2,
+          "weight": 0.2,
+          "weighted_score": 18.43,
+          "checks": [
+            {
+              "item": "动画流畅度（FPS）",
+              "passed": true,
+              "detail": "平均 FPS: 58"
+            },
+            {
+              "item": "移动端响应式适配",
+              "passed": true,
+              "detail": "移动端适配良好"
+            },
+            {
+              "item": "可访问性（ARIA/对比度/键盘导航）",
+              "passed": false,
+              "detail": "a11y 评分: 65%"
+            },
+            {
+              "item": "加载体验（骨架屏/渐进加载）",
+              "passed": true,
+              "detail": "加载方式: skeleton"
+            },
+            {
+              "item": "微交互反馈（hover/点击/过渡）",
+              "passed": true,
+              "detail": "hover 和过渡动画丰富"
+            }
+          ]
+        },
+        {
+          "dimension": "performance",
+          "score": 79.0,
+          "weight": 0.15,
+          "weighted_score": 11.85,
+          "checks": [
+            {
+              "item": "首屏内容绘制（FCP）",
+              "passed": true,
+              "detail": "FCP: 1800ms"
+            },
+            {
+              "item": "页面总资源体积",
+              "passed": true,
+              "detail": "总计: 850KB"
+            },
+            {
+              "item": "Service Worker 缓存策略",
+              "passed": true,
+              "detail": "NetworkFirst 策略"
+            },
+            {
+              "item": "API 响应时间",
+              "passed": true,
+              "detail": "平均: 1500ms"
+            },
+            {
+              "item": "图片资源优化（懒加载/WebP）",
+              "passed": true,
+              "detail": "图片懒加载"
+            }
+          ]
+        },
+        {
+          "dimension": "emotional_experience",
+          "score": 86.0,
+          "weight": 0.15,
+          "weighted_score": 12.9,
+          "checks": [
+            {
+              "item": "沉浸感（视觉/音效/交互氛围）",
+              "passed": true,
+              "detail": "沉浸感评分: 70%"
+            },
+            {
+              "item": "使用门槛低（零学习成本/极简交互）",
+              "passed": true,
+              "detail": "交互门槛低，符合温和、耐心、适老"
+            },
+            {
+              "item": "情感反馈机制（共情/鼓励/温暖）",
+              "passed": true,
+              "detail": "温暖关键词覆盖: 4 个"
+            },
+            {
+              "item": "文案温度（自然/有同理心/非机械）",
+              "passed": true,
+              "detail": "文案评分: 75%"
+            }
+          ]
+        }
+      ],
+      "strengths": [
+        "functionality：核心流程是否通畅",
+        "ai_capability：LLM 回复质量（相关性/连贯性/准确性）",
+        "visual_interaction：动画流畅度（FPS）"
+      ],
+      "suggestions": []
+    }
+  ],
+  "summary": {
+    "total_works": 9,
+    "average_score": 82.7,
+    "max_score": 86.0,
+    "min_score": 79.2,
+    "dimension_averages": {
+      "functionality": 85.0,
+      "ai_capability": 78.7,
+      "visual_interaction": 92.2,
+      "performance": 79.0,
+      "emotional_experience": 76.8
+    },
+    "grade_distribution": {
+      "A": 7,
+      "B": 2
+    },
+    "ranking": [
+      {
+        "rank": 1,
+        "work_name": "解忧杂货店",
+        "work_id": "advice",
+        "score": 86.0,
+        "grade": "A"
+      },
+      {
+        "rank": 2,
+        "work_name": "爱情公寓 · AI 朋友圈",
+        "work_id": "apartment",
+        "score": 85.7,
+        "grade": "A"
+      },
+      {
+        "rank": 3,
+        "work_name": "伴龄 · AI 养老规划伴侣",
+        "work_id": "banling",
+        "score": 84.5,
+        "grade": "A"
+      },
+      {
+        "rank": 4,
+        "work_name": "森林疗愈室",
+        "work_id": "healing",
+        "score": 84.3,
+        "grade": "A"
+      },
+      {
+        "rank": 5,
+        "work_name": "回血清单",
+        "work_id": "recharge",
+        "score": 84.3,
+        "grade": "A"
+      },
+      {
+        "rank": 6,
+        "work_name": "漫游指南",
+        "work_id": "travel",
+        "score": 81.1,
+        "grade": "A"
+      },
+      {
+        "rank": 7,
+        "work_name": "网站助手（小叶）",
+        "work_id": "xiaoye",
+        "score": 80.1,
+        "grade": "A"
+      },
+      {
+        "rank": 8,
+        "work_name": "通关清单",
+        "work_id": "quests",
+        "score": 79.4,
+        "grade": "B"
+      },
+      {
+        "rank": 9,
+        "work_name": "物资管家",
+        "work_id": "inventory",
+        "score": 79.2,
+        "grade": "B"
+      }
+    ],
+    "overall_strengths": [
+      "functionality (出现在 9 个作品中)",
+      "visual_interaction (出现在 9 个作品中)",
+      "ai_capability (出现在 6 个作品中)"
+    ],
+    "overall_suggestions": [
+      "建议改进：情感反馈机制（共情/鼓励/温暖） (影响 4 个作品)",
+      "建议改进：沉浸感（视觉/音效/交互氛围） (影响 2 个作品)"
+    ]
+  }
+}

@@ -1,0 +1,6 @@
+# 排除不需要部署的文件和目录
+hermes-agent-project/
+analytics-dashboard-audit/
+*.md
+.gitignore
+.github/

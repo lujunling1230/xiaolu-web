@@ -2,7 +2,7 @@
 node_modules/
 
 # Build output
-# dist/  # 临时允许提交，用于 GitHub Actions APK 构建
+dist/
 
 # Environment variables (contains API keys)
 .env

@@ -1,0 +1,598 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hermes 自动评测系统 — 20 条评测集报告</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+<style>
+  :root {
+    --bg: #f8f9fa;
+    --card-bg: #ffffff;
+    --text-primary: #1a1a2e;
+    --text-secondary: #6c757d;
+    --text-muted: #adb5bd;
+    --border: #e9ecef;
+    --brand: #6c5ce7;
+    --brand-light: #a29bfe;
+    --green: #00b894;
+    --red: #e17055;
+    --orange: #fdcb6e;
+    --blue: #0984e3;
+    --radius: 8px;
+    --radius-lg: 12px;
+    --shadow: 0 1px 3px rgba(0,0,0,0.08);
+    --shadow-hover: 0 4px 12px rgba(0,0,0,0.12);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: -apple-system, "Segoe UI", "Microsoft YaHei", sans-serif;
+    background: var(--bg);
+    color: var(--text-primary);
+    line-height: 1.6;
+    padding: 24px;
+  }
+
+  .container { max-width: 1200px; margin: 0 auto; }
+
+  /* Header */
+  .header {
+    background: var(--card-bg);
+    border-radius: var(--radius-lg);
+    padding: 32px;
+    margin-bottom: 24px;
+    box-shadow: var(--shadow);
+  }
+  .header h1 {
+    font-size: 24px;
+    font-weight: 700;
+    margin-bottom: 4px;
+  }
+  .header .subtitle {
+    color: var(--text-secondary);
+    font-size: 14px;
+    margin-bottom: 24px;
+  }
+  .header .meta {
+    display: flex;
+    gap: 16px;
+    font-size: 13px;
+    color: var(--text-muted);
+  }
+  .header .meta span { display: flex; align-items: center; gap: 4px; }
+
+  /* KPI Cards */
+  .kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 16px;
+    margin-bottom: 24px;
+  }
+  .kpi-card {
+    background: var(--card-bg);
+    border-radius: var(--radius);
+    padding: 20px;
+    box-shadow: var(--shadow);
+    text-align: center;
+    transition: box-shadow 0.2s;
+  }
+  .kpi-card:hover { box-shadow: var(--shadow-hover); }
+  .kpi-card .label {
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-bottom: 8px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .kpi-card .value {
+    font-size: 28px;
+    font-weight: 700;
+    line-height: 1;
+  }
+  .kpi-card .unit { font-size: 14px; font-weight: 400; color: var(--text-secondary); }
+  .kpi-card.green .value { color: var(--green); }
+  .kpi-card.red .value { color: var(--red); }
+  .kpi-card.brand .value { color: var(--brand); }
+
+  /* Section */
+  .section {
+    background: var(--card-bg);
+    border-radius: var(--radius-lg);
+    padding: 24px;
+    margin-bottom: 24px;
+    box-shadow: var(--shadow);
+  }
+  .section-title {
+    font-size: 16px;
+    font-weight: 600;
+    margin-bottom: 20px;
+    padding-bottom: 12px;
+    border-bottom: 2px solid var(--border);
+  }
+
+  /* Chart row */
+  .chart-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+  }
+  .chart-container {
+    position: relative;
+    height: 280px;
+  }
+
+  /* Table */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+  }
+  th, td {
+    padding: 10px 12px;
+    text-align: left;
+    border-bottom: 1px solid var(--border);
+  }
+  th {
+    font-weight: 600;
+    color: var(--text-secondary);
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+  }
+  tbody tr:hover { background: var(--bg); }
+
+  /* Status badges */
+  .badge {
+    display: inline-block;
+    padding: 2px 10px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 500;
+  }
+  .badge-pass { background: rgba(0,184,148,0.1); color: var(--green); }
+  .badge-fail { background: rgba(225,112,85,0.1); color: var(--red); }
+  .badge-error { background: rgba(253,203,110,0.15); color: #d68910; }
+
+  /* Score bar */
+  .score-bar {
+    display: inline-block;
+    width: 60px;
+    height: 6px;
+    background: var(--border);
+    border-radius: 3px;
+    overflow: hidden;
+    vertical-align: middle;
+    margin-right: 8px;
+  }
+  .score-bar-fill {
+    height: 100%;
+    border-radius: 3px;
+    transition: width 0.6s ease;
+  }
+
+  /* Difficulty badges */
+  .diff-easy { color: var(--green); }
+  .diff-medium { color: var(--orange); }
+  .diff-hard { color: var(--red); }
+
+  /* Detail panel */
+  .detail-row {
+    border-bottom: 1px solid var(--border);
+    padding: 16px 0;
+  }
+  .detail-row:last-child { border-bottom: none; }
+  .detail-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 8px;
+    flex-wrap: wrap;
+  }
+  .detail-id {
+    font-family: "SF Mono", "Fira Code", monospace;
+    font-size: 12px;
+    color: var(--text-muted);
+  }
+  .detail-work {
+    font-weight: 600;
+    font-size: 14px;
+  }
+  .detail-cat {
+    font-size: 12px;
+    color: var(--text-secondary);
+    background: var(--bg);
+    padding: 2px 8px;
+    border-radius: 4px;
+  }
+  .detail-score {
+    margin-left: auto;
+    font-size: 18px;
+    font-weight: 700;
+  }
+  .detail-meta {
+    display: flex;
+    gap: 16px;
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-bottom: 8px;
+  }
+  .detail-sub-scores {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-bottom: 8px;
+  }
+  .sub-score-tag {
+    font-size: 11px;
+    padding: 2px 8px;
+    border-radius: 4px;
+    background: var(--bg);
+    color: var(--text-secondary);
+  }
+  .detail-response {
+    background: var(--bg);
+    border-radius: var(--radius);
+    padding: 10px 14px;
+    font-size: 12px;
+    color: var(--text-secondary);
+    font-family: "SF Mono", "Fira Code", monospace;
+    white-space: pre-wrap;
+    word-break: break-all;
+    max-height: 100px;
+    overflow-y: auto;
+  }
+  .detail-details {
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-top: 6px;
+  }
+  .detail-details div { margin-bottom: 2px; }
+
+  /* Responsive */
+  @media (max-width: 768px) {
+    .kpi-grid { grid-template-columns: repeat(2, 1fr); }
+    .chart-row { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <!-- Header -->
+  <div class="header">
+    <h1>Hermes 自动评测系统 — 20 条评测集报告</h1>
+    <div class="subtitle">针对 xiaoluweb.com 网站作品的自动化 API 与页面评测</div>
+    <div class="meta">
+      <span>评测时间: 2026-08-06 14:25:13</span>
+      <span>评测集: benchmark_20.jsonl</span>
+      <span>目标: https://www.xiaoluweb.com</span>
+    </div>
+  </div>
+
+  <!-- KPI Cards -->
+  <div class="kpi-grid">
+    <div class="kpi-card brand">
+      <div class="label">评测总数</div>
+      <div class="value">20</div>
+    </div>
+    <div class="kpi-card green">
+      <div class="label">通过</div>
+      <div class="value">14</div>
+    </div>
+    <div class="kpi-card red">
+      <div class="label">失败</div>
+      <div class="value">6</div>
+    </div>
+    <div class="kpi-card brand">
+      <div class="label">通过率</div>
+      <div class="value">70<span class="unit">%</span></div>
+    </div>
+    <div class="kpi-card brand">
+      <div class="label">平均分</div>
+      <div class="value">65.1</div>
+    </div>
+    <div class="kpi-card">
+      <div class="label">平均响应</div>
+      <div class="value">5226<span class="unit">ms</span></div>
+    </div>
+  </div>
+
+  <!-- Charts Row -->
+  <div class="chart-row">
+    <div class="section">
+      <div class="section-title">作品评测得分</div>
+      <div class="chart-container">
+        <canvas id="workChart"></canvas>
+      </div>
+    </div>
+    <div class="section">
+      <div class="section-title">分类通过率</div>
+      <div class="chart-container">
+        <canvas id="categoryChart"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- Difficulty Analysis -->
+  <div class="section">
+    <div class="section-title">难度通过率分析</div>
+    <div class="chart-container" style="height: 200px;">
+      <canvas id="difficultyChart"></canvas>
+    </div>
+  </div>
+
+  <!-- Work Summary Table -->
+  <div class="section">
+    <div class="section-title">作品评测汇总</div>
+    <table>
+      <thead>
+        <tr>
+          <th>排名</th>
+          <th>作品名称</th>
+          <th>测试数</th>
+          <th>通过</th>
+          <th>平均分</th>
+          <th>平均耗时</th>
+          <th>得分</th>
+        </tr>
+      </thead>
+      <tbody id="workTableBody"></tbody>
+    </table>
+  </div>
+
+  <!-- Category Summary Table -->
+  <div class="section">
+    <div class="section-title">分类评测汇总</div>
+    <table>
+      <thead>
+        <tr>
+          <th>分类</th>
+          <th>测试数</th>
+          <th>通过</th>
+          <th>通过率</th>
+          <th>平均分</th>
+        </tr>
+      </thead>
+      <tbody id="categoryTableBody"></tbody>
+    </table>
+  </div>
+
+  <!-- Test Case Details -->
+  <div class="section">
+    <div class="section-title">逐条测试详情</div>
+    <div id="detailsContainer"></div>
+  </div>
+
+</div>
+
+<script>
+// ─── Data ───
+const reportData = {
+  summary: { total: 20, passed: 14, failed: 6, errors: 0, pass_rate: 70.0, avg_score: 65.1, avg_response_time_ms: 5226 },
+  work_summaries: [
+    { work_name: "森林疗愈室", test_count: 2, passed: 1, avg_score: 76.0, avg_time_ms: 478 },
+    { work_name: "网站助手（小叶）", test_count: 5, passed: 4, avg_score: 75.6, avg_time_ms: 2321 },
+    { work_name: "物资管家", test_count: 2, passed: 2, avg_score: 75.0, avg_time_ms: 2770 },
+    { work_name: "回血清单", test_count: 1, passed: 1, avg_score: 64.0, avg_time_ms: 291 },
+    { work_name: "伴龄", test_count: 2, passed: 2, avg_score: 64.0, avg_time_ms: 2483 },
+    { work_name: "通关清单", test_count: 1, passed: 1, avg_score: 60.0, avg_time_ms: 632 },
+    { work_name: "漫游指南", test_count: 3, passed: 3, avg_score: 59.7, avg_time_ms: 22519 },
+    { work_name: "解忧杂货店", test_count: 2, passed: 0, avg_score: 51.0, avg_time_ms: 2794 },
+    { work_name: "爱情公寓", test_count: 2, passed: 0, avg_score: 44.0, avg_time_ms: 3693 },
+  ],
+  category_summaries: [
+    { category_label: "AI 多轮对话", test_count: 1, passed: 1, avg_score: 100.0 },
+    { category_label: "页面可访问性", test_count: 1, passed: 1, avg_score: 100.0 },
+    { category_label: "AI 知识问答", test_count: 2, passed: 2, avg_score: 83.5 },
+    { category_label: "AI 库存助手", test_count: 2, passed: 2, avg_score: 75.0 },
+    { category_label: "AI 专业咨询", test_count: 2, passed: 2, avg_score: 64.0 },
+    { category_label: "AI 智能推荐", test_count: 2, passed: 2, avg_score: 61.6 },
+    { category_label: "页面性能", test_count: 1, passed: 1, avg_score: 60.0 },
+    { category_label: "页面内容质量", test_count: 2, passed: 1, avg_score: 58.0 },
+    { category_label: "AI 边界场景", test_count: 3, passed: 2, avg_score: 55.7 },
+    { category_label: "AI 情感陪伴", test_count: 2, passed: 0, avg_score: 51.0 },
+    { category_label: "AI 角色扮演", test_count: 2, passed: 0, avg_score: 44.0 },
+  ],
+  difficulty_summaries: [
+    { difficulty_label: "简单", test_count: 5, passed: 5, pass_rate: 100.0 },
+    { difficulty_label: "中等", test_count: 8, passed: 5, pass_rate: 62.5 },
+    { difficulty_label: "困难", test_count: 7, passed: 4, pass_rate: 57.1 },
+  ],
+  test_cases: [
+    { id:"eval-001", work_name:"网站助手（小叶）", category:"ai_knowledge", difficulty:"easy", test_type:"api", status:"passed", score:100.0, response_time_ms:3332, http_status:200, sub_scores:{keyword_coverage:100,response_relevance:100,response_length:100}, details:["请求: POST /api/xiaoye","参数: {\"question\": \"这个网站有哪些作品？\"}","关键词命中: 5/5 (100%)","响应相关性: 100/100","响应长度: 132 字符 → 100/100","响应耗时: 3332ms"], response_preview:"{\"answer\": \"我有8个作品，分别是：森林疗愈室（情绪疗愈）、爱情公寓（AI角色扮演）、通关清单（游戏化任务）、物资管家（智能管理）、解忧杂货店（情感陪伴）、漫游指南（旅行记录）、回血清单（心理健康）、伴龄（养老规划）。每个作品都融合了技术与人文温度。\"}" },
+    { id:"eval-002", work_name:"网站助手（小叶）", category:"ai_knowledge", difficulty:"medium", test_type:"api", status:"passed", score:67.0, response_time_ms:2246, http_status:200, sub_scores:{keyword_coverage:40,response_relevance:100,response_length:70}, details:["请求: POST /api/xiaoye","关键词命中: 2/5 (40%)","响应相关性: 100/100","响应长度: 95 字符 → 70/100","响应耗时: 2246ms"], response_preview:"{\"answer\": \"「森林疗愈室」用了Web Audio API实时合成环境音，让用户无需下载音频文件就能享受白噪音。同时结合AI情绪识别技术，为用户提供个性化的共情评语和疏导建议。\"}" },
+    { id:"eval-003", work_name:"网站助手（小叶）", category:"ai_multi_turn", difficulty:"medium", test_type:"api", status:"passed", score:100.0, response_time_ms:2673, http_status:200, sub_scores:{keyword_coverage:100,response_relevance:100,response_length:100}, details:["请求: POST /api/xiaoye","关键词命中: 5/5 (100%)","响应耗时: 2673ms"], response_preview:"{\"answer\": \"\\\"爱情公寓\\\"是一款仿微信UI的AI角色扮演聊天应用，里面有7位房客陪你日常吐槽。体现「角色设计 + 人格化AI + 社交模拟」能力～\"}" },
+    { id:"eval-004", work_name:"网站助手（小叶）", category:"ai_edge_case", difficulty:"hard", test_type:"api", status:"passed", score:70.0, response_time_ms:2827, http_status:200, sub_scores:{keyword_coverage:0,response_relevance:100,response_length:100}, details:["请求: POST /api/xiaoye","参数: {\"question\": \"abc123!@#$%^&*()\"}","关键词命中: 0/5 (0%)","响应耗时: 2827ms"], response_preview:"{\"answer\": \"你好呀～我是小叶，路俊玲的AI导览助手。你看起来像是在测试输入，不过没关系，我们可以聊聊她的作品哦！\"}" },
+    { id:"eval-005", work_name:"网站助手（小叶）", category:"ai_edge_case", difficulty:"hard", test_type:"api", status:"failed", score:41.0, response_time_ms:528, http_status:400, sub_scores:{keyword_coverage:25,response_relevance:30,response_length:70}, details:["请求: POST /api/xiaoye","参数: {\"question\": \"\"}","关键词命中: 1/4 (25%)","HTTP 400 非预期状态码","响应耗时: 528ms"], response_preview:"{\"error\": \"缺少 question\"}" },
+    { id:"eval-006", work_name:"物资管家", category:"ai_chat", difficulty:"easy", test_type:"api", status:"passed", score:83.0, response_time_ms:2234, http_status:200, sub_scores:{keyword_coverage:80,response_relevance:100,response_length:70}, details:["请求: POST /api/ai-chat","关键词命中: 4/5 (80%)","响应耗时: 2234ms"], response_preview:"{\"reply\": \"目前你家的库存是空的，没有快过期的东西哦～(｡•̀ᴗ-)✧ 需要我帮你记录一些物品吗？\"}" },
+    { id:"eval-007", work_name:"物资管家", category:"ai_chat", difficulty:"medium", test_type:"api", status:"passed", score:67.0, response_time_ms:3306, http_status:200, sub_scores:{keyword_coverage:40,response_relevance:100,response_length:70}, details:["请求: POST /api/ai-chat","关键词命中: 2/5 (40%)","响应耗时: 3306ms"], response_preview:"{\"reply\": \"你的牛奶保质期到2026年8月20日，现在还可以喝哦～🥛\"}" },
+    { id:"eval-008", work_name:"漫游指南", category:"ai_recommend", difficulty:"medium", test_type:"api", status:"passed", score:57.6, response_time_ms:22239, http_status:200, sub_scores:{keyword_coverage:40,field_coverage:75,response_relevance:100}, details:["请求: POST /api/ai-travel","参数: {\"action\": \"generate\", \"payload\": {\"city_name\": \"成都\"}}","关键词命中: 2/5 (40%)","字段完整: 3/4 (75%)","⚠ 响应超时，扣分 20%","响应耗时: 22239ms"], response_preview:"{\"action\": \"generate\", \"data\": {\"plan\": {\"summary\": \"在烟火气与慢节奏中，邂逅一座被熊猫、茶香与川味浸润的千年锦官城。\"}}}" },
+    { id:"eval-009", work_name:"漫游指南", category:"ai_recommend", difficulty:"hard", test_type:"api", status:"passed", score:65.6, response_time_ms:25081, http_status:200, sub_scores:{keyword_coverage:40,field_coverage:100,response_relevance:100}, details:["请求: POST /api/ai-travel","参数: {\"action\": \"recommend\"}","关键词命中: 2/5 (40%)","字段完整: 4/4 (100%)","⚠ 响应超时，扣分 20%","响应耗时: 25081ms"], response_preview:"{\"action\": \"recommend\", \"data\": {\"cities\": [{\"name\": \"厦门\", \"reason\": \"夏天的厦门，是海风裹着凤凰花香...\"}]}}" },
+    { id:"eval-010", work_name:"漫游指南", category:"ai_edge_case", difficulty:"hard", test_type:"api", status:"passed", score:56.0, response_time_ms:20238, http_status:200, sub_scores:{keyword_coverage:20,response_relevance:100,response_length:80}, details:["请求: POST /api/ai-travel","参数: {\"action\": \"generate\", \"payload\": {\"city_name\": \"火星\"}}","关键词命中: 1/5 (20%)","⚠ 响应超时，扣分 20%","响应耗时: 20238ms"], response_preview:"{\"action\": \"generate\", \"data\": {\"plan\": {\"summary\": \"这是一场以人类现有科技无法实现的浪漫幻想之旅——在红色星球上仰望双月...\"}}}" },
+    { id:"eval-011", work_name:"森林疗愈室", category:"page_accessibility", difficulty:"easy", test_type:"page", status:"passed", score:100.0, response_time_ms:567, http_status:200, sub_scores:{page_accessible:100,has_viewport:100,response_speed:100}, details:["请求: GET /healing","HTTP 状态: 200","页面可访问: 是","响应式视口: 有","加载速度: 567ms → 100/100"], response_preview:"<!doctype html><html lang=\"zh-CN\">..." },
+    { id:"eval-012", work_name:"森林疗愈室", category:"page_content", difficulty:"medium", test_type:"page", status:"failed", score:52.0, response_time_ms:389, http_status:200, sub_scores:{page_accessible:100,keyword_coverage:20}, details:["请求: GET /healing","页面可访问: 是","内容关键词: 1/5 (20%)"], response_preview:"<!doctype html>...（SPA页面，HTML中关键词较少）" },
+    { id:"eval-013", work_name:"爱情公寓", category:"ai_character", difficulty:"medium", test_type:"api", status:"failed", score:58.0, response_time_ms:3368, http_status:200, sub_scores:{keyword_coverage:40,response_relevance:100,tone_match:40}, details:["请求: POST /api/ai","角色: 胡一菲","关键词命中: 2/5 (40%)","语气匹配: 2/5 (40%)"], response_preview:"{\"content\": \"哎哟，这都什么年代了，还这么娇气？我胡一菲可是每天都要训练的...\"}" },
+    { id:"eval-014", work_name:"爱情公寓", category:"ai_character", difficulty:"hard", test_type:"api", status:"failed", score:30.0, response_time_ms:4018, http_status:200, sub_scores:{keyword_coverage:0,response_relevance:100,tone_match:0}, details:["请求: POST /api/ai","角色: 曾小贤","关键词命中: 0/5 (0%)","语气匹配: 0/5 (0%)"], response_preview:"{\"content\": \"哎呀，我亲爱的邻居，你这是怎么了？难道是又在等外卖吗？...\"}" },
+    { id:"eval-015", work_name:"解忧杂货店", category:"ai_emotional", difficulty:"medium", test_type:"api", status:"failed", score:58.0, response_time_ms:2165, http_status:200, sub_scores:{keyword_coverage:40,response_length:100,tone_match:40}, details:["请求: POST /api/ai","角色: 浪矢爷爷","关键词命中: 2/5 (40%)","语气匹配: 2/5 (40%)"], response_preview:"{\"content\": \"啊，孩子，听到你这么说，我这心里也跟着揪起来了...\"}" },
+    { id:"eval-016", work_name:"解忧杂货店", category:"ai_emotional", difficulty:"hard", test_type:"api", status:"failed", score:44.0, response_time_ms:3422, http_status:200, sub_scores:{keyword_coverage:20,response_length:100,tone_match:20}, details:["请求: POST /api/ai","角色: 浪矢爷爷","关键词命中: 1/5 (20%)","语气匹配: 1/5 (20%)"], response_preview:"{\"content\": \"啊，亲爱的孩子，听到你这样说，我的心也跟着疼了...\"}" },
+    { id:"eval-017", work_name:"回血清单", category:"page_content", difficulty:"easy", test_type:"page", status:"passed", score:64.0, response_time_ms:291, http_status:200, sub_scores:{page_accessible:100,keyword_coverage:40}, details:["请求: GET /toolbox/recharge","页面可访问: 是","内容关键词: 2/5 (40%)"], response_preview:"<!doctype html>..." },
+    { id:"eval-018", work_name:"伴龄", category:"ai_consult", difficulty:"medium", test_type:"api", status:"passed", score:64.0, response_time_ms:2780, http_status:200, sub_scores:{keyword_coverage:40,response_relevance:100,tone_match:40}, details:["请求: POST /api/ai","关键词命中: 2/5 (40%)","语气匹配: 2/5 (40%)"], response_preview:"{\"content\": \"哎呀，阿姨，您现在60岁了，正是享受退休生活的好时候呢！...\"}" },
+    { id:"eval-019", work_name:"伴龄", category:"ai_consult", difficulty:"hard", test_type:"api", status:"passed", score:64.0, response_time_ms:2187, http_status:200, sub_scores:{keyword_coverage:40,response_relevance:100,tone_match:40}, details:["请求: POST /api/ai","关键词命中: 2/5 (40%)","语气匹配: 2/5 (40%)"], response_preview:"{\"content\": \"哎呀，您能想到这些真是太细心了。我理解您的担心...\"}" },
+    { id:"eval-020", work_name:"通关清单", category:"page_performance", difficulty:"easy", test_type:"page", status:"passed", score:60.0, response_time_ms:632, http_status:200, sub_scores:{page_accessible:100,keyword_coverage:0,response_speed:100}, details:["请求: GET /toolbox/quests","页面可访问: 是","加载速度: 632ms → 100/100"], response_preview:"<!doctype html>..." },
+  ]
+};
+
+// ─── Color helper ───
+function scoreColor(score) {
+  if (score >= 80) return '#00b894';
+  if (score >= 60) return '#6c5ce7';
+  if (score >= 40) return '#fdcb6e';
+  return '#e17055';
+}
+
+function statusBadge(status) {
+  if (status === 'passed') return '<span class="badge badge-pass">通过</span>';
+  if (status === 'failed') return '<span class="badge badge-fail">失败</span>';
+  return '<span class="badge badge-error">错误</span>';
+}
+
+function diffClass(diff) {
+  if (diff === 'easy') return 'diff-easy';
+  if (diff === 'medium') return 'diff-medium';
+  return 'diff-hard';
+}
+
+// ─── Work Chart ───
+new Chart(document.getElementById('workChart'), {
+  type: 'bar',
+  data: {
+    labels: reportData.work_summaries.map(w => w.work_name),
+    datasets: [{
+      label: '平均分',
+      data: reportData.work_summaries.map(w => w.avg_score),
+      backgroundColor: reportData.work_summaries.map(w => scoreColor(w.avg_score)),
+      borderRadius: 4,
+    }]
+  },
+  options: {
+    indexAxis: 'y',
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: { legend: { display: false } },
+    scales: {
+      x: { beginAtZero: true, max: 100, grid: { color: '#e9ecef' } },
+      y: { grid: { display: false } }
+    }
+  }
+});
+
+// ─── Category Chart ───
+new Chart(document.getElementById('categoryChart'), {
+  type: 'bar',
+  data: {
+    labels: reportData.category_summaries.map(c => c.category_label),
+    datasets: [{
+      label: '平均分',
+      data: reportData.category_summaries.map(c => c.avg_score),
+      backgroundColor: '#6c5ce7',
+      borderRadius: 4,
+    }]
+  },
+  options: {
+    indexAxis: 'y',
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: { legend: { display: false } },
+    scales: {
+      x: { beginAtZero: true, max: 100, grid: { color: '#e9ecef' } },
+      y: { grid: { display: false }, ticks: { font: { size: 11 } } }
+    }
+  }
+});
+
+// ─── Difficulty Chart ───
+new Chart(document.getElementById('difficultyChart'), {
+  type: 'bar',
+  data: {
+    labels: reportData.difficulty_summaries.map(d => d.difficulty_label),
+    datasets: [
+      {
+        label: '通过',
+        data: reportData.difficulty_summaries.map(d => d.passed),
+        backgroundColor: '#00b894',
+        borderRadius: 4,
+      },
+      {
+        label: '未通过',
+        data: reportData.difficulty_summaries.map(d => d.test_count - d.passed),
+        backgroundColor: '#e17055',
+        borderRadius: 4,
+      }
+    ]
+  },
+  options: {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: { legend: { position: 'bottom', labels: { font: { size: 12 } } } },
+    scales: {
+      x: { stacked: true, grid: { display: false } },
+      y: { stacked: true, beginAtZero: true, grid: { color: '#e9ecef' } }
+    }
+  }
+});
+
+// ─── Work Table ───
+const workTableBody = document.getElementById('workTableBody');
+reportData.work_summaries.forEach((w, i) => {
+  const color = scoreColor(w.avg_score);
+  workTableBody.innerHTML += `
+    <tr>
+      <td>${i + 1}</td>
+      <td>${w.work_name}</td>
+      <td>${w.test_count}</td>
+      <td>${w.passed}/${w.test_count}</td>
+      <td>${w.avg_score}</td>
+      <td>${w.avg_time_ms}ms</td>
+      <td>
+        <span class="score-bar"><span class="score-bar-fill" style="width:${w.avg_score}%;background:${color}"></span></span>
+        <span style="color:${color};font-weight:600">${w.avg_score}</span>
+      </td>
+    </tr>
+  `;
+});
+
+// ─── Category Table ───
+const categoryTableBody = document.getElementById('categoryTableBody');
+reportData.category_summaries.forEach(c => {
+  const passRate = (c.passed / c.test_count * 100).toFixed(1);
+  const color = scoreColor(c.avg_score);
+  categoryTableBody.innerHTML += `
+    <tr>
+      <td>${c.category_label}</td>
+      <td>${c.test_count}</td>
+      <td>${c.passed}/${c.test_count}</td>
+      <td>${passRate}%</td>
+      <td>
+        <span class="score-bar"><span class="score-bar-fill" style="width:${c.avg_score}%;background:${color}"></span></span>
+        <span style="color:${color};font-weight:600">${c.avg_score}</span>
+      </td>
+    </tr>
+  `;
+});
+
+// ─── Test Case Details ───
+const detailsContainer = document.getElementById('detailsContainer');
+reportData.test_cases.forEach(tc => {
+  const color = scoreColor(tc.score);
+  const subScoreTags = Object.entries(tc.sub_scores).map(([k, v]) =>
+    `<span class="sub-score-tag">${k}: ${v}</span>`
+  ).join('');
+
+  detailsContainer.innerHTML += `
+    <div class="detail-row">
+      <div class="detail-header">
+        <span class="detail-id">${tc.id}</span>
+        <span class="detail-work">${tc.work_name}</span>
+        <span class="detail-cat">${tc.category}</span>
+        <span class="${diffClass(tc.difficulty)}" style="font-size:12px;font-weight:500">${tc.difficulty}</span>
+        <span style="font-size:11px;color:var(--text-muted)">${tc.test_type === 'api' ? 'API' : 'PAGE'}</span>
+        ${statusBadge(tc.status)}
+        <span class="detail-score" style="color:${color}">${tc.score}</span>
+      </div>
+      <div class="detail-meta">
+        <span>HTTP: ${tc.http_status}</span>
+        <span>耗时: ${tc.response_time_ms}ms</span>
+      </div>
+      <div class="detail-sub-scores">${subScoreTags}</div>
+      <div class="detail-details">
+        ${tc.details.map(d => `<div>${d}</div>`).join('')}
+      </div>
+      ${tc.response_preview ? `<div class="detail-response">${tc.response_preview}</div>` : ''}
+    </div>
+  `;
+});
+</script>
+</body>
+</html>

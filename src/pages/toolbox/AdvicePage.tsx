@@ -7,7 +7,6 @@ import { useSolo } from "../../context/StandaloneContext";
 import { useAppManifest } from "../../hooks/useAppManifest";
 import PWAInstallPrompt from "../../components/PWAInstallPrompt";
 import WeChatGuide from "../../components/WeChatGuide";
-import UniversalCheckinPanel from "../../components/UniversalCheckinPanel";
 import UserAuthBar from "../../components/UserAuthBar";
 import { userGetItem, userSetItem } from "../../utils/userStorage";
 
@@ -479,11 +478,6 @@ const AdvicePage: React.FC = () => {
         <span className="advice-topbar-meta">The Advice Shop</span>
         <UserAuthBar style={{ marginLeft: "auto" }} />
       </header>
-
-      {/* 签到打卡 */}
-      <div className="advice-checkin">
-        <UniversalCheckinPanel productId="advice" accentColor="#a8814a" variant="lite" />
-      </div>
 
       {/* ===== 标题区（隐藏，由开场动画 & 顶栏承担） ===== */}
       <section className="advice-hero" aria-hidden="true" style={{ visibility: 'hidden', height: 0, overflow: 'hidden', padding: 0, margin: 0 }}>
@@ -1175,13 +1169,6 @@ const AdvicePage: React.FC = () => {
         /* ---------- 主交互区 ---------- */
         .advice-main {
           max-width: 560px; margin: 0 auto;
-          padding: 0 4vw;
-        }
-
-        /* ---------- 签到打卡面板 ---------- */
-        .advice-checkin {
-          max-width: 560px;
-          margin: 56px auto 16px;
           padding: 0 4vw;
         }
 

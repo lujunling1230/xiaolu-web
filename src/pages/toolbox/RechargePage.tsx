@@ -25,7 +25,8 @@ import { useSolo } from "../../context/StandaloneContext";
 import { useAppManifest } from "../../hooks/useAppManifest";
 import PWAInstallPrompt from "../../components/PWAInstallPrompt";
 import WeChatGuide from "../../components/WeChatGuide";
-import UserAuthBar from "../../components/UserAuthBar";
+import UserAuthModal from "../../components/UserAuthModal";
+import { useUserAuth } from "../../context/UserAuthContext";
 import { userGetItem, userSetItem, userRemoveItem } from "../../utils/userStorage";
 import {
   getPoints,
@@ -1281,6 +1282,8 @@ function drawShareCard(data: {
    Tab 4 — 我的
    ============================================================ */
 const MePage: React.FC = () => {
+  const { isLoggedIn, username, logout } = useUserAuth();
+  const [showAuthModal, setShowAuthModal] = useState(false);
   const [aboutOpen, setAboutOpen] = useState(false);
   const [shareOpen, setShareOpen] = useState(false);
   const [feedbackOpen, setFeedbackOpen] = useState(false);
@@ -1370,23 +1373,32 @@ const MePage: React.FC = () => {
       <div className="me-user-card">
         <div className="me-user-avatar">{userData.avatar}</div>
         <div className="me-user-info">
-          <span className="me-user-name">回血达人</span>
+          <span className="me-user-name">{isLoggedIn ? username : "回血达人"}</span>
           <span className="me-user-level">Lv.{userData.level}</span>
         </div>
-        <div className="me-user-stats">
-          <div className="me-user-stat">
-            <span className="me-user-stat-value">{userData.totalCount}</span>
-            <span className="me-user-stat-label">累计</span>
+        {isLoggedIn ? (
+          <div className="me-user-stats">
+            <div className="me-user-stat">
+              <span className="me-user-stat-value">{userData.totalCount}</span>
+              <span className="me-user-stat-label">累计</span>
+            </div>
+            <div className="me-user-stat">
+              <span className="me-user-stat-value">{userData.streak}</span>
+              <span className="me-user-stat-label">连续</span>
+            </div>
+            <div className="me-user-stat">
+              <span className="me-user-stat-value">{userData.todayCount}</span>
+              <span className="me-user-stat-label">今日</span>
+            </div>
           </div>
-          <div className="me-user-stat">
-            <span className="me-user-stat-value">{userData.streak}</span>
-            <span className="me-user-stat-label">连续</span>
-          </div>
-          <div className="me-user-stat">
-            <span className="me-user-stat-value">{userData.todayCount}</span>
-            <span className="me-user-stat-label">今日</span>
-          </div>
-        </div>
+        ) : (
+          <button
+            className="me-login-btn"
+            onClick={() => setShowAuthModal(true)}
+          >
+            登录 / 注册
+          </button>
+        )}
 
         {/* 积分与签到 */}
         <div className="me-points-card">
@@ -1492,6 +1504,13 @@ const MePage: React.FC = () => {
       <div className="me-section">
         <h3 className="me-section-label">设置</h3>
         <div className="me-settings">
+          {isLoggedIn && (
+            <button className="me-settings-btn" onClick={() => logout()}>
+              <span className="me-settings-icon">🔒</span>
+              <span className="me-settings-text">退出登录</span>
+              <span className="me-settings-arrow">›</span>
+            </button>
+          )}
           <button className="me-settings-btn" onClick={handleReset}>
             <span className="me-settings-icon">🔄</span>
             <span className="me-settings-text">重置数据</span>
@@ -1652,6 +1671,9 @@ const MePage: React.FC = () => {
           />
         )}
       </AnimatePresence>
+
+      {/* 登录注册弹窗 */}
+      <UserAuthModal isOpen={showAuthModal} onClose={() => setShowAuthModal(false)} />
     </div>
   );
 };
@@ -1866,7 +1888,6 @@ const RechargePage: React.FC = () => {
               </Link>
             )}
             <span className="recharge-topbar-meta">Recharge Station</span>
-            <UserAuthBar style={{ marginLeft: "auto" }} />
           </header>
           <section className="recharge-hero">
             <motion.h1
@@ -2737,6 +2758,24 @@ const RechargePage: React.FC = () => {
         }
         .me-user-stat-label {
           font-size: 9px; color: rgba(255,255,255,0.6); letter-spacing: 0.04em;
+        }
+        .me-login-btn {
+          margin-left: auto;
+          padding: 6px 18px;
+          border-radius: 999px;
+          border: 1.5px solid rgba(184,169,217,0.5);
+          background: rgba(184,169,217,0.15);
+          color: #E8DFF5;
+          font-size: 12px;
+          cursor: pointer;
+          font-family: inherit;
+          letter-spacing: 0.04em;
+          transition: all 0.25s ease;
+          white-space: nowrap;
+        }
+        .me-login-btn:hover {
+          background: rgba(184,169,217,0.25);
+          border-color: rgba(184,169,217,0.7);
         }
 
         /* 积分卡片 */

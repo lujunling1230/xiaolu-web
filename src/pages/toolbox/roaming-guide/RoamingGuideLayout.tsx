@@ -2,6 +2,7 @@ import { Outlet, NavLink, Link } from "react-router-dom";
 import { useEffect } from "react";
 import { useSolo } from "../../../context/StandaloneContext";
 import { track } from "../../../utils/track";
+import UserAuthBar from "../../../components/UserAuthBar";
 
 export default function RoamingGuideLayout() {
   const { isSolo } = useSolo();
@@ -185,12 +186,33 @@ export default function RoamingGuideLayout() {
 
         /* 侧边栏底部 */
         .rg-sidebar-footer {
-          padding: 14px 20px;
+          padding: 14px 20px 16px;
           text-align: center;
           border-top: 1px solid rgba(90,74,58,0.08);
           font-size: 10px;
           color: #B0A898;
           letter-spacing: 1px;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          gap: 10px;
+        }
+        .rg-sidebar-footer-text {
+          font-size: 10px;
+          color: #B0A898;
+          letter-spacing: 1px;
+        }
+        .rg-sidebar-auth {
+          padding-bottom: 4px;
+        }
+
+        /* 移动端浮动登录入口 */
+        .rg-mobile-auth {
+          display: none;
+          position: fixed;
+          top: 10px;
+          right: 10px;
+          z-index: 200;
         }
 
         /* ===== 主内容区 ===== */
@@ -279,6 +301,9 @@ export default function RoamingGuideLayout() {
           /* 隐藏底部 footer */
           .rg-sidebar-footer { display: none; }
 
+          /* 移动端显示浮动登录入口 */
+          .rg-mobile-auth { display: block; }
+
           /* 主内容区全宽 + 底部留白 */
           .rg-content {
             margin-left: 0;
@@ -331,9 +356,17 @@ export default function RoamingGuideLayout() {
         </nav>
 
         <div className="rg-sidebar-footer">
-          慢慢走，好好看
+          <span className="rg-sidebar-footer-text">慢慢走，好好看</span>
+          <div className="rg-sidebar-auth">
+            <UserAuthBar />
+          </div>
         </div>
       </aside>
+
+      {/* 移动端浮动登录入口 */}
+      <div className="rg-mobile-auth">
+        <UserAuthBar />
+      </div>
 
       {/* ===== 主内容 ===== */}
       <main className="rg-content">

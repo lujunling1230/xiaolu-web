@@ -249,93 +249,6 @@ const XpBar: React.FC<{ xp: number }> = ({ xp }) => {
 };
 
 /* ============================================================
-   子组件：金币与称号面板
-   ============================================================ */
-const CoinBar: React.FC<{
-  coins: number;
-  streak: number;
-  checkedInToday: boolean;
-  onCheckin: () => void;
-}> = ({ coins, streak, checkedInToday, onCheckin }) => {
-  const title = getTitle(coins);
-  const nextTitle = TITLES.find((t) => t.min > coins);
-  const progress = nextTitle
-    ? Math.min(100, ((coins - title.min) / (nextTitle.min - title.min)) * 100)
-    : 100;
-
-  return (
-    <div className="quest-coin-wrap">
-      <div className="quest-coin-head">
-        <div className="quest-coin-left">
-          <span className="quest-coin-icon">◆</span>
-          <motion.span
-            className="quest-coin-value"
-            key={coins}
-            initial={{ scale: 1.1, color: "#b0b8c4" }}
-            animate={{ scale: 1, color: "#9ca3af" }}
-            transition={{ type: "spring", stiffness: 300, damping: 20 }}
-          >
-            {coins}
-          </motion.span>
-          <span className="quest-coin-label">金币</span>
-        </div>
-        <div className="quest-coin-right">
-          <span
-            className="quest-title-badge"
-            style={{ color: "#9ca3af", borderColor: "rgba(255,255,255,0.15)" }}
-          >
-            {title.label}
-          </span>
-          {streak > 0 && (
-            <span className="quest-streak-badge">
-              <span className="quest-streak-fire">🔥</span>
-              <span>连续 {streak} 天</span>
-            </span>
-          )}
-        </div>
-      </div>
-
-      {/* 称号进度 */}
-      {nextTitle && (
-        <div className="quest-title-progress">
-          <div className="quest-title-progress-track">
-            <motion.div
-              className="quest-title-progress-fill"
-              initial={false}
-              animate={{ width: `${progress}%` }}
-              transition={{ type: "spring", stiffness: 120, damping: 14 }}
-              style={{ background: title.color }}
-            />
-          </div>
-          <span className="quest-title-progress-text">
-            距「{nextTitle.label}」还需 {nextTitle.min - coins} 金币
-          </span>
-        </div>
-      )}
-
-      {/* 每日签到 */}
-      <button
-        className={cn("quest-checkin-btn", checkedInToday && "quest-checkin-done")}
-        onClick={onCheckin}
-        disabled={checkedInToday}
-      >
-        {checkedInToday ? (
-          <>
-            <span>✓</span>
-            <span>今日已签到</span>
-          </>
-        ) : (
-          <>
-            <span className="quest-checkin-gift">🎁</span>
-            <span>每日签到 +{COIN_REWARD.daily} 金币</span>
-          </>
-        )}
-      </button>
-    </div>
-  );
-};
-
-/* ============================================================
    子组件：编辑任务模态框
    ============================================================ */
 const EditModal: React.FC<{
@@ -769,21 +682,17 @@ const QuestLogPage: React.FC = () => {
     track("quest_claim_card", { cardId: card.id, reward: card.rewardAmount });
   };
 
-  // 完成回调
+  // 完成回调 — 先查目标任务，再在 setQuests 外做副作用，避免 StrictMode 双执行
   const handleComplete = (id: string) => {
-    setQuests((prev) => {
-      const target = prev.find((q) => q.id === id);
-      if (target && !target.completed) {
-        setXp((x) => x + XP_REWARD[target.difficulty]);
-        // 发放金币奖励
-        const coinReward = COIN_REWARD[target.difficulty];
-        addCoins(coinReward, `完成任务「${target.text}」`);
-        track("quest_complete", { difficulty: target.difficulty, coins: coinReward });
-        // 累计完成 +1
-        setTotalCompleted((c) => c + 1);
-      }
-      return prev.filter((q) => q.id !== id);
-    });
+    const target = quests.find((q) => q.id === id);
+    if (!target || target.completed) return;
+
+    setQuests((prev) => prev.filter((q) => q.id !== id));
+    setXp((x) => x + XP_REWARD[target.difficulty]);
+    const coinReward = COIN_REWARD[target.difficulty];
+    addCoins(coinReward, `完成任务「${target.text}」`);
+    track("quest_complete", { difficulty: target.difficulty, coins: coinReward });
+    setTotalCompleted((c) => c + 1);
   };
 
   const handleDelete = (id: string) => {
@@ -838,6 +747,11 @@ const QuestLogPage: React.FC = () => {
     return { done, active, total: quests.length };
   }, [quests]);
 
+  // 缓存重复计算，避免每次渲染重复调用
+  const username = getCurrentUsername();
+  const currentTitle = getTitle(coins);
+  const level = Math.floor(xp / XP_PER_LEVEL) + 1;
+
   return (
     <div className="quest-page">
       {/* 顶部返回 */}
@@ -854,10 +768,29 @@ const QuestLogPage: React.FC = () => {
       {/* ===== 待办 Tab ===== */}
       {activeTab === "todo" && (
         <>
-          {/* 标题 */}
+          {/* 标题 + 紧凑状态条 */}
           <div className="quest-title-area">
             <h1 className="quest-title">通关清单</h1>
             <p className="quest-subtitle">把人生变成一场 RPG。</p>
+            <div className="quest-mini-status">
+              <span className="quest-mini-item">
+                <span className="quest-mini-level">Lv.{level}</span>
+              </span>
+              <span className="quest-mini-divider" />
+              <span className="quest-mini-item">
+                <span className="quest-mini-coin-icon">◆</span>
+                <span className="quest-mini-coin-val">{coins}</span>
+              </span>
+              <span className="quest-mini-divider" />
+              <span className="quest-mini-item">
+                <span className="quest-mini-task-icon">📋</span>
+                <span>{stats.active} 待办</span>
+              </span>
+              <span className="quest-mini-spacer" />
+              <span className="quest-mini-title" style={{ color: currentTitle.color }}>
+                {currentTitle.label}
+              </span>
+            </div>
           </div>
 
           {/* 任务列表 */}
@@ -892,17 +825,17 @@ const QuestLogPage: React.FC = () => {
           {/* 用户卡片 */}
           <div className="quest-profile-card">
             <div className="quest-profile-avatar">
-              {getCurrentUsername() ? getCurrentUsername()!.charAt(0).toUpperCase() : "🎮"}
+              {username ? username.charAt(0).toUpperCase() : "🎮"}
             </div>
             <div className="quest-profile-info">
-              <h2 className="quest-profile-name">{getCurrentUsername() || "匿名冒险者"}</h2>
+              <h2 className="quest-profile-name">{username || "匿名冒险者"}</h2>
               <div className="quest-profile-badges">
-                <span className="quest-level-badge">Lv.{Math.floor(xp / XP_PER_LEVEL) + 1}</span>
+                <span className="quest-level-badge">Lv.{level}</span>
                 <span
                   className="quest-title-badge"
-                  style={{ color: getTitle(coins).color, borderColor: getTitle(coins).color + "40" }}
+                  style={{ color: currentTitle.color, borderColor: currentTitle.color + "40" }}
                 >
-                  {getTitle(coins).label}
+                  {currentTitle.label}
                 </span>
               </div>
             </div>
@@ -985,6 +918,21 @@ const QuestLogPage: React.FC = () => {
             )}
           </div>
 
+          {/* 金币记录 */}
+          {coinsHistory.length > 0 && (
+            <div className="quest-history-section">
+              <h3 className="quest-section-h3">💰 金币记录</h3>
+              <div className="quest-history-list">
+                {coinsHistory.slice(-6).reverse().map((rec, i) => (
+                  <div key={i} className="quest-history-item">
+                    <span className="quest-history-reason">{rec.reason}</span>
+                    <span className="quest-history-amount">+{rec.amount}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* 跨产品体验卡 */}
           <AnimatePresence>
             {pendingCards.length > 0 && (
@@ -1033,47 +981,47 @@ const QuestLogPage: React.FC = () => {
         </section>
       )}
 
-      {/* 底部输入框 - 仅待办 Tab */}
-      {activeTab === "todo" && (
-        <div className="quest-input-bar">
-          <input
-            className="quest-input"
-            type="text"
-            placeholder="输入新任务，按回车开始冒险…"
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") handleAdd();
-            }}
-          />
+      {/* 底部固定区域：输入栏 + Tab 导航 */}
+      <div className="quest-bottom-area">
+        {activeTab === "todo" && (
+          <div className="quest-input-bar">
+            <input
+              className="quest-input"
+              type="text"
+              placeholder="输入新任务，按回车开始冒险…"
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") handleAdd();
+              }}
+            />
+            <button
+              type="button"
+              className="quest-add-btn"
+              onClick={handleAdd}
+              disabled={!input.trim()}
+            >
+              添加
+            </button>
+          </div>
+        )}
+        <nav className="quest-tabbar">
           <button
-            type="button"
-            className="quest-add-btn"
-            onClick={handleAdd}
-            disabled={!input.trim()}
+            className={cn("quest-tab", activeTab === "todo" && "quest-tab-active")}
+            onClick={() => setActiveTab("todo")}
           >
-            添加
+            <span className="quest-tab-icon">📋</span>
+            <span className="quest-tab-label">待办</span>
           </button>
-        </div>
-      )}
-
-      {/* 底部 Tab 导航 */}
-      <nav className="quest-tabbar">
-        <button
-          className={cn("quest-tab", activeTab === "todo" && "quest-tab-active")}
-          onClick={() => setActiveTab("todo")}
-        >
-          <span className="quest-tab-icon">📋</span>
-          <span className="quest-tab-label">待办</span>
-        </button>
-        <button
-          className={cn("quest-tab", activeTab === "mine" && "quest-tab-active")}
-          onClick={() => setActiveTab("mine")}
-        >
-          <span className="quest-tab-icon">👤</span>
-          <span className="quest-tab-label">我的</span>
-        </button>
-      </nav>
+          <button
+            className={cn("quest-tab", activeTab === "mine" && "quest-tab-active")}
+            onClick={() => setActiveTab("mine")}
+          >
+            <span className="quest-tab-icon">👤</span>
+            <span className="quest-tab-label">我的</span>
+          </button>
+        </nav>
+      </div>
 
       {/* 智能拆解 Modal */}
       <AnimatePresence>
@@ -1123,10 +1071,7 @@ const QuestLogPage: React.FC = () => {
           font-size: 11px; color: #4b5563; letter-spacing: 0.28em; text-transform: uppercase;
         }
 
-        /* 玩家状态 */
-        .quest-status {
-          max-width: 720px; margin: 0 auto; padding: 32px 4px 0;
-        }
+        /* 玩家状态（XP 条仍复用） */
         .quest-xp-wrap { margin-bottom: 14px; }
         .quest-xp-head {
           display: flex; align-items: center; justify-content: space-between;
@@ -1148,68 +1093,11 @@ const QuestLogPage: React.FC = () => {
           background: linear-gradient(90deg, #f472b6, #fde047, #34d399);
           box-shadow: 0 0 12px rgba(253, 224, 71, 0.5);
         }
-        .quest-stats-pills { display: flex; gap: 10px; }
-        .quest-pill {
-          font-size: 12px; color: #d1d5db; padding: 4px 12px; border-radius: 999px;
-          background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.08);
-        }
-        .quest-pill-done { color: #34d399; border-color: rgba(52, 211, 153, 0.3); }
-
-        /* 金币面板 */
-        .quest-coin-wrap {
-          margin: 12px 0 10px;
-          padding: 10px 14px;
-          border-radius: 14px;
-          background: rgba(255,255,255,0.04);
-          border: 1px solid rgba(255,255,255,0.08);
-        }
-        .quest-coin-head {
-          display: flex; align-items: center; justify-content: space-between;
-          margin-bottom: 10px;
-        }
-        .quest-coin-left {
-          display: flex; align-items: center; gap: 8px;
-        }
-        .quest-coin-icon {
-          font-size: 13px; color: #9ca3af;
-        }
-        .quest-coin-value {
-          font-size: 16px; font-weight: 600; color: #9ca3af;
-          font-variant-numeric: tabular-nums;
-        }
-        .quest-coin-label {
-          font-size: 12px; color: #9ca3af; margin-left: 2px;
-        }
-        .quest-coin-right {
-          display: flex; align-items: center; gap: 8px;
-        }
         .quest-title-badge {
           font-size: 11px; font-weight: 700;
           padding: 3px 10px; border-radius: 6px;
           border: 1.5px solid;
           background: rgba(0,0,0,0.2);
-        }
-        .quest-streak-badge {
-          font-size: 11px; color: #9ca3af;
-          display: flex; align-items: center; gap: 3px;
-          padding: 3px 8px; border-radius: 6px;
-          background: rgba(255,255,255,0.04);
-          border: 1px solid rgba(255,255,255,0.08);
-        }
-        .quest-streak-fire { font-size: 13px; }
-
-        .quest-title-progress { margin-bottom: 12px; }
-        .quest-title-progress-track {
-          height: 6px; border-radius: 999px; overflow: hidden;
-          background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.06);
-          margin-bottom: 6px;
-        }
-        .quest-title-progress-fill {
-          height: 100%; border-radius: 999px;
-          box-shadow: 0 0 8px rgba(255,255,255,0.15);
-        }
-        .quest-title-progress-text {
-          font-size: 11px; color: #6b7280;
         }
 
         .quest-checkin-btn {
@@ -1363,13 +1251,15 @@ const QuestLogPage: React.FC = () => {
         }
         .quest-empty-icon { font-size: 40px; display: block; margin-bottom: 12px; }
 
-        /* 输入栏（固定在 tabbar 上方） */
-        .quest-input-bar {
-          position: fixed; bottom: 62px; left: 0; right: 0; z-index: 40;
-          display: flex; gap: 10px; padding: 12px 20px;
+        /* 底部固定区域（输入栏 + Tab 导航） */
+        .quest-bottom-area {
+          position: fixed; bottom: 0; left: 0; right: 0; z-index: 50;
           max-width: 720px; margin: 0 auto;
-          background: rgba(17, 24, 39, 0.95);
+          background: rgba(17, 24, 39, 0.97);
           border-top: 1px solid rgba(255,255,255,0.08);
+        }
+        .quest-input-bar {
+          display: flex; gap: 10px; padding: 12px 20px;
         }
         .quest-input {
           flex: 1; padding: 11px 16px; border-radius: 10px;
@@ -1508,11 +1398,8 @@ const QuestLogPage: React.FC = () => {
 
         /* ===== 底部 Tab 导航栏 ===== */
         .quest-tabbar {
-          position: fixed; bottom: 0; left: 0; right: 0; z-index: 50;
           display: flex;
-          max-width: 720px; margin: 0 auto;
-          background: rgba(17, 24, 39, 0.97);
-          border-top: 1px solid rgba(255,255,255,0.08);
+          border-top: 1px solid rgba(255,255,255,0.06);
           padding: 6px 0;
           padding-bottom: max(6px, env(safe-area-inset-bottom, 6px));
         }
@@ -1622,6 +1509,55 @@ const QuestLogPage: React.FC = () => {
 
         /* 联动礼券 on mine page */
         .quest-mine-section .quest-reward-cards { max-width: none; padding: 0; margin-bottom: 16px; }
+
+        /* ===== 待办页紧凑状态条 ===== */
+        .quest-mini-status {
+          display: flex; align-items: center; gap: 10px;
+          margin-top: 14px; padding: 10px 14px; border-radius: 12px;
+          background: rgba(255,255,255,0.04);
+          border: 1px solid rgba(255,255,255,0.08);
+        }
+        .quest-mini-item {
+          display: flex; align-items: center; gap: 4px;
+          font-size: 13px; color: #9ca3af;
+        }
+        .quest-mini-level {
+          font-weight: 700; font-size: 13px; color: #fde047;
+          padding: 2px 8px; border-radius: 5px;
+          background: rgba(253, 224, 71, 0.12);
+          border: 1px solid rgba(253, 224, 71, 0.3);
+        }
+        .quest-mini-coin-icon { font-size: 12px; color: #9ca3af; }
+        .quest-mini-coin-val { font-weight: 600; font-variant-numeric: tabular-nums; color: #d1d5db; }
+        .quest-mini-task-icon { font-size: 13px; }
+        .quest-mini-divider {
+          width: 1px; height: 16px; background: rgba(255,255,255,0.1); flex-shrink: 0;
+        }
+        .quest-mini-spacer { flex: 1; }
+        .quest-mini-title {
+          font-size: 11px; font-weight: 700; letter-spacing: 0.03em;
+        }
+
+        /* ===== 金币记录 ===== */
+        .quest-history-section { margin-bottom: 20px; }
+        .quest-history-list {
+          display: flex; flex-direction: column; gap: 6px;
+        }
+        .quest-history-item {
+          display: flex; align-items: center; justify-content: space-between;
+          padding: 10px 14px; border-radius: 10px;
+          background: rgba(255,255,255,0.03);
+          border: 1px solid rgba(255,255,255,0.06);
+        }
+        .quest-history-reason {
+          font-size: 13px; color: #9ca3af;
+          overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+          flex: 1; margin-right: 12px;
+        }
+        .quest-history-amount {
+          font-size: 14px; font-weight: 700; color: #fde047;
+          font-variant-numeric: tabular-nums; flex-shrink: 0;
+        }
       `}</style>
 
       {/* 浮动管理员入口 🔒 */}

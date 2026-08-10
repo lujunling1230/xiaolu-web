@@ -7,7 +7,7 @@ import { useSolo } from "../../context/StandaloneContext";
 import { useAppManifest } from "../../hooks/useAppManifest";
 import PWAInstallPrompt from "../../components/PWAInstallPrompt";
 import WeChatGuide from "../../components/WeChatGuide";
-import UserAuthBar from "../../components/UserAuthBar";
+import UserAuthModal from "../../components/UserAuthModal";
 import { useUserAuth } from "../../context/UserAuthContext";
 import { userGetItem, userSetItem } from "../../utils/userStorage";
 import { getCurrentUsername } from "../../utils/userAuth";
@@ -118,7 +118,7 @@ const THEMES: Record<string, { bg: string; accent: string; name: string }> = {
   default: { bg: "radial-gradient(120% 80% at 50% -10%, #1f2937 0%, #111827 50%, #0b0f1a 100%)", accent: "#fde047", name: "默认" },
   theme_purple: { bg: "radial-gradient(120% 80% at 50% -10%, #2d1b4e 0%, #1a1033 50%, #0d0820 100%)", accent: "#c084fc", name: "暗夜紫" },
   theme_blue: { bg: "radial-gradient(120% 80% at 50% -10%, #1e3a5f 0%, #0f1f3a 50%, #060f1e 100%)", accent: "#60a5fa", name: "深海蓝" },
-  theme_rose: { bg: "radial-gradient(120% 80% at 50% -10%, #3d1f2e 0%, #221019 50%, #12060c 100%)", accent: "#f472b6", name: "玫瑰粉" },
+  theme_rose: { bg: "radial-gradient(120% 80% at 50% -10%, #8b2d5a 0%, #5a1d3a 50%, #2a0e1e 100%)", accent: "#f472b6", name: "玫瑰粉" },
 };
 
 const DIFF_LABEL: Record<Difficulty, string> = {
@@ -620,7 +620,7 @@ const BreakdownModal: React.FC<{
 const QuestLogPage: React.FC = () => {
   useAppManifest("/manifests/quest.webmanifest");
   const { isSolo } = useSolo();
-  const { isAdmin: adminMode, verifyAdmin, AdminGuardUI } = useAdminGuard();
+  const { verifyAdmin, AdminGuardUI } = useAdminGuard();
   const [quests, setQuests] = useState<Quest[]>(() => loadQuests());
 
   useEffect(() => { document.title = "通关清单"; track("tool_enter", { tool_name: "通关清单" }); }, []);
@@ -650,6 +650,9 @@ const QuestLogPage: React.FC = () => {
   const [purchaseFlash, setPurchaseFlash] = useState<string | null>(null);
   const [avatar, setAvatar] = useState<string>(() => loadAvatar());
   const avatarInputRef = useRef<HTMLInputElement>(null);
+  const [showLoginModal, setShowLoginModal] = useState(false);
+  const [titlesExpanded, setTitlesExpanded] = useState(false);
+  const [historyExpanded, setHistoryExpanded] = useState(false);
 
   // 持久化
   useEffect(() => {
@@ -765,11 +768,6 @@ const QuestLogPage: React.FC = () => {
     reader.readAsDataURL(file);
     // 清空 input 使同一文件可重复选择
     e.target.value = "";
-  };
-
-  /* 删除头像 */
-  const handleAvatarRemove = () => {
-    setAvatar("");
   };
 
   /* 每日签到 */
@@ -907,7 +905,7 @@ const QuestLogPage: React.FC = () => {
 
   // 缓存重复计算，避免每次渲染重复调用
   // 消费 UserAuthContext，登录/退出后自动刷新用户名
-  const { username: authUsername } = useUserAuth();
+  const { username: authUsername, isLoggedIn, logout } = useUserAuth();
   const username = authUsername || getCurrentUsername();
   const currentTitle = getTitle(coins);
   const level = Math.floor(xp / XP_PER_LEVEL) + 1;
@@ -1150,10 +1148,19 @@ const QuestLogPage: React.FC = () => {
               </div>
               {/* 账户操作 */}
               <div className="quest-profile-account">
-                <UserAuthBar compact />
-                {avatar && (
-                  <button className="quest-avatar-remove-btn" onClick={handleAvatarRemove}>
-                    移除头像
+                {isLoggedIn ? (
+                  <button
+                    className="quest-logout-btn"
+                    onClick={() => logout()}
+                  >
+                    退出登录
+                  </button>
+                ) : (
+                  <button
+                    className="quest-login-btn"
+                    onClick={() => setShowLoginModal(true)}
+                  >
+                    登录 / 注册
                   </button>
                 )}
               </div>
@@ -1183,35 +1190,6 @@ const QuestLogPage: React.FC = () => {
             </div>
           </div>
 
-          {/* 称号成就 */}
-          <div className="quest-achievements">
-            <h3 className="quest-section-h3">🏆 称号成就</h3>
-            <div className="quest-titles-list">
-              {TITLES.map((t) => {
-                const unlocked = coins >= t.min;
-                return (
-                  <div
-                    key={t.label}
-                    className={cn("quest-title-row", !unlocked && "quest-title-locked")}
-                  >
-                    <span
-                      className="quest-title-dot"
-                      style={{ background: unlocked ? t.color : "#374151" }}
-                    />
-                    <span
-                      className="quest-title-name"
-                      style={{ color: unlocked ? t.color : "#4b5563" }}
-                    >
-                      {t.label}
-                    </span>
-                    <span className="quest-title-req">{t.min}+ 金币</span>
-                    {unlocked && <span className="quest-title-check">✓</span>}
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-
           {/* 每日签到 */}
           <div className="quest-checkin-section">
             <h3 className="quest-section-h3">📅 每日签到</h3>
@@ -1237,20 +1215,65 @@ const QuestLogPage: React.FC = () => {
             )}
           </div>
 
-          {/* 金币记录 */}
+          {/* 称号成就（可折叠） */}
+          <div className="quest-achievements">
+            <button
+              className="quest-section-toggle"
+              onClick={() => setTitlesExpanded((v) => !v)}
+            >
+              <h3 className="quest-section-h3">🏆 称号成就</h3>
+              <span className={cn("quest-toggle-arrow", titlesExpanded && "quest-toggle-open")}>▶</span>
+            </button>
+            {titlesExpanded && (
+              <div className="quest-titles-list">
+                {TITLES.map((t) => {
+                  const unlocked = coins >= t.min;
+                  return (
+                    <div
+                      key={t.label}
+                      className={cn("quest-title-row", !unlocked && "quest-title-locked")}
+                    >
+                      <span
+                        className="quest-title-dot"
+                        style={{ background: unlocked ? t.color : "#374151" }}
+                      />
+                      <span
+                        className="quest-title-name"
+                        style={{ color: unlocked ? t.color : "#4b5563" }}
+                      >
+                        {t.label}
+                      </span>
+                      <span className="quest-title-req">{t.min}+ 金币</span>
+                      {unlocked && <span className="quest-title-check">✓</span>}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+
+          {/* 金币记录（可折叠） */}
           {coinsHistory.length > 0 && (
             <div className="quest-history-section">
-              <h3 className="quest-section-h3">💰 金币记录</h3>
-              <div className="quest-history-list">
-                {coinsHistory.slice(-6).reverse().map((rec, i) => (
-                  <div key={i} className="quest-history-item">
-                    <span className="quest-history-reason">{rec.reason}</span>
-                    <span className={cn("quest-history-amount", rec.amount < 0 && "quest-history-spend")}>
-                      {rec.amount > 0 ? "+" : ""}{rec.amount}
-                    </span>
-                  </div>
-                ))}
-              </div>
+              <button
+                className="quest-section-toggle"
+                onClick={() => setHistoryExpanded((v) => !v)}
+              >
+                <h3 className="quest-section-h3">💰 金币记录</h3>
+                <span className={cn("quest-toggle-arrow", historyExpanded && "quest-toggle-open")}>▶</span>
+              </button>
+              {historyExpanded && (
+                <div className="quest-history-list">
+                  {coinsHistory.slice(-20).reverse().map((rec, i) => (
+                    <div key={i} className="quest-history-item">
+                      <span className="quest-history-reason">{rec.reason}</span>
+                      <span className={cn("quest-history-amount", rec.amount < 0 && "quest-history-spend")}>
+                        {rec.amount > 0 ? "+" : ""}{rec.amount}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           )}
 
@@ -1384,6 +1407,12 @@ const QuestLogPage: React.FC = () => {
           />
         )}
       </AnimatePresence>
+
+      {/* 登录/注册 Modal */}
+      <UserAuthModal
+        isOpen={showLoginModal}
+        onClose={() => setShowLoginModal(false)}
+      />
 
       <style>{`
         .quest-page,
@@ -1812,14 +1841,38 @@ const QuestLogPage: React.FC = () => {
           display: flex; align-items: center; gap: 10px; margin-top: 10px;
           flex-wrap: wrap;
         }
-        .quest-avatar-remove-btn {
-          padding: 3px 10px; border-radius: 6px;
+        .quest-login-btn {
+          padding: 6px 16px; border-radius: 8px; border: none;
+          background: linear-gradient(135deg, #fde047, #f59e0b);
+          color: #06281f; font-size: 13px; font-weight: 700;
+          font-family: inherit; cursor: pointer;
+          transition: all 0.15s ease;
+        }
+        .quest-login-btn:hover { transform: scale(1.05); }
+        .quest-logout-btn {
+          padding: 5px 14px; border-radius: 8px;
           border: 1px solid rgba(248,113,113,0.3);
           background: rgba(248,113,113,0.08);
-          color: #f87171; font-size: 11px; font-family: inherit;
+          color: #f87171; font-size: 12px; font-family: inherit;
           cursor: pointer; transition: all 0.15s ease;
         }
-        .quest-avatar-remove-btn:hover { background: rgba(248,113,113,0.15); }
+        .quest-logout-btn:hover { background: rgba(248,113,113,0.15); }
+
+        /* 可折叠区块 */
+        .quest-section-toggle {
+          width: 100%; display: flex; align-items: center;
+          justify-content: space-between; gap: 8px;
+          background: none; border: none;
+          cursor: pointer; padding: 0; margin-bottom: 10px;
+          font-family: inherit;
+        }
+        .quest-section-toggle .quest-section-h3 { margin: 0; }
+        .quest-toggle-arrow {
+          font-size: 11px; color: #6b7280;
+          transition: transform 0.2s ease;
+          transform: rotate(0deg);
+        }
+        .quest-toggle-open { transform: rotate(90deg); }
 
         /* XP bar on mine page */
         .quest-mine-section .quest-xp-wrap { margin-bottom: 16px; }
@@ -2071,24 +2124,6 @@ const QuestLogPage: React.FC = () => {
           font-variant-numeric: tabular-nums;
         }
       `}</style>
-
-      {/* 浮动管理员入口 🔒 */}
-      <button
-        onClick={() => verifyAdmin(() => {})}
-        title={adminMode ? "管理面板" : "管理员登录"}
-        style={{
-          position: "fixed", bottom: 80, right: 28, zIndex: 20,
-          width: 44, height: 44, border: "none", borderRadius: "50%",
-          background: adminMode ? "rgba(141,154,139,0.3)" : "rgba(255,255,255,0.5)",
-          backdropFilter: "blur(10px)",
-          boxShadow: "0 2px 12px rgba(0,0,0,0.08)",
-          cursor: "pointer", fontSize: 18,
-          display: "flex", alignItems: "center", justifyContent: "center",
-          transition: "all 0.25s ease",
-        }}
-      >
-        {adminMode ? "⚙" : "🔒"}
-      </button>
 
       <AdminGuardUI />
       <PWAInstallPrompt />

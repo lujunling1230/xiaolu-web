@@ -1423,6 +1423,7 @@ const QuestLogPage: React.FC = () => {
 
         .quest-page {
           min-height: 100vh;
+          display: flex; flex-direction: column;
           color: #f3f4f6;
           background:
             radial-gradient(120% 80% at 50% -10%, #1f2937 0%, #111827 50%, #0b0f1a 100%);
@@ -1434,6 +1435,7 @@ const QuestLogPage: React.FC = () => {
         .quest-topbar {
           display: flex; align-items: center; justify-content: space-between;
           max-width: 720px; margin: 0 auto; padding: 22px 4px 0;
+          flex-shrink: 0;
         }
         .quest-back {
           font-size: 14px; color: #9ca3af; text-decoration: none;
@@ -1556,7 +1558,7 @@ const QuestLogPage: React.FC = () => {
         }
 
         /* 标题 */
-        .quest-title-area { max-width: 720px; margin: 0 auto; padding: 28px 4px 20px; }
+        .quest-title-area { max-width: 720px; margin: 0 auto; padding: 28px 4px 20px; flex-shrink: 0; }
         .quest-title {
           font-size: 26px; font-weight: 800; color: #fff; margin: 0 0 6px;
           letter-spacing: 0.04em;
@@ -1564,7 +1566,7 @@ const QuestLogPage: React.FC = () => {
         .quest-subtitle { font-size: 13px; color: #9ca3af; margin: 0; }
 
         /* 任务列表 */
-        .quest-list-section { max-width: 720px; margin: 0 auto; }
+        .quest-list-section { max-width: 720px; margin: 0 auto; flex: 1; display: flex; flex-direction: column; width: 100%; }
         .quest-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
         .quest-item {
           position: relative; display: flex; align-items: center; gap: 12px;
@@ -1620,7 +1622,7 @@ const QuestLogPage: React.FC = () => {
 
         /* 空状态 */
         .quest-empty {
-          text-align: center; padding: 48px 0; color: #6b7280;
+          text-align: center; padding: 48px 0; color: #6b7280; margin: auto;
         }
         .quest-empty-icon { font-size: 40px; display: block; margin-bottom: 12px; }
 
@@ -1790,7 +1792,7 @@ const QuestLogPage: React.FC = () => {
 
         /* ===== 我的页面 ===== */
         .quest-mine-section {
-          max-width: 720px; margin: 0 auto; padding: 28px 4px 20px;
+          max-width: 720px; margin: 0 auto; padding: 28px 4px 20px; flex: 1; width: 100%;
         }
 
         /* 用户卡片 */
@@ -2003,7 +2005,7 @@ const QuestLogPage: React.FC = () => {
 
         /* ===== 金币商店 ===== */
         .quest-shop-section {
-          max-width: 720px; margin: 0 auto; padding: 28px 4px 20px;
+          max-width: 720px; margin: 0 auto; padding: 28px 4px 20px; flex: 1; width: 100%;
         }
 
         /* 金币余额 */

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { createPortal } from "react-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { useUserAuth } from "../context/UserAuthContext";
 
@@ -60,7 +61,7 @@ export default function UserAuthModal({ isOpen, onClose, defaultMode = "login" }
     }
   };
 
-  return (
+  return createPortal(
     <AnimatePresence>
       {isOpen && (
         <motion.div
@@ -71,7 +72,7 @@ export default function UserAuthModal({ isOpen, onClose, defaultMode = "login" }
           style={{
             position: "fixed",
             inset: 0,
-            zIndex: 2000,
+            zIndex: 10000,
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
@@ -304,6 +305,7 @@ export default function UserAuthModal({ isOpen, onClose, defaultMode = "login" }
           </motion.div>
         </motion.div>
       )}
-    </AnimatePresence>
+    </AnimatePresence>,
+    document.body
   );
 }

@@ -8,6 +8,7 @@ import { useAppManifest } from "../../hooks/useAppManifest";
 import PWAInstallPrompt from "../../components/PWAInstallPrompt";
 import WeChatGuide from "../../components/WeChatGuide";
 import UserAuthBar from "../../components/UserAuthBar";
+import { useUserAuth } from "../../context/UserAuthContext";
 import { userGetItem, userSetItem } from "../../utils/userStorage";
 import { getCurrentUsername } from "../../utils/userAuth";
 import {
@@ -905,7 +906,9 @@ const QuestLogPage: React.FC = () => {
   }, [quests]);
 
   // 缓存重复计算，避免每次渲染重复调用
-  const username = getCurrentUsername();
+  // 消费 UserAuthContext，登录/退出后自动刷新用户名
+  const { username: authUsername } = useUserAuth();
+  const username = authUsername || getCurrentUsername();
   const currentTitle = getTitle(coins);
   const level = Math.floor(xp / XP_PER_LEVEL) + 1;
 

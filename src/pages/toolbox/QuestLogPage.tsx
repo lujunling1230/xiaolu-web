@@ -84,6 +84,39 @@ function getTitle(coins: number): { label: string; color: string } {
   return TITLES[0];
 }
 
+/* ========== 金币商店 ========== */
+const SHOP_INVENTORY_KEY = "quest_log_shop_inventory";
+const THEME_KEY = "quest_log_theme";
+
+interface ShopItem {
+  id: string;
+  name: string;
+  desc: string;
+  price: number;
+  icon: string;
+  /** 最大持有数量 */
+  max: number;
+  /** 一次性解锁（如主题），购买后不可重复购买 */
+  oneTime?: boolean;
+}
+
+const SHOP_ITEMS: ShopItem[] = [
+  { id: "streak_protect", name: "签到保护卡", desc: "断签时自动消耗，连续天数不归零", price: 30, icon: "🛡️", max: 3 },
+  { id: "double_coin", name: "双倍金币 buff", desc: "下一次完成任务金币 ×2", price: 20, icon: "⚡", max: 1 },
+  { id: "skip_breakdown", name: "跳过拆解券 ×3", desc: "添加任务时跳过拆解弹窗，直接添加", price: 10, icon: "🎫", max: 99 },
+  { id: "theme_purple", name: "主题：暗夜紫", desc: "解锁紫色主题皮肤", price: 100, icon: "🎨", max: 1, oneTime: true },
+  { id: "theme_blue", name: "主题：深海蓝", desc: "解锁蓝色主题皮肤", price: 100, icon: "🎨", max: 1, oneTime: true },
+  { id: "theme_rose", name: "主题：玫瑰粉", desc: "解锁粉色主题皮肤", price: 100, icon: "🎨", max: 1, oneTime: true },
+];
+
+// 主题配置：背景渐变 + 强调色
+const THEMES: Record<string, { bg: string; accent: string; name: string }> = {
+  default: { bg: "radial-gradient(120% 80% at 50% -10%, #1f2937 0%, #111827 50%, #0b0f1a 100%)", accent: "#fde047", name: "默认" },
+  theme_purple: { bg: "radial-gradient(120% 80% at 50% -10%, #2d1b4e 0%, #1a1033 50%, #0d0820 100%)", accent: "#c084fc", name: "暗夜紫" },
+  theme_blue: { bg: "radial-gradient(120% 80% at 50% -10%, #1e3a5f 0%, #0f1f3a 50%, #060f1e 100%)", accent: "#60a5fa", name: "深海蓝" },
+  theme_rose: { bg: "radial-gradient(120% 80% at 50% -10%, #3d1f2e 0%, #221019 50%, #12060c 100%)", accent: "#f472b6", name: "玫瑰粉" },
+};
+
 const DIFF_LABEL: Record<Difficulty, string> = {
   easy: "先做 5 分钟",
   normal: "只要 60 分",
@@ -144,6 +177,14 @@ function loadStreak(): number {
 function loadTotalCompleted(): number {
   const raw = userGetItem<string>(TOTAL_COMPLETED_KEY, "0");
   return raw ? Math.max(0, Number(raw) || 0) : 0;
+}
+
+function loadShopInventory(): Record<string, number> {
+  return userGetItem<Record<string, number>>(SHOP_INVENTORY_KEY, {}) || {};
+}
+
+function loadTheme(): string {
+  return userGetItem<string>(THEME_KEY, "default") || "default";
 }
 
 function getTodayStr(): string {
@@ -593,9 +634,12 @@ const QuestLogPage: React.FC = () => {
   const [pendingCards, setPendingCards] = useState<RewardCard[]>(() => getPendingCards("quest"));
   const [cardClaimAnim, setCardClaimAnim] = useState<string | null>(null);
 
-  /* ========== Tab 导航 + 累计完成 ========== */
-  const [activeTab, setActiveTab] = useState<"todo" | "mine">("todo");
+  /* ========== Tab 导航 + 累计完成 + 商店 ========== */
+  const [activeTab, setActiveTab] = useState<"todo" | "shop" | "mine">("todo");
   const [totalCompleted, setTotalCompleted] = useState<number>(() => loadTotalCompleted());
+  const [shopInventory, setShopInventory] = useState<Record<string, number>>(() => loadShopInventory());
+  const [activeTheme, setActiveTheme] = useState<string>(() => loadTheme());
+  const [purchaseFlash, setPurchaseFlash] = useState<string | null>(null);
 
   // 持久化
   useEffect(() => {
@@ -619,6 +663,14 @@ const QuestLogPage: React.FC = () => {
     userSetItem(TOTAL_COMPLETED_KEY, String(totalCompleted));
   }, [totalCompleted]);
 
+  useEffect(() => {
+    userSetItem(SHOP_INVENTORY_KEY, shopInventory);
+  }, [shopInventory]);
+
+  useEffect(() => {
+    userSetItem(THEME_KEY, activeTheme);
+  }, [activeTheme]);
+
   /* 等级变化追踪 */
   const prevLevelRef = useRef(Math.floor(xp / XP_PER_LEVEL) + 1);
   useEffect(() => {
@@ -635,13 +687,53 @@ const QuestLogPage: React.FC = () => {
     setCoinsHistory((h) => [...h, { amount, reason, ts: Date.now() }]);
   };
 
+  /* 消耗金币 */
+  const spendCoins = (amount: number, reason: string): boolean => {
+    if (coins < amount) return false;
+    setCoins((c) => c - amount);
+    setCoinsHistory((h) => [...h, { amount: -amount, reason, ts: Date.now() }]);
+    return true;
+  };
+
+  /* 购买商店物品 */
+  const handlePurchase = (item: ShopItem) => {
+    const owned = shopInventory[item.id] || 0;
+    if (item.oneTime && owned >= 1) return; // 一次性物品已拥有
+    if (!item.oneTime && owned >= item.max) return; // 已达上限
+    if (!spendCoins(item.price, `购买「${item.name}」`)) return;
+
+    setShopInventory((prev) => ({ ...prev, [item.id]: (prev[item.id] || 0) + 1 }));
+
+    // 主题类物品购买后自动切换
+    if (item.id.startsWith("theme_")) {
+      setActiveTheme(item.id);
+    }
+
+    setPurchaseFlash(item.id);
+    setTimeout(() => setPurchaseFlash(null), 600);
+    playCoinSound();
+    track("quest_shop_purchase", { itemId: item.id, price: item.price });
+  };
+
+  /* 切换主题（已解锁的主题间切换） */
+  const handleSwitchTheme = (themeId: string) => {
+    if (themeId !== "default" && !(shopInventory[themeId] >= 1)) return;
+    setActiveTheme(themeId);
+  };
+
   /* 每日签到 */
   const handleCheckin = () => {
     if (checkedInToday) return;
     const today = getTodayStr();
     let newStreak = streak;
+    let usedProtect = false;
     if (isYesterday(checkinDate)) {
       newStreak = streak + 1;
+    } else if (streak > 0 && (shopInventory["streak_protect"] || 0) > 0) {
+      // 消耗签到保护卡，streak 不归零
+      newStreak = streak + 1;
+      usedProtect = true;
+      setShopInventory((prev) => ({ ...prev, streak_protect: Math.max(0, (prev["streak_protect"] || 0) - 1) }));
     } else {
       newStreak = 1;
     }
@@ -655,7 +747,7 @@ const QuestLogPage: React.FC = () => {
       reason = `连续签到 ${newStreak} 天（含周奖励）`;
     }
     addCoins(reward, reason);
-    track("quest_checkin", { streak: newStreak, reward });
+    track("quest_checkin", { streak: newStreak, reward, usedProtect });
 
     // 检测跨产品体验卡（回血清单连续7天 → 通关清单得卡）
     const newCard = checkAndGrantCard("recharge");
@@ -689,9 +781,16 @@ const QuestLogPage: React.FC = () => {
 
     setQuests((prev) => prev.filter((q) => q.id !== id));
     setXp((x) => x + XP_REWARD[target.difficulty]);
-    const coinReward = COIN_REWARD[target.difficulty];
-    addCoins(coinReward, `完成任务「${target.text}」`);
-    track("quest_complete", { difficulty: target.difficulty, coins: coinReward });
+
+    // 双倍金币 buff：消耗并翻倍
+    const hasDoubleCoin = (shopInventory["double_coin"] || 0) > 0;
+    let coinReward = COIN_REWARD[target.difficulty];
+    if (hasDoubleCoin) {
+      coinReward *= 2;
+      setShopInventory((prev) => ({ ...prev, double_coin: 0 }));
+    }
+    addCoins(coinReward, `完成任务「${target.text}」${hasDoubleCoin ? "（双倍buff）" : ""}`);
+    track("quest_complete", { difficulty: target.difficulty, coins: coinReward, doubleCoin: hasDoubleCoin });
     setTotalCompleted((c) => c + 1);
   };
 
@@ -712,6 +811,14 @@ const QuestLogPage: React.FC = () => {
     const text = input.trim();
     if (!text) return;
     setInput("");
+
+    // 跳过拆解券：直接以「直接挑战」难度添加
+    if ((shopInventory["skip_breakdown"] || 0) > 0) {
+      setShopInventory((prev) => ({ ...prev, skip_breakdown: Math.max(0, (prev["skip_breakdown"] || 0) - 1) }));
+      setQuests((prev) => [{ id: genId(), text, difficulty: "hard", completed: false }, ...prev]);
+      return;
+    }
+
     // 弹出智能拆解
     setPending(text);
   };
@@ -752,8 +859,11 @@ const QuestLogPage: React.FC = () => {
   const currentTitle = getTitle(coins);
   const level = Math.floor(xp / XP_PER_LEVEL) + 1;
 
+  // 当前主题配置
+  const themeConfig = THEMES[activeTheme] || THEMES["default"];
+
   return (
-    <div className="quest-page">
+    <div className="quest-page" style={activeTheme !== "default" ? { background: themeConfig.bg } : undefined}>
       {/* 顶部返回 */}
       <header className="quest-topbar">
         {!isSolo && (
@@ -790,6 +900,9 @@ const QuestLogPage: React.FC = () => {
               <span className="quest-mini-title" style={{ color: currentTitle.color }}>
                 {currentTitle.label}
               </span>
+              {(shopInventory["double_coin"] || 0) > 0 && (
+                <span className="quest-mini-buff">⚡×2</span>
+              )}
             </div>
           </div>
 
@@ -817,6 +930,136 @@ const QuestLogPage: React.FC = () => {
             )}
           </section>
         </>
+      )}
+
+      {/* ===== 商店 Tab ===== */}
+      {activeTab === "shop" && (
+        <section className="quest-shop-section">
+          {/* 金币余额 */}
+          <div className="quest-shop-balance">
+            <span className="quest-shop-balance-icon">◆</span>
+            <motion.span
+              key={coins}
+              initial={{ scale: 1.15 }}
+              animate={{ scale: 1 }}
+              transition={{ type: "spring", stiffness: 300, damping: 20 }}
+              className="quest-shop-balance-val"
+            >
+              {coins}
+            </motion.span>
+            <span className="quest-shop-balance-label">金币</span>
+          </div>
+
+          {/* 活跃道具提示 */}
+          {((shopInventory["double_coin"] || 0) > 0 || (shopInventory["streak_protect"] || 0) > 0 || (shopInventory["skip_breakdown"] || 0) > 0) && (
+            <div className="quest-shop-buffs">
+              {(shopInventory["double_coin"] || 0) > 0 && (
+                <span className="quest-shop-buff">⚡ 双倍金币就绪</span>
+              )}
+              {(shopInventory["streak_protect"] || 0) > 0 && (
+                <span className="quest-shop-buff">🛡️ 签到保护 ×{shopInventory["streak_protect"]}</span>
+              )}
+              {(shopInventory["skip_breakdown"] || 0) > 0 && (
+                <span className="quest-shop-buff">🎫 跳过拆解 ×{shopInventory["skip_breakdown"]}</span>
+              )}
+            </div>
+          )}
+
+          {/* 道具 */}
+          <h3 className="quest-section-h3">⚡ 道具</h3>
+          <div className="quest-shop-grid">
+            {SHOP_ITEMS.filter(item => !item.oneTime).map(item => {
+              const owned = shopInventory[item.id] || 0;
+              const maxed = owned >= item.max;
+              const affordable = coins >= item.price;
+              return (
+                <motion.div
+                  key={item.id}
+                  className={cn("quest-shop-card", purchaseFlash === item.id && "quest-shop-card-flash")}
+                  animate={purchaseFlash === item.id ? { scale: [1, 0.95, 1] } : {}}
+                  transition={{ duration: 0.4 }}
+                >
+                  <div className="quest-shop-card-top">
+                    <span className="quest-shop-card-icon">{item.icon}</span>
+                    <div className="quest-shop-card-info">
+                      <span className="quest-shop-card-name">{item.name}</span>
+                      <span className="quest-shop-card-desc">{item.desc}</span>
+                    </div>
+                  </div>
+                  <div className="quest-shop-card-bottom">
+                    {owned > 0 && <span className="quest-shop-owned">持有 {owned}</span>}
+                    <button
+                      className="quest-shop-buy-btn"
+                      onClick={() => handlePurchase(item)}
+                      disabled={maxed || !affordable}
+                    >
+                      {maxed ? "已满" : <>◆ {item.price}</>}
+                    </button>
+                  </div>
+                </motion.div>
+              );
+            })}
+          </div>
+
+          {/* 主题皮肤 */}
+          <h3 className="quest-section-h3">🎨 主题皮肤</h3>
+          <div className="quest-shop-grid">
+            {/* 默认主题 */}
+            <div className={cn("quest-shop-card", activeTheme === "default" && "quest-shop-card-active")}>
+              <div className="quest-shop-card-top">
+                <span className="quest-shop-card-icon">🎮</span>
+                <div className="quest-shop-card-info">
+                  <span className="quest-shop-card-name">默认</span>
+                  <span className="quest-shop-card-desc">经典暗色背景</span>
+                </div>
+              </div>
+              <div className="quest-shop-card-bottom">
+                <button
+                  className="quest-shop-use-btn"
+                  onClick={() => handleSwitchTheme("default")}
+                  disabled={activeTheme === "default"}
+                >
+                  {activeTheme === "default" ? "使用中" : "切换"}
+                </button>
+              </div>
+            </div>
+            {SHOP_ITEMS.filter(item => item.oneTime).map(item => {
+              const owned = shopInventory[item.id] || 0;
+              const isActive = activeTheme === item.id;
+              const affordable = coins >= item.price;
+              return (
+                <div key={item.id} className={cn("quest-shop-card", isActive && "quest-shop-card-active")}>
+                  <div className="quest-shop-card-top">
+                    <span className="quest-shop-card-icon">{item.icon}</span>
+                    <div className="quest-shop-card-info">
+                      <span className="quest-shop-card-name">{item.name.replace("主题：", "")}</span>
+                      <span className="quest-shop-card-desc">{item.desc}</span>
+                    </div>
+                  </div>
+                  <div className="quest-shop-card-bottom">
+                    {owned > 0 ? (
+                      <button
+                        className="quest-shop-use-btn"
+                        onClick={() => handleSwitchTheme(item.id)}
+                        disabled={isActive}
+                      >
+                        {isActive ? "使用中" : "切换"}
+                      </button>
+                    ) : (
+                      <button
+                        className="quest-shop-buy-btn"
+                        onClick={() => handlePurchase(item)}
+                        disabled={!affordable}
+                      >
+                        ◆ {item.price}
+                      </button>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </section>
       )}
 
       {/* ===== 我的 Tab ===== */}
@@ -926,7 +1169,25 @@ const QuestLogPage: React.FC = () => {
                 {coinsHistory.slice(-6).reverse().map((rec, i) => (
                   <div key={i} className="quest-history-item">
                     <span className="quest-history-reason">{rec.reason}</span>
-                    <span className="quest-history-amount">+{rec.amount}</span>
+                    <span className={cn("quest-history-amount", rec.amount < 0 && "quest-history-spend")}>
+                      {rec.amount > 0 ? "+" : ""}{rec.amount}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* 我的道具 */}
+          {Object.values(shopInventory).some(v => v > 0) && (
+            <div className="quest-inventory-section">
+              <h3 className="quest-section-h3">🎒 我的道具</h3>
+              <div className="quest-inventory-grid">
+                {SHOP_ITEMS.filter(item => (shopInventory[item.id] || 0) > 0).map(item => (
+                  <div key={item.id} className="quest-inventory-item">
+                    <span className="quest-inventory-icon">{item.icon}</span>
+                    <span className="quest-inventory-name">{item.name.replace("主题：", "").replace(" ×3", "")}</span>
+                    <span className="quest-inventory-count">×{shopInventory[item.id]}</span>
                   </div>
                 ))}
               </div>
@@ -1012,6 +1273,13 @@ const QuestLogPage: React.FC = () => {
           >
             <span className="quest-tab-icon">📋</span>
             <span className="quest-tab-label">待办</span>
+          </button>
+          <button
+            className={cn("quest-tab", activeTab === "shop" && "quest-tab-active")}
+            onClick={() => setActiveTab("shop")}
+          >
+            <span className="quest-tab-icon">🛒</span>
+            <span className="quest-tab-label">商店</span>
           </button>
           <button
             className={cn("quest-tab", activeTab === "mine" && "quest-tab-active")}
@@ -1537,6 +1805,17 @@ const QuestLogPage: React.FC = () => {
         .quest-mini-title {
           font-size: 11px; font-weight: 700; letter-spacing: 0.03em;
         }
+        .quest-mini-buff {
+          font-size: 10px; font-weight: 700; color: #fde047;
+          padding: 2px 6px; border-radius: 4px;
+          background: rgba(253,224,71,0.15);
+          border: 1px solid rgba(253,224,71,0.3);
+          animation: quest-buff-pulse 1.5s ease-in-out infinite;
+        }
+        @keyframes quest-buff-pulse {
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0.6; }
+        }
 
         /* ===== 金币记录 ===== */
         .quest-history-section { margin-bottom: 20px; }
@@ -1557,6 +1836,130 @@ const QuestLogPage: React.FC = () => {
         .quest-history-amount {
           font-size: 14px; font-weight: 700; color: #fde047;
           font-variant-numeric: tabular-nums; flex-shrink: 0;
+        }
+        .quest-history-spend { color: #f87171; }
+
+        /* ===== 金币商店 ===== */
+        .quest-shop-section {
+          max-width: 720px; margin: 0 auto; padding: 28px 4px 20px;
+        }
+
+        /* 金币余额 */
+        .quest-shop-balance {
+          display: flex; align-items: center; justify-content: center; gap: 8px;
+          padding: 20px; border-radius: 16px; margin-bottom: 16px;
+          background: linear-gradient(135deg, rgba(253,224,71,0.08), rgba(245,158,11,0.06));
+          border: 1px solid rgba(253,224,71,0.2);
+        }
+        .quest-shop-balance-icon { font-size: 18px; color: #9ca3af; }
+        .quest-shop-balance-val {
+          font-size: 32px; font-weight: 800; color: #fde047;
+          font-variant-numeric: tabular-nums; line-height: 1;
+        }
+        .quest-shop-balance-label { font-size: 14px; color: #9ca3af; }
+
+        /* 活跃道具提示 */
+        .quest-shop-buffs {
+          display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px;
+        }
+        .quest-shop-buff {
+          font-size: 12px; color: #fde047; font-weight: 500;
+          padding: 5px 12px; border-radius: 999px;
+          background: rgba(253,224,71,0.1);
+          border: 1px solid rgba(253,224,71,0.25);
+        }
+
+        /* 商品网格 */
+        .quest-shop-grid {
+          display: grid; grid-template-columns: 1fr 1fr; gap: 10px;
+          margin-bottom: 20px;
+        }
+
+        /* 商品卡片 */
+        .quest-shop-card {
+          display: flex; flex-direction: column; gap: 10px;
+          padding: 14px; border-radius: 14px;
+          background: rgba(255,255,255,0.04);
+          border: 1px solid rgba(255,255,255,0.08);
+          transition: all 0.2s ease;
+        }
+        .quest-shop-card:hover { transform: translateY(-2px); border-color: rgba(255,255,255,0.15); }
+        .quest-shop-card-active {
+          border-color: rgba(253,224,71,0.4);
+          background: rgba(253,224,71,0.06);
+        }
+        .quest-shop-card-flash { border-color: #34d399 !important; box-shadow: 0 0 12px rgba(52,211,153,0.3); }
+
+        .quest-shop-card-top {
+          display: flex; align-items: flex-start; gap: 10px;
+        }
+        .quest-shop-card-icon { font-size: 28px; flex-shrink: 0; line-height: 1; }
+        .quest-shop-card-info { flex: 1; display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+        .quest-shop-card-name { font-size: 14px; font-weight: 700; color: #f3f4f6; }
+        .quest-shop-card-desc { font-size: 11px; color: #6b7280; line-height: 1.4; }
+
+        .quest-shop-card-bottom {
+          display: flex; align-items: center; justify-content: space-between; gap: 8px;
+        }
+        .quest-shop-owned {
+          font-size: 11px; color: #34d399; font-weight: 600;
+          padding: 2px 8px; border-radius: 5px;
+          background: rgba(52,211,153,0.1);
+          border: 1px solid rgba(52,211,153,0.25);
+        }
+
+        /* 购买按钮 */
+        .quest-shop-buy-btn {
+          padding: 7px 14px; border-radius: 8px; border: none;
+          font-size: 13px; font-weight: 700; font-family: inherit;
+          color: #06281f;
+          background: linear-gradient(135deg, #fde047, #f59e0b);
+          cursor: pointer; transition: all 0.15s ease;
+          margin-left: auto;
+        }
+        .quest-shop-buy-btn:hover:not(:disabled) { transform: scale(1.05); }
+        .quest-shop-buy-btn:disabled {
+          opacity: 0.35; cursor: not-allowed;
+          background: rgba(255,255,255,0.1); color: #6b7280;
+        }
+
+        /* 使用/切换按钮 */
+        .quest-shop-use-btn {
+          padding: 7px 14px; border-radius: 8px;
+          border: 1px solid rgba(255,255,255,0.15);
+          font-size: 12px; font-weight: 600; font-family: inherit;
+          color: #9ca3af; background: rgba(255,255,255,0.04);
+          cursor: pointer; transition: all 0.15s ease;
+          margin-left: auto;
+        }
+        .quest-shop-use-btn:hover:not(:disabled) {
+          background: rgba(255,255,255,0.08); color: #f3f4f6;
+        }
+        .quest-shop-use-btn:disabled {
+          color: #fde047; border-color: rgba(253,224,71,0.3);
+          background: rgba(253,224,71,0.08); cursor: default;
+        }
+
+        @media (max-width: 380px) {
+          .quest-shop-grid { grid-template-columns: 1fr; }
+        }
+
+        /* ===== 我的道具 ===== */
+        .quest-inventory-section { margin-bottom: 20px; }
+        .quest-inventory-grid {
+          display: flex; flex-wrap: wrap; gap: 8px;
+        }
+        .quest-inventory-item {
+          display: flex; align-items: center; gap: 6px;
+          padding: 8px 12px; border-radius: 10px;
+          background: rgba(255,255,255,0.04);
+          border: 1px solid rgba(255,255,255,0.08);
+        }
+        .quest-inventory-icon { font-size: 18px; line-height: 1; }
+        .quest-inventory-name { font-size: 12px; color: #d1d5db; }
+        .quest-inventory-count {
+          font-size: 12px; font-weight: 700; color: #fde047;
+          font-variant-numeric: tabular-nums;
         }
       `}</style>
 

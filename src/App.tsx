@@ -300,7 +300,7 @@ const AppContent: React.FC = () => {
         }
 
         .po-eyebrow {
-          font-size: 11px; letter-spacing: 0.22em; text-transform: uppercase;
+          font-size: 13px; letter-spacing: 0.22em; text-transform: uppercase;
           color: #3a6a4a; margin: 0 0 14px; font-weight: 600;
           text-shadow: 0 1px 3px rgba(255,255,255,0.6);
         }
@@ -319,13 +319,13 @@ const AppContent: React.FC = () => {
         }
         .po-tagline {
           font-family: "Noto Serif SC", Georgia, serif;
-          font-size: clamp(15px, 2.5vw, 18px);
+          font-size: clamp(17px, 3vw, 21px);
           color: #3a4036; margin: 0 0 28px;
           font-weight: 500; letter-spacing: 0.04em;
           text-shadow: 0 1px 4px rgba(255,255,255,0.5);
         }
         .po-bio {
-          font-size: 14px; line-height: 1.8; color: #3a4036;
+          font-size: 16px; line-height: 1.8; color: #3a4036;
           margin: 0 0 36px; max-width: 560px;
           text-shadow: 0 1px 4px rgba(255,255,255,0.4);
           letter-spacing: 0.02em;
@@ -334,7 +334,7 @@ const AppContent: React.FC = () => {
 
         /* ===== 幽灵按钮 ===== */
         .po-btn {
-          padding: 11px 28px; font-size: 14px; font-weight: 500;
+          padding: 12px 30px; font-size: 15px; font-weight: 500;
           border-radius: 999px; cursor: pointer;
           transition: all 0.3s ease; font-family: inherit;
           letter-spacing: 0.03em;

@@ -142,8 +142,7 @@ const SimpleNavbar: React.FC<SimpleNavbarProps> = ({
           align-items: center;
           justify-content: space-evenly;
           flex: 1;
-          max-width: 680px;
-          margin-left: 48px;
+          margin-left: 32px;
         }
 
         /* ---------- 单条导航 ---------- */

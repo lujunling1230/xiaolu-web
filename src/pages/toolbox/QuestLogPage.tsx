@@ -84,6 +84,9 @@ function getTitle(coins: number): { label: string; color: string } {
   return TITLES[0];
 }
 
+/* ========== 头像 ========== */
+const AVATAR_KEY = "quest_log_avatar";
+
 /* ========== 金币商店 ========== */
 const SHOP_INVENTORY_KEY = "quest_log_shop_inventory";
 const THEME_KEY = "quest_log_theme";
@@ -185,6 +188,10 @@ function loadShopInventory(): Record<string, number> {
 
 function loadTheme(): string {
   return userGetItem<string>(THEME_KEY, "default") || "default";
+}
+
+function loadAvatar(): string {
+  return userGetItem<string>(AVATAR_KEY, "") || "";
 }
 
 function getTodayStr(): string {
@@ -640,6 +647,8 @@ const QuestLogPage: React.FC = () => {
   const [shopInventory, setShopInventory] = useState<Record<string, number>>(() => loadShopInventory());
   const [activeTheme, setActiveTheme] = useState<string>(() => loadTheme());
   const [purchaseFlash, setPurchaseFlash] = useState<string | null>(null);
+  const [avatar, setAvatar] = useState<string>(() => loadAvatar());
+  const avatarInputRef = useRef<HTMLInputElement>(null);
 
   // 持久化
   useEffect(() => {
@@ -670,6 +679,10 @@ const QuestLogPage: React.FC = () => {
   useEffect(() => {
     userSetItem(THEME_KEY, activeTheme);
   }, [activeTheme]);
+
+  useEffect(() => {
+    userSetItem(AVATAR_KEY, avatar);
+  }, [avatar]);
 
   /* 等级变化追踪 */
   const prevLevelRef = useRef(Math.floor(xp / XP_PER_LEVEL) + 1);
@@ -719,6 +732,43 @@ const QuestLogPage: React.FC = () => {
   const handleSwitchTheme = (themeId: string) => {
     if (themeId !== "default" && !(shopInventory[themeId] >= 1)) return;
     setActiveTheme(themeId);
+  };
+
+  /* 头像上传：Canvas 压缩至 128×128，Base64 存储 */
+  const handleAvatarUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith("image/")) return;
+
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement("canvas");
+        const SIZE = 128;
+        canvas.width = SIZE;
+        canvas.height = SIZE;
+        const ctx = canvas.getContext("2d");
+        if (!ctx) return;
+        // 居中裁剪
+        const minDim = Math.min(img.width, img.height);
+        const sx = (img.width - minDim) / 2;
+        const sy = (img.height - minDim) / 2;
+        ctx.drawImage(img, sx, sy, minDim, minDim, 0, 0, SIZE, SIZE);
+        const dataUrl = canvas.toDataURL("image/jpeg", 0.85);
+        setAvatar(dataUrl);
+        track("quest_avatar_upload", {});
+      };
+      img.src = ev.target?.result as string;
+    };
+    reader.readAsDataURL(file);
+    // 清空 input 使同一文件可重复选择
+    e.target.value = "";
+  };
+
+  /* 删除头像 */
+  const handleAvatarRemove = () => {
+    setAvatar("");
   };
 
   /* 每日签到 */
@@ -872,7 +922,6 @@ const QuestLogPage: React.FC = () => {
           </Link>
         )}
         <span className="quest-topbar-meta">Quest Log</span>
-        <UserAuthBar style={{ marginLeft: "auto" }} />
       </header>
 
       {/* ===== 待办 Tab ===== */}
@@ -1067,8 +1116,23 @@ const QuestLogPage: React.FC = () => {
         <section className="quest-mine-section">
           {/* 用户卡片 */}
           <div className="quest-profile-card">
-            <div className="quest-profile-avatar">
-              {username ? username.charAt(0).toUpperCase() : "🎮"}
+            {/* 头像：点击上传 */}
+            <div className="quest-profile-avatar-wrap" onClick={() => avatarInputRef.current?.click()}>
+              {avatar ? (
+                <img src={avatar} alt="头像" className="quest-profile-avatar-img" />
+              ) : (
+                <div className="quest-profile-avatar">
+                  {username ? username.charAt(0).toUpperCase() : "🎮"}
+                </div>
+              )}
+              <span className="quest-profile-avatar-badge">📷</span>
+              <input
+                ref={avatarInputRef}
+                type="file"
+                accept="image/*"
+                onChange={handleAvatarUpload}
+                style={{ display: "none" }}
+              />
             </div>
             <div className="quest-profile-info">
               <h2 className="quest-profile-name">{username || "匿名冒险者"}</h2>
@@ -1080,6 +1144,15 @@ const QuestLogPage: React.FC = () => {
                 >
                   {currentTitle.label}
                 </span>
+              </div>
+              {/* 账户操作 */}
+              <div className="quest-profile-account">
+                <UserAuthBar compact />
+                {avatar && (
+                  <button className="quest-avatar-remove-btn" onClick={handleAvatarRemove}>
+                    移除头像
+                  </button>
+                )}
               </div>
             </div>
           </div>
@@ -1704,6 +1777,27 @@ const QuestLogPage: React.FC = () => {
           border: 2px solid rgba(253,224,71,0.3);
           flex-shrink: 0;
         }
+        /* 头像上传包裹 */
+        .quest-profile-avatar-wrap {
+          position: relative; flex-shrink: 0;
+          cursor: pointer; width: 56px; height: 56px;
+        }
+        .quest-profile-avatar-wrap:hover .quest-profile-avatar-badge {
+          opacity: 1; transform: scale(1);
+        }
+        .quest-profile-avatar-img {
+          width: 56px; height: 56px; border-radius: 50%;
+          object-fit: cover;
+          border: 2px solid rgba(253,224,71,0.3);
+        }
+        .quest-profile-avatar-badge {
+          position: absolute; bottom: -2px; right: -2px;
+          width: 20px; height: 20px; border-radius: 50%;
+          background: #1f2937; border: 1.5px solid rgba(253,224,71,0.4);
+          display: flex; align-items: center; justify-content: center;
+          font-size: 10px; opacity: 0; transform: scale(0.8);
+          transition: all 0.2s ease;
+        }
         .quest-profile-info { flex: 1; min-width: 0; }
         .quest-profile-name {
           font-size: 18px; font-weight: 700; color: #fff;
@@ -1711,6 +1805,18 @@ const QuestLogPage: React.FC = () => {
           overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
         }
         .quest-profile-badges { display: flex; gap: 8px; flex-wrap: wrap; }
+        .quest-profile-account {
+          display: flex; align-items: center; gap: 10px; margin-top: 10px;
+          flex-wrap: wrap;
+        }
+        .quest-avatar-remove-btn {
+          padding: 3px 10px; border-radius: 6px;
+          border: 1px solid rgba(248,113,113,0.3);
+          background: rgba(248,113,113,0.08);
+          color: #f87171; font-size: 11px; font-family: inherit;
+          cursor: pointer; transition: all 0.15s ease;
+        }
+        .quest-avatar-remove-btn:hover { background: rgba(248,113,113,0.15); }
 
         /* XP bar on mine page */
         .quest-mine-section .quest-xp-wrap { margin-bottom: 16px; }

@@ -14,12 +14,19 @@ import UserAuthModal from "./UserAuthModal";
 
 interface UserAuthBarProps {
   style?: React.CSSProperties;
+  /** 紧凑暗色模式：适配深色背景页面（如通关清单） */
+  compact?: boolean;
 }
 
-export default function UserAuthBar({ style }: UserAuthBarProps) {
+export default function UserAuthBar({ style, compact }: UserAuthBarProps) {
   const { isLoggedIn, username, logout } = useUserAuth();
   const [showModal, setShowModal] = useState(false);
   const [showDropdown, setShowDropdown] = useState(false);
+
+  // 紧凑模式配色（暗色背景）
+  const c = compact
+    ? { border: "rgba(255,255,255,0.12)", bg: "rgba(255,255,255,0.06)", text: "#d1d5db", avatarBg: "#4b5563" }
+    : { border: "rgba(122,154,106,0.35)", bg: "rgba(122,154,106,0.08)", text: "#5a7a5a", avatarBg: "#7a9a7a" };
 
   return (
     <>
@@ -41,9 +48,9 @@ export default function UserAuthBar({ style }: UserAuthBarProps) {
                 gap: 6,
                 padding: "5px 12px",
                 borderRadius: 999,
-                border: "1.5px solid rgba(122,154,106,0.35)",
-                background: "rgba(122,154,106,0.08)",
-                color: "#5a7a5a",
+                border: `1.5px solid ${c.border}`,
+                background: c.bg,
+                color: c.text,
                 fontSize: 12,
                 cursor: "pointer",
                 fontFamily: "inherit",
@@ -55,7 +62,7 @@ export default function UserAuthBar({ style }: UserAuthBarProps) {
                   width: 18,
                   height: 18,
                   borderRadius: "50%",
-                  background: "#7a9a7a",
+                  background: c.avatarBg,
                   color: "#fff",
                   display: "flex",
                   alignItems: "center",
@@ -138,9 +145,9 @@ export default function UserAuthBar({ style }: UserAuthBarProps) {
             style={{
               padding: "5px 14px",
               borderRadius: 999,
-              border: "1.5px solid rgba(122,154,106,0.35)",
-              background: "rgba(122,154,106,0.08)",
-              color: "#5a7a5a",
+              border: `1.5px solid ${c.border}`,
+              background: c.bg,
+              color: c.text,
               fontSize: 12,
               cursor: "pointer",
               fontFamily: "inherit",

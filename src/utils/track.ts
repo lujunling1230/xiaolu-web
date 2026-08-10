@@ -1163,6 +1163,184 @@ export function exportCSV(events?: TrackEvent[]): string {
   ].join("\n");
 }
 
+/* ============================================================
+ * 示例数据注入（种子数据）
+ * 生成近 14 天的模拟埋点事件，用于预览数据分析看板
+ * ============================================================ */
+
+/** 工具 → 路径 / 事件 映射 */
+const SEED_TOOLS = [
+  { name: "森林疗愈室", path: "/toolbox/healing", events: ["healing_breath", "healing_journal", "healing_meditation"] },
+  { name: "爱情公寓", path: "/toolbox/apartment", events: ["apartment_chat", "apartment_post"] },
+  { name: "通关清单", path: "/toolbox/quests", events: ["quest_complete", "quest_level"] },
+  { name: "物资管家", path: "/toolbox/inventory", events: ["iv_item_add", "iv_ai_ask"] },
+  { name: "解忧杂货店", path: "/toolbox/advice", events: ["advice_letter", "advice_reply"] },
+  { name: "漫游指南", path: "/toolbox/travel", events: ["rg_ai_open", "rg_ai_recommend_submit", "rg_ai_recommend_result", "rg_ai_adopt_city", "rg_ai_generate_submit", "rg_ai_generate_result", "rg_ai_save_plan"] },
+  { name: "回血清单", path: "/toolbox/recharge", events: ["recharge_action"] },
+  { name: "伴龄", path: "/toolbox/banling", events: ["banling_chat", "banling_report", "banling_action_adopt"] },
+] as const;
+
+const SEED_NAV_ITEMS = ["首页", "致用", "作品集", "工具箱", "联系"];
+const SEED_ENTRY_PATHS = ["/", "/?mode=full", "/zhiyong", "/mickey", "/toolbox"];
+
+function makeSeedEvent(
+  name: string,
+  path: string,
+  session: string,
+  anonId: string,
+  mode: "full" | "solo",
+  ts: number,
+  props?: Record<string, unknown>
+): TrackEvent {
+  return {
+    id: `seed_${ts}_${Math.random().toString(36).slice(2, 6)}`,
+    name,
+    props,
+    ts,
+    session,
+    anon_id: anonId,
+    path,
+    mode,
+  };
+}
+
+/**
+ * 注入示例数据
+ * 生成 ~25 位访客、近 14 天的模拟埋点事件
+ * 返回生成的事件数量
+ */
+export function seedSampleData(): number {
+  const existing = readLocalEvents();
+  const now = Date.now();
+  const dayMs = 86_400_000;
+  const events: TrackEvent[] = [];
+
+  /* 25 位访客 */
+  for (let v = 0; v < 25; v++) {
+    const anonId = `anon_seed_${v}_${Math.random().toString(36).slice(2, 8)}`;
+    const firstDayOffset = Math.floor(Math.random() * 12);
+    const visitCount = 1 + Math.floor(Math.random() * 4);
+
+    for (let visit = 0; visit < visitCount; visit++) {
+      const dayOffset = firstDayOffset + visit * (1 + Math.floor(Math.random() * 2));
+      if (dayOffset > 14) break;
+
+      const hourOfDay = 8 + Math.floor(Math.random() * 14);
+      const dateObj = new Date(now - dayOffset * dayMs);
+      dateObj.setHours(hourOfDay, Math.floor(Math.random() * 60), 0, 0);
+      const sessionStart = dateObj.getTime();
+      if (sessionStart > now) continue;
+
+      const sessionId = `${sessionStart}-${Math.random().toString(36).slice(2, 8)}`;
+      const mode: "full" | "solo" = Math.random() > 0.25 ? "full" : "solo";
+      const browseDepth = 1 + Math.floor(Math.random() * 5);
+      const isBounce = browseDepth === 1;
+      let ts = sessionStart;
+
+      /* 入口 page_view */
+      const entryPath = SEED_ENTRY_PATHS[Math.floor(Math.random() * SEED_ENTRY_PATHS.length)];
+      events.push(makeSeedEvent("page_view", entryPath, sessionId, anonId, mode, ts, { path: entryPath.split("?")[0], title: "小鹿书局" }));
+
+      if (!isBounce) {
+        /* 进入一个工具 */
+        const tool = SEED_TOOLS[Math.floor(Math.random() * SEED_TOOLS.length)];
+        ts += 15_000 + Math.random() * 30_000;
+        events.push(makeSeedEvent("tool_enter", tool.path, sessionId, anonId, mode, ts, { tool_name: tool.name }));
+        ts += 2000 + Math.random() * 3000;
+        events.push(makeSeedEvent("page_view", tool.path, sessionId, anonId, mode, ts, { path: tool.path, title: tool.name }));
+
+        /* 工具内交互事件（按顺序生成，支撑漏斗分析） */
+        const eventCount = 1 + Math.floor(Math.random() * tool.events.length);
+        for (let e = 0; e < eventCount; e++) {
+          ts += 5000 + Math.random() * 20_000;
+          if (ts > now) break;
+          events.push(makeSeedEvent(tool.events[e], tool.path, sessionId, anonId, mode, ts));
+        }
+
+        /* 可能浏览第二个工具 */
+        if (Math.random() > 0.5 && browseDepth > 2) {
+          const tool2 = SEED_TOOLS[Math.floor(Math.random() * SEED_TOOLS.length)];
+          ts += 10_000 + Math.random() * 20_000;
+          events.push(makeSeedEvent("tool_enter", tool2.path, sessionId, anonId, mode, ts, { tool_name: tool2.name }));
+          ts += 2000 + Math.random() * 3000;
+          events.push(makeSeedEvent("page_view", tool2.path, sessionId, anonId, mode, ts, { path: tool2.path, title: tool2.name }));
+
+          const seCount = 1 + Math.floor(Math.random() * tool2.events.length);
+          for (let e = 0; e < seCount; e++) {
+            ts += 5000 + Math.random() * 15_000;
+            if (ts > now) break;
+            events.push(makeSeedEvent(tool2.events[e], tool2.path, sessionId, anonId, mode, ts));
+          }
+        }
+
+        /* 可能触发导航点击 */
+        if (Math.random() > 0.6) {
+          ts += 3000 + Math.random() * 5000;
+          events.push(makeSeedEvent("nav_click", "/", sessionId, anonId, mode, ts, { nav_item: SEED_NAV_ITEMS[Math.floor(Math.random() * SEED_NAV_ITEMS.length)] }));
+        }
+
+        /* 可能打开小叶 */
+        if (Math.random() > 0.7) {
+          ts += 5000 + Math.random() * 10_000;
+          events.push(makeSeedEvent("xiaoye_open", "/", sessionId, anonId, mode, ts));
+          if (Math.random() > 0.4) {
+            ts += 3000 + Math.random() * 7000;
+            events.push(makeSeedEvent("xiaoye_chat", "/", sessionId, anonId, mode, ts));
+          }
+        }
+
+        /* 可能提交联系表单 */
+        if (Math.random() > 0.85) {
+          ts += 5000 + Math.random() * 10_000;
+          events.push(makeSeedEvent("contact_submit", "/contact", sessionId, anonId, mode, ts));
+        }
+      }
+    }
+  }
+
+  /* 确保今天至少有 5 位访客 */
+  const todayEvents = events.filter((e) => {
+    const todayStart = new Date();
+    todayStart.setHours(0, 0, 0, 0);
+    return e.ts >= todayStart.getTime();
+  });
+  const todayVisitors = new Set(todayEvents.map((e) => e.anon_id));
+  if (todayVisitors.size < 5) {
+    const todayStart = new Date();
+    todayStart.setHours(0, 0, 0, 0);
+    for (let v = 25; v < 25 + (5 - todayVisitors.size); v++) {
+      const anonId = `anon_seed_today_${v}_${Math.random().toString(36).slice(2, 8)}`;
+      const sessionId = `${todayStart.getTime() + v * 3600000}-${Math.random().toString(36).slice(2, 8)}`;
+      const mode: "full" | "solo" = "full";
+      let ts = todayStart.getTime() + 9 * 3600000 + Math.floor(Math.random() * 8 * 3600000);
+      if (ts > now) ts = now - Math.floor(Math.random() * 3600000);
+
+      events.push(makeSeedEvent("page_view", "/?mode=full", sessionId, anonId, mode, ts, { path: "/", title: "小鹿书局" }));
+      ts += 20000;
+      const tool = SEED_TOOLS[Math.floor(Math.random() * SEED_TOOLS.length)];
+      events.push(makeSeedEvent("tool_enter", tool.path, sessionId, anonId, mode, ts, { tool_name: tool.name }));
+      ts += 3000;
+      events.push(makeSeedEvent("page_view", tool.path, sessionId, anonId, mode, ts, { path: tool.path, title: tool.name }));
+      ts += 10000;
+      const evCount = 1 + Math.floor(Math.random() * tool.events.length);
+      for (let e = 0; e < evCount; e++) {
+        ts += 8000;
+        if (ts > now) break;
+        events.push(makeSeedEvent(tool.events[e], tool.path, sessionId, anonId, mode, ts));
+      }
+    }
+  }
+
+  /* 按时间排序 */
+  events.sort((a, b) => a.ts - b.ts);
+
+  /* 合并已有数据并保存 */
+  const combined = [...existing, ...events].sort((a, b) => a.ts - b.ts);
+  saveLocalEvents(combined);
+
+  return events.length;
+}
+
 /** 自动追踪页面访问 + 启动批量上报 */
 export function initPageTracking() {
   const trackPage = () => {

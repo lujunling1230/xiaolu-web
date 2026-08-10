@@ -288,7 +288,7 @@ const AppContent: React.FC = () => {
         }
         .po-hero::after {
           content: ""; position: absolute; inset: 0; z-index: 1; pointer-events: none;
-          background: linear-gradient(180deg, rgba(0,0,0,0.18) 0%, rgba(0,0,0,0.04) 30%, rgba(0,0,0,0.12) 70%, rgba(0,0,0,0.22) 100%);
+          background: linear-gradient(180deg, rgba(255,253,249,0.25) 0%, rgba(255,253,249,0.08) 30%, rgba(255,253,249,0.12) 70%, rgba(255,253,249,0.28) 100%);
         }
 
         /* 漂浮文字块（无卡片边框，无底部遮罩） */
@@ -301,16 +301,17 @@ const AppContent: React.FC = () => {
 
         .po-eyebrow {
           font-size: 11px; letter-spacing: 0.22em; text-transform: uppercase;
-          color: rgba(200,220,200,0.88); margin: 0 0 14px; font-weight: 500;
+          color: #3a6a4a; margin: 0 0 14px; font-weight: 600;
+          text-shadow: 0 1px 3px rgba(255,255,255,0.6);
         }
         .po-name {
           font-family: "Noto Serif SC", Georgia, serif;
           font-size: clamp(52px, 10vw, 80px); font-weight: 700;
-          color: #fff; margin: 0 0 16px; line-height: 1.05;
+          color: #2a3a2a; margin: 0 0 16px; line-height: 1.05;
           letter-spacing: 0.04em;
-          text-shadow: 0 4px 20px rgba(0,0,0,0.35);
+          text-shadow: 0 2px 8px rgba(255,255,255,0.6);
           /* 微渐变下划线 */
-          background: linear-gradient(90deg, transparent 0%, rgba(200,220,200,0.6) 50%, transparent 100%);
+          background: linear-gradient(90deg, transparent 0%, rgba(58,106,74,0.5) 50%, transparent 100%);
           background-size: 100% 3px;
           background-position: 0 100%;
           background-repeat: no-repeat;
@@ -319,14 +320,14 @@ const AppContent: React.FC = () => {
         .po-tagline {
           font-family: "Noto Serif SC", Georgia, serif;
           font-size: clamp(15px, 2.5vw, 18px);
-          color: rgba(255,255,255,0.85); margin: 0 0 28px;
-          font-weight: 400; letter-spacing: 0.04em;
-          text-shadow: 0 2px 12px rgba(0,0,0,0.35);
+          color: #3a4036; margin: 0 0 28px;
+          font-weight: 500; letter-spacing: 0.04em;
+          text-shadow: 0 1px 4px rgba(255,255,255,0.5);
         }
         .po-bio {
-          font-size: 14px; line-height: 1.8; color: rgba(255,255,255,0.72);
+          font-size: 14px; line-height: 1.8; color: #3a4036;
           margin: 0 0 36px; max-width: 560px;
-          text-shadow: 0 2px 12px rgba(0,0,0,0.35);
+          text-shadow: 0 1px 4px rgba(255,255,255,0.4);
           letter-spacing: 0.02em;
         }
         .po-hero-btns { display: flex; gap: 20px; flex-wrap: wrap; justify-content: center; position: relative; z-index: 1; }
@@ -378,9 +379,9 @@ const AppContent: React.FC = () => {
         .po-section-heading {
           font-family: "Noto Serif SC", Georgia, serif;
           font-size: clamp(28px, 4vw, 36px); font-weight: 600;
-          color: #4a4038; margin: 0 0 80px;
+          color: #2a2018; margin: 0 0 80px;
           letter-spacing: 0.06em;
-          text-shadow: 0 1px 4px rgba(255,255,255,0.5);
+          text-shadow: 0 1px 4px rgba(255,255,255,0.6);
         }
 
         /* ===== 关于我：纯文字左右布局 ===== */
@@ -418,19 +419,19 @@ const AppContent: React.FC = () => {
         .po-block-title {
           font-family: "Noto Serif SC", Georgia, serif;
           font-size: clamp(17px, 2.2vw, 20px); font-weight: 600;
-          color: #4a4038; margin: 0 0 14px;
+          color: #2a2018; margin: 0 0 14px;
           letter-spacing: 0.04em;
-          text-shadow: 0 1px 4px rgba(255,255,255,0.6);
+          text-shadow: 0 1px 4px rgba(255,255,255,0.7);
         }
         /* 正文：深橄榄绿，清晰可读 */
         .po-block-body {
-          font-size: 13px; line-height: 1.8; color: #3a4a2c;
+          font-size: 13px; line-height: 1.8; color: #1a2a0c;
           margin: 0 0 12px;
-          text-shadow: 0 1px 3px rgba(255,255,255,0.5);
+          text-shadow: 0 1px 3px rgba(255,255,255,0.6);
           letter-spacing: 0.02em;
         }
         .po-block-meta {
-          font-size: 12px; color: #7a9a6a; margin: 0;
+          font-size: 12px; color: #3a5a2a; margin: 0;
           letter-spacing: 0.05em;
         }
         .po-edu-item {
@@ -438,15 +439,15 @@ const AppContent: React.FC = () => {
           padding-left: 16px;
           border-left: 2px solid rgba(122,154,130,0.5);
         }
-        .po-edu-school { font-size: 15px; font-weight: 500; color: #4a4038; }
-        .po-edu-degree { font-size: 13px; color: #7a7268; }
+        .po-edu-school { font-size: 15px; font-weight: 500; color: #2a2018; }
+        .po-edu-degree { font-size: 13px; color: #4a4238; }
 
         /* 技能分组 */
         .po-skill-groups { display: flex; flex-direction: column; gap: 16px; }
         .po-skill-group { display: flex; flex-direction: column; gap: 8px; }
         .po-skill-group-label {
           font-size: 12px; font-weight: 600;
-          color: #5a6a4c; letter-spacing: 0.08em;
+          color: #2a3a1c; letter-spacing: 0.08em;
           text-transform: uppercase;
         }
 
@@ -457,9 +458,9 @@ const AppContent: React.FC = () => {
           border-radius: 999px;
           background: rgba(168, 190, 120, 0.2);
           border: 1px solid rgba(168, 190, 120, 0.45);
-          color: #3a4a2c;
+          color: #1a2a0c;
           cursor: default;
-          text-shadow: 0 1px 3px rgba(255,255,255,0.6);
+          text-shadow: 0 1px 3px rgba(255,255,255,0.7);
           transition: all 0.2s ease;
         }
         .po-skill-tag:hover {
@@ -469,7 +470,7 @@ const AppContent: React.FC = () => {
         .po-skill-tag--ai {
           background: rgba(93, 138, 106, 0.12);
           border-color: rgba(93, 138, 106, 0.35);
-          color: #4a6a4a;
+          color: #2a4a2a;
         }
         .po-skill-tag--ai:hover {
           background: rgba(93, 138, 106, 0.22);
@@ -478,7 +479,7 @@ const AppContent: React.FC = () => {
         .po-skill-tag--eng {
           background: rgba(176, 120, 50, 0.1);
           border-color: rgba(176, 120, 50, 0.3);
-          color: #6a4a2a;
+          color: #4a2a0a;
         }
         .po-skill-tag--eng:hover {
           background: rgba(176, 120, 50, 0.18);
@@ -489,10 +490,10 @@ const AppContent: React.FC = () => {
         .po-quote {
           font-family: "Noto Serif SC", Georgia, serif;
           font-size: clamp(20px, 2.5vw, 26px); font-weight: 700;
-          color: #6a8a6a; margin: 0 0 16px;
+          color: #2a4a2a; margin: 0 0 16px;
           line-height: 1.45; letter-spacing: 0.03em;
-          opacity: 0.75;
-          text-shadow: 0 2px 8px rgba(255,255,255,0.7);
+          opacity: 0.95;
+          text-shadow: 0 2px 8px rgba(255,255,255,0.8);
         }
 
         /* ===== 作品说明书 ===== */

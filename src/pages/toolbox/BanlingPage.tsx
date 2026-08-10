@@ -7,7 +7,6 @@ import { useSolo } from "../../context/StandaloneContext";
 import { useAppManifest } from "../../hooks/useAppManifest";
 import PWAInstallPrompt from "../../components/PWAInstallPrompt";
 import WeChatGuide from "../../components/WeChatGuide";
-import UserAuthBar from "../../components/UserAuthBar";
 import { userGetItem, userSetItem, userRemoveItem } from "../../utils/userStorage";
 
 /**
@@ -858,7 +857,6 @@ ${messages.map((m) => `${m.role === "user" ? "用户" : "伴龄"}: ${m.content}`
                 <path d="M6 9l6 6 6-6" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
             </div>
-            <UserAuthBar />
             <button
               className="bl-about-btn"
               onClick={() => setShowAboutModal(true)}

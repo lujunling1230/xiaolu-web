@@ -34,6 +34,7 @@ import {
   type PathFlowNode,
   type PathFlowLink,
   type WorkMetrics,
+  seedSampleData,
 } from "../utils/track";
 
 /* ============================================================
@@ -72,6 +73,7 @@ export default function AnalyticsDashboard() {
   const [loading, setLoading] = useState(false);
   const [clearingCloud, setClearingCloud] = useState(false);
   const [spinning, setSpinning] = useState(false);
+  const [seeding, setSeeding] = useState(false);
   const [funnelTab, setFunnelTab] = useState<string>("漫游指南");
   const [activeSection, setActiveSection] = useState<SectionTab>("core");
 
@@ -260,6 +262,17 @@ export default function AnalyticsDashboard() {
       if (ok) refresh();
       else alert("清空失败，密码可能不正确");
     });
+  };
+
+  const handleSeedData = () => {
+    if (!confirm("将向本地注入近 14 天的示例埋点数据（不会影响云端），确定继续吗？")) return;
+    setSeeding(true);
+    setTimeout(() => {
+      const count = seedSampleData();
+      setSeeding(false);
+      refresh();
+      alert(`已注入 ${count} 条示例数据，刷新看板即可查看`);
+    }, 300);
   };
 
   return (
@@ -952,6 +965,22 @@ export default function AnalyticsDashboard() {
 
       {/* 底部操作 */}
       <div style={{ display: "flex", gap: 12, justifyContent: "flex-end", flexWrap: "wrap" }}>
+        <button
+          onClick={handleSeedData}
+          disabled={seeding}
+          style={{
+            padding: "8px 18px",
+            borderRadius: 999,
+            border: "1.5px solid #E8853A",
+            background: "transparent",
+            color: "#C06A2E",
+            fontSize: 13,
+            cursor: seeding ? "wait" : "pointer",
+            opacity: seeding ? 0.6 : 1,
+          }}
+        >
+          {seeding ? "注入中..." : "注入示例数据"}
+        </button>
         <button
           onClick={handleExport}
           style={{

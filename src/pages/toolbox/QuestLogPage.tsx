@@ -9,6 +9,7 @@ import PWAInstallPrompt from "../../components/PWAInstallPrompt";
 import WeChatGuide from "../../components/WeChatGuide";
 import UserAuthBar from "../../components/UserAuthBar";
 import { userGetItem, userSetItem } from "../../utils/userStorage";
+import { getCurrentUsername } from "../../utils/userAuth";
 import {
   type RewardCard,
   checkAndGrantCard,
@@ -49,6 +50,7 @@ const COINS_KEY = "quest_log_coins";
 const COINS_HISTORY_KEY = "quest_log_coins_history";
 const CHECKIN_KEY = "quest_log_checkin";
 const STREAK_KEY = "quest_log_streak";
+const TOTAL_COMPLETED_KEY = "quest_log_total_completed";
 
 interface CoinRecord {
   amount: number;
@@ -136,6 +138,11 @@ function loadCheckin(): string {
 
 function loadStreak(): number {
   const raw = userGetItem<string>(STREAK_KEY, "0");
+  return raw ? Math.max(0, Number(raw) || 0) : 0;
+}
+
+function loadTotalCompleted(): number {
+  const raw = userGetItem<string>(TOTAL_COMPLETED_KEY, "0");
   return raw ? Math.max(0, Number(raw) || 0) : 0;
 }
 
@@ -673,6 +680,10 @@ const QuestLogPage: React.FC = () => {
   const [pendingCards, setPendingCards] = useState<RewardCard[]>(() => getPendingCards("quest"));
   const [cardClaimAnim, setCardClaimAnim] = useState<string | null>(null);
 
+  /* ========== Tab 导航 + 累计完成 ========== */
+  const [activeTab, setActiveTab] = useState<"todo" | "mine">("todo");
+  const [totalCompleted, setTotalCompleted] = useState<number>(() => loadTotalCompleted());
+
   // 持久化
   useEffect(() => {
     userSetItem(STORAGE_KEY, quests);
@@ -690,6 +701,10 @@ const QuestLogPage: React.FC = () => {
     userSetItem(CHECKIN_KEY, checkinDate);
     userSetItem(STREAK_KEY, String(streak));
   }, [checkinDate, streak]);
+
+  useEffect(() => {
+    userSetItem(TOTAL_COMPLETED_KEY, String(totalCompleted));
+  }, [totalCompleted]);
 
   /* 等级变化追踪 */
   const prevLevelRef = useRef(Math.floor(xp / XP_PER_LEVEL) + 1);
@@ -764,6 +779,8 @@ const QuestLogPage: React.FC = () => {
         const coinReward = COIN_REWARD[target.difficulty];
         addCoins(coinReward, `完成任务「${target.text}」`);
         track("quest_complete", { difficulty: target.difficulty, coins: coinReward });
+        // 累计完成 +1
+        setTotalCompleted((c) => c + 1);
       }
       return prev.filter((q) => q.id !== id);
     });
@@ -834,118 +851,229 @@ const QuestLogPage: React.FC = () => {
         <UserAuthBar style={{ marginLeft: "auto" }} />
       </header>
 
-      {/* 玩家状态 */}
-      <section className="quest-status">
-        <XpBar xp={xp} />
-        <CoinBar
-          coins={coins}
-          streak={streak}
-          checkedInToday={checkedInToday}
-          onCheckin={handleCheckin}
-        />
-        <div className="quest-stats-pills">
-          <span className="quest-pill">⚔️ 进行中 {stats.active}</span>
-          <span className="quest-pill quest-pill-done">✓ 已通关 {stats.done}</span>
-        </div>
-      </section>
-
-      {/* 跨产品体验卡 */}
-      <AnimatePresence>
-        {pendingCards.length > 0 && (
-          <motion.div
-            className="quest-reward-cards"
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-          >
-            <p className="quest-reward-cards-title">联动礼券</p>
-            <div className="quest-reward-cards-list">
-              {pendingCards.map((card) => (
-                <motion.div
-                  key={card.id}
-                  className={cn(
-                    "quest-reward-card",
-                    cardClaimAnim === card.id && "quest-reward-card-claiming"
-                  )}
-                  layout
-                  exit={{ opacity: 0, scale: 0.8, x: 60 }}
-                  transition={{ duration: 0.4 }}
-                >
-                  <div className="quest-reward-card-left">
-                    <span className="quest-reward-card-icon">🎫</span>
-                    <div className="quest-reward-card-info">
-                      <span className="quest-reward-card-name">{card.title}</span>
-                      <span className="quest-reward-card-desc">{card.desc}</span>
-                    </div>
-                  </div>
-                  <div className="quest-reward-card-right">
-                    <span className="quest-reward-card-amount">+{card.rewardAmount} 金币</span>
-                    <button
-                      className="quest-reward-card-btn"
-                      onClick={() => handleClaimCard(card)}
-                      disabled={cardClaimAnim === card.id}
-                    >
-                      {cardClaimAnim === card.id ? "领取中..." : "领取"}
-                    </button>
-                  </div>
-                </motion.div>
-              ))}
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* 标题 */}
-      <div className="quest-title-area">
-        <h1 className="quest-title">通关清单</h1>
-        <p className="quest-subtitle">把人生变成一场 RPG。</p>
-      </div>
-
-      {/* 任务列表 */}
-      <section className="quest-list-section">
-        {quests.length === 0 ? (
-          <div className="quest-empty">
-            <span className="quest-empty-icon">🎮</span>
-            <p>还没有任务，输入一个开启冒险吧！</p>
+      {/* ===== 待办 Tab ===== */}
+      {activeTab === "todo" && (
+        <>
+          {/* 标题 */}
+          <div className="quest-title-area">
+            <h1 className="quest-title">通关清单</h1>
+            <p className="quest-subtitle">把人生变成一场 RPG。</p>
           </div>
-        ) : (
-          <ul className="quest-list">
-            <AnimatePresence>
-              {quests.map((q) => (
-                <QuestItem
-                  key={q.id}
-                  quest={q}
-                  onComplete={handleComplete}
-                  onDelete={handleDelete}
-                  onEdit={setEditingQuest}
-                />
-              ))}
-            </AnimatePresence>
-          </ul>
-        )}
-      </section>
 
-      {/* 底部输入框 */}
-      <div className="quest-input-bar">
-        <input
-          className="quest-input"
-          type="text"
-          placeholder="输入新任务，按回车开始冒险…"
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === "Enter") handleAdd();
-          }}
-        />
+          {/* 任务列表 */}
+          <section className="quest-list-section">
+            {quests.length === 0 ? (
+              <div className="quest-empty">
+                <span className="quest-empty-icon">🎮</span>
+                <p>还没有任务，输入一个开启冒险吧！</p>
+              </div>
+            ) : (
+              <ul className="quest-list">
+                <AnimatePresence>
+                  {quests.map((q) => (
+                    <QuestItem
+                      key={q.id}
+                      quest={q}
+                      onComplete={handleComplete}
+                      onDelete={handleDelete}
+                      onEdit={setEditingQuest}
+                    />
+                  ))}
+                </AnimatePresence>
+              </ul>
+            )}
+          </section>
+        </>
+      )}
+
+      {/* ===== 我的 Tab ===== */}
+      {activeTab === "mine" && (
+        <section className="quest-mine-section">
+          {/* 用户卡片 */}
+          <div className="quest-profile-card">
+            <div className="quest-profile-avatar">
+              {getCurrentUsername() ? getCurrentUsername()!.charAt(0).toUpperCase() : "🎮"}
+            </div>
+            <div className="quest-profile-info">
+              <h2 className="quest-profile-name">{getCurrentUsername() || "匿名冒险者"}</h2>
+              <div className="quest-profile-badges">
+                <span className="quest-level-badge">Lv.{Math.floor(xp / XP_PER_LEVEL) + 1}</span>
+                <span
+                  className="quest-title-badge"
+                  style={{ color: getTitle(coins).color, borderColor: getTitle(coins).color + "40" }}
+                >
+                  {getTitle(coins).label}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {/* XP 进度条 */}
+          <XpBar xp={xp} />
+
+          {/* 数据统计网格 */}
+          <div className="quest-stats-grid">
+            <div className="quest-stat-card">
+              <span className="quest-stat-value">{coins}</span>
+              <span className="quest-stat-label">累计金币</span>
+            </div>
+            <div className="quest-stat-card">
+              <span className="quest-stat-value quest-stat-highlight">{totalCompleted}</span>
+              <span className="quest-stat-label">累计完成</span>
+            </div>
+            <div className="quest-stat-card">
+              <span className="quest-stat-value">{streak}</span>
+              <span className="quest-stat-label">连续签到</span>
+            </div>
+            <div className="quest-stat-card">
+              <span className="quest-stat-value">{stats.active}</span>
+              <span className="quest-stat-label">进行中</span>
+            </div>
+          </div>
+
+          {/* 称号成就 */}
+          <div className="quest-achievements">
+            <h3 className="quest-section-h3">🏆 称号成就</h3>
+            <div className="quest-titles-list">
+              {TITLES.map((t) => {
+                const unlocked = coins >= t.min;
+                return (
+                  <div
+                    key={t.label}
+                    className={cn("quest-title-row", !unlocked && "quest-title-locked")}
+                  >
+                    <span
+                      className="quest-title-dot"
+                      style={{ background: unlocked ? t.color : "#374151" }}
+                    />
+                    <span
+                      className="quest-title-name"
+                      style={{ color: unlocked ? t.color : "#4b5563" }}
+                    >
+                      {t.label}
+                    </span>
+                    <span className="quest-title-req">{t.min}+ 金币</span>
+                    {unlocked && <span className="quest-title-check">✓</span>}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* 每日签到 */}
+          <div className="quest-checkin-section">
+            <h3 className="quest-section-h3">📅 每日签到</h3>
+            <button
+              className={cn("quest-checkin-btn", checkedInToday && "quest-checkin-done")}
+              onClick={handleCheckin}
+              disabled={checkedInToday}
+            >
+              {checkedInToday ? (
+                <>
+                  <span>✓</span>
+                  <span>今日已签到</span>
+                </>
+              ) : (
+                <>
+                  <span className="quest-checkin-gift">🎁</span>
+                  <span>每日签到 +{COIN_REWARD.daily} 金币</span>
+                </>
+              )}
+            </button>
+            {streak > 0 && (
+              <p className="quest-streak-text">🔥 已连续签到 {streak} 天</p>
+            )}
+          </div>
+
+          {/* 跨产品体验卡 */}
+          <AnimatePresence>
+            {pendingCards.length > 0 && (
+              <motion.div
+                className="quest-reward-cards"
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+              >
+                <p className="quest-reward-cards-title">联动礼券</p>
+                <div className="quest-reward-cards-list">
+                  {pendingCards.map((card) => (
+                    <motion.div
+                      key={card.id}
+                      className={cn(
+                        "quest-reward-card",
+                        cardClaimAnim === card.id && "quest-reward-card-claiming"
+                      )}
+                      layout
+                      exit={{ opacity: 0, scale: 0.8, x: 60 }}
+                      transition={{ duration: 0.4 }}
+                    >
+                      <div className="quest-reward-card-left">
+                        <span className="quest-reward-card-icon">🎫</span>
+                        <div className="quest-reward-card-info">
+                          <span className="quest-reward-card-name">{card.title}</span>
+                          <span className="quest-reward-card-desc">{card.desc}</span>
+                        </div>
+                      </div>
+                      <div className="quest-reward-card-right">
+                        <span className="quest-reward-card-amount">+{card.rewardAmount} 金币</span>
+                        <button
+                          className="quest-reward-card-btn"
+                          onClick={() => handleClaimCard(card)}
+                          disabled={cardClaimAnim === card.id}
+                        >
+                          {cardClaimAnim === card.id ? "领取中..." : "领取"}
+                        </button>
+                      </div>
+                    </motion.div>
+                  ))}
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </section>
+      )}
+
+      {/* 底部输入框 - 仅待办 Tab */}
+      {activeTab === "todo" && (
+        <div className="quest-input-bar">
+          <input
+            className="quest-input"
+            type="text"
+            placeholder="输入新任务，按回车开始冒险…"
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") handleAdd();
+            }}
+          />
+          <button
+            type="button"
+            className="quest-add-btn"
+            onClick={handleAdd}
+            disabled={!input.trim()}
+          >
+            添加
+          </button>
+        </div>
+      )}
+
+      {/* 底部 Tab 导航 */}
+      <nav className="quest-tabbar">
         <button
-          type="button"
-          className="quest-add-btn"
-          onClick={handleAdd}
-          disabled={!input.trim()}
+          className={cn("quest-tab", activeTab === "todo" && "quest-tab-active")}
+          onClick={() => setActiveTab("todo")}
         >
-          添加
+          <span className="quest-tab-icon">📋</span>
+          <span className="quest-tab-label">待办</span>
         </button>
-      </div>
+        <button
+          className={cn("quest-tab", activeTab === "mine" && "quest-tab-active")}
+          onClick={() => setActiveTab("mine")}
+        >
+          <span className="quest-tab-icon">👤</span>
+          <span className="quest-tab-label">我的</span>
+        </button>
+      </nav>
 
       {/* 智能拆解 Modal */}
       <AnimatePresence>
@@ -978,7 +1106,7 @@ const QuestLogPage: React.FC = () => {
           background:
             radial-gradient(120% 80% at 50% -10%, #1f2937 0%, #111827 50%, #0b0f1a 100%);
           font-family: "Noto Sans SC", system-ui, sans-serif;
-          padding: 0 20px 120px;
+          padding: 0 20px 160px;
         }
 
         /* 顶部 */
@@ -1235,13 +1363,12 @@ const QuestLogPage: React.FC = () => {
         }
         .quest-empty-icon { font-size: 40px; display: block; margin-bottom: 12px; }
 
-        /* 输入栏（固定底部） */
+        /* 输入栏（固定在 tabbar 上方） */
         .quest-input-bar {
-          position: fixed; bottom: 0; left: 0; right: 0; z-index: 40;
-          display: flex; gap: 10px; padding: 14px 20px;
+          position: fixed; bottom: 62px; left: 0; right: 0; z-index: 40;
+          display: flex; gap: 10px; padding: 12px 20px;
           max-width: 720px; margin: 0 auto;
-          background: rgba(17, 24, 39, 0.85);
-          backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+          background: rgba(17, 24, 39, 0.95);
           border-top: 1px solid rgba(255,255,255,0.08);
         }
         .quest-input {
@@ -1378,6 +1505,123 @@ const QuestLogPage: React.FC = () => {
           .quest-modal-opt-xp { font-size: 11px; padding: 3px 8px; }
           .quest-edit-difficulty { flex-direction: column; }
         }
+
+        /* ===== 底部 Tab 导航栏 ===== */
+        .quest-tabbar {
+          position: fixed; bottom: 0; left: 0; right: 0; z-index: 50;
+          display: flex;
+          max-width: 720px; margin: 0 auto;
+          background: rgba(17, 24, 39, 0.97);
+          border-top: 1px solid rgba(255,255,255,0.08);
+          padding: 6px 0;
+          padding-bottom: max(6px, env(safe-area-inset-bottom, 6px));
+        }
+        .quest-tab {
+          flex: 1; display: flex; flex-direction: column; align-items: center; gap: 3px;
+          padding: 8px 0;
+          background: none; border: none;
+          color: #6b7280; font-size: 11px; font-family: inherit;
+          cursor: pointer; transition: color 0.2s ease, transform 0.15s ease;
+        }
+        .quest-tab:active { transform: scale(0.92); }
+        .quest-tab-active { color: #fde047; }
+        .quest-tab-icon { font-size: 20px; line-height: 1; }
+        .quest-tab-label { font-size: 11px; letter-spacing: 0.03em; }
+
+        /* ===== 我的页面 ===== */
+        .quest-mine-section {
+          max-width: 720px; margin: 0 auto; padding: 28px 4px 20px;
+        }
+
+        /* 用户卡片 */
+        .quest-profile-card {
+          display: flex; align-items: center; gap: 16px;
+          padding: 20px 18px; border-radius: 16px;
+          background: rgba(255,255,255,0.04);
+          border: 1px solid rgba(255,255,255,0.08);
+          margin-bottom: 16px;
+        }
+        .quest-profile-avatar {
+          width: 56px; height: 56px; border-radius: 50%;
+          display: flex; align-items: center; justify-content: center;
+          font-size: 24px; font-weight: 700; color: #fde047;
+          background: linear-gradient(135deg, rgba(253,224,71,0.15), rgba(245,158,11,0.15));
+          border: 2px solid rgba(253,224,71,0.3);
+          flex-shrink: 0;
+        }
+        .quest-profile-info { flex: 1; min-width: 0; }
+        .quest-profile-name {
+          font-size: 18px; font-weight: 700; color: #fff;
+          margin: 0 0 8px; letter-spacing: 0.02em;
+          overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+        }
+        .quest-profile-badges { display: flex; gap: 8px; flex-wrap: wrap; }
+
+        /* XP bar on mine page */
+        .quest-mine-section .quest-xp-wrap { margin-bottom: 16px; }
+
+        /* 数据统计网格 */
+        .quest-stats-grid {
+          display: grid; grid-template-columns: 1fr 1fr; gap: 10px;
+          margin-bottom: 20px;
+        }
+        .quest-stat-card {
+          display: flex; flex-direction: column; align-items: center; gap: 4px;
+          padding: 18px 12px; border-radius: 14px;
+          background: rgba(255,255,255,0.04);
+          border: 1px solid rgba(255,255,255,0.08);
+          transition: transform 0.2s ease;
+        }
+        .quest-stat-card:hover { transform: translateY(-2px); }
+        .quest-stat-value {
+          font-size: 28px; font-weight: 800; color: #9ca3af;
+          font-variant-numeric: tabular-nums; line-height: 1;
+        }
+        .quest-stat-highlight { color: #fde047; }
+        .quest-stat-label {
+          font-size: 12px; color: #6b7280; letter-spacing: 0.05em;
+        }
+
+        /* 区块标题 */
+        .quest-section-h3 {
+          font-size: 15px; font-weight: 700; color: #f3f4f6;
+          margin: 0 0 12px; letter-spacing: 0.03em;
+        }
+
+        /* 称号成就 */
+        .quest-achievements { margin-bottom: 20px; }
+        .quest-titles-list {
+          display: flex; flex-direction: column; gap: 8px;
+        }
+        .quest-title-row {
+          display: flex; align-items: center; gap: 10px;
+          padding: 12px 14px; border-radius: 12px;
+          background: rgba(255,255,255,0.04);
+          border: 1px solid rgba(255,255,255,0.08);
+          transition: all 0.2s ease;
+        }
+        .quest-title-locked { opacity: 0.45; }
+        .quest-title-dot {
+          width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0;
+        }
+        .quest-title-name {
+          flex: 1; font-size: 14px; font-weight: 600;
+        }
+        .quest-title-req {
+          font-size: 11px; color: #6b7280; letter-spacing: 0.03em;
+        }
+        .quest-title-check {
+          font-size: 14px; color: #34d399; font-weight: 700;
+        }
+
+        /* 签到区块 */
+        .quest-checkin-section { margin-bottom: 20px; }
+        .quest-streak-text {
+          font-size: 12px; color: #9ca3af; margin: 8px 0 0; text-align: center;
+        }
+
+        /* 联动礼券 on mine page */
+        .quest-mine-section .quest-reward-cards { max-width: none; padding: 0; margin-bottom: 16px; }
       `}</style>
 
       {/* 浮动管理员入口 🔒 */}
@@ -1385,7 +1629,7 @@ const QuestLogPage: React.FC = () => {
         onClick={() => verifyAdmin(() => {})}
         title={adminMode ? "管理面板" : "管理员登录"}
         style={{
-          position: "fixed", bottom: 28, right: 28, zIndex: 20,
+          position: "fixed", bottom: 80, right: 28, zIndex: 20,
           width: 44, height: 44, border: "none", borderRadius: "50%",
           background: adminMode ? "rgba(141,154,139,0.3)" : "rgba(255,255,255,0.5)",
           backdropFilter: "blur(10px)",

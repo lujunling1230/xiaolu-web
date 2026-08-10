@@ -379,9 +379,9 @@ const AppContent: React.FC = () => {
         .po-section-heading {
           font-family: "Noto Serif SC", Georgia, serif;
           font-size: clamp(28px, 4vw, 36px); font-weight: 600;
-          color: #2a2018; margin: 0 0 80px;
+          color: #1a1008; margin: 0 0 80px;
           letter-spacing: 0.06em;
-          text-shadow: 0 1px 4px rgba(255,255,255,0.6);
+          text-shadow: 0 1px 4px rgba(255,255,255,0.7);
         }
 
         /* ===== 关于我：纯文字左右布局 ===== */
@@ -419,19 +419,19 @@ const AppContent: React.FC = () => {
         .po-block-title {
           font-family: "Noto Serif SC", Georgia, serif;
           font-size: clamp(17px, 2.2vw, 20px); font-weight: 600;
-          color: #2a2018; margin: 0 0 14px;
+          color: #1a1008; margin: 0 0 14px;
           letter-spacing: 0.04em;
-          text-shadow: 0 1px 4px rgba(255,255,255,0.7);
+          text-shadow: 0 1px 4px rgba(255,255,255,0.8);
         }
         /* 正文：深橄榄绿，清晰可读 */
         .po-block-body {
-          font-size: 13px; line-height: 1.8; color: #1a2a0c;
+          font-size: 13px; line-height: 1.8; color: #0a1a00;
           margin: 0 0 12px;
-          text-shadow: 0 1px 3px rgba(255,255,255,0.6);
+          text-shadow: 0 1px 3px rgba(255,255,255,0.7);
           letter-spacing: 0.02em;
         }
         .po-block-meta {
-          font-size: 12px; color: #3a5a2a; margin: 0;
+          font-size: 12px; color: #2a4a1a; margin: 0;
           letter-spacing: 0.05em;
         }
         .po-edu-item {
@@ -439,15 +439,15 @@ const AppContent: React.FC = () => {
           padding-left: 16px;
           border-left: 2px solid rgba(122,154,130,0.5);
         }
-        .po-edu-school { font-size: 15px; font-weight: 500; color: #2a2018; }
-        .po-edu-degree { font-size: 13px; color: #4a4238; }
+        .po-edu-school { font-size: 15px; font-weight: 500; color: #1a1008; }
+        .po-edu-degree { font-size: 13px; color: #3a3228; }
 
         /* 技能分组 */
         .po-skill-groups { display: flex; flex-direction: column; gap: 16px; }
         .po-skill-group { display: flex; flex-direction: column; gap: 8px; }
         .po-skill-group-label {
           font-size: 12px; font-weight: 600;
-          color: #2a3a1c; letter-spacing: 0.08em;
+          color: #1a2a0c; letter-spacing: 0.08em;
           text-transform: uppercase;
         }
 
@@ -458,9 +458,9 @@ const AppContent: React.FC = () => {
           border-radius: 999px;
           background: rgba(168, 190, 120, 0.2);
           border: 1px solid rgba(168, 190, 120, 0.45);
-          color: #1a2a0c;
+          color: #0a1a00;
           cursor: default;
-          text-shadow: 0 1px 3px rgba(255,255,255,0.7);
+          text-shadow: 0 1px 3px rgba(255,255,255,0.8);
           transition: all 0.2s ease;
         }
         .po-skill-tag:hover {
@@ -470,7 +470,7 @@ const AppContent: React.FC = () => {
         .po-skill-tag--ai {
           background: rgba(93, 138, 106, 0.12);
           border-color: rgba(93, 138, 106, 0.35);
-          color: #2a4a2a;
+          color: #1a3a1a;
         }
         .po-skill-tag--ai:hover {
           background: rgba(93, 138, 106, 0.22);
@@ -479,7 +479,7 @@ const AppContent: React.FC = () => {
         .po-skill-tag--eng {
           background: rgba(176, 120, 50, 0.1);
           border-color: rgba(176, 120, 50, 0.3);
-          color: #4a2a0a;
+          color: #3a1a00;
         }
         .po-skill-tag--eng:hover {
           background: rgba(176, 120, 50, 0.18);
@@ -490,10 +490,10 @@ const AppContent: React.FC = () => {
         .po-quote {
           font-family: "Noto Serif SC", Georgia, serif;
           font-size: clamp(20px, 2.5vw, 26px); font-weight: 700;
-          color: #2a4a2a; margin: 0 0 16px;
+          color: #1a3a1a; margin: 0 0 16px;
           line-height: 1.45; letter-spacing: 0.03em;
-          opacity: 0.95;
-          text-shadow: 0 2px 8px rgba(255,255,255,0.8);
+          opacity: 1;
+          text-shadow: 0 2px 8px rgba(255,255,255,0.9);
         }
 
         /* ===== 作品说明书 ===== */

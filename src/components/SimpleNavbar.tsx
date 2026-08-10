@@ -129,7 +129,7 @@ const SimpleNavbar: React.FC<SimpleNavbarProps> = ({
         .sn-logo:hover { opacity: 0.8; }
         .sn-brand {
           font-family: "Noto Sans SC", -apple-system, BlinkMacSystemFont, sans-serif;
-          font-size: 1.1rem;
+          font-size: 1.25rem;
           font-weight: 600;
           color: #3A4F3A;
           letter-spacing: 0.06em;
@@ -149,7 +149,7 @@ const SimpleNavbar: React.FC<SimpleNavbarProps> = ({
         .sn-link {
           position: relative;
           padding: 8px 14px;
-          font-size: 14px;
+          font-size: 16px;
           font-weight: 400;
           color: #6a7066;
           letter-spacing: 0.05em;
@@ -175,7 +175,7 @@ const SimpleNavbar: React.FC<SimpleNavbarProps> = ({
           padding: 7px 14px;
           border: 1px solid rgba(93, 138, 106, 0.2);
           color: #5d8a6a;
-          font-size: 13px;
+          font-size: 15px;
           letter-spacing: 0.04em;
         }
         .sn-link--xiaoye:hover {
@@ -190,7 +190,7 @@ const SimpleNavbar: React.FC<SimpleNavbarProps> = ({
             height: 52px;
             padding: 0 16px;
           }
-          .sn-brand { font-size: 1rem; }
+          .sn-brand { font-size: 1.1rem; }
           .sn-bar-nav {
             margin-left: 16px;
             max-width: none;
@@ -207,7 +207,7 @@ const SimpleNavbar: React.FC<SimpleNavbarProps> = ({
           .sn-bar-nav::-webkit-scrollbar { display: none; }
           .sn-link {
             padding: 6px 10px;
-            font-size: 12px;
+            font-size: 14px;
             flex-shrink: 0;
           }
         }

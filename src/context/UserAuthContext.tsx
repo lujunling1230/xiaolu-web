@@ -16,10 +16,10 @@ interface UserAuthContextValue {
   username: string | null;
   /** 当前会话 */
   session: UserSession | null;
-  /** 登录 */
-  login: (username: string, password: string) => { success: boolean; error?: string };
-  /** 注册 */
-  register: (username: string, password: string) => { success: boolean; error?: string };
+  /** 登录（异步，调用服务端 API） */
+  login: (username: string, password: string) => Promise<{ success: boolean; error?: string }>;
+  /** 注册（异步，调用服务端 API） */
+  register: (username: string, password: string) => Promise<{ success: boolean; error?: string }>;
   /** 退出 */
   logout: () => void;
   /** 刷新会话状态 */
@@ -30,8 +30,8 @@ const UserAuthContext = createContext<UserAuthContextValue>({
   isLoggedIn: false,
   username: null,
   session: null,
-  login: () => ({ success: false, error: "" }),
-  register: () => ({ success: false, error: "" }),
+  login: async () => ({ success: false, error: "" }),
+  register: async () => ({ success: false, error: "" }),
   logout: () => {},
   refresh: () => {},
 });
@@ -47,19 +47,18 @@ export function UserAuthProvider({ children }: { children: ReactNode }) {
     refresh();
   }, []);
 
-  const login = (username: string, password: string) => {
-    const result = loginUser(username, password);
+  const login = async (username: string, password: string) => {
+    const result = await loginUser(username, password);
     if (result.success) {
       refresh();
     }
     return result;
   };
 
-  const register = (username: string, password: string) => {
-    const result = registerUser(username, password);
+  const register = async (username: string, password: string) => {
+    const result = await registerUser(username, password);
     if (result.success) {
-      // 注册成功后自动登录
-      loginUser(username, password);
+      // 注册成功后已自动登录（loginUser/registerUser 内部保存了 session）
       refresh();
     }
     return result;

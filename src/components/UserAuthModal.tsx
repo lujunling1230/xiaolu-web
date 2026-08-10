@@ -49,8 +49,8 @@ export default function UserAuthModal({ isOpen, onClose, defaultMode = "login" }
 
     setLoading(true);
     const result = mode === "login"
-      ? login(username.trim(), password)
-      : register(username.trim(), password);
+      ? await login(username.trim(), password)
+      : await register(username.trim(), password);
     setLoading(false);
 
     if (result.success) {

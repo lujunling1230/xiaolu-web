@@ -2125,6 +2125,22 @@ const QuestLogPage: React.FC = () => {
           font-size: 12px; font-weight: 700; color: #fde047;
           font-variant-numeric: tabular-nums;
         }
+
+        /* ===== 手机端：消除中间多余空白 ===== */
+        @media (max-width: 768px) {
+          /* 内容区不撑满，跟随内容自然高度 */
+          .quest-list-section,
+          .quest-shop-section,
+          .quest-mine-section { flex: none; }
+
+          /* 空状态保留居中效果，但限制高度 */
+          .quest-empty {
+            min-height: 30vh;
+            display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+            padding: 24px 0;
+          }
+        }
       `}</style>
 
       <AdminGuardUI />

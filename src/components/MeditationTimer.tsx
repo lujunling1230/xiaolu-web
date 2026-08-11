@@ -1121,9 +1121,9 @@ const MeditationTimer: React.FC = () => {
           background: rgba(30,41,59,0.6);
           border-color: rgba(255,255,255,0.08);
           box-shadow: 0 4px 24px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.06);
-          /* night 模式深色背景，恢复浅色文字 */
-          --text: rgba(255, 255, 255, 0.88);
-          --text-soft: rgba(255, 255, 255, 0.58);
+          /* night 模式深色背景，使用亮暖金色文字（比纯白更显眼且不突兀） */
+          --text: #FFE8B0;
+          --text-soft: rgba(255, 232, 176, 0.82);
           --accent: #A5C4A0;
           --card-bg: rgba(255,255,255,0.06);
           --border: rgba(255,255,255,0.12);

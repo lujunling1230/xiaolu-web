@@ -936,11 +936,6 @@ const SystemTuningPage: React.FC = () => {
   /* ===== "我"页面折叠状态 ===== */
   const [foldFav, setFoldFav] = useState(false);
   const [foldMoments, setFoldMoments] = useState(true);
-  const [foldWorks, setFoldWorks] = useState(false);
-  const [foldCh1, setFoldCh1] = useState(false);
-  const [foldCh2, setFoldCh2] = useState(false);
-  const [foldCh3, setFoldCh3] = useState(false);
-  const [foldCh4, setFoldCh4] = useState(false);
 
   /* ===== 聊天背景系统（按会话保存） ===== */
   const [sessionBgs, setSessionBgs] = useState<Record<string, string>>(() => {
@@ -2107,193 +2102,6 @@ const SystemTuningPage: React.FC = () => {
                 </div>
               )}
 
-              {/* 4. 我的作品集（我的书架）- 折叠 - 叙事结构 */}
-              <div className="wx-me-section">
-                <div className="wx-me-fold-header" onClick={() => setFoldWorks(!foldWorks)}>
-                  <div className="wx-me-fold-left">
-                    <span className="wx-me-section-icon">📚</span>
-                    <span className="wx-me-section-title">我的作品集</span>
-                  </div>
-                  <span className={`wx-me-fold-arrow ${foldWorks ? "wx-me-fold-open" : ""}`}>▶</span>
-                </div>
-                {foldWorks && (
-                  <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.25 }}>
-                    <div className="wx-me-section-desc">在 LeafBook 留下的痕迹，按你的旅程排列</div>
-
-                    {/* 第一章：初遇 */}
-                    <div className="wx-me-chapter">
-                      <div className="wx-me-chapter-header" onClick={() => setFoldCh1(!foldCh1)}>
-                        <span className="wx-me-chapter-num">01</span>
-                        <div className="wx-me-chapter-info">
-                          <div className="wx-me-chapter-title">初遇</div>
-                          <div className="wx-me-chapter-sub">Onboarding · 推开 LeafBook 的大门</div>
-                        </div>
-                        <span className={`wx-me-fold-arrow ${foldCh1 ? "wx-me-fold-open" : ""}`}>▶</span>
-                      </div>
-                      {foldCh1 && (
-                        <motion.div className="wx-me-chapter-body" initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.25 }}>
-                          <div className="wx-me-narrative" onClick={() => window.open("/toolbox/travel", "_self")}>
-                            <span className="wx-me-narrative-icon">🗺️</span>
-                            <div className="wx-me-narrative-content">
-                              <div className="wx-me-narrative-label">漫游指南</div>
-                              <div className="wx-me-narrative-text">走过的路，看过的云。</div>
-                            </div>
-                          </div>
-                          <div className="wx-me-narrative" onClick={() => window.open("/toolbox/quests", "_self")}>
-                            <span className="wx-me-narrative-icon">🎯</span>
-                            <div className="wx-me-narrative-content">
-                              <div className="wx-me-narrative-label">通关清单</div>
-                              <div className="wx-me-narrative-text">把人生变成一场 RPG。</div>
-                            </div>
-                          </div>
-                        </motion.div>
-                      )}
-                      {foldCh1 && getWorksByChapter("ch1").map((w) => (
-                        <div key={w.id} className="wx-me-narrative" style={{ position: "relative" }}>
-                            <span className="wx-me-narrative-icon">📝</span>
-                            <div className="wx-me-narrative-content">
-                              <div className="wx-me-narrative-label">{w.title}{w.link && <span style={{ fontSize: 10, color: "#4a7c59", marginLeft: 4 }}>🔗</span>}</div>
-                              <div className="wx-me-narrative-text">{w.content.length > 30 ? w.content.slice(0, 30) + "…" : w.content || "（无内容）"}</div>
-                            </div>
-                            <div style={{ position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)", display: "flex", gap: 4 }}>
-                              <span onClick={(e) => { e.stopPropagation(); openEditWorkModal(w); }} style={{ fontSize: 11, cursor: "pointer", padding: "2px 6px", borderRadius: 4, background: "#f5f5f5" }}>✏️</span>
-                              <span onClick={(e) => { e.stopPropagation(); handleDeleteWork(w.id); }} style={{ fontSize: 11, cursor: "pointer", padding: "2px 6px", borderRadius: 4, background: "#f5f5f5" }}>🗑️</span>
-                            </div>
-                          </div>
-                      ))}
-                    </div>
-
-                    {/* 第二章：陪伴 */}
-                    <div className="wx-me-chapter">
-                      <div className="wx-me-chapter-header" onClick={() => setFoldCh2(!foldCh2)}>
-                        <span className="wx-me-chapter-num">02</span>
-                        <div className="wx-me-chapter-info">
-                          <div className="wx-me-chapter-title">陪伴</div>
-                          <div className="wx-me-chapter-sub">Companionship · 情绪低落时，有人在等你说话</div>
-                        </div>
-                        <span className={`wx-me-fold-arrow ${foldCh2 ? "wx-me-fold-open" : ""}`}>▶</span>
-                      </div>
-                      {foldCh2 && (
-                        <motion.div className="wx-me-chapter-body" initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.25 }}>
-                          <div className="wx-me-narrative" onClick={() => window.open("/toolbox/answer", "_self")}>
-                            <span className="wx-me-narrative-icon">🏠</span>
-                            <div className="wx-me-narrative-content">
-                              <div className="wx-me-narrative-label">爱情公寓</div>
-                              <div className="wx-me-narrative-text">3601·3602·3603 全员在线。</div>
-                            </div>
-                          </div>
-                          <div className="wx-me-narrative" onClick={() => window.open("/toolbox/advice", "_self")}>
-                            <span className="wx-me-narrative-icon">🕯️</span>
-                            <div className="wx-me-narrative-content">
-                              <div className="wx-me-narrative-label">解忧杂货店</div>
-                              <div className="wx-me-narrative-text">总有一句话，能解开你的心结。</div>
-                            </div>
-                          </div>
-                        </motion.div>
-                      )}
-                      {foldCh2 && getWorksByChapter("ch2").map((w) => (
-                        <div key={w.id} className="wx-me-narrative" style={{ position: "relative" }}>
-                            <span className="wx-me-narrative-icon">📝</span>
-                            <div className="wx-me-narrative-content">
-                              <div className="wx-me-narrative-label">{w.title}{w.link && <span style={{ fontSize: 10, color: "#4a7c59", marginLeft: 4 }}>🔗</span>}</div>
-                              <div className="wx-me-narrative-text">{w.content.length > 30 ? w.content.slice(0, 30) + "…" : w.content || "（无内容）"}</div>
-                            </div>
-                            <div style={{ position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)", display: "flex", gap: 4 }}>
-                              {w.link && <span onClick={(e) => { e.stopPropagation(); window.open(w.link, "_self"); }} style={{ fontSize: 11, cursor: "pointer", padding: "2px 6px", borderRadius: 4, background: "#e8f0e8", color: "#4a7c59" }}>🔗</span>}
-                              <span onClick={(e) => { e.stopPropagation(); openEditWorkModal(w); }} style={{ fontSize: 11, cursor: "pointer", padding: "2px 6px", borderRadius: 4, background: "#f5f5f5" }}>✏️</span>
-                              <span onClick={(e) => { e.stopPropagation(); handleDeleteWork(w.id); }} style={{ fontSize: 11, cursor: "pointer", padding: "2px 6px", borderRadius: 4, background: "#f5f5f5" }}>🗑️</span>
-                            </div>
-                          </div>
-                      ))}
-                    </div>
-
-                    {/* 第三章：求助 */}
-                    <div className="wx-me-chapter">
-                      <div className="wx-me-chapter-header" onClick={() => setFoldCh3(!foldCh3)}>
-                        <span className="wx-me-chapter-num">03</span>
-                        <div className="wx-me-chapter-info">
-                          <div className="wx-me-chapter-title">求助</div>
-                          <div className="wx-me-chapter-sub">Problem Solving · 现实中的麻烦也能在这里解决</div>
-                        </div>
-                        <span className={`wx-me-fold-arrow ${foldCh3 ? "wx-me-fold-open" : ""}`}>▶</span>
-                      </div>
-                      {foldCh3 && (
-                        <motion.div className="wx-me-chapter-body" initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.25 }}>
-                          <div className="wx-me-narrative" onClick={() => window.open("/toolbox/supplies", "_self")}>
-                            <span className="wx-me-narrative-icon">📦</span>
-                            <div className="wx-me-narrative-content">
-                              <div className="wx-me-narrative-label">物资管家</div>
-                              <div className="wx-me-narrative-text">库存与保质期管理，生活从此不慌。</div>
-                            </div>
-                          </div>
-                          <div className="wx-me-narrative" onClick={() => window.open("/toolbox/recharge", "_self")}>
-                            <span className="wx-me-narrative-icon">🔋</span>
-                            <div className="wx-me-narrative-content">
-                              <div className="wx-me-narrative-label">回血清单</div>
-                              <div className="wx-me-narrative-text">允许一切崩塌，只做一件极小的事。</div>
-                            </div>
-                          </div>
-
-                        </motion.div>
-                      )}
-                      {foldCh3 && getWorksByChapter("ch3").map((w) => (
-                        <div key={w.id} className="wx-me-narrative" style={{ position: "relative" }}>
-                            <span className="wx-me-narrative-icon">📝</span>
-                            <div className="wx-me-narrative-content">
-                              <div className="wx-me-narrative-label">{w.title}{w.link && <span style={{ fontSize: 10, color: "#4a7c59", marginLeft: 4 }}>🔗</span>}</div>
-                              <div className="wx-me-narrative-text">{w.content.length > 30 ? w.content.slice(0, 30) + "…" : w.content || "（无内容）"}</div>
-                            </div>
-                            <div style={{ position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)", display: "flex", gap: 4 }}>
-                              {w.link && <span onClick={(e) => { e.stopPropagation(); window.open(w.link, "_self"); }} style={{ fontSize: 11, cursor: "pointer", padding: "2px 6px", borderRadius: 4, background: "#e8f0e8", color: "#4a7c59" }}>🔗</span>}                              <span onClick={(e) => { e.stopPropagation(); openEditWorkModal(w); }} style={{ fontSize: 11, cursor: "pointer", padding: "2px 6px", borderRadius: 4, background: "#f5f5f5" }}>✏️</span>
-                              <span onClick={(e) => { e.stopPropagation(); handleDeleteWork(w.id); }} style={{ fontSize: 11, cursor: "pointer", padding: "2px 6px", borderRadius: 4, background: "#f5f5f5" }}>🗑️</span>
-                            </div>
-                          </div>
-                      ))}
-                    </div>
-
-                    {/* 第四章：沉淀 */}
-                    <div className="wx-me-chapter">
-                      <div className="wx-me-chapter-header" onClick={() => setFoldCh4(!foldCh4)}>
-                        <span className="wx-me-chapter-num">04</span>
-                        <div className="wx-me-chapter-info">
-                          <div className="wx-me-chapter-title">沉淀</div>
-                          <div className="wx-me-chapter-sub">Reflection · 所有的互动沉淀为专属记忆</div>
-                        </div>
-                        <span className={`wx-me-fold-arrow ${foldCh4 ? "wx-me-fold-open" : ""}`}>▶</span>
-                      </div>
-                      {foldCh4 && (
-                        <motion.div className="wx-me-chapter-body" initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.25 }}>
-                          <div className="wx-me-narrative" onClick={() => window.open("/healing", "_self")}>
-                            <span className="wx-me-narrative-icon">🌲</span>
-                            <div className="wx-me-narrative-content">
-                              <div className="wx-me-narrative-label">森林疗愈室</div>
-                              <div className="wx-me-narrative-text">调节呼吸与情绪，最终与自己和解。</div>
-                            </div>
-                          </div>
-                        </motion.div>
-                      )}
-                      {foldCh4 && getWorksByChapter("ch4").map((w) => (
-                        <div key={w.id} className="wx-me-narrative" style={{ position: "relative" }}>
-                            <span className="wx-me-narrative-icon">📝</span>
-                            <div className="wx-me-narrative-content">
-                              <div className="wx-me-narrative-label">{w.title}{w.link && <span style={{ fontSize: 10, color: "#4a7c59", marginLeft: 4 }}>🔗</span>}</div>
-                              <div className="wx-me-narrative-text">{w.content.length > 30 ? w.content.slice(0, 30) + "…" : w.content || "（无内容）"}</div>
-                            </div>
-                            <div style={{ position: "absolute", right: 12, top: "50%", transform: "translateY(-50%)", display: "flex", gap: 4 }}>
-                              {w.link && <span onClick={(e) => { e.stopPropagation(); window.open(w.link, "_self"); }} style={{ fontSize: 11, cursor: "pointer", padding: "2px 6px", borderRadius: 4, background: "#e8f0e8", color: "#4a7c59" }}>🔗</span>}                              <span onClick={(e) => { e.stopPropagation(); openEditWorkModal(w); }} style={{ fontSize: 11, cursor: "pointer", padding: "2px 6px", borderRadius: 4, background: "#f5f5f5" }}>✏️</span>
-                              <span onClick={(e) => { e.stopPropagation(); handleDeleteWork(w.id); }} style={{ fontSize: 11, cursor: "pointer", padding: "2px 6px", borderRadius: 4, background: "#f5f5f5" }}>🗑️</span>
-                            </div>
-                          </div>
-                      ))}
-                    </div>
-
-                    <div className="wx-me-actions">
-                      <button className="wx-me-action-btn" onClick={() => openNewWorkModal()}>+ 新建作品</button>
-                    </div>
-                  </motion.div>
-                )}
-              </div>
-
               {/* 底部版权 */}
               <div className="wx-me-footer">
                 <div className="wx-me-slogan">让作品，有回声。</div>
@@ -2443,7 +2251,7 @@ const SystemTuningPage: React.FC = () => {
         html, body { margin: 0; padding: 0; }
         .apt-page {
           min-height: 100vh;
-          background: #F5F1E8;
+          background: linear-gradient(180deg, #f7f3eb 0%, #f0ece2 100%);
           color: #3D3830;
           font-family: "Noto Sans SC", system-ui, sans-serif;
           padding: 0 24px 60px;
@@ -2478,8 +2286,8 @@ const SystemTuningPage: React.FC = () => {
           font-family: "PingFang SC", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
           min-height: calc(100vh - 24px);
           position: relative;
-          box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-          border-radius: 12px;
+          box-shadow: 0 8px 32px rgba(0,0,0,0.10), 0 2px 8px rgba(0,0,0,0.04);
+          border-radius: 16px;
           overflow: hidden;
         }
 
@@ -2490,7 +2298,9 @@ const SystemTuningPage: React.FC = () => {
           justify-content: space-between;
           height: 48px;
           padding: 12px 16px;
-          background: #ededed;
+          background: linear-gradient(180deg, #f0f0f0 0%, #e8e8e8 100%);
+          backdrop-filter: blur(8px);
+          -webkit-backdrop-filter: blur(8px);
           border-bottom: 1px solid #d6d6d6;
           flex-shrink: 0;
           position: relative;
@@ -2647,14 +2457,15 @@ const SystemTuningPage: React.FC = () => {
           cursor: pointer;
           background: #fff;
           border-bottom: 1px solid #eee;
-          transition: background-color 0.15s ease;
+          transition: all 0.2s ease;
           user-select: none;
         }
         .wx-item:last-child {
           border-bottom: none;
         }
         .wx-item:hover {
-          background-color: #f9f9f9;
+          background-color: #faf8f5;
+          transform: translateX(2px);
         }
         .wx-item:active {
           background-color: #e5e5e5;
@@ -2669,6 +2480,7 @@ const SystemTuningPage: React.FC = () => {
           font-size: 20px;
           flex-shrink: 0;
           background: #f0f0f0;
+          box-shadow: 0 2px 8px rgba(0,0,0,0.08);
         }
         .wx-info {
           flex: 1;
@@ -2693,7 +2505,7 @@ const SystemTuningPage: React.FC = () => {
         }
         .wx-time {
           font-size: 11px;
-          color: #999;
+          color: #b0a090;
           flex-shrink: 0;
         }
         .wx-msg {
@@ -2710,8 +2522,11 @@ const SystemTuningPage: React.FC = () => {
           align-items: center;
           justify-content: space-around;
           height: 44px;
-          background: #fff;
+          background: rgba(255,255,255,0.95);
+          backdrop-filter: blur(12px);
+          -webkit-backdrop-filter: blur(12px);
           border-top: 1px solid #eee;
+          box-shadow: 0 -2px 12px rgba(0,0,0,0.04);
           flex-shrink: 0;
         }
         .wx-tab {
@@ -2723,6 +2538,7 @@ const SystemTuningPage: React.FC = () => {
           flex: 1;
           height: 100%;
           cursor: pointer;
+          transition: color 0.2s ease;
         }
         .wx-tab-icon {
           font-size: 20px;
@@ -4130,17 +3946,18 @@ const SystemTuningPage: React.FC = () => {
 
         /* 气泡主体 */
         .apt-bubble-body {
-          padding: 8px 12px; border-radius: 18px;
+          padding: 8px 12px; border-radius: 20px;
           font-size: 14px; line-height: 1.4;
           word-break: break-word;
           position: relative;
           overflow: visible;
+          box-shadow: 0 2px 8px rgba(0,0,0,0.06);
         }
         .apt-bubble-user .apt-bubble-body {
-          border-bottom-right-radius: 6px;
+          border-bottom-right-radius: 8px;
         }
         .apt-bubble-char .apt-bubble-body {
-          border-bottom-left-radius: 6px;
+          border-bottom-left-radius: 8px;
         }
 
         /* 主题气泡额外样式 */

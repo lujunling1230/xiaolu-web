@@ -1204,9 +1204,9 @@ const GratitudeJournal: React.FC = () => {
             0 5px 14px -3px rgba(0,0,0,0.35),
             0 20px 50px -14px rgba(0,0,0,0.55),
             inset 0 0 70px rgba(0,0,0,0.2);
-          /* night 模式纸张是深色，恢复浅色文字 */
-          --text: rgba(255, 255, 255, 0.88);
-          --text-soft: rgba(255, 255, 255, 0.58);
+          /* night 模式纸张是深色，使用亮暖金色文字（比纯白更显眼且不突兀） */
+          --text: #FFE8B0;
+          --text-soft: rgba(255, 232, 176, 0.82);
           --accent: #A5C4A0;
           --card-bg: rgba(255,255,255,0.06);
           --border: rgba(255,255,255,0.12);

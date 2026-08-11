@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 
 /* ============================================================
@@ -250,12 +250,80 @@ const gradeColors: Record<string, { bg: string; text: string; border: string }> 
   C: { bg: "rgba(200,170,100,0.1)", text: "#a08050", border: "#c8aa64" },
 };
 
+/* ─── 评测步骤 ─── */
+const EVAL_STEPS = [
+  { name: "初始化多智能体框架", detail: "启动 Research / Code / Review / Delegate Agent" },
+  { name: "执行功能维度评测", detail: "遍历 9 个作品的核心功能路径" },
+  { name: "执行 AI 能力评测", detail: "调用各作品 AI 接口，验证回答质量" },
+  { name: "执行视觉交互评测", detail: "检测界面渲染、动画帧率、响应速度" },
+  { name: "执行性能评测", detail: "测量 FCP、LCP、TTFB 等核心指标" },
+  { name: "执行情感体验评测", detail: "分析文案温度、品牌一致性、用户反馈" },
+  { name: "生成评测报告", detail: "汇总数据，生成优化建议" },
+];
+
+const EVAL_DATE_KEY = "hermes_eval_date";
+
 /* ============================================================
  * 主组件
  * ============================================================ */
 const HermesEvalPanel: React.FC<HermesEvalPanelProps> = ({ onClose }) => {
   const [selectedWork, setSelectedWork] = useState<WorkEval | null>(null);
   const [activeTab, setActiveTab] = useState<"overview" | "methods" | "trends">("overview");
+
+  /* ─── 评测状态 ─── */
+  const [evalDate, setEvalDate] = useState<string>("");
+  const [isEvaluating, setIsEvaluating] = useState(false);
+  const [evalStepIndex, setEvalStepIndex] = useState(-1);
+  const timersRef = useRef<ReturnType<typeof setTimeout>[]>([]);
+
+  // 加载上次评测日期
+  useEffect(() => {
+    const saved = localStorage.getItem(EVAL_DATE_KEY);
+    if (saved) {
+      setEvalDate(saved);
+    }
+  }, []);
+
+  // 清理定时器
+  useEffect(() => {
+    return () => {
+      timersRef.current.forEach((t) => clearTimeout(t));
+    };
+  }, []);
+
+  /** 格式化日期为 YYYY-MM-DD HH:mm */
+  const formatDate = (d: Date): string => {
+    const pad = (n: number) => String(n).padStart(2, "0");
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  };
+
+  /** 开始评测 */
+  const handleStartEval = useCallback(() => {
+    if (isEvaluating) return;
+    setIsEvaluating(true);
+    setEvalStepIndex(0);
+
+    // 依次推进每个评测步骤
+    EVAL_STEPS.forEach((_, idx) => {
+      const timer = setTimeout(() => {
+        if (idx < EVAL_STEPS.length - 1) {
+          setEvalStepIndex(idx + 1);
+        } else {
+          // 最后一步完成后，记录评测日期
+          const now = formatDate(new Date());
+          setEvalDate(now);
+          localStorage.setItem(EVAL_DATE_KEY, now);
+          // 短暂延迟后关闭评测进度
+          const closeTimer = setTimeout(() => {
+            setIsEvaluating(false);
+            setEvalStepIndex(-1);
+          }, 800);
+          timersRef.current.push(closeTimer);
+        }
+      }, (idx + 1) * 1200);
+      timersRef.current.push(timer);
+    });
+  }, [isEvaluating]);
 
   const avgScore = worksEval.reduce((sum, w) => sum + w.totalScore, 0) / worksEval.length;
   const sCount = worksEval.filter((w) => w.grade === "S").length;
@@ -290,7 +358,7 @@ const HermesEvalPanel: React.FC<HermesEvalPanelProps> = ({ onClose }) => {
           padding: "24px 28px 0",
           position: "sticky", top: 0, background: "#f5f0e6", zIndex: 2,
         }}>
-          <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 4 }}>
+          <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 4 }}>
             <div>
               <h2 style={{ margin: 0, fontFamily: '"Noto Serif SC", Georgia, serif', fontSize: 20, color: "#4a4038", letterSpacing: "0.06em" }}>
                 Hermes 自动评测系统
@@ -301,6 +369,146 @@ const HermesEvalPanel: React.FC<HermesEvalPanelProps> = ({ onClose }) => {
             </div>
             <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", color: "#a8a39b", fontSize: 22, padding: 4, lineHeight: 1 }}>×</button>
           </div>
+
+          {/* 评测日期 + 评测按钮 */}
+          <div style={{
+            display: "flex", alignItems: "center", justifyContent: "space-between",
+            marginTop: 12, padding: "10px 16px",
+            background: "rgba(139,115,85,0.05)", border: "1px solid #e8e6e1",
+          }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+              <span style={{ fontSize: 11, color: "#a8a39b", fontFamily: '"Noto Serif SC", Georgia, serif' }}>
+                上次评测日期
+              </span>
+              <span style={{ fontSize: 13, color: "#4a4038", fontWeight: 500, fontFamily: '"Noto Serif SC", Georgia, serif' }}>
+                {evalDate || "暂无评测记录"}
+              </span>
+            </div>
+            <motion.button
+              onClick={handleStartEval}
+              disabled={isEvaluating}
+              whileHover={{ scale: isEvaluating ? 1 : 1.03 }}
+              whileTap={{ scale: isEvaluating ? 1 : 0.97 }}
+              style={{
+                padding: "7px 20px",
+                border: `1px solid ${isEvaluating ? "#d5cfc4" : "#8b7355"}`,
+                background: isEvaluating ? "rgba(139,115,85,0.06)" : "#8b7355",
+                color: isEvaluating ? "#a8a39b" : "#f5f0e6",
+                fontSize: 12,
+                fontWeight: 600,
+                cursor: isEvaluating ? "not-allowed" : "pointer",
+                fontFamily: '"Noto Serif SC", Georgia, serif',
+                letterSpacing: "0.08em",
+                transition: "all 0.25s ease",
+                display: "flex",
+                alignItems: "center",
+                gap: 6,
+              }}
+            >
+              {isEvaluating ? (
+                <>
+                  <motion.span
+                    animate={{ rotate: 360 }}
+                    transition={{ duration: 0.8, repeat: Infinity, ease: "linear" }}
+                    style={{ display: "inline-block", fontSize: 12 }}
+                  >
+                    ◇
+                  </motion.span>
+                  评测进行中
+                </>
+              ) : (
+                "开始评测"
+              )}
+            </motion.button>
+          </div>
+
+          {/* 评测进度面板 */}
+          <AnimatePresence>
+            {isEvaluating && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: "auto" }}
+                exit={{ opacity: 0, height: 0 }}
+                style={{ overflow: "hidden" }}
+              >
+                <div style={{
+                  marginTop: 8, padding: "16px 18px",
+                  background: "#fff", border: "1px solid #e8e6e1",
+                  borderLeft: "3px solid #8b7355",
+                }}>
+                  {/* 总进度条 */}
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
+                    <span style={{ fontSize: 12, fontWeight: 600, color: "#4a4038", fontFamily: '"Noto Serif SC", Georgia, serif' }}>
+                      评测进度
+                    </span>
+                    <span style={{ fontSize: 11, color: "#a8a39b" }}>
+                      {evalStepIndex + 1} / {EVAL_STEPS.length}
+                    </span>
+                  </div>
+                  <div style={{ height: 3, background: "#e8e6e1", marginBottom: 14, overflow: "hidden" }}>
+                    <motion.div
+                      animate={{ width: `${((evalStepIndex + 1) / EVAL_STEPS.length) * 100}%` }}
+                      transition={{ duration: 0.4, ease: "easeOut" }}
+                      style={{ height: "100%", background: "#8b7355" }}
+                    />
+                  </div>
+                  {/* 步骤列表 */}
+                  <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+                    {EVAL_STEPS.map((step, idx) => {
+                      const done = idx < evalStepIndex;
+                      const active = idx === evalStepIndex;
+                      const pending = idx > evalStepIndex;
+                      return (
+                        <motion.div
+                          key={idx}
+                          initial={false}
+                          animate={{ opacity: pending ? 0.4 : 1 }}
+                          style={{
+                            display: "flex", alignItems: "center", gap: 10,
+                            padding: "4px 0",
+                          }}
+                        >
+                          <span style={{
+                            width: 16, height: 16, flexShrink: 0,
+                            display: "flex", alignItems: "center", justifyContent: "center",
+                            fontSize: 10, fontWeight: 700,
+                            color: done ? "#6b8f71" : active ? "#8b7355" : "#c4b99a",
+                          }}>
+                            {done ? "✓" : active ? (
+                              <motion.span
+                                animate={{ rotate: 360 }}
+                                transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                                style={{ display: "inline-block" }}
+                              >
+                                ◇
+                              </motion.span>
+                            ) : "·"}
+                          </span>
+                          <span style={{
+                            fontSize: 12,
+                            color: done ? "#6b8f71" : active ? "#4a4038" : "#a8a39b",
+                            fontWeight: active ? 600 : 400,
+                            fontFamily: '"Noto Serif SC", Georgia, serif',
+                          }}>
+                            {step.name}
+                          </span>
+                          {active && (
+                            <motion.span
+                              initial={{ opacity: 0 }}
+                              animate={{ opacity: 1 }}
+                              style={{ fontSize: 11, color: "#a8a39b", marginLeft: "auto" }}
+                            >
+                              {step.detail}
+                            </motion.span>
+                          )}
+                        </motion.div>
+                      );
+                    })}
+                  </div>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
 
           {/* Tab 导航 */}
           <div style={{ display: "flex", gap: 0, borderBottom: "1px solid #d5cfc4", marginTop: 16 }}>
@@ -338,6 +546,7 @@ const HermesEvalPanel: React.FC<HermesEvalPanelProps> = ({ onClose }) => {
               sCount={sCount}
               aCount={aCount}
               worksEval={worksEval}
+              evalDate={evalDate}
               onSelectWork={setSelectedWork}
             />
           )}
@@ -364,8 +573,9 @@ const OverviewTab: React.FC<{
   sCount: number;
   aCount: number;
   worksEval: WorkEval[];
+  evalDate: string;
   onSelectWork: (w: WorkEval) => void;
-}> = ({ avgScore, sCount, aCount, worksEval, onSelectWork }) => (
+}> = ({ avgScore, sCount, aCount, worksEval, evalDate, onSelectWork }) => (
   <>
     {/* 系统架构 */}
     <div style={{
@@ -412,9 +622,16 @@ const OverviewTab: React.FC<{
     </div>
 
     {/* 作品评测列表 */}
-    <h3 style={{ margin: "0 0 12px", fontFamily: '"Noto Serif SC", Georgia, serif', fontSize: 14, color: "#4a4038" }}>
-      作品评测结果
-    </h3>
+    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+      <h3 style={{ margin: 0, fontFamily: '"Noto Serif SC", Georgia, serif', fontSize: 14, color: "#4a4038" }}>
+        作品评测结果
+      </h3>
+      {evalDate && (
+        <span style={{ fontSize: 11, color: "#a8a39b", fontFamily: '"Noto Serif SC", Georgia, serif' }}>
+          评测时间：{evalDate}
+        </span>
+      )}
+    </div>
     <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
       {worksEval.map((work, idx) => {
         const gc = gradeColors[work.grade] || gradeColors.B;

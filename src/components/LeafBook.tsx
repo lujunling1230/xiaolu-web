@@ -894,8 +894,8 @@ const LeafBook: React.FC<LeafBookProps> = ({ registerOpenBook, flipTriggerRef, a
         :root[data-theme="day"] .lb-book {
           --lb-page-bg: #F5F0E4;
           --lb-vein-color: rgba(122, 154, 130, 0.06);
-          --lb-text: #3d3d3d;
-          --lb-text-soft: #6b6b6b;
+          --lb-text: #2a2a2a;
+          --lb-text-soft: #4a4a4a;
         }
         :root[data-theme="night"] .lb-book {
           --lb-page-bg: #2A3028;
@@ -1220,7 +1220,7 @@ const LeafBook: React.FC<LeafBookProps> = ({ registerOpenBook, flipTriggerRef, a
         .lb-cover-subtitle {
           font-size: 16px;
           font-weight: 400;
-          color: #5A6B5C;
+          color: #3A4B3C;
           margin: 0 0 36px;
           letter-spacing: 0.06em;
           line-height: 1.5;
@@ -1232,7 +1232,7 @@ const LeafBook: React.FC<LeafBookProps> = ({ registerOpenBook, flipTriggerRef, a
         .lb-cover-year {
           font-size: 12px;
           font-weight: 300;
-          color: #999;
+          color: #666;
           letter-spacing: 0.1em;
           align-self: flex-end;
           margin-top: auto;
@@ -1497,7 +1497,7 @@ const LeafBook: React.FC<LeafBookProps> = ({ registerOpenBook, flipTriggerRef, a
         .lb-spread-num {
           font-family: "Noto Serif SC", Georgia, serif;
           font-size: 11px;
-          color: rgba(140, 110, 80, 0.5);
+          color: rgba(140, 110, 80, 0.7);
           font-variant-numeric: tabular-nums;
           min-width: 22px;
           padding-top: 2px;
@@ -1528,7 +1528,7 @@ const LeafBook: React.FC<LeafBookProps> = ({ registerOpenBook, flipTriggerRef, a
         }
         .lb-spread-item-sub {
           font-size: 11px;
-          color: rgba(140, 110, 80, 0.55);
+          color: rgba(140, 110, 80, 0.75);
           line-height: 1.45;
           white-space: nowrap;
           overflow: hidden;
@@ -1645,7 +1645,7 @@ const LeafBook: React.FC<LeafBookProps> = ({ registerOpenBook, flipTriggerRef, a
           font-family: "Noto Serif SC", Georgia, serif;
           font-size: 22px;
           font-weight: 500;
-          color: #3A4F3A;
+          color: #2A3F2A;
           margin: 0 0 28px;
           letter-spacing: 0.04em;
         }
@@ -1656,7 +1656,7 @@ const LeafBook: React.FC<LeafBookProps> = ({ registerOpenBook, flipTriggerRef, a
           font-family: "Noto Serif SC", Georgia, serif;
           font-size: 15px;
           line-height: 1.8;
-          color: #4A5A4A;
+          color: #2A3A2A;
           margin: 0 0 32px;
         }
         :root[data-theme="night"] .lb-origin-body {
@@ -1674,7 +1674,7 @@ const LeafBook: React.FC<LeafBookProps> = ({ registerOpenBook, flipTriggerRef, a
           text-align: right;
           font-style: italic;
           font-size: 14px;
-          color: #5A6B5C;
+          color: #3A4B3C;
           margin: 0 0 40px;
           font-family: "Noto Serif SC", Georgia, serif;
         }
@@ -1685,7 +1685,7 @@ const LeafBook: React.FC<LeafBookProps> = ({ registerOpenBook, flipTriggerRef, a
           text-align: center;
           font-size: 13px;
           font-weight: 300;
-          color: #5A6B5C;
+          color: #3A4B3C;
           opacity: 0.7;
           letter-spacing: 0.06em;
           font-family: "Noto Sans SC", system-ui, sans-serif;

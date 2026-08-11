@@ -7,7 +7,6 @@ import { useAppManifest } from "../hooks/useAppManifest";
 import GratitudeJournal from "../components/GratitudeJournal";
 import BreathingGuide from "../components/BreathingGuide";
 import MeditationTimer from "../components/MeditationTimer";
-import HealingCompanion from "../components/HealingCompanion";
 import AchievementPage from "../components/AchievementPage";
 import WeChatGuide from "../components/WeChatGuide";
 import PWAInstallPrompt from "../components/PWAInstallPrompt";
@@ -35,14 +34,7 @@ const MeditationIcon = () => (
 );
 
 
-type ModuleId = "welcome" | "journal" | "breathing" | "meditation" | "achievements" | "companion";
-
-const CompanionIcon = () => (
-  <svg width="18" height="18" viewBox="0 0 20 20" fill="none">
-    <path d="M10 3C7 6 4 9 4 12.5C4 16 6.7 19 10 19C13.3 19 16 16 16 12.5C16 9 13 6 10 7C8 7.3 6.5 9.5 7.5 12C8 13.2 9 13.8 10 12.5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" />
-    <path d="M7 10L5.5 13M13 10L14.5 13M5 15L3.5 17.5M15 15L16.5 17.5" stroke="currentColor" strokeWidth="1" strokeLinecap="round" opacity="0.4" />
-  </svg>
-);
+type ModuleId = "welcome" | "journal" | "breathing" | "meditation" | "achievements";
 
 const AchievementIcon = () => (
   <svg width="18" height="18" viewBox="0 0 20 20" fill="none">
@@ -84,7 +76,6 @@ const HealingRoomPage: React.FC = () => {
       case "breathing": return <BreathingGuide />;
       case "meditation": return <MeditationTimer />;
       case "achievements": return <AchievementPage />;
-      case "companion": return <HealingCompanion />;
       default: return <WelcomeCard />;
     }
   };
@@ -152,24 +143,6 @@ const HealingRoomPage: React.FC = () => {
               <span className="hl-nav-sub">Achievements</span>
             </span>
           </button>
-          {/* 疗愈对话入口 */}
-          <button
-            className={`hl-nav-item ${active === "companion" ? "hl-nav-active" : ""}`}
-            onClick={() => handleSelect("companion")}
-          >
-            {active === "companion" && (
-              <motion.span
-                className="hl-nav-bar"
-                layoutId="hl-nav-bar"
-                transition={{ duration: 0.3, ease: "easeOut" }}
-              />
-            )}
-            <span className="hl-nav-icon"><CompanionIcon /></span>
-            <span className="hl-nav-text">
-              <span className="hl-nav-label">疗愈对话</span>
-              <span className="hl-nav-sub">Companion</span>
-            </span>
-          </button>
         </nav>
 
         {/* 装饰语 */}
@@ -212,13 +185,6 @@ const HealingRoomPage: React.FC = () => {
               <span className="hl-nav-icon"><AchievementIcon /></span>
               疗愈成就
             </button>
-            <button
-              className={`hl-mobile-nav-item ${active === "companion" ? "hl-mobile-nav-active" : ""}`}
-              onClick={() => handleSelect("companion")}
-            >
-              <span className="hl-nav-icon"><CompanionIcon /></span>
-              疗愈对话
-            </button>
           </motion.div>
         )}
       </AnimatePresence>
@@ -229,12 +195,23 @@ const HealingRoomPage: React.FC = () => {
           <AnimatePresence mode="wait">
             <motion.div
               key={active}
-              className="hl-card"
+              className={`hl-card${active === "welcome" ? " hl-card-welcome" : ""}`}
               initial={{ opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -8 }}
               transition={{ duration: 0.35, ease: "easeOut" }}
             >
+              {active !== "welcome" && (
+                <button
+                  className="hl-close-btn"
+                  onClick={() => handleSelect("welcome")}
+                  aria-label="返回"
+                >
+                  <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                    <path d="M3 3L11 11M11 3L3 11" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
+                  </svg>
+                </button>
+              )}
               {renderModule()}
             </motion.div>
           </AnimatePresence>
@@ -296,7 +273,7 @@ const HealingRoomPage: React.FC = () => {
           background: rgba(10, 20, 10, 0.35);
           backdrop-filter: blur(16px);
           -webkit-backdrop-filter: blur(16px);
-          border-right: 1px solid rgba(255, 255, 255, 0.1);
+          border-right: 1px solid rgba(240, 232, 215, 0.12);
         }
 
         /* 回到主站 */
@@ -308,9 +285,9 @@ const HealingRoomPage: React.FC = () => {
           margin-bottom: 24px;
           font-size: 12px;
           font-weight: 500;
-          color: rgba(255, 255, 255, 0.75);
-          background: rgba(255, 255, 255, 0.08);
-          border: 1px solid rgba(255, 255, 255, 0.15);
+          color: rgba(240, 232, 215, 0.85);
+          background: rgba(255, 248, 235, 0.08);
+          border: 1px solid rgba(240, 232, 215, 0.2);
           border-radius: 999px;
           text-decoration: none;
           letter-spacing: 0.04em;
@@ -318,8 +295,8 @@ const HealingRoomPage: React.FC = () => {
           width: fit-content;
         }
         .hl-back:hover {
-          background: rgba(255, 255, 255, 0.15);
-          color: #fff;
+          background: rgba(255, 248, 235, 0.15);
+          color: rgba(250, 244, 230, 1);
           transform: translateX(-2px);
         }
 
@@ -328,7 +305,7 @@ const HealingRoomPage: React.FC = () => {
           font-family: "Noto Serif SC", Georgia, serif;
           font-size: 16px;
           font-weight: 600;
-          color: rgba(255, 255, 255, 0.9);
+          color: rgba(245, 238, 222, 0.95);
           margin-bottom: 20px;
           padding-left: 12px;
           letter-spacing: 0.08em;
@@ -355,19 +332,19 @@ const HealingRoomPage: React.FC = () => {
           cursor: pointer;
           text-align: left;
           transition: background 0.25s ease, color 0.25s ease;
-          color: rgba(255, 255, 255, 0.65);
+          color: rgba(235, 226, 208, 0.82);
           overflow: hidden;
         }
         .hl-nav-item:hover {
-          background: rgba(255, 255, 255, 0.08);
-          color: rgba(255, 255, 255, 0.9);
+          background: rgba(255, 248, 235, 0.08);
+          color: rgba(250, 244, 230, 0.98);
         }
         .hl-nav-active {
-          background: rgba(122, 154, 130, 0.2) !important;
-          color: rgba(200, 230, 200, 0.95) !important;
+          background: rgba(94, 138, 110, 0.2) !important;
+          color: rgba(250, 244, 230, 1) !important;
         }
         .hl-nav-active:hover {
-          background: rgba(122, 154, 130, 0.25) !important;
+          background: rgba(94, 138, 110, 0.28) !important;
         }
 
         /* 左侧竖线指示器 */
@@ -377,9 +354,9 @@ const HealingRoomPage: React.FC = () => {
           top: 20%;
           bottom: 20%;
           width: 3px;
-          background: rgba(160, 200, 160, 0.8);
+          background: rgba(94, 138, 110, 0.8);
           border-radius: 0 3px 3px 0;
-          box-shadow: 0 0 8px rgba(160, 200, 160, 0.5);
+          box-shadow: 0 0 6px rgba(94, 138, 110, 0.3);
         }
 
         .hl-nav-icon {
@@ -389,7 +366,7 @@ const HealingRoomPage: React.FC = () => {
           flex-shrink: 0;
           width: 18px;
           height: 18px;
-          opacity: 0.75;
+          opacity: 0.9;
         }
         .hl-nav-active .hl-nav-icon { opacity: 1; }
 
@@ -406,7 +383,7 @@ const HealingRoomPage: React.FC = () => {
         }
         .hl-nav-sub {
           font-size: 9px;
-          opacity: 0.55;
+          opacity: 0.75;
           letter-spacing: 0.04em;
         }
 
@@ -414,7 +391,7 @@ const HealingRoomPage: React.FC = () => {
         .hl-sidebar-quote {
           font-family: "Noto Serif SC", Georgia, serif;
           font-size: 10px;
-          color: rgba(255, 255, 255, 0.35);
+          color: rgba(230, 222, 205, 0.55);
           text-align: center;
           margin-top: 16px;
           letter-spacing: 0.06em;
@@ -439,21 +416,78 @@ const HealingRoomPage: React.FC = () => {
         }
 
         .hl-card {
-          background: rgba(255, 255, 255, 0.12);
-          backdrop-filter: blur(16px);
-          -webkit-backdrop-filter: blur(16px);
-          border: 1px solid rgba(255, 255, 255, 0.18);
+          position: relative;
+          background: #f5f0e6;
+          border: 1px solid rgba(0, 0, 0, 0.06);
           border-radius: 20px;
           padding: 36px;
-          box-shadow: 0 12px 48px rgba(0, 0, 0, 0.18);
-          color: rgba(255, 255, 255, 0.92);
+          box-shadow: 0 12px 48px rgba(0, 0, 0, 0.15);
+          color: #1a1f1a;
 
-          /* 覆盖子组件的 CSS 变量为白色系，适配深色卡片背景 */
-          --text: rgba(255, 255, 255, 0.92);
-          --text-soft: rgba(255, 255, 255, 0.6);
-          --accent: #A5C4A0;
-          --card-bg: rgba(255, 255, 255, 0.08);
-          --border: rgba(255, 255, 255, 0.15);
+          /* 覆盖子组件的 CSS 变量为深色文字，适配浅色卡片背景（树叶描边黑） */
+          --text: #1a1f1a;
+          --text-soft: rgba(26, 31, 26, 0.75);
+          --accent: #5E8A6E;
+          --card-bg: rgba(0, 0, 0, 0.03);
+          --border: rgba(0, 0, 0, 0.08);
+        }
+
+        /* 欢迎页卡片：半透明绿调米色，透出森林背景 */
+        .hl-card-welcome {
+          background: rgba(238, 240, 232, 0.38);
+          backdrop-filter: blur(28px) saturate(1.1);
+          -webkit-backdrop-filter: blur(28px) saturate(1.1);
+          border: 1px solid rgba(255, 255, 255, 0.18);
+          box-shadow: 0 12px 48px rgba(0, 0, 0, 0.15), inset 0 1px 0 rgba(255, 255, 255, 0.15);
+          text-shadow: 0 1px 4px rgba(255, 250, 240, 0.55);
+        }
+
+        /* 关闭按钮 */
+        .hl-close-btn {
+          position: absolute;
+          top: 14px;
+          right: 14px;
+          z-index: 10;
+          width: 30px;
+          height: 30px;
+          border: none;
+          border-radius: 50%;
+          background: rgba(26, 31, 26, 0.08);
+          color: rgba(26, 31, 26, 0.75);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          cursor: pointer;
+          transition: all 0.2s ease;
+        }
+        .hl-close-btn:hover {
+          background: rgba(26, 31, 26, 0.15);
+          color: #1a1f1a;
+          transform: rotate(90deg);
+        }
+
+        /* 强制子组件 night 模式在卡片内使用暖米色背景 + 深色文字 */
+        [data-theme="night"] .hl-card .gj-page-paper {
+          background-color: #f5f0e6 !important;
+          background-image:
+            radial-gradient(ellipse 62% 52% at 18% 14%, rgba(122,154,130,0.08) 0%, transparent 62%),
+            radial-gradient(ellipse 56% 46% at 86% 88%, rgba(202,172,122,0.10) 0%, transparent 60%),
+            radial-gradient(ellipse 72% 62% at 50% 52%, rgba(246,238,218,0.4) 0%, transparent 72%) !important;
+          --text: #1a1f1a !important;
+          --text-soft: rgba(26, 31, 26, 0.75) !important;
+          --accent: #5E8A6E !important;
+          --card-bg: rgba(0, 0, 0, 0.03) !important;
+          --border: rgba(0, 0, 0, 0.08) !important;
+        }
+        [data-theme="night"] .hl-card .ms-card {
+          background: #f5f0e6 !important;
+          border-color: rgba(0, 0, 0, 0.08) !important;
+          box-shadow: 0 4px 24px rgba(0,0,0,0.06) !important;
+          --text: #1a1f1a !important;
+          --text-soft: rgba(26, 31, 26, 0.75) !important;
+          --accent: #5E8A6E !important;
+          --card-bg: rgba(0, 0, 0, 0.03) !important;
+          --border: rgba(0, 0, 0, 0.08) !important;
         }
 
         /* ===== 欢迎卡片 ===== */
@@ -470,12 +504,12 @@ const HealingRoomPage: React.FC = () => {
           font-family: "Noto Serif SC", Georgia, serif;
           font-size: 24px;
           font-weight: 600;
-          color: rgba(255, 255, 255, 0.92);
+          color: #1a1f1a;
           margin: 0 0 14px;
         }
         .hl-welcome-sub {
           font-size: 15px;
-          color: rgba(255, 255, 255, 0.65);
+          color: rgba(26, 31, 26, 0.85);
           margin: 0 0 24px;
           line-height: 1.7;
         }
@@ -485,7 +519,7 @@ const HealingRoomPage: React.FC = () => {
           justify-content: center;
           gap: 10px;
           font-size: 12px;
-          color: rgba(255, 255, 255, 0.35);
+          color: rgba(26, 31, 26, 0.7);
           letter-spacing: 0.06em;
         }
         .hl-welcome-arrow {
@@ -509,29 +543,29 @@ const HealingRoomPage: React.FC = () => {
           background: rgba(10, 20, 10, 0.7);
           backdrop-filter: blur(12px);
           -webkit-backdrop-filter: blur(12px);
-          border-bottom: 1px solid rgba(255,255,255,0.1);
+          border-bottom: 1px solid rgba(240, 232, 215, 0.12);
           align-items: center;
           justify-content: space-between;
         }
         .hl-mobile-back {
           font-size: 13px;
-          color: rgba(255,255,255,0.7);
+          color: rgba(240, 232, 215, 0.85);
           text-decoration: none;
           padding: 6px 0;
         }
         .hl-mobile-title {
           font-family: "Noto Serif SC", Georgia, serif;
           font-size: 15px;
-          color: rgba(255,255,255,0.85);
+          color: rgba(245, 238, 222, 0.95);
           font-weight: 500;
         }
         .hl-mobile-menu-btn {
           width: 32px;
           height: 32px;
           border: none;
-          background: rgba(255,255,255,0.1);
+          background: rgba(255, 248, 235, 0.1);
           border-radius: 8px;
-          color: rgba(255,255,255,0.8);
+          color: rgba(240, 232, 215, 0.9);
           font-size: 16px;
           cursor: pointer;
           display: flex;
@@ -551,7 +585,7 @@ const HealingRoomPage: React.FC = () => {
           backdrop-filter: blur(16px);
           -webkit-backdrop-filter: blur(16px);
           padding: 8px 16px 12px;
-          border-bottom: 1px solid rgba(255,255,255,0.1);
+          border-bottom: 1px solid rgba(240, 232, 215, 0.12);
           flex-wrap: wrap;
           gap: 6px;
         }
@@ -560,18 +594,18 @@ const HealingRoomPage: React.FC = () => {
           align-items: center;
           gap: 6px;
           padding: 8px 14px;
-          border: 1px solid rgba(255,255,255,0.15);
+          border: 1px solid rgba(240, 232, 215, 0.18);
           border-radius: 999px;
-          background: rgba(255,255,255,0.06);
-          color: rgba(255,255,255,0.7);
+          background: rgba(255, 248, 235, 0.06);
+          color: rgba(235, 226, 208, 0.85);
           font-size: 13px;
           cursor: pointer;
           transition: all 0.2s ease;
         }
         .hl-mobile-nav-active {
-          background: rgba(122, 154, 130, 0.25);
-          border-color: rgba(160, 200, 160, 0.4);
-          color: rgba(200, 230, 200, 0.95);
+          background: rgba(94, 138, 110, 0.22);
+          border-color: rgba(94, 138, 110, 0.45);
+          color: rgba(250, 244, 230, 1);
         }
 
         /* ===== 响应式 ===== */

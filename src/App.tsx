@@ -505,7 +505,7 @@ const AppContent: React.FC = () => {
         /* 作品说明书副标题：居中引言风格 */
         .po-projects-sub {
           font-size: 16px;
-          color: #888;
+          color: #555;
           font-style: italic;
           text-align: center;
           line-height: 1.6;

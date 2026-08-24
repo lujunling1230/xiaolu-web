@@ -6,7 +6,6 @@ import App from "./App";
 import ToolboxHome from "./pages/toolbox/ToolboxHome";
 import ToolboxDetail from "./pages/toolbox/ToolboxDetail";
 import InventoryPage from "./pages/toolbox/InventoryPage";
-import AdvicePage from "./pages/toolbox/AdvicePage";
 import QuestLogPage from "./pages/toolbox/QuestLogPage";
 import RechargePage from "./pages/toolbox/RechargePage";
 import MuseumPage from "./pages/toolbox/MuseumPage";
@@ -33,6 +32,9 @@ import ZhongjiPage from "./pages/ZhongjiPage";
 import ZhiyongPage from "./pages/ZhiyongPage";
 import XianqingPage from "./pages/XianqingPage";
 import ContactPage from "./pages/ContactPage";
+import CaseStudyBanling from "./pages/CaseStudyBanling";
+import CaseStudyHermes from "./pages/CaseStudyHermes";
+import DataAchievements from "./pages/DataAchievements";
 import "./index.css";
 
 /** 路由切换时回到页面顶部，避免新页面继承上一页的滚动位置 */
@@ -83,8 +85,7 @@ createRoot(document.getElementById("root")!).render(
         <Route path="/toolbox/inventory" element={<InventoryPage />} />
         {/* /toolbox/supplies 别名：米奇妙妙屋中「物资管家」入口专用，指向同一组件 */}
         <Route path="/toolbox/supplies" element={<InventoryPage />} />
-        {/* 解忧杂货店：治愈系问答空间 */}
-        <Route path="/toolbox/advice" element={<AdvicePage />} />
+        {/* AdvicePage removed - module deleted */}
         {/* 通关清单：游戏化 To-Do */}
         <Route path="/toolbox/quests" element={<QuestLogPage />} />
         {/* /toolbox/memories route removed - Museum module deleted */}
@@ -127,6 +128,11 @@ createRoot(document.getElementById("root")!).render(
         <Route path="/toolbox/banling" element={<BanlingPage />} />
         {/* 作品详情占位页 */}
         <Route path="/toolbox/:title" element={<ToolboxDetail />} />
+        {/* 产品案例研究（商业价值展示） */}
+        <Route path="/case-study/banling" element={<CaseStudyBanling />} />
+        <Route path="/case-study/hermes" element={<CaseStudyHermes />} />
+        {/* 数据成果展示（公开指标看板） */}
+        <Route path="/stats" element={<DataAchievements />} />
       </Routes>
       </StandaloneProvider>
       </UserAuthProvider>

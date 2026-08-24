@@ -5,6 +5,8 @@
  * 前端不持有任何 API Key。
  */
 
+import { track } from "./track";
+
 export interface CallAIOptions {
   model?: string;
   temperature?: number;
@@ -55,6 +57,7 @@ export async function callAI(
         errInfo = await response.text();
       }
       console.warn(`[aiClient] 请求失败 (${status}):`, errInfo);
+      track("ai_call", { model, success: false, error: `http_${status}` });
       return "🍃 信号受到干扰，请稍后再试… —— 调频师 (FM 95.8)";
     }
 
@@ -62,16 +65,19 @@ export async function callAI(
     const content = data?.content;
 
     if (typeof content === "string" && content.trim()) {
+      track("ai_call", { model, success: true, tokens: content.length });
       return content.trim();
     }
 
     console.warn("[aiClient] 响应格式异常:", data);
+    track("ai_call", { model, success: false, error: "format" });
     return "🍃 信号受到干扰，请稍后再试… —— 调频师 (FM 95.8)";
   } catch (err) {
     if (err instanceof DOMException && err.name === "AbortError") {
       return "";
     }
     console.warn("[aiClient] 请求异常:", err);
+    track("ai_call", { model, success: false, error: "exception" });
     return "🍃 信号受到干扰，请稍后再试… —— 调频师 (FM 95.8)";
   }
 }

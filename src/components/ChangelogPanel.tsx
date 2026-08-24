@@ -27,7 +27,7 @@ const changelog: VersionEntry[] = [
       "首页文字配色加深 + 字号放大优化，提升森林背景下的可读性",
       "导航栏等间隔分布，视觉节奏更均匀",
       "伴龄移除登录注册，直接进入页面降低使用门槛",
-      "解忧杂货店去掉积分体系，回血清单登录注册移至「我的」页面",
+      "回血清单登录注册移至「我的」页面",
       "移除签到积分面板（爱情公寓/疗愈室/伴龄），回归作品核心体验",
       "移除 playwright/puppeteer/sharp 重型依赖，修复 Vercel 构建失败",
     ],
@@ -100,10 +100,9 @@ const changelog: VersionEntry[] = [
   {
     version: "v1.2",
     date: "2026-07-02",
-    title: "解忧杂货店与 PWA",
+    title: "PWA 与视觉升级",
     type: "major",
     changes: [
-      "「解忧杂货店」上线：AI 回信 + 四角色系统 + 打字机效果",
       "PWA 配置：独立安装 + 离线缓存 + Service Worker",
       "Footer 重构 + 导航栏森林晨雾视觉升级",
       "管理员面板图片上传组件（Base64 预览/拖拽/删除）",

@@ -974,6 +974,22 @@ ${messages.map((m) => `${m.role === "user" ? "用户" : "伴龄"}: ${m.content}`
                           <div className="bl-notice-step"><span className="bl-ns-num">03</span> 定制方案</div>
                           <div className="bl-notice-step"><span className="bl-ns-num">04</span> 长期陪伴</div>
                         </div>
+                        <Link
+                          to="/case-study/banling"
+                          style={{
+                            display: "block",
+                            marginTop: 12,
+                            padding: "8px 0",
+                            fontSize: 12,
+                            color: "#b07d2b",
+                            textDecoration: "none",
+                            borderTop: "1px solid rgba(0,0,0,0.08)",
+                            textAlign: "center",
+                          }}
+                          onClick={() => track("case_study_link", { from: "banling_about" })}
+                        >
+                          查看产品案例研究（市场分析 · 商业模式 · 竞品对比） →
+                        </Link>
                       </div>
                       <button
                         className="bl-modal-btn bl-modal-about-btn"
@@ -1434,6 +1450,65 @@ ${messages.map((m) => `${m.role === "user" ? "用户" : "伴龄"}: ${m.content}`
           </div>
         </div>
       )}
+
+      {/* 保险规划推荐（变现入口） */}
+      <div className="bl-tool-card" style={{ marginTop: 16, background: "linear-gradient(135deg, #fff8e7, #fffdf8)", border: "1px solid #e8d5a0" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 12 }}>
+          <span style={{ fontSize: 18 }}>🛡️</span>
+          <h3 className="bl-card-title" style={{ margin: 0 }}>保障缺口分析</h3>
+        </div>
+        <p style={{ fontSize: 13, color: "#7a6a52", lineHeight: 1.7, marginBottom: 12 }}>
+          基于您的养老金计算结果，推荐补充以下保障方案：
+        </p>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+          {[
+            { name: "养老年金险", desc: "补充退休后稳定现金流", tag: "推荐" },
+            { name: "长期护理险", desc: "覆盖失能照护费用", tag: "热门" },
+            { name: "百万医疗险", desc: "高额医疗费用兜底", tag: "" },
+            { name: "意外伤害险", desc: "老年人意外保障", tag: "" },
+          ].map(item => (
+            <div
+              key={item.name}
+              style={{
+                padding: "10px 12px",
+                background: "#fff",
+                borderRadius: 8,
+                border: "1px solid #eee",
+                cursor: "pointer",
+                transition: "all 0.2s",
+              }}
+              onClick={() => track("banling_insurance_click", { product: item.name })}
+              onMouseEnter={(e) => { e.currentTarget.style.borderColor = "#c4a35a"; e.currentTarget.style.transform = "translateY(-1px)"; }}
+              onMouseLeave={(e) => { e.currentTarget.style.borderColor = "#eee"; e.currentTarget.style.transform = "none"; }}
+            >
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
+                <span style={{ fontSize: 13, fontWeight: 600, color: "#4a4038" }}>{item.name}</span>
+                {item.tag && <span style={{ fontSize: 10, padding: "1px 6px", background: "#c4a35a", color: "#fff", borderRadius: 2 }}>{item.tag}</span>}
+              </div>
+              <div style={{ fontSize: 11, color: "#a8a39b" }}>{item.desc}</div>
+            </div>
+          ))}
+        </div>
+        <button
+          style={{
+            width: "100%",
+            marginTop: 10,
+            padding: "8px 0",
+            border: "1px solid #c4a35a",
+            borderRadius: 8,
+            background: "transparent",
+            color: "#b07d2b",
+            fontSize: 13,
+            cursor: "pointer",
+            transition: "all 0.2s",
+          }}
+          onClick={() => track("banling_insurance_consult", { source: "tools_tab" })}
+          onMouseEnter={(e) => { e.currentTarget.style.background = "#c4a35a"; e.currentTarget.style.color = "#fff"; }}
+          onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; e.currentTarget.style.color = "#b07d2b"; }}
+        >
+          获取个性化保障方案 →
+        </button>
+      </div>
     </div>
   );
 

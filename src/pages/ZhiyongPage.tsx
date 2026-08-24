@@ -27,7 +27,6 @@ const NAV_ITEMS = [
 /* ---------- 作品说明书 ---------- */
 const PROJECTS = [
   { name: "物资管家", path: "/toolbox/supplies", tag: "已交付", desc: "库存管理 · 保质期提醒 · 物资分类" },
-  { name: "解忧杂货店", path: "/toolbox/advice", tag: "自研", desc: "一句话建议 · 心情回复 · 温暖陪伴" },
   { name: "通关清单", path: "/toolbox/quests", tag: "自研", desc: "RPG 游戏化任务 · 经验值 · 成就系统" },
   { name: "回血清单", path: "/toolbox/recharge", tag: "自研", desc: "情绪疗愈 · 极小行动 · 心情标签 · AI 推荐" },
   { name: "漫游指南", path: "/toolbox/travel/map", tag: "自研", desc: "地图标记 · 旅行记录 · AI 推荐" },
@@ -39,7 +38,6 @@ const PROJECTS = [
 /* ---------- 作品集 ---------- */
 const TOOLS = [
   { name: "物资管家", icon: "📦", desc: "库存管理 · 保质期提醒 · 物资分类", path: "/toolbox/supplies" },
-  { name: "解忧杂货店", icon: "🏮", desc: "一句话建议 · 心情回复 · 温暖陪伴", path: "/toolbox/advice" },
   { name: "通关清单", icon: "🎮", desc: "RPG 游戏化任务 · 经验值 · 成就系统", path: "/toolbox/quests" },
   { name: "回血清单", icon: "🔋", desc: "情绪疗愈 · 极小行动 · 心情标签 · AI 推荐", path: "/toolbox/recharge" },
   { name: "漫游指南", icon: "🧳", desc: "地图标记 · 旅行记录 · AI 推荐", path: "/toolbox/travel/map" },
@@ -409,7 +407,7 @@ const ZhiyongPage: React.FC = () => {
                 margin: "0 0 20px",
                 letterSpacing: "0.02em",
               }}>
-                森林疗愈室 · 爱情公寓 · 通关清单 · 物资管家 · 解忧杂货店 · 漫游指南 · 回血清单 · 第七卷胶片
+                森林疗愈室 · 爱情公寓 · 通关清单 · 物资管家 · 漫游指南 · 回血清单 · 第七卷胶片
               </p>
               <span style={{
                 fontFamily: SANS,

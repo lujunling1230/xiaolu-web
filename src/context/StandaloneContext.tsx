@@ -6,7 +6,7 @@ import { useLocation, useNavigate } from "react-router-dom";
  *
  * 场景：
  *   HR 访问：xiaoluweb.com/mickey → 全功能，能看所有作品
- *   用户访问：xiaoluweb.com/toolbox/advice?solo=1 → 仅当前作品，隐藏所有导航入口
+ *   用户访问：xiaoluweb.com/toolbox/recharge?solo=1 → 仅当前作品，隐藏所有导航入口
  *
  * 用法：
  *   const { isSolo } = useSolo();

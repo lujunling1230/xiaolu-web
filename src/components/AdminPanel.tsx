@@ -368,6 +368,67 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onClose, onLogout }) => {
               查看
             </button>
           </div>
+
+          {/* 数据成果公开页入口 */}
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              padding: "11px 16px",
+              marginTop: 6,
+              background: "#FAF9F6",
+              border: "1px solid #E8E6E1",
+              borderRadius: 12,
+              transition: "all 0.3s ease",
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.borderColor = "rgba(45,95,63,0.4)";
+              e.currentTarget.style.boxShadow = "0 4px 12px rgba(45,95,63,0.08)";
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.borderColor = "#E8E6E1";
+              e.currentTarget.style.boxShadow = "none";
+            }}
+          >
+            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+              <span style={{ fontSize: 22 }}>📈</span>
+              <div>
+                <div style={{ fontSize: 15, fontWeight: 500, color: "#4a4038" }}>
+                  数据成果看板
+                </div>
+                <div style={{ fontSize: 11, color: "#a8a39b", marginTop: 2 }}>
+                  公开指标 · 简历数据 · 可分享链接
+                </div>
+              </div>
+            </div>
+            <button
+              onClick={() => window.open("/stats", "_blank")}
+              style={{
+                padding: "7px 16px",
+                border: "1px solid #d5cfc4",
+                borderRadius: 999,
+                background: "transparent",
+                color: "#7a7268",
+                cursor: "pointer",
+                fontSize: 12,
+                transition: "all 0.3s ease",
+                whiteSpace: "nowrap",
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.borderColor = "#2d5f3f";
+                e.currentTarget.style.color = "#2d5f3f";
+                e.currentTarget.style.background = "rgba(45,95,63,0.08)";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.borderColor = "#d5cfc4";
+                e.currentTarget.style.color = "#7a7268";
+                e.currentTarget.style.background = "transparent";
+              }}
+            >
+              打开 ↗
+            </button>
+          </div>
         </div>
 
         {/* 底部操作区 */}

@@ -239,7 +239,6 @@ function generateSuggestions(thisWeek, lastWeek) {
   const funnels = [
     { name: "伴龄", steps: ["tool_enter", "banling_chat", "banling_report", "banling_action_adopt"] },
     { name: "漫游指南", steps: ["tool_enter", "rg_ai_open", "rg_ai_recommend_submit", "rg_ai_adopt_city"] },
-    { name: "解忧杂货店", steps: ["tool_enter", "advice_letter", "advice_reply"] },
     { name: "物资管家", steps: ["tool_enter", "iv_item_add", "iv_ai_ask"] },
     { name: "爱情公寓", steps: ["tool_enter", "apartment_chat", "apartment_post"] },
     { name: "通关清单", steps: ["tool_enter", "quest_complete", "quest_level"] },

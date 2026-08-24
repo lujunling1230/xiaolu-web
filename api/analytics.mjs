@@ -59,13 +59,26 @@ const ALLOWED_EVENTS = new Set([
   "apartment_post",
   "quest_complete",
   "quest_level",
-  "advice_letter",
-  "advice_reply",
+  "quest_shop_purchase",
+  "quest_avatar_upload",
+  "quest_checkin",
+  "quest_claim_card",
   "recharge_action",
+  "recharge_claim_card",
   /* 伴龄 */
   "banling_chat",
   "banling_report",
   "banling_action_adopt",
+  "banling_insurance_click",
+  "banling_insurance_consult",
+  /* 产品案例研究 */
+  "case_study_view",
+  "case_study_cta",
+  "case_study_link",
+  /* AI 调用计数 */
+  "ai_call",
+  /* 变现入口 */
+  "hermes_enterprise_click",
 ]);
 
 /* ---- Bot / Crawler 检测 ---- */
@@ -111,6 +124,7 @@ function sanitizeEvent(evt) {
     session: String(evt.session || "").slice(0, 30),
     anon_id: String(evt.anon_id || "").slice(0, 50),
     path: String(evt.path || "").slice(0, 200),
+    mode: String(evt.mode || "full").slice(0, 10),
   };
 }
 

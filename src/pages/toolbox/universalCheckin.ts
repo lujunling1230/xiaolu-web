@@ -202,7 +202,6 @@ export const PRODUCT_IDS: Record<string, string> = {
   "森林疗愈室": "healing",
   "系统调频": "system_tuning",
   "物资管家": "inventory",
-  "万能百事通": "advice",
   "漫游指南": "travel",
   "伴龄": "banling",
   "回血清单": "recharge",

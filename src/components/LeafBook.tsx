@@ -28,9 +28,8 @@ const ROUTES: string[] = [
   "/toolbox/answer",      // 1 爱情公寓
   "/toolbox/quests",      // 2 通关清单
   "/toolbox/supplies",    // 3 物资管家
-  "/toolbox/advice",      // 4 解忧杂货店
-  "/toolbox/travel/map",  // 5 漫游指南
-  "/toolbox/recharge",    // 6 回血清单
+  "/toolbox/travel/map",  // 4 漫游指南
+  "/toolbox/recharge",    // 5 回血清单
 ];
 
 /** 叶脉 SVG 纸纹理 */

@@ -40,16 +40,6 @@
     "tags": ["React", "TypeScript", "LocalStorage", "分类搜索", "提醒机制"]
   },
   {
-    "id": "advice-shop",
-    "title": "解忧杂货铺",
-    "tag": "治愈系问答空间",
-    "painPoint": "总有一句话，能解开你的心结",
-    "description": "收录了 100+ 治愈句子，点击随机翻牌，每次翻开都是惊喜。",
-    "imageUrl": "/projects/4-advice-shop.png",
-    "liveUrl": "https://xiaoluweb.com/toolbox/advice",
-    "tags": ["React", "Framer Motion", "情感化设计", "LocalStorage"]
-  },
-  {
     "id": "travel-guide",
     "title": "漫游指南",
     "tag": "旅行足迹与攻略",

@@ -138,9 +138,6 @@ export default function AnalyticsDashboard() {
       /* 通关清单 */
       questComplete: countEvent("quest_complete", hours, events),
       questLevel: countEvent("quest_level", hours, events),
-      /* 解忧杂货店 */
-      adviceLetter: countEvent("advice_letter", hours, events),
-      adviceReply: countEvent("advice_reply", hours, events),
       /* 回血清单 */
       rechargeAction: countEvent("recharge_action", hours, events),
       /* 伴龄 */
@@ -170,11 +167,6 @@ export default function AnalyticsDashboard() {
         events
       ),
       /* 各作品漏斗（基于进入该工具的会话） */
-      adviceFunnel: funnel(
-        ["tool_enter", "advice_letter", "advice_reply"],
-        hours,
-        eventsByToolSessions("解忧杂货店", events)
-      ),
       inventoryFunnel: funnel(
         ["tool_enter", "iv_item_add", "iv_ai_ask"],
         hours,
@@ -647,10 +639,6 @@ export default function AnalyticsDashboard() {
                 <StatCard label="物资入库" value={stats.ivItemAdds} color="#8D9A8B" compact />
                 <StatCard label="AI 管家" value={stats.ivAiAsks} color="#C06A2E" compact />
               </WorkStatRow>
-              <WorkStatRow label="解忧杂货店">
-                <StatCard label="写信" value={stats.adviceLetter} color="#4d8a82" compact />
-                <StatCard label="收到回信" value={stats.adviceReply} color="#7BA89E" compact />
-              </WorkStatRow>
               <WorkStatRow label="漫游指南">
                 <StatCard label="AI 向导" value={stats.rgAiOpens} color="#7BA89E" compact />
                 <StatCard label="采纳城市" value={stats.rgAiAdopts} color="#E8853A" compact />
@@ -687,7 +675,7 @@ export default function AnalyticsDashboard() {
               转化漏斗
             </h3>
             <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 16 }}>
-              {["漫游指南", "解忧杂货店", "物资管家", "爱情公寓", "通关清单", "森林疗愈室", "回血清单", "伴龄", "小叶"].map((tab) => (
+              {["漫游指南", "物资管家", "爱情公寓", "通关清单", "森林疗愈室", "回血清单", "伴龄", "小叶"].map((tab) => (
                 <button
                   key={tab}
                   onClick={() => setFunnelTab(tab)}
@@ -714,12 +702,6 @@ export default function AnalyticsDashboard() {
                 <FunnelBars data={stats.recommendFunnel} />
                 <div style={{ fontSize: 12, color: "#a8a39b", margin: "20px 0 8px" }}>攻略生成</div>
                 <FunnelBars data={stats.generateFunnel} />
-              </>
-            )}
-            {funnelTab === "解忧杂货店" && (
-              <>
-                <div style={{ fontSize: 12, color: "#a8a39b", marginBottom: 8 }}>写信 → 收到回信</div>
-                <FunnelBars data={stats.adviceFunnel} />
               </>
             )}
             {funnelTab === "物资管家" && (
@@ -1117,8 +1099,6 @@ function formatStepName(step: string): string {
     rg_ai_generate_result: "收到攻略结果",
     rg_ai_save_plan: "保存攻略",
     tool_enter: "进入工具",
-    advice_letter: "写信",
-    advice_reply: "收到回信",
     iv_item_add: "物资入库",
     iv_ai_ask: "问 AI 管家",
     apartment_chat: "AI 聊天",
@@ -1156,7 +1136,6 @@ function formatPagePath(rawPath: string): string {
     "/toolbox/apartment": "爱情公寓",
     "/toolbox/quests": "通关清单",
     "/toolbox/inventory": "物资管家",
-    "/toolbox/advice": "解忧杂货店",
     "/toolbox/travel": "漫游指南",
     "/toolbox/recharge": "回血清单",
     "/toolbox/banling": "伴龄",

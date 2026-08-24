@@ -54,7 +54,6 @@ const ToolboxHome: React.FC = () => {
     const routeMap: Record<string, string> = {
       "森林疗愈室": "/healing",
       "物资管家": "/toolbox/inventory",
-      "万能百事通": "/toolbox/advice",
       "漫游指南": "/toolbox/travel",
       "通关清单": "/toolbox/quests",
       "系统调频 + 回血清单": "/toolbox/answer",

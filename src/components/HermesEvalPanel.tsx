@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { Link } from "react-router-dom";
 
 /* ============================================================
  * HermesEvalPanel — Hermes 自动评测系统（优化版）
@@ -105,6 +106,21 @@ interface WorkEval {
   trend: number; // 相比上次评测的变化（正数为提升，负数为下降）
 }
 
+/* ─── 真实评测结果（来自 /api/hermes-eval） ─── */
+interface RealWorkEval {
+  workId: string;
+  workName: string;
+  success: boolean;
+  responseTime: number;
+  totalScore: number;
+  grade: string;
+  gradeLabel: string;
+  dimensions: Record<string, number>;
+  strengths: string[];
+  suggestions: string[];
+  responsePreview: string | null;
+}
+
 const worksEval: WorkEval[] = [
   {
     id: "healing", name: "森林疗愈室", grade: "S", gradeLabel: "卓越", totalScore: 92.5,
@@ -165,21 +181,6 @@ const worksEval: WorkEval[] = [
     suggestions: ["首屏加载时间可优化（FCP > 2500ms）", "省份数据无权限修改需加强"],
     optimizationAdvice: "视觉交互「界面美观度」子项得分最高（94）；性能「加载速度」子项得分最低（80），建议对省份地图 SVG 做懒加载 + 资源预加载，目标将 FCP 控制在 1500ms 以内。",
     trend: 1.2,
-  },
-  {
-    id: "advice", name: "解忧杂货店", grade: "A", gradeLabel: "优秀", totalScore: 88.5,
-    dimensions: { functionality: 85, ai_capability: 92, visual_interaction: 88, performance: 86, emotional_experience: 94 },
-    subScores: {
-      functionality: [86, 85, 84, 82],
-      ai_capability: [93, 90, 92, 94],
-      visual_interaction: [90, 88, 86, 84],
-      performance: [88, 86, 84, 82],
-      emotional_experience: [95, 93, 94, 92],
-    },
-    strengths: ["浪矢爷爷 AI 回信温度极高", "深夜杂货店氛围营造到位", "信件本地存储 + 回看体验好"],
-    suggestions: ["表单校验可加强（空信拦截）"],
-    optimizationAdvice: "情感体验「用户满意度」子项得分最高（95），品牌调性一致；功能性「功能创新性」得分偏低（82），建议增加信件分类标签、收藏信件、定时回看提醒等细节功能。",
-    trend: 0.5,
   },
   {
     id: "inventory", name: "物资管家", grade: "A", gradeLabel: "优秀", totalScore: 84.0,
@@ -250,31 +251,24 @@ const gradeColors: Record<string, { bg: string; text: string; border: string }> 
   C: { bg: "rgba(200,170,100,0.1)", text: "#a08050", border: "#c8aa64" },
 };
 
-/* ─── 评测步骤 ─── */
-const EVAL_STEPS = [
-  { name: "初始化多智能体框架", detail: "启动 Research / Code / Review / Delegate Agent" },
-  { name: "执行功能维度评测", detail: "遍历 9 个作品的核心功能路径" },
-  { name: "执行 AI 能力评测", detail: "调用各作品 AI 接口，验证回答质量" },
-  { name: "执行视觉交互评测", detail: "检测界面渲染、动画帧率、响应速度" },
-  { name: "执行性能评测", detail: "测量 FCP、LCP、TTFB 等核心指标" },
-  { name: "执行情感体验评测", detail: "分析文案温度、品牌一致性、用户反馈" },
-  { name: "生成评测报告", detail: "汇总数据，生成优化建议" },
-];
-
 const EVAL_DATE_KEY = "hermes_eval_date";
 
 /* ============================================================
  * 主组件
  * ============================================================ */
 const HermesEvalPanel: React.FC<HermesEvalPanelProps> = ({ onClose }) => {
-  const [selectedWork, setSelectedWork] = useState<WorkEval | null>(null);
+  const [selectedWork, setSelectedWork] = useState<WorkEval | RealWorkEval | null>(null);
   const [activeTab, setActiveTab] = useState<"overview" | "methods" | "trends">("overview");
 
   /* ─── 评测状态 ─── */
   const [evalDate, setEvalDate] = useState<string>("");
   const [isEvaluating, setIsEvaluating] = useState(false);
   const [evalStepIndex, setEvalStepIndex] = useState(-1);
-  const timersRef = useRef<ReturnType<typeof setTimeout>[]>([]);
+  const [evalStepName, setEvalStepName] = useState("");
+  const [evalStepTotal, setEvalStepTotal] = useState(0);
+  const [realResults, setRealResults] = useState<RealWorkEval[]>([]);
+  const [evalError, setEvalError] = useState<string | null>(null);
+  const abortRef = useRef<AbortController | null>(null);
 
   // 加载上次评测日期
   useEffect(() => {
@@ -282,12 +276,19 @@ const HermesEvalPanel: React.FC<HermesEvalPanelProps> = ({ onClose }) => {
     if (saved) {
       setEvalDate(saved);
     }
+    // 加载上次评测结果
+    const savedResults = localStorage.getItem("hermes_eval_results");
+    if (savedResults) {
+      try {
+        setRealResults(JSON.parse(savedResults));
+      } catch { /* ignore */ }
+    }
   }, []);
 
-  // 清理定时器
+  // 清理
   useEffect(() => {
     return () => {
-      timersRef.current.forEach((t) => clearTimeout(t));
+      abortRef.current?.abort();
     };
   }, []);
 
@@ -297,37 +298,98 @@ const HermesEvalPanel: React.FC<HermesEvalPanelProps> = ({ onClose }) => {
     return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
   };
 
-  /** 开始评测 */
-  const handleStartEval = useCallback(() => {
+  /** 开始真实评测 —— 调用 /api/hermes-eval SSE 接口 */
+  const handleStartEval = useCallback(async () => {
     if (isEvaluating) return;
     setIsEvaluating(true);
     setEvalStepIndex(0);
+    setEvalError(null);
+    setRealResults([]);
+    setEvalStepTotal(9);
+    setEvalStepName("正在连接评测服务…");
 
-    // 依次推进每个评测步骤
-    EVAL_STEPS.forEach((_, idx) => {
-      const timer = setTimeout(() => {
-        if (idx < EVAL_STEPS.length - 1) {
-          setEvalStepIndex(idx + 1);
-        } else {
-          // 最后一步完成后，记录评测日期
-          const now = formatDate(new Date());
-          setEvalDate(now);
-          localStorage.setItem(EVAL_DATE_KEY, now);
-          // 短暂延迟后关闭评测进度
-          const closeTimer = setTimeout(() => {
-            setIsEvaluating(false);
-            setEvalStepIndex(-1);
-          }, 800);
-          timersRef.current.push(closeTimer);
+    const controller = new AbortController();
+    abortRef.current = controller;
+
+    try {
+      const res = await fetch("/api/hermes-eval", {
+        method: "POST",
+        signal: controller.signal,
+        headers: { "Content-Type": "application/json" },
+      });
+
+      if (!res.ok) {
+        throw new Error(`评测服务返回 ${res.status}`);
+      }
+
+      const reader = res.body?.getReader();
+      if (!reader) throw new Error("无法读取响应流");
+
+      const decoder = new TextDecoder();
+      let buffer = "";
+      const collected: RealWorkEval[] = [];
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split("\n");
+        buffer = lines.pop() || "";
+
+        let currentEvent = "";
+        for (const line of lines) {
+          if (line.startsWith("event: ")) {
+            currentEvent = line.slice(7).trim();
+          } else if (line.startsWith("data: ") && currentEvent) {
+            try {
+              const data = JSON.parse(line.slice(6));
+              if (currentEvent === "start") {
+                setEvalStepTotal(data.totalCases || 9);
+              } else if (currentEvent === "progress") {
+                setEvalStepIndex(data.step - 1);
+                setEvalStepName(data.workName);
+                setEvalStepTotal(data.total);
+              } else if (currentEvent === "result") {
+                collected.push(data);
+                setRealResults([...collected]);
+              } else if (currentEvent === "complete") {
+                const now = formatDate(new Date());
+                setEvalDate(now);
+                localStorage.setItem(EVAL_DATE_KEY, now);
+                localStorage.setItem("hermes_eval_results", JSON.stringify(data.results));
+              } else if (currentEvent === "error") {
+                setEvalError(data.message);
+              }
+            } catch { /* ignore parse errors */ }
+            currentEvent = "";
+          }
         }
-      }, (idx + 1) * 1200);
-      timersRef.current.push(timer);
-    });
+      }
+
+      // 完成
+      setEvalStepIndex(-1);
+    } catch (err: unknown) {
+      if (err instanceof DOMException && err.name === "AbortError") return;
+      setEvalError(err instanceof Error ? err.message : "评测过程出错");
+    } finally {
+      setIsEvaluating(false);
+      abortRef.current = null;
+    }
   }, [isEvaluating]);
 
-  const avgScore = worksEval.reduce((sum, w) => sum + w.totalScore, 0) / worksEval.length;
-  const sCount = worksEval.filter((w) => w.grade === "S").length;
-  const aCount = worksEval.filter((w) => w.grade === "A").length;
+  // 使用真实结果或静态数据
+  const useRealData = realResults.length > 0;
+  const displayResults: RealWorkEval[] = realResults;
+  const avgScore = useRealData
+    ? displayResults.reduce((s, w) => s + w.totalScore, 0) / displayResults.length
+    : worksEval.reduce((sum, w) => sum + w.totalScore, 0) / worksEval.length;
+  const sCount = useRealData
+    ? displayResults.filter((w) => w.grade === "S").length
+    : worksEval.filter((w) => w.grade === "S").length;
+  const aCount = useRealData
+    ? displayResults.filter((w) => w.grade === "A").length
+    : worksEval.filter((w) => w.grade === "A").length;
 
   return (
     <motion.div
@@ -366,6 +428,12 @@ const HermesEvalPanel: React.FC<HermesEvalPanelProps> = ({ onClose }) => {
               <p style={{ margin: "4px 0 0", fontSize: 12, color: "#a8a39b" }}>
                 五维评测 · 多智能体协作 · 自动生成优化建议
               </p>
+              <Link
+                to="/case-study/hermes"
+                style={{ display: "inline-block", marginTop: 6, fontSize: 11, color: "#8b7355", textDecoration: "none", borderBottom: "1px dashed #8b7355" }}
+              >
+                查看产品案例研究（市场分析 · 商业模式 · 竞品对比） →
+              </Link>
             </div>
             <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", color: "#a8a39b", fontSize: 22, padding: 4, lineHeight: 1 }}>×</button>
           </div>
@@ -436,75 +504,93 @@ const HermesEvalPanel: React.FC<HermesEvalPanelProps> = ({ onClose }) => {
                   background: "#fff", border: "1px solid #e8e6e1",
                   borderLeft: "3px solid #8b7355",
                 }}>
-                  {/* 总进度条 */}
+                  {/* 当前评测状态 */}
                   <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
-                    <span style={{ fontSize: 12, fontWeight: 600, color: "#4a4038", fontFamily: '"Noto Serif SC", Georgia, serif' }}>
-                      评测进度
-                    </span>
+                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                      <motion.span
+                        animate={{ rotate: 360 }}
+                        transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                        style={{ display: "inline-block", fontSize: 13, color: "#8b7355" }}
+                      >
+                        ◇
+                      </motion.span>
+                      <span style={{ fontSize: 12, fontWeight: 600, color: "#4a4038", fontFamily: '"Noto Serif SC", Georgia, serif' }}>
+                        {evalStepName || "初始化中…"}
+                      </span>
+                    </div>
                     <span style={{ fontSize: 11, color: "#a8a39b" }}>
-                      {evalStepIndex + 1} / {EVAL_STEPS.length}
+                      {Math.min(evalStepIndex + 1, evalStepTotal)} / {evalStepTotal}
                     </span>
                   </div>
+
+                  {/* 总进度条 */}
                   <div style={{ height: 3, background: "#e8e6e1", marginBottom: 14, overflow: "hidden" }}>
                     <motion.div
-                      animate={{ width: `${((evalStepIndex + 1) / EVAL_STEPS.length) * 100}%` }}
+                      animate={{ width: `${evalStepTotal > 0 ? ((evalStepIndex + 1) / evalStepTotal) * 100 : 0}%` }}
                       transition={{ duration: 0.4, ease: "easeOut" }}
                       style={{ height: "100%", background: "#8b7355" }}
                     />
                   </div>
-                  {/* 步骤列表 */}
-                  <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-                    {EVAL_STEPS.map((step, idx) => {
-                      const done = idx < evalStepIndex;
-                      const active = idx === evalStepIndex;
-                      const pending = idx > evalStepIndex;
-                      return (
+
+                  {/* 实时结果列表 */}
+                  {realResults.length > 0 && (
+                    <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                      {realResults.map((r) => (
                         <motion.div
-                          key={idx}
-                          initial={false}
-                          animate={{ opacity: pending ? 0.4 : 1 }}
+                          key={r.workId}
+                          initial={{ opacity: 0, x: -8 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          transition={{ duration: 0.3 }}
                           style={{
-                            display: "flex", alignItems: "center", gap: 10,
+                            display: "flex", alignItems: "center", justifyContent: "space-between",
                             padding: "4px 0",
                           }}
                         >
-                          <span style={{
-                            width: 16, height: 16, flexShrink: 0,
-                            display: "flex", alignItems: "center", justifyContent: "center",
-                            fontSize: 10, fontWeight: 700,
-                            color: done ? "#6b8f71" : active ? "#8b7355" : "#c4b99a",
-                          }}>
-                            {done ? "✓" : active ? (
-                              <motion.span
-                                animate={{ rotate: 360 }}
-                                transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-                                style={{ display: "inline-block" }}
-                              >
-                                ◇
-                              </motion.span>
-                            ) : "·"}
-                          </span>
-                          <span style={{
-                            fontSize: 12,
-                            color: done ? "#6b8f71" : active ? "#4a4038" : "#a8a39b",
-                            fontWeight: active ? 600 : 400,
-                            fontFamily: '"Noto Serif SC", Georgia, serif',
-                          }}>
-                            {step.name}
-                          </span>
-                          {active && (
-                            <motion.span
-                              initial={{ opacity: 0 }}
-                              animate={{ opacity: 1 }}
-                              style={{ fontSize: 11, color: "#a8a39b", marginLeft: "auto" }}
-                            >
-                              {step.detail}
-                            </motion.span>
-                          )}
+                          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                            <span style={{
+                              fontSize: 10, fontWeight: 700,
+                              color: r.success ? "#6b8f71" : "#c44",
+                            }}>
+                              {r.success ? "✓" : "✗"}
+                            </span>
+                            <span style={{
+                              fontSize: 12, color: "#4a4038",
+                              fontFamily: '"Noto Serif SC", Georgia, serif',
+                            }}>
+                              {r.workName}
+                            </span>
+                            <span style={{ fontSize: 10, color: "#a8a39b" }}>
+                              {(r.responseTime / 1000).toFixed(1)}s
+                            </span>
+                          </div>
+                          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                            <span style={{ fontSize: 12, fontWeight: 600, color: "#4a4038" }}>
+                              {r.totalScore}
+                            </span>
+                            <span style={{
+                              fontSize: 10, fontWeight: 600, padding: "1px 6px",
+                              background: (gradeColors[r.grade] || gradeColors.B).bg,
+                              color: (gradeColors[r.grade] || gradeColors.B).text,
+                              border: `1px solid ${(gradeColors[r.grade] || gradeColors.B).border}`,
+                            }}>
+                              {r.grade}
+                            </span>
+                          </div>
                         </motion.div>
-                      );
-                    })}
-                  </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* 错误提示 */}
+                  {evalError && (
+                    <div style={{
+                      marginTop: 8, padding: "8px 12px",
+                      background: "rgba(204,68,68,0.06)", border: "1px solid rgba(204,68,68,0.2)",
+                      fontSize: 12, color: "#c44", fontFamily: '"Noto Serif SC", Georgia, serif',
+                    }}>
+                      评测出错：{evalError}
+                    </div>
+                  )}
                 </div>
               </motion.div>
             )}
@@ -547,11 +633,45 @@ const HermesEvalPanel: React.FC<HermesEvalPanelProps> = ({ onClose }) => {
               aCount={aCount}
               worksEval={worksEval}
               evalDate={evalDate}
+              realResults={realResults}
+              useRealData={useRealData}
               onSelectWork={setSelectedWork}
             />
           )}
           {activeTab === "methods" && <MethodsTab />}
           {activeTab === "trends" && <TrendsTab worksEval={worksEval} />}
+        </div>
+
+        {/* 企业评测服务入口（变现） */}
+        <div style={{
+          marginTop: 16, padding: "16px 20px",
+          background: "linear-gradient(135deg, rgba(45,95,63,0.06), rgba(196,163,90,0.04))",
+          border: "1px solid rgba(45,95,63,0.15)", borderRadius: 8,
+          display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12,
+        }}>
+          <div>
+            <div style={{ fontSize: 14, fontWeight: 600, color: "#4a4038", fontFamily: '"Noto Serif SC", serif' }}>
+              企业级 AI 产品评测服务
+            </div>
+            <div style={{ fontSize: 11, color: "#8b7355", marginTop: 4, fontFamily: '"Noto Sans SC", sans-serif' }}>
+              自定义评测维度 · 竞品对比报告 · 合规审计支持 · 评测 SDK 接入
+            </div>
+          </div>
+          <a
+            href="/contact"
+            onClick={() => { track("hermes_enterprise_click", {}); }}
+            style={{
+              flexShrink: 0, padding: "8px 18px",
+              background: "#2d5f3f", color: "#f5f0e6",
+              borderRadius: 6, fontSize: 12, textDecoration: "none",
+              fontWeight: 600, fontFamily: '"Noto Sans SC", sans-serif',
+              transition: "opacity 0.2s",
+            }}
+            onMouseEnter={(e) => { e.currentTarget.style.opacity = "0.85"; }}
+            onMouseLeave={(e) => { e.currentTarget.style.opacity = "1"; }}
+          >
+            咨询合作 →
+          </a>
         </div>
 
         {/* 作品详情弹窗 */}
@@ -574,8 +694,10 @@ const OverviewTab: React.FC<{
   aCount: number;
   worksEval: WorkEval[];
   evalDate: string;
-  onSelectWork: (w: WorkEval) => void;
-}> = ({ avgScore, sCount, aCount, worksEval, evalDate, onSelectWork }) => (
+  realResults: RealWorkEval[];
+  useRealData: boolean;
+  onSelectWork: (w: WorkEval | RealWorkEval) => void;
+}> = ({ avgScore, sCount, aCount, worksEval, evalDate, realResults, useRealData, onSelectWork }) => (
   <>
     {/* 系统架构 */}
     <div style={{
@@ -586,15 +708,15 @@ const OverviewTab: React.FC<{
         系统架构
       </h3>
       <p style={{ margin: "0 0 12px", fontSize: 13, color: "#5c5348", lineHeight: 1.8 }}>
-        Hermes 基于多智能体协作框架，Research Agent 分析产品功能，Code Agent 检查技术实现，
-        Review Agent 评估质量，Delegate Agent 协调任务分发。配合 Sequential / Parallel / Conditional
-        三种工作流模式，实现全自动五维评测，覆盖 9 个作品，50 个评测用例。
+        {useRealData
+          ? "本轮评测通过服务端 Serverless Function 真实调用各作品 AI 接口，基于实际响应数据（响应时间、字段完整性、关键词匹配、情感温度词检测）生成五维评分。"
+          : "Hermes 基于多智能体协作框架，Research Agent 分析产品功能，Code Agent 检查技术实现，Review Agent 评估质量，Delegate Agent 协调任务分发。配合 Sequential / Parallel / Conditional 三种工作流模式，实现全自动五维评测，覆盖 9 个作品，50 个评测用例。"}
       </p>
       <div style={{ display: "flex", gap: 20, flexWrap: "wrap" }}>
-        <AggregateStat label="评测作品" value={worksEval.length} unit="个" />
+        <AggregateStat label="评测作品" value={useRealData ? realResults.length : worksEval.length} unit="个" />
         <AggregateStat label="评测维度" value={5} unit="维" />
         <AggregateStat label="平均得分" value={avgScore.toFixed(1)} unit="分" />
-        <AggregateStat label="S/A 级占比" value={`${sCount + aCount}/${worksEval.length}`} unit="" />
+        <AggregateStat label="S/A 级占比" value={`${sCount + aCount}/${useRealData ? realResults.length : worksEval.length}`} unit="" />
       </div>
     </div>
 
@@ -624,7 +746,7 @@ const OverviewTab: React.FC<{
     {/* 作品评测列表 */}
     <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
       <h3 style={{ margin: 0, fontFamily: '"Noto Serif SC", Georgia, serif', fontSize: 14, color: "#4a4038" }}>
-        作品评测结果
+        作品评测结果{useRealData ? "（实时数据）" : ""}
       </h3>
       {evalDate && (
         <span style={{ fontSize: 11, color: "#a8a39b", fontFamily: '"Noto Serif SC", Georgia, serif' }}>
@@ -633,54 +755,110 @@ const OverviewTab: React.FC<{
       )}
     </div>
     <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-      {worksEval.map((work, idx) => {
-        const gc = gradeColors[work.grade] || gradeColors.B;
-        return (
-          <motion.div
-            key={work.id}
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: idx * 0.04, duration: 0.3 }}
-            style={{
-              display: "flex", alignItems: "center", justifyContent: "space-between",
-              padding: "12px 16px", background: "#fff", border: "1px solid #e8e6e1",
-              cursor: "pointer", transition: "border-color 0.25s ease",
-            }}
-            onClick={() => onSelectWork(work)}
-            onMouseEnter={(e) => { e.currentTarget.style.borderColor = "#8b7355"; }}
-            onMouseLeave={(e) => { e.currentTarget.style.borderColor = "#e8e6e1"; }}
-          >
-            <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-              <span style={{ fontFamily: '"Noto Serif SC", Georgia, serif', fontSize: 13, fontWeight: 600, color: "#4a4038", minWidth: 90 }}>
-                {work.name}
-              </span>
-              <div style={{ display: "flex", gap: 3, alignItems: "flex-end", height: 22 }}>
-                {DIMENSIONS.map((dim) => {
-                  const val = work.dimensions[dim.key] || 0;
-                  return (
-                    <div key={dim.key} style={{
-                      width: 12, height: `${(val / 100) * 20}px`,
-                      background: val >= 90 ? "#8b7355" : val >= 80 ? "#a89470" : val >= 70 ? "#c4b99a" : "#d5cfc4",
-                    }} title={`${dim.name}: ${val}`} />
-                  );
-                })}
+      {useRealData ? (
+        /* 真实评测结果 */
+        realResults.map((work, idx) => {
+          const gc = gradeColors[work.grade] || gradeColors.B;
+          return (
+            <motion.div
+              key={work.workId}
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: idx * 0.04, duration: 0.3 }}
+              style={{
+                display: "flex", alignItems: "center", justifyContent: "space-between",
+                padding: "12px 16px", background: "#fff", border: "1px solid #e8e6e1",
+                cursor: "pointer", transition: "border-color 0.25s ease",
+              }}
+              onClick={() => onSelectWork(work)}
+              onMouseEnter={(e) => { e.currentTarget.style.borderColor = "#8b7355"; }}
+              onMouseLeave={(e) => { e.currentTarget.style.borderColor = "#e8e6e1"; }}
+            >
+              <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                <span style={{
+                  fontFamily: '"Noto Serif SC", Georgia, serif', fontSize: 13, fontWeight: 600,
+                  color: "#4a4038", minWidth: 90,
+                }}>
+                  {work.workName}
+                </span>
+                <div style={{ display: "flex", gap: 3, alignItems: "flex-end", height: 22 }}>
+                  {DIMENSIONS.map((dim) => {
+                    const val = work.dimensions[dim.key] || 0;
+                    return (
+                      <div key={dim.key} style={{
+                        width: 12, height: `${(val / 100) * 20}px`,
+                        background: val >= 90 ? "#8b7355" : val >= 80 ? "#a89470" : val >= 70 ? "#c4b99a" : "#d5cfc4",
+                      }} title={`${dim.name}: ${val}`} />
+                    );
+                  })}
+                </div>
+                <span style={{
+                  fontSize: 10, color: work.success ? "#6b8f71" : "#c44", marginLeft: 4,
+                }}>
+                  {work.success ? "✓" : "✗"} {(work.responseTime / 1000).toFixed(1)}s
+                </span>
               </div>
-              {/* 趋势箭头 */}
-              <span style={{ fontSize: 11, color: work.trend >= 0 ? "#6b8f71" : "#c44", marginLeft: 4 }}>
-                {work.trend >= 0 ? "▲" : "▼"}{Math.abs(work.trend).toFixed(1)}
-              </span>
-            </div>
-            <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-              <span style={{ fontSize: 16, fontFamily: '"Noto Serif SC", Georgia, serif', fontWeight: 700, color: "#4a4038" }}>
-                {work.totalScore}
-              </span>
-              <span style={{ fontSize: 11, fontWeight: 600, padding: "2px 8px", background: gc.bg, color: gc.text, border: `1px solid ${gc.border}`, minWidth: 28, textAlign: "center" }}>
-                {work.grade}
-              </span>
-            </div>
-          </motion.div>
-        );
-      })}
+              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                <span style={{ fontSize: 16, fontFamily: '"Noto Serif SC", Georgia, serif', fontWeight: 700, color: "#4a4038" }}>
+                  {work.totalScore}
+                </span>
+                <span style={{ fontSize: 11, fontWeight: 600, padding: "2px 8px", background: gc.bg, color: gc.text, border: `1px solid ${gc.border}`, minWidth: 28, textAlign: "center" }}>
+                  {work.grade}
+                </span>
+              </div>
+            </motion.div>
+          );
+        })
+      ) : (
+        /* 静态评测结果 */
+        worksEval.map((work, idx) => {
+          const gc = gradeColors[work.grade] || gradeColors.B;
+          return (
+            <motion.div
+              key={work.id}
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: idx * 0.04, duration: 0.3 }}
+              style={{
+                display: "flex", alignItems: "center", justifyContent: "space-between",
+                padding: "12px 16px", background: "#fff", border: "1px solid #e8e6e1",
+                cursor: "pointer", transition: "border-color 0.25s ease",
+              }}
+              onClick={() => onSelectWork(work)}
+              onMouseEnter={(e) => { e.currentTarget.style.borderColor = "#8b7355"; }}
+              onMouseLeave={(e) => { e.currentTarget.style.borderColor = "#e8e6e1"; }}
+            >
+              <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                <span style={{ fontFamily: '"Noto Serif SC", Georgia, serif', fontSize: 13, fontWeight: 600, color: "#4a4038", minWidth: 90 }}>
+                  {work.name}
+                </span>
+                <div style={{ display: "flex", gap: 3, alignItems: "flex-end", height: 22 }}>
+                  {DIMENSIONS.map((dim) => {
+                    const val = work.dimensions[dim.key] || 0;
+                    return (
+                      <div key={dim.key} style={{
+                        width: 12, height: `${(val / 100) * 20}px`,
+                        background: val >= 90 ? "#8b7355" : val >= 80 ? "#a89470" : val >= 70 ? "#c4b99a" : "#d5cfc4",
+                      }} title={`${dim.name}: ${val}`} />
+                    );
+                  })}
+                </div>
+                <span style={{ fontSize: 11, color: work.trend >= 0 ? "#6b8f71" : "#c44", marginLeft: 4 }}>
+                  {work.trend >= 0 ? "▲" : "▼"}{Math.abs(work.trend).toFixed(1)}
+                </span>
+              </div>
+              <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                <span style={{ fontSize: 16, fontFamily: '"Noto Serif SC", Georgia, serif', fontWeight: 700, color: "#4a4038" }}>
+                  {work.totalScore}
+                </span>
+                <span style={{ fontSize: 11, fontWeight: 600, padding: "2px 8px", background: gc.bg, color: gc.text, border: `1px solid ${gc.border}`, minWidth: 28, textAlign: "center" }}>
+                  {work.grade}
+                </span>
+              </div>
+            </motion.div>
+          );
+        })
+      )}
     </div>
   </>
 );
@@ -851,8 +1029,12 @@ const AggregateStat: React.FC<{ label: string; value: string | number; unit: str
 /* ============================================================
  * 作品详情弹窗
  * ============================================================ */
-const WorkDetailModal: React.FC<{ work: WorkEval; onClose: () => void }> = ({ work, onClose }) => {
+const WorkDetailModal: React.FC<{ work: WorkEval | RealWorkEval; onClose: () => void }> = ({ work, onClose }) => {
   const gc = gradeColors[work.grade] || gradeColors.B;
+  const isReal = "workId" in work;
+  const displayName = isReal ? (work as RealWorkEval).workName : (work as WorkEval).name;
+  const realWork = isReal ? (work as RealWorkEval) : null;
+  const staticWork = !isReal ? (work as WorkEval) : null;
 
   return (
     <motion.div
@@ -885,67 +1067,94 @@ const WorkDetailModal: React.FC<{ work: WorkEval; onClose: () => void }> = ({ wo
         }}>
           <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
             <h3 style={{ margin: 0, fontFamily: '"Noto Serif SC", Georgia, serif', fontSize: 18, color: "#4a4038" }}>
-              {work.name}
+              {displayName}
             </h3>
             <span style={{ fontSize: 11, fontWeight: 600, padding: "2px 8px", background: gc.bg, color: gc.text, border: `1px solid ${gc.border}` }}>
               {work.grade} · {work.gradeLabel}
             </span>
+            {realWork && (
+              <span style={{
+                fontSize: 10, fontWeight: 600, padding: "2px 8px",
+                background: realWork.success ? "rgba(107,143,113,0.1)" : "rgba(204,68,68,0.08)",
+                color: realWork.success ? "#6b8f71" : "#c44",
+                border: `1px solid ${realWork.success ? "#6b8f71" : "#c44"}`,
+              }}>
+                {realWork.success ? "接口正常" : "接口异常"}
+              </span>
+            )}
           </div>
           <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", color: "#a8a39b", fontSize: 22, padding: 4, lineHeight: 1 }}>×</button>
         </div>
 
         <div style={{ padding: "20px 24px 28px" }}>
-          {/* 总分 + 趋势 */}
+          {/* 总分 + 趋势/响应时间 */}
           <div style={{ textAlign: "center", marginBottom: 20 }}>
             <div style={{ fontSize: 44, fontFamily: '"Noto Serif SC", Georgia, serif', fontWeight: 700, color: "#4a4038" }}>
               {work.totalScore}
             </div>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, marginTop: 2 }}>
               <span style={{ fontSize: 12, color: "#a8a39b" }}>综合评分</span>
-              <span style={{
-                fontSize: 12, fontWeight: 600,
-                color: work.trend >= 0 ? "#6b8f71" : "#c44",
-              }}>
-                {work.trend >= 0 ? "▲" : "▼"} {Math.abs(work.trend).toFixed(1)} vs 上次
-              </span>
+              {staticWork ? (
+                <span style={{
+                  fontSize: 12, fontWeight: 600,
+                  color: staticWork.trend >= 0 ? "#6b8f71" : "#c44",
+                }}>
+                  {staticWork.trend >= 0 ? "▲" : "▼"} {Math.abs(staticWork.trend).toFixed(1)} vs 上次
+                </span>
+              ) : realWork ? (
+                <span style={{ fontSize: 12, fontWeight: 600, color: "#8b7355" }}>
+                  响应时间 {(realWork.responseTime / 1000).toFixed(2)}s
+                </span>
+              ) : null}
             </div>
           </div>
 
           {/* 五维得分 + 子维度 */}
           <h4 style={{ margin: "0 0 10px", fontSize: 13, fontFamily: '"Noto Serif SC", Georgia, serif', color: "#4a4038" }}>
-            五维评测明细（含子维度）
+            五维评测明细{staticWork ? "（含子维度）" : ""}
           </h4>
           {DIMENSIONS.map((dim) => {
             const val = work.dimensions[dim.key] || 0;
-            const subs = work.subScores[dim.key] || [0, 0, 0, 0];
+            const subs = staticWork?.subScores[dim.key] || null;
             return (
               <div key={dim.key} style={{ marginBottom: 12 }}>
                 <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 3 }}>
                   <span style={{ fontSize: 12, fontWeight: 600, color: "#4a4038" }}>{dim.name}</span>
                   <span style={{ fontSize: 12, fontWeight: 600, color: "#4a4038" }}>{val}</span>
                 </div>
-                {/* 子维度进度条 */}
-                <div style={{ display: "flex", gap: 4, marginBottom: 4 }}>
-                  {dim.subDimensions.map((sub, si) => {
-                    const subVal = subs[si] || 0;
-                    return (
-                      <div key={sub.name} style={{ flex: sub.weight, display: "flex", flexDirection: "column", gap: 2 }}>
-                        <div style={{ height: 4, background: "#e8e6e1" }}>
-                          <motion.div
-                            initial={{ width: 0 }}
-                            animate={{ width: `${subVal}%` }}
-                            transition={{ duration: 0.5, delay: 0.05 * si }}
-                            style={{ height: "100%", background: subVal >= 90 ? "#8b7355" : subVal >= 80 ? "#a89470" : subVal >= 70 ? "#c4b99a" : "#d5cfc4" }}
-                          />
-                        </div>
-                        <div style={{ display: "flex", justifyContent: "space-between" }}>
-                          <span style={{ fontSize: 10, color: "#a8a39b" }}>{sub.name}</span>
-                          <span style={{ fontSize: 10, color: "#7a7268" }}>{subVal}</span>
-                        </div>
-                      </div>
-                    );
-                  })}
+                {/* 主维度进度条 */}
+                <div style={{ height: 6, background: "#e8e6e1", marginBottom: 4 }}>
+                  <motion.div
+                    initial={{ width: 0 }}
+                    animate={{ width: `${val}%` }}
+                    transition={{ duration: 0.5 }}
+                    style={{ height: "100%", background: val >= 90 ? "#8b7355" : val >= 80 ? "#a89470" : val >= 70 ? "#c4b99a" : "#d5cfc4" }}
+                  />
                 </div>
+                {/* 子维度进度条（仅静态数据有） */}
+                {subs && (
+                  <div style={{ display: "flex", gap: 4, marginBottom: 4 }}>
+                    {dim.subDimensions.map((sub, si) => {
+                      const subVal = subs[si] || 0;
+                      return (
+                        <div key={sub.name} style={{ flex: sub.weight, display: "flex", flexDirection: "column", gap: 2 }}>
+                          <div style={{ height: 4, background: "#e8e6e1" }}>
+                            <motion.div
+                              initial={{ width: 0 }}
+                              animate={{ width: `${subVal}%` }}
+                              transition={{ duration: 0.5, delay: 0.05 * si }}
+                              style={{ height: "100%", background: subVal >= 90 ? "#8b7355" : subVal >= 80 ? "#a89470" : subVal >= 70 ? "#c4b99a" : "#d5cfc4" }}
+                            />
+                          </div>
+                          <div style={{ display: "flex", justifyContent: "space-between" }}>
+                            <span style={{ fontSize: 10, color: "#a8a39b" }}>{sub.name}</span>
+                            <span style={{ fontSize: 10, color: "#7a7268" }}>{subVal}</span>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
             );
           })}
@@ -954,12 +1163,14 @@ const WorkDetailModal: React.FC<{ work: WorkEval; onClose: () => void }> = ({ wo
           <div style={{ marginTop: 18 }}>
             <h4 style={{ margin: "0 0 8px", fontSize: 13, color: "#6b8f71", fontFamily: '"Noto Serif SC", Georgia, serif' }}>亮点</h4>
             <ul style={{ margin: 0, padding: "0 0 0 16px", listStyle: "none" }}>
-              {work.strengths.map((s, i) => (
+              {work.strengths.length > 0 ? work.strengths.map((s, i) => (
                 <li key={i} style={{ position: "relative", paddingLeft: 14, marginBottom: 4, fontSize: 12, color: "#5c5348", lineHeight: 1.7 }}>
                   <span style={{ position: "absolute", left: 0, top: 9, width: 4, height: 4, borderRadius: "50%", background: "#6b8f71" }} />
                   {s}
                 </li>
-              ))}
+              )) : (
+                <li style={{ fontSize: 12, color: "#a8a39b", paddingLeft: 14 }}>暂无亮点数据</li>
+              )}
             </ul>
           </div>
 
@@ -978,22 +1189,40 @@ const WorkDetailModal: React.FC<{ work: WorkEval; onClose: () => void }> = ({ wo
             </div>
           )}
 
-          {/* 自动生成的优化建议 */}
-          <div style={{
-            marginTop: 16, padding: "14px 18px",
-            background: "rgba(139,115,85,0.05)", border: "1px solid #d5cfc4",
-            borderLeft: "3px solid #8b7355",
-          }}>
-            <h4 style={{ margin: "0 0 6px", fontSize: 13, fontFamily: '"Noto Serif SC", Georgia, serif', color: "#4a4038" }}>
-              AI 优化建议
-            </h4>
-            <p style={{ margin: 0, fontSize: 12, color: "#5c5348", lineHeight: 1.8 }}>
-              {work.optimizationAdvice}
-            </p>
-            <div style={{ marginTop: 8, fontSize: 10, color: "#c4b99a" }}>
-              * 由 Hermes Review Agent 基于评测数据自动生成
+          {/* AI 优化建议（仅静态数据） / 响应预览（仅真实数据） */}
+          {staticWork?.optimizationAdvice ? (
+            <div style={{
+              marginTop: 16, padding: "14px 18px",
+              background: "rgba(139,115,85,0.05)", border: "1px solid #d5cfc4",
+              borderLeft: "3px solid #8b7355",
+            }}>
+              <h4 style={{ margin: "0 0 6px", fontSize: 13, fontFamily: '"Noto Serif SC", Georgia, serif', color: "#4a4038" }}>
+                AI 优化建议
+              </h4>
+              <p style={{ margin: 0, fontSize: 12, color: "#5c5348", lineHeight: 1.8 }}>
+                {staticWork.optimizationAdvice}
+              </p>
+              <div style={{ marginTop: 8, fontSize: 10, color: "#c4b99a" }}>
+                * 由 Hermes Review Agent 基于评测数据自动生成
+              </div>
             </div>
-          </div>
+          ) : realWork?.responsePreview ? (
+            <div style={{
+              marginTop: 16, padding: "14px 18px",
+              background: "rgba(139,115,85,0.05)", border: "1px solid #d5cfc4",
+              borderLeft: "3px solid #8b7355",
+            }}>
+              <h4 style={{ margin: "0 0 6px", fontSize: 13, fontFamily: '"Noto Serif SC", Georgia, serif', color: "#4a4038" }}>
+                接口响应预览
+              </h4>
+              <p style={{ margin: 0, fontSize: 11, color: "#5c5348", lineHeight: 1.8, fontFamily: "monospace", wordBreak: "break-all" }}>
+                {realWork.responsePreview}
+              </p>
+              <div style={{ marginTop: 8, fontSize: 10, color: "#c4b99a" }}>
+                * 截取前 200 字符
+              </div>
+            </div>
+          ) : null}
         </div>
       </motion.div>
     </motion.div>

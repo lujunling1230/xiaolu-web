@@ -51,15 +51,27 @@ const ALLOWED_EVENTS = [
   /* 通关清单 */
   "quest_complete",
   "quest_level",
-  /* 解忧杂货店 */
-  "advice_letter",
-  "advice_reply",
+  "quest_shop_purchase",
+  "quest_avatar_upload",
+  "quest_checkin",
+  "quest_claim_card",
   /* 回血清单 */
   "recharge_action",
+  "recharge_claim_card",
   /* 伴龄 */
   "banling_chat",
   "banling_report",
   "banling_action_adopt",
+  "banling_insurance_click",
+  "banling_insurance_consult",
+  /* 产品案例研究 */
+  "case_study_view",
+  "case_study_cta",
+  "case_study_link",
+  /* AI 调用计数 */
+  "ai_call",
+  /* 变现入口 */
+  "hermes_enterprise_click",
 ] as const;
 
 const EVENT_SET = new Set<string>(ALLOWED_EVENTS);
@@ -1005,7 +1017,6 @@ function simplifyPath(path: string): string {
     "/toolbox/apartment": "爱情公寓",
     "/toolbox/quests": "通关清单",
     "/toolbox/inventory": "物资管家",
-    "/toolbox/advice": "解忧杂货店",
     "/toolbox/travel": "漫游指南",
     "/toolbox/recharge": "回血清单",
     "/toolbox/banling": "伴龄",
@@ -1049,7 +1060,6 @@ export function workComparisonMatrix(
     { name: "爱情公寓", path: "/toolbox/apartment", events: ["apartment_chat", "apartment_post"] },
     { name: "通关清单", path: "/toolbox/quests", events: ["quest_complete", "quest_level"] },
     { name: "物资管家", path: "/toolbox/inventory", events: ["iv_item_add", "iv_ai_ask"] },
-    { name: "解忧杂货店", path: "/toolbox/advice", events: ["advice_letter", "advice_reply"] },
     { name: "漫游指南", path: "/toolbox/travel", events: ["rg_ai_open", "rg_ai_adopt_city", "rg_ai_save_plan"] },
     { name: "回血清单", path: "/toolbox/recharge", events: ["recharge_action"] },
     { name: "伴龄", path: "/toolbox/banling", events: ["banling_chat", "banling_report", "banling_action_adopt"] },
@@ -1121,8 +1131,6 @@ export function workComparisonMatrix(
       quest_level: "等级提升",
       iv_item_add: "物资入库",
       iv_ai_ask: "问 AI 管家",
-      advice_letter: "写信",
-      advice_reply: "收到回信",
       rg_ai_open: "AI 向导",
       rg_ai_adopt_city: "采纳城市",
       rg_ai_save_plan: "保存攻略",
@@ -1174,7 +1182,6 @@ const SEED_TOOLS = [
   { name: "爱情公寓", path: "/toolbox/apartment", events: ["apartment_chat", "apartment_post"] },
   { name: "通关清单", path: "/toolbox/quests", events: ["quest_complete", "quest_level"] },
   { name: "物资管家", path: "/toolbox/inventory", events: ["iv_item_add", "iv_ai_ask"] },
-  { name: "解忧杂货店", path: "/toolbox/advice", events: ["advice_letter", "advice_reply"] },
   { name: "漫游指南", path: "/toolbox/travel", events: ["rg_ai_open", "rg_ai_recommend_submit", "rg_ai_recommend_result", "rg_ai_adopt_city", "rg_ai_generate_submit", "rg_ai_generate_result", "rg_ai_save_plan"] },
   { name: "回血清单", path: "/toolbox/recharge", events: ["recharge_action"] },
   { name: "伴龄", path: "/toolbox/banling", events: ["banling_chat", "banling_report", "banling_action_adopt"] },

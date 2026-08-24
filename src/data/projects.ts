@@ -33,6 +33,7 @@ export interface Project {
   // 基础信息
   liveUrl: string;         // 独立部署链接
   tags?: string[];         // 技术标签
+  caseStudyUrl?: string;   // 产品案例研究链接（商业分析）
 }
 
 export const projects: Project[] = [
@@ -284,67 +285,6 @@ export const projects: Project[] = [
     tags: ["React", "TypeScript", "LocalStorage", "分类搜索", "提醒机制"],
   },
   {
-    id: "advice-shop",
-    title: "解忧杂货店",
-    tag: "治愈系问答空间",
-    story: {
-      intro: [
-        "深夜三点，你盯着天花板，心里有个问题，却不知道问谁。",
-        "想说的话打了又删，最后只发了一个表情包。",
-      ],
-      pain: [
-        "心情不好，不想打扰朋友，却也不知道谁能懂；",
-        "心理咨询太贵，也提不起勇气推开那扇门；",
-        "想听一句话，却不知道去哪找，像个迷路的人在原地打转。",
-      ],
-      highlightIntro: "但在解忧杂货店，总有一句话在等你。",
-      highlight: [
-        "提笔只为你，落笔皆温柔；",
-        "收到回信的那一刻，心跳会慢半拍，答案来的刚刚好；",
-        "不用解释，不用铺垫，打开就是一句「我懂」。",
-      ],
-      cta: "点开右侧，写一封属于你的信。",
-      ctaLabel: "写一封信",
-      closing: "总有一句话，能解开你的心结。",
-    },
-    painPoints: [
-      "用户需要即时的情感慰藉",
-      "传统心理咨询门槛高、费用高",
-      "深夜独处时无人倾诉",
-    ],
-    targetUsers: [
-      "情绪低落的年轻人",
-      "寻求心灵慰藉的用户",
-      "喜欢随机惊喜的人群",
-    ],
-    solutions: [
-      "浪矢爷爷以真实老者的口吻回信，每封信都带着温度，像深夜里一盏亮着的灯",
-      "写信获取回信的交互机制",
-      "轻量、安静、温柔的界面设计",
-    ],
-    coreValue: [
-      "总有一句话，能解开你的心结",
-      "即时的情感共鸣",
-      "零压力的使用体验",
-    ],
-    useCases: [
-      "心情不好时的即时安慰",
-      "深夜独处的温暖陪伴",
-      "选择困难时的随机指引",
-    ],
-    highlights: [
-      "书信交互与回信惊喜感",
-      "浪矢爷爷的真实回信，有温度、有耐心",
-      "极简交互设计",
-    ],
-    futurePlans: [
-      "信件收藏与回看时光机",
-      "多角色回信风格选择",
-    ],
-    liveUrl: "https://xiaoluweb.com/toolbox/advice",
-    tags: ["React", "Framer Motion", "情感化设计", "LocalStorage"],
-  },
-  {
     id: "travel-guide",
     title: "漫游指南",
     tag: "旅行足迹与攻略",
@@ -536,5 +476,6 @@ export const projects: Project[] = [
     ],
     liveUrl: "https://xiaoluweb.com/toolbox/banling",
     tags: ["React", "Framer Motion", "AI 对话", "PWA", "养老规划", "报告生成"],
+    caseStudyUrl: "/case-study/banling",
   },
 ];

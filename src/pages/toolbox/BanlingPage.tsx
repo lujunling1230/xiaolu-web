@@ -8,6 +8,7 @@ import { useAppManifest } from "../../hooks/useAppManifest";
 import PWAInstallPrompt from "../../components/PWAInstallPrompt";
 import WeChatGuide from "../../components/WeChatGuide";
 import { userGetItem, userSetItem, userRemoveItem } from "../../utils/userStorage";
+import { CHINA_CITIES, CITIES_BY_PROVINCE, PROVINCES, matchCity } from "../../data/chinaCities";
 
 /**
  * 伴龄 · AI 养老规划伴侣
@@ -158,12 +159,8 @@ function getGreeting(nickname: string): string {
   return `${prefix}，${name}${emoji}`;
 }
 
-/* ===== 可选城市列表 ===== */
-const CITY_OPTIONS = [
-  "北京市", "上海市", "广州市", "深圳市", "杭州市", "南京市",
-  "成都市", "武汉市", "西安市", "重庆市", "苏州市", "天津市",
-  "长沙市", "郑州市", "青岛市", "沈阳市", "大连市", "厦门市",
-];
+/* ===== 可选城市列表（全国所有地级行政区） ===== */
+const CITY_OPTIONS = CHINA_CITIES;
 
 /* ===== 今日小贴士（根据天气+年龄，结合出行建议） ===== */
 interface WeatherInfo {
@@ -436,6 +433,7 @@ export default function BanlingPage() {
   const [showAboutModal, setShowAboutModal] = useState(false);
   const [aboutFlipped, setAboutFlipped] = useState(false);
   const [showCityPicker, setShowCityPicker] = useState(false);
+  const [citySearch, setCitySearch] = useState("");
   const [location, setLocation] = useState("上海市");
   const [weather, setWeather] = useState("default");
   const [weatherTemp, setWeatherTemp] = useState<number | undefined>(undefined);
@@ -506,8 +504,8 @@ export default function BanlingPage() {
           );
           const data = await res.json();
           const rawCity = data.city || data.principalSubdivision || data.locality || "";
-          /* 匹配到可选城市则使用，否则用原始值 */
-          const matched = CITY_OPTIONS.find((c) => c.includes(rawCity) || rawCity.includes(c.replace(/市$/, "")));
+          /* 使用 matchCity 模糊匹配全国城市 */
+          const matched = matchCity(rawCity);
           const finalCity = matched || (rawCity ? rawCity + "市" : "上海市");
           setLocation(finalCity);
           fetchWeather(finalCity);
@@ -879,16 +877,39 @@ ${messages.map((m) => `${m.role === "user" ? "用户" : "伴龄"}: ${m.content}`
                   <span>选择城市</span>
                   <button onClick={() => setShowCityPicker(false)}>×</button>
                 </div>
+                <input
+                  className="bl-cp-search"
+                  type="text"
+                  placeholder="搜索城市名…"
+                  value={citySearch}
+                  onChange={(e) => setCitySearch(e.target.value)}
+                />
                 <div className="bl-cp-list">
-                  {CITY_OPTIONS.map((city) => (
-                    <button
-                      key={city}
-                      className={`bl-cp-item ${city === location ? "active" : ""}`}
-                      onClick={() => handleSelectCity(city)}
-                    >
-                      {city}
-                    </button>
-                  ))}
+                  {(() => {
+                    const q = citySearch.trim();
+                    if (q) {
+                      const results = CITY_OPTIONS.filter(c => c.includes(q) || q.includes(c.replace(/市$/, "")));
+                      return results.length > 0
+                        ? results.map(city => (
+                            <button key={city} className={`bl-cp-item ${city === location ? "active" : ""}`} onClick={() => handleSelectCity(city)}>
+                              {city}
+                            </button>
+                          ))
+                        : <p className="bl-cp-empty">未找到匹配城市</p>;
+                    }
+                    return PROVINCES.map(province => (
+                      <div key={province} className="bl-cp-group">
+                        <p className="bl-cp-province">{province}</p>
+                        <div className="bl-cp-group-items">
+                          {CITIES_BY_PROVINCE[province].map(city => (
+                            <button key={city} className={`bl-cp-item ${city === location ? "active" : ""}`} onClick={() => handleSelectCity(city)}>
+                              {city}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    ));
+                  })()}
                 </div>
               </motion.div>
             )}
@@ -2383,23 +2404,62 @@ function BanlingStyles() {
         line-height: 1;
       }
 
+      .bl-cp-search {
+        width: 100%;
+        padding: 8px 12px;
+        border: 1px solid var(--border-light);
+        border-radius: 8px;
+        font-size: 13px;
+        color: var(--text);
+        background: var(--bg-card);
+        margin-bottom: 4px;
+        box-sizing: border-box;
+      }
+
+      .bl-cp-search:focus {
+        outline: none;
+        border-color: var(--sage);
+      }
+
       .bl-cp-list {
+        padding: 4px 8px 8px;
+        max-height: 320px;
+        overflow-y: auto;
+      }
+
+      .bl-cp-group {
+        margin-bottom: 8px;
+      }
+
+      .bl-cp-province {
+        font-size: 12px;
+        font-weight: 600;
+        color: var(--text-light);
+        margin: 6px 0 4px;
+        padding-left: 4px;
+      }
+
+      .bl-cp-group-items {
         display: grid;
         grid-template-columns: repeat(3, 1fr);
-        gap: 4px;
-        padding: 8px;
-        max-height: 240px;
-        overflow-y: auto;
+        gap: 2px;
+      }
+
+      .bl-cp-empty {
+        text-align: center;
+        color: var(--text-light);
+        font-size: 13px;
+        padding: 20px;
       }
 
       .bl-cp-item {
         background: none;
         border: none;
-        padding: 10px 8px;
-        font-size: 13px;
+        padding: 8px 6px;
+        font-size: 12px;
         color: var(--text);
         cursor: pointer;
-        border-radius: 8px;
+        border-radius: 6px;
         transition: background 0.15s, color 0.15s;
       }
 

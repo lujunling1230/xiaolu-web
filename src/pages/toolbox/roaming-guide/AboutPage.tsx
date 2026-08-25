@@ -3,7 +3,7 @@ export default function AboutPage() {
     <div className="rg-about-page">
       <style>{`
         .rg-about-page {
-          padding: 56px 48px;
+          padding: 40px 48px 80px;
           font-family: 'PingFang SC', system-ui, sans-serif;
         }
 

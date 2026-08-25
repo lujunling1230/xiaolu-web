@@ -66,7 +66,7 @@ export default function MapPage() {
         }
       `}</style>
 
-      <main style={{ maxWidth: 1200, margin: "0 auto", padding: "24px 20px 60px", background: "#F5F3EE", fontFamily: "'PingFang SC', system-ui, sans-serif", minHeight: "100vh" }}>
+      <main style={{ maxWidth: 1200, margin: "0 auto", padding: "24px 20px 80px", fontFamily: "'PingFang SC', system-ui, sans-serif" }}>
         <MapContainer
           cities={cities}
           selectedCity={selectedCity}

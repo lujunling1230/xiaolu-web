@@ -29,17 +29,17 @@ export default function PlanPage() {
           max-width: 720px;
           margin: 0 auto;
           padding: 32px 20px 80px;
-          background: #F5F3EE;
-          min-height: 100vh;
           font-family: 'PingFang SC', system-ui, sans-serif;
         }
         .rg-plan-card {
-          background: #fff;
-          border: none;
+          background: rgba(255,255,255,0.7);
+          backdrop-filter: blur(8px);
+          -webkit-backdrop-filter: blur(8px);
+          border: 1px solid rgba(255,255,255,0.6);
           border-radius: 16px;
           padding: 24px;
           margin-bottom: 20px;
-          box-shadow: 0 4px 12px rgba(90, 74, 58, 0.08);
+          box-shadow: 0 4px 16px rgba(90, 74, 58, 0.06);
         }
         .rg-plan-card h3 {
           font-family: 'Source Han Serif SC', 'Noto Serif SC', serif;

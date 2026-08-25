@@ -1,4 +1,4 @@
-import type { City, ProvinceArea, AIReverseRecommendResponse, AIForwardGenerateResponse } from "./types";
+import type { ProvinceArea, AIReverseRecommendResponse, AIForwardGenerateResponse } from "./types";
 
 /* ============================================================
    默认城市数据（6 城，从原 TravelPage 迁移 + 扩展字段）
@@ -12,7 +12,7 @@ export const DEFAULT_CITIES = [
     coord: { lng: 100.23, lat: 25.59 },
     slogan: "风花雪月的慢生活",
     images: [
-      "https://images.unsplash.com/photo-1531219573917-2ca59e96bc0e?w=800&h=600&fit=crop",
+      "https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=Beautiful%20scenery%20of%20Dali%20Yunnan%20China%2C%20Erhai%20Lake%20with%20Cangshan%20mountains%2C%20traditional%20Bai%20architecture%2C%20golden%20sunset%20over%20the%20lake%2C%20photorealistic%20landscape%20photography&image_size=landscape_4_3",
     ],
     days: 5,
     play: [
@@ -44,7 +44,7 @@ export const DEFAULT_CITIES = [
     coord: { lng: 104.06, lat: 30.67 },
     slogan: "一座来了就不想走的城",
     images: [
-      "https://images.unsplash.com/photo-1593696954577-ab3d39317b97?w=800&h=600&fit=crop",
+      "https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=Chengdu%20Sichuan%20China%20cityscape%2C%20Jinli%20ancient%20street%20with%20red%20lanterns%2C%20traditional%20Chinese%20architecture%2C%20warm%20evening%20light%2C%20photorealistic%20travel%20photography&image_size=landscape_4_3",
     ],
     days: 4,
     play: [
@@ -76,7 +76,7 @@ export const DEFAULT_CITIES = [
     coord: { lng: 120.62, lat: 31.30 },
     slogan: "小桥流水人家的江南梦",
     images: [
-      "https://images.unsplash.com/photo-1599779019475-d5c9e7c2c1f0?w=800&h=600&fit=crop",
+      "https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=Suzhou%20Jiangsu%20China%2C%20classical%20Chinese%20garden%20with%20pavilion%20and%20lotus%20pond%2C%20Pingjiang%20canal%20with%20stone%20bridge%2C%20misty%20morning%2C%20photorealistic%20landscape&image_size=landscape_4_3",
     ],
     days: 3,
     play: [
@@ -108,7 +108,7 @@ export const DEFAULT_CITIES = [
     coord: { lng: 118.10, lat: 24.46 },
     slogan: "海风里藏着文艺的味道",
     images: [
-      "https://images.unsplash.com/photo-1528219089975-1c5b2c2c3c1f?w=800&h=600&fit=crop",
+      "https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=Xiamen%20Fujian%20China%2C%20Gulangyu%20island%20seaside%20view%2C%20colonial%20architecture%20with%20banyan%20trees%2C%20blue%20ocean%20and%20golden%20sunset%2C%20photorealistic%20travel%20photography&image_size=landscape_4_3",
     ],
     days: 4,
     play: [
@@ -140,7 +140,7 @@ export const DEFAULT_CITIES = [
     coord: { lng: 108.94, lat: 34.26 },
     slogan: "一眼千年，长安如故",
     images: [
-      "https://images.unsplash.com/photo-1591851658485-c5f6c6b7e0e8?w=800&h=600&fit=crop",
+      "https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=Xian%20Shaanxi%20China%2C%20ancient%20city%20wall%20at%20sunset%2C%20Bell%20Tower%20with%20golden%20lights%2C%20historical%20grandeur%2C%20photorealistic%20travel%20photography&image_size=landscape_4_3",
     ],
     days: 5,
     play: [
@@ -172,7 +172,7 @@ export const DEFAULT_CITIES = [
     coord: { lng: 120.15, lat: 30.28 },
     slogan: "山寺月中寻桂子",
     images: [
-      "https://images.unsplash.com/photo-1591868050309-7d2b1e2f6c1a?w=800&h=600&fit=crop",
+      "https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=Hangzhou%20Zhejiang%20China%2C%20West%20Lake%20with%20misty%20mountains%2C%20Su%20causeway%20with%20willow%20trees%2C%20traditional%20boat%20on%20calm%20water%2C%20photorealistic%20landscape%20photography&image_size=landscape_4_3",
     ],
     days: 4,
     play: [

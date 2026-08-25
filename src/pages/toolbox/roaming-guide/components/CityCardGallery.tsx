@@ -78,7 +78,7 @@ export default function CityCardGallery({
                     c.play.reduce((s, x) => s + x.rating, 0) / c.play.length
                   )
                 : 3;
-            const firstImage = c.images?.find(u => !u.startsWith("data:video") && !/\.(mp4|mov|webm)(\?.*)?$/i.test(u)) || c.images?.[0] || "https://images.unsplash.com/photo-1506744038136-46273834b3fb?w=800&h=600&fit=crop";
+            const firstImage = c.images?.find(u => !u.startsWith("data:video") && !/\.(mp4|mov|webm)(\?.*)?$/i.test(u)) || c.images?.[0] || "https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=Beautiful%20Chinese%20city%20landscape%20with%20mountains%20and%20traditional%20architecture%2C%20photorealistic%20travel%20photography&image_size=landscape_4_3";
             return (
               <motion.div
                 key={c.id}

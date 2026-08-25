@@ -207,6 +207,12 @@ export async function loginUser(
       }
     }
 
+    // 服务端不可用 → 降级到本地登录
+    const localFallback = loginLocal(trimmed, password);
+    if (localFallback.success) {
+      return { success: true };
+    }
+
     return { success: false, error: data.error || "用户名或密码错误" };
   } catch {
     // 网络错误 → 降级到本地

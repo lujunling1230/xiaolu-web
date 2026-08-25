@@ -634,7 +634,7 @@ const HomePage: React.FC<{
 
         <button className="home-recommend-btn" onClick={generateRecommendations}>
           <span className="home-recommend-btn-icon">✨</span>
-          AI 帮我推荐
+          智能推荐
         </button>
         <p className="home-mode-hint">
           根据你的心情，为你匹配「{getMoodMode(MOOD_EXTENDED.find(m => m.key === selectedMood)?.moodType || "happy")}」模式的小事
@@ -1557,7 +1557,7 @@ const MePage: React.FC = () => {
               <p className="about-version">v2.0</p>
               <p className="about-desc">
                 每天做一件滋养自己的小事，像充电一样慢慢回血。
-                100件治愈小事，AI智能推荐，帮你找到最适合当下的能量补给。
+                100件治愈小事，智能推荐，帮你找到最适合当下的能量补给。
               </p>
               <div className="about-deco" />
             </motion.div>

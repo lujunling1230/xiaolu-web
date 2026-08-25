@@ -116,7 +116,7 @@ export default function CityDetailModal({
             {/* 轮播图 */}
             <div className="rg-detail-carousel">
               <div className="rg-detail-carousel-track" style={{ transform: `translateX(-${carouselIndex * 100}%)` }}>
-                {(city.images?.length ? city.images : ["https://images.unsplash.com/photo-1506744038136-46273834b3fb?w=800&h=600&fit=crop"]).map((item, i) => (
+                {(city.images?.length ? city.images : ["https://trae-api-cn.mchost.guru/api/ide/v1/text_to_image?prompt=Beautiful%20Chinese%20city%20landscape%20with%20mountains%20and%20traditional%20architecture%2C%20photorealistic%20travel%20photography&image_size=landscape_4_3"]).map((item, i) => (
                   <div key={i} className="rg-detail-carousel-slide rg-film-slide">
                     <div className="rg-film-frame">
                       <div className="rg-film-holes rg-film-holes--top" />

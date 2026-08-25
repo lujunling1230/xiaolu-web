@@ -22,7 +22,7 @@ export default function CitiesPage() {
 
   return (
     <>
-      <main style={{ maxWidth: 1200, margin: "0 auto", padding: "24px 20px 60px" }}>
+      <main style={{ maxWidth: 1200, margin: "0 auto", padding: "24px 20px 80px" }}>
         {/* ===== 已去 ===== */}
         <CityCardGallery
           cities={visitedCities}

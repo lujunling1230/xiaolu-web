@@ -3,7 +3,6 @@ import { useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useSolo } from "../../../context/StandaloneContext";
 import { track } from "../../../utils/track";
-import UserAuthBar from "../../../components/UserAuthBar";
 
 const NAV_ITEMS = [
   { to: "map", icon: "🗺", label: "足迹地图", en: "Atlas" },
@@ -407,16 +406,8 @@ export default function RoamingGuideLayout() {
 
         <div className="rg-sidebar-footer">
           <span>慢慢走，好好看</span>
-          <div className="rg-sidebar-auth">
-            <UserAuthBar />
-          </div>
         </div>
       </aside>
-
-      {/* 移动端浮动登录入口 */}
-      <div className="rg-mobile-auth">
-        <UserAuthBar />
-      </div>
 
       {/* ===== 主内容 ===== */}
       <main className="rg-content">

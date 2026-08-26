@@ -323,14 +323,14 @@ export default function AIAssistantPanel({
       >
         <svg className="rg-ai-globe__svg" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
           {/* 地球外轮廓 */}
-          <circle cx="32" cy="32" r="28" stroke="#7BA89E" strokeWidth="2.5" fill="rgba(123,168,158,0.12)" />
+          <circle cx="32" cy="32" r="28" stroke="#4A90D9" strokeWidth="2.5" fill="rgba(74,144,217,0.12)" />
           {/* 赤道 */}
-          <ellipse cx="32" cy="32" rx="28" ry="8" stroke="#7BA89E" strokeWidth="1.2" fill="none" opacity="0.6" />
+          <ellipse cx="32" cy="32" rx="28" ry="8" stroke="#4A90D9" strokeWidth="1.2" fill="none" opacity="0.6" />
           {/* 经线 */}
-          <ellipse cx="32" cy="32" rx="12" ry="28" stroke="#7BA89E" strokeWidth="1.2" fill="none" opacity="0.5" />
-          <ellipse cx="32" cy="32" rx="22" ry="28" stroke="#7BA89E" strokeWidth="1" fill="none" opacity="0.35" />
+          <ellipse cx="32" cy="32" rx="12" ry="28" stroke="#4A90D9" strokeWidth="1.2" fill="none" opacity="0.5" />
+          <ellipse cx="32" cy="32" rx="22" ry="28" stroke="#4A90D9" strokeWidth="1" fill="none" opacity="0.35" />
           {/* 大陆轮廓（简化） */}
-          <path d="M20 24 Q26 20 30 26 T38 22 Q42 24 40 30 T44 36 Q40 42 34 40 T28 44 Q22 42 24 36 T20 30 Q18 26 20 24Z" fill="rgba(123,168,158,0.25)" stroke="#7BA89E" strokeWidth="1" />
+          <path d="M20 24 Q26 20 30 26 T38 22 Q42 24 40 30 T44 36 Q40 42 34 40 T28 44 Q22 42 24 36 T20 30 Q18 26 20 24Z" fill="rgba(74,144,217,0.25)" stroke="#4A90D9" strokeWidth="1" />
           {/* 定位标记 */}
           <circle cx="44" cy="20" r="3" fill="#F4D35E" />
           <circle cx="44" cy="20" r="6" stroke="#F4D35E" strokeWidth="1" fill="none" opacity="0.4">
@@ -363,7 +363,7 @@ export default function AIAssistantPanel({
         {/* 标题栏 */}
         <div className="rg-ai-drawer__header">
           <div className="rg-ai-drawer__brand">
-            <svg className="rg-ai-drawer__globe-icon" viewBox="0 0 24 24" fill="none" stroke="#7BA89E" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <svg className="rg-ai-drawer__globe-icon" viewBox="0 0 24 24" fill="none" stroke="#4A90D9" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <circle cx="12" cy="12" r="10" />
               <line x1="2" y1="12" x2="22" y2="12" />
               <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
@@ -1499,7 +1499,7 @@ const CSS = `
   width: 36px;
   height: 36px;
   border: 3px solid rgba(90,74,58,0.1);
-  border-top-color: #7BA89E;
+  border-top-color: #4A90D9;
   border-radius: 50%;
   animation: rg-ai-spin 1.2s linear infinite;
 }
@@ -1551,9 +1551,9 @@ const CSS = `
   line-height: 1.85;
   margin: 0 0 16px;
   padding: 12px 14px;
-  background: rgba(123,168,158,0.08);
+  background: rgba(74,144,217,0.08);
   border-radius: 8px;
-  border-left: 3px solid #7BA89E;
+  border-left: 3px solid #4A90D9;
   letter-spacing: 0.06em;
 }
 
@@ -1614,7 +1614,7 @@ const CSS = `
 
 .rg-ai-city-card__index {
   font-size: 12px;
-  color: #7BA89E;
+  color: #4A90D9;
   font-weight: 700;
   letter-spacing: 1px;
 }
@@ -1682,9 +1682,9 @@ const CSS = `
 }
 
 .rg-ai-city-card__adopt--done {
-  background: rgba(123,168,158,0.15);
+  background: rgba(74,144,217,0.15);
   border: none;
-  color: #7BA89E;
+  color: #4A90D9;
   cursor: default;
 }
 
@@ -1717,7 +1717,7 @@ const CSS = `
 .rg-ai-detail-label {
   flex-shrink: 0;
   font-size: 12px;
-  color: #7BA89E;
+  color: #4A90D9;
   font-weight: 600;
   letter-spacing: 1px;
   min-width: 48px;
@@ -1793,7 +1793,7 @@ const CSS = `
 
 .rg-ai-select:focus {
   outline: none;
-  border-color: #7BA89E;
+  border-color: #4A90D9;
 }
 
 /* ================================================================
@@ -1863,7 +1863,7 @@ const CSS = `
 }
 
 .rg-ai-compactness__label--active {
-  color: #7BA89E;
+  color: #4A90D9;
   font-weight: 600;
 }
 
@@ -1884,7 +1884,7 @@ const CSS = `
   width: 22px;
   height: 22px;
   border-radius: 50%;
-  background: #7BA89E;
+  background: #4A90D9;
   border: 2px solid #fff;
   box-shadow: 0 2px 6px rgba(123, 168, 158, 0.35);
   cursor: pointer;
@@ -1899,7 +1899,7 @@ const CSS = `
   width: 22px;
   height: 22px;
   border-radius: 50%;
-  background: #7BA89E;
+  background: #4A90D9;
   border: 2px solid #fff;
   box-shadow: 0 2px 6px rgba(123, 168, 158, 0.35);
   cursor: pointer;
@@ -1918,10 +1918,10 @@ const CSS = `
   border-radius: 14px;
   background: linear-gradient(
     135deg,
-    rgba(123,168,158,0.08) 0%,
+    rgba(74,144,217,0.08) 0%,
     rgba(244,211,94,0.04) 100%
   );
-  border: 1px solid rgba(123,168,158,0.15);
+  border: 1px solid rgba(74,144,217,0.15);
   margin-bottom: 16px;
   box-shadow: 0 4px 12px rgba(90, 74, 58, 0.08);
 }
@@ -1959,10 +1959,10 @@ const CSS = `
 .rg-ai-plan__highlight-tag {
   padding: 3px 10px;
   border-radius: 12px;
-  background: rgba(123,168,158,0.08);
-  border: 1px solid rgba(123,168,158,0.15);
+  background: rgba(74,144,217,0.08);
+  border: 1px solid rgba(74,144,217,0.15);
   font-size: 12px;
-  color: #7BA89E;
+  color: #4A90D9;
   letter-spacing: 1px;
 }
 
@@ -1991,14 +1991,14 @@ const CSS = `
   align-items: center;
   gap: 12px;
   padding: 12px 14px;
-  background: rgba(123,168,158,0.06);
+  background: rgba(74,144,217,0.06);
   border-bottom: 1px solid rgba(90,74,58,0.1);
 }
 
 .rg-ai-day-card__num {
   font-size: 12px;
   font-weight: 700;
-  color: #7BA89E;
+  color: #4A90D9;
   letter-spacing: 2px;
   flex-shrink: 0;
 }
@@ -2018,7 +2018,7 @@ const CSS = `
   display: block;
   font-size: 12px;
   font-weight: 700;
-  color: #7BA89E;
+  color: #4A90D9;
   letter-spacing: 2px;
   margin-bottom: 6px;
 }

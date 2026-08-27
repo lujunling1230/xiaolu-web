@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Link } from "react-router-dom";
+import { track } from "../utils/track";
 
 /* ============================================================
  * HermesEvalPanel — Hermes 自动评测系统（优化版）

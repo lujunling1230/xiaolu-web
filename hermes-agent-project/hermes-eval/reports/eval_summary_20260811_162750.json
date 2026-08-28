@@ -1,0 +1,39 @@
+{
+  "summary": {
+    "total_evaluated": 3,
+    "average_score": 0.98,
+    "max_score": 1.0,
+    "min_score": 0.94,
+    "grade_distribution": {
+      "S": 3,
+      "A": 0,
+      "B": 0,
+      "C": 0,
+      "D": 0
+    },
+    "avg_response_time": 17.85
+  },
+  "category_breakdown": {
+    "research": {
+      "count": 3,
+      "average": 0.98,
+      "max": 1.0,
+      "min": 0.94
+    }
+  },
+  "difficulty_breakdown": {
+    "easy": {
+      "count": 1,
+      "average": 1.0,
+      "max": 1.0,
+      "min": 1.0
+    },
+    "medium": {
+      "count": 2,
+      "average": 0.97,
+      "max": 1.0,
+      "min": 0.94
+    }
+  },
+  "eval_timestamp": "2026-08-11 16:27:50"
+}

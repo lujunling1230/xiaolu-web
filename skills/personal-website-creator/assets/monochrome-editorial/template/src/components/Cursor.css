@@ -1,0 +1,8 @@
+/* Visual styling lives in index.css (.cursor-ring / .cursor-dot).
+   This file is reserved for cursor-specific responsive overrides. */
+@media (max-width: 760px) {
+  .cursor-ring,
+  .cursor-dot {
+    display: none;
+  }
+}

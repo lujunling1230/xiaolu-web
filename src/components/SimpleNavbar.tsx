@@ -25,7 +25,7 @@ const NAV_ITEMS = [
 ] as const;
 
 /* -----------------------------------------------------------
- * BrandLogo — 小鹿 + luro
+ * BrandLogo — 小鹿 + Rosy
  * ----------------------------------------------------------- */
 const BrandLogo: React.FC<{ onClick: () => void }> = ({ onClick }) => (
   <a
@@ -44,7 +44,7 @@ const BrandLogo: React.FC<{ onClick: () => void }> = ({ onClick }) => (
       <circle cx="14" cy="11" r="1" fill="#5d8a6a" />
       <circle cx="12" cy="15" r="1.2" fill="#5d8a6a" opacity="0.6" />
     </svg>
-    <span className="sn-brand">luro</span>
+    <span className="sn-brand">Rosy</span>
   </a>
 );
 

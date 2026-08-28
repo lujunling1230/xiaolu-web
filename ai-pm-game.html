@@ -1,0 +1,2994 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>产品跟练 — AI产品经理的一天</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700;900&display=swap');
+
+  :root {
+    --primary: #4F6EF7;
+    --primary-dark: #3A54D4;
+    --accent: #FF8C42;
+    --accent-light: #FFB088;
+    --bg: #0F1419;
+    --bg-card: #1A2030;
+    --bg-card-hover: #222A3D;
+    --text: #E8ECF4;
+    --text-dim: #8B95A8;
+    --text-muted: #5C6678;
+    --success: #4ADE80;
+    --warning: #FBBF24;
+    --danger: #F87171;
+    --border: rgba(255,255,255,0.08);
+    --shadow: 0 8px 32px rgba(0,0,0,0.4);
+    --radius: 16px;
+    --radius-sm: 10px;
+  }
+
+  * { margin:0; padding:0; box-sizing:border-box; }
+
+  body {
+    font-family: 'Noto Sans SC', -apple-system, BlinkMacSystemFont, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    overflow-x: hidden;
+    line-height: 1.6;
+  }
+
+  /* ===== 开场动画 ===== */
+  .intro-overlay {
+    position: fixed; inset: 0; z-index: 9999;
+    background: linear-gradient(135deg, #0F1419 0%, #1A1F3A 50%, #0F1419 100%);
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    transition: opacity 1.5s ease, visibility 1.5s ease;
+  }
+  .intro-overlay.hidden { opacity: 0; visibility: hidden; }
+  .intro-logo {
+    font-size: 56px; font-weight: 900; letter-spacing: 4px;
+    background: linear-gradient(135deg, var(--primary), var(--accent));
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    animation: fadeInUp 1s ease;
+  }
+  .intro-sub {
+    font-size: 18px; color: var(--text-dim); margin-top: 16px;
+    animation: fadeInUp 1s ease 0.3s both;
+  }
+  .intro-loader {
+    margin-top: 48px; width: 240px; height: 4px;
+    background: rgba(255,255,255,0.1); border-radius: 2px; overflow: hidden;
+    animation: fadeInUp 1s ease 0.6s both;
+  }
+  .intro-loader::after {
+    content:''; display:block; width:40%; height:100%;
+    background: linear-gradient(90deg, var(--primary), var(--accent));
+    border-radius:2px; animation: loading 2s ease infinite;
+  }
+  @keyframes loading { 0%{margin-left:-40%}100%{margin-left:100%} }
+  @keyframes fadeInUp { from{opacity:0;transform:translateY(20px)} to{opacity:1;transform:translateY(0)} }
+
+  /* ===== 布局 ===== */
+  .app-container {
+    max-width: 960px; margin: 0 auto; padding: 0 20px 100px;
+    opacity: 0; transition: opacity 1s ease;
+  }
+  .app-container.visible { opacity: 1; }
+
+  /* ===== 顶部状态栏 ===== */
+  .top-bar {
+    position: sticky; top: 0; z-index: 100;
+    background: rgba(15,20,25,0.85); backdrop-filter: blur(16px);
+    border-bottom: 1px solid var(--border);
+    padding: 14px 20px; display: flex; align-items: center; justify-content: space-between;
+    margin: 0 -20px 24px;
+  }
+  .top-bar-left { display: flex; align-items: center; gap: 12px; }
+  .clock-badge {
+    background: var(--primary); color: #fff; font-weight: 700;
+    padding: 6px 14px; border-radius: 20px; font-size: 15px;
+    letter-spacing: 1px;
+  }
+  .progress-bar-container { flex: 1; max-width: 200px; }
+  .progress-bar-bg { width: 100%; height: 6px; background: rgba(255,255,255,0.1); border-radius: 3px; overflow: hidden; }
+  .progress-bar-fill { height: 100%; background: linear-gradient(90deg, var(--primary), var(--accent)); border-radius: 3px; transition: width 0.6s ease; width: 0%; }
+  .top-bar-right { display: flex; gap: 8px; }
+
+  /* ===== 信任电池 ===== */
+  .trust-batteries { display: flex; gap: 6px; margin-left: 12px; }
+  .trust-battery {
+    width: 28px; height: 16px; border-radius: 3px; position: relative;
+    background: rgba(255,255,255,0.1); border: 1px solid var(--border);
+    overflow: hidden; cursor: pointer;
+  }
+  .trust-battery-fill {
+    height: 100%; border-radius: 2px; transition: width 0.5s ease, background 0.3s;
+    width: 70%;
+  }
+  .trust-battery-label {
+    position: absolute; bottom: -18px; left: 50%; transform: translateX(-50%);
+    font-size: 10px; color: var(--text-muted); white-space: nowrap;
+  }
+
+  /* ===== 角色档案 ===== */
+  .character-screen {
+    text-align: center; padding: 40px 20px;
+  }
+  .character-screen h1 {
+    font-size: 32px; font-weight: 900; margin-bottom: 8px;
+    background: linear-gradient(135deg, var(--primary), var(--accent));
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  }
+  .character-screen .subtitle { color: var(--text-dim); font-size: 16px; margin-bottom: 40px; }
+  .attr-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; max-width: 500px; margin: 0 auto 40px; }
+  .attr-card {
+    background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-sm);
+    padding: 20px; text-align: center; cursor: pointer; transition: all 0.3s;
+  }
+  .attr-card:hover { background: var(--bg-card-hover); border-color: var(--primary); transform: translateY(-2px); }
+  .attr-card.selected { border-color: var(--accent); background: rgba(255,140,66,0.08); }
+  .attr-icon { font-size: 32px; margin-bottom: 8px; }
+  .attr-name { font-weight: 700; font-size: 15px; }
+  .attr-desc { font-size: 12px; color: var(--text-muted); margin-top: 4px; }
+  .btn-primary {
+    background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+    color: #fff; border: none; padding: 14px 48px; border-radius: 30px;
+    font-size: 16px; font-weight: 700; cursor: pointer; letter-spacing: 1px;
+    transition: all 0.3s; box-shadow: 0 4px 20px rgba(79,110,247,0.4);
+  }
+  .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 6px 28px rgba(79,110,247,0.5); }
+  .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
+
+  /* ===== 剧情卡片 ===== */
+  .scene-card {
+    background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 32px; margin-bottom: 24px; box-shadow: var(--shadow);
+    animation: slideUp 0.5s ease;
+  }
+  @keyframes slideUp { from{opacity:0;transform:translateY(16px)} to{opacity:1;transform:translateY(0)} }
+
+  .scene-header { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; }
+  .scene-icon { font-size: 28px; }
+  .scene-title { font-size: 20px; font-weight: 700; }
+  .scene-time { font-size: 13px; color: var(--text-muted); margin-left: auto; }
+
+  .npc-dialog {
+    background: rgba(79,110,247,0.06); border-left: 3px solid var(--primary);
+    padding: 16px 20px; border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+    margin: 16px 0; font-size: 15px; line-height: 1.8;
+  }
+  .npc-name { font-weight: 700; color: var(--primary); font-size: 13px; margin-bottom: 4px; }
+
+  .story-text { font-size: 15px; color: var(--text); line-height: 1.9; margin: 16px 0; }
+
+  /* ===== 选择题 ===== */
+  .question-block { margin: 24px 0; }
+  .question-title { font-size: 16px; font-weight: 700; margin-bottom: 12px; color: var(--accent); }
+  .choice-list { display: flex; flex-direction: column; gap: 10px; }
+  .choice-item {
+    background: rgba(255,255,255,0.03); border: 1px solid var(--border);
+    border-radius: var(--radius-sm); padding: 14px 18px; cursor: pointer;
+    transition: all 0.25s; font-size: 14px; display: flex; align-items: flex-start; gap: 10px;
+  }
+  .choice-item:hover { background: rgba(79,110,247,0.08); border-color: var(--primary); }
+  .choice-item.selected { background: rgba(79,110,247,0.15); border-color: var(--primary); }
+  .choice-item.correct { background: rgba(74,222,128,0.1); border-color: var(--success); }
+  .choice-item.wrong { background: rgba(248,113,113,0.1); border-color: var(--danger); }
+  .choice-letter {
+    width: 26px; height: 26px; border-radius: 50%; background: rgba(255,255,255,0.1);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px; font-weight: 700; flex-shrink: 0;
+  }
+  .choice-item.selected .choice-letter { background: var(--primary); color: #fff; }
+
+  /* ===== 反馈区 ===== */
+  .feedback-box {
+    margin: 20px 0; padding: 16px 20px; border-radius: var(--radius-sm);
+    font-size: 14px; line-height: 1.7; animation: slideUp 0.4s ease;
+  }
+  .feedback-good { background: rgba(74,222,128,0.08); border: 1px solid rgba(74,222,128,0.3); color: #A7F3D0; }
+  .feedback-bad { background: rgba(248,113,113,0.08); border: 1px solid rgba(248,113,113,0.3); color: #FECACA; }
+  .feedback-neutral { background: rgba(251,191,36,0.08); border: 1px solid rgba(251,191,36,0.3); color: #FDE68A; }
+
+  /* ===== 知识卡片 ===== */
+  .knowledge-card {
+    background: linear-gradient(135deg, rgba(79,110,247,0.08), rgba(255,140,66,0.06));
+    border: 1px solid rgba(79,110,247,0.2); border-radius: var(--radius-sm);
+    padding: 18px 20px; margin: 20px 0;
+  }
+  .knowledge-title { font-size: 13px; font-weight: 700; color: var(--primary); margin-bottom: 8px; display: flex; align-items: center; gap: 6px; }
+  .knowledge-content { font-size: 13px; color: var(--text-dim); line-height: 1.8; }
+
+  /* ===== AI 互动区 ===== */
+  .ai-interaction {
+    background: linear-gradient(135deg, rgba(79,110,247,0.05), rgba(255,140,66,0.03));
+    border: 1px dashed rgba(79,110,247,0.3); border-radius: var(--radius-sm);
+    padding: 20px; margin: 20px 0;
+  }
+  .ai-header { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
+  .ai-badge {
+    background: linear-gradient(135deg, var(--primary), var(--accent));
+    color: #fff; font-size: 11px; font-weight: 700; padding: 3px 10px;
+    border-radius: 12px; letter-spacing: 0.5px;
+  }
+  .ai-label { font-size: 13px; font-weight: 600; color: var(--text); }
+  .ai-input-area { display: flex; gap: 8px; margin-bottom: 12px; }
+  .ai-input {
+    flex: 1; background: rgba(255,255,255,0.05); border: 1px solid var(--border);
+    border-radius: 8px; padding: 10px 14px; color: var(--text); font-size: 14px;
+    font-family: inherit; resize: none; min-height: 40px;
+  }
+  .ai-input:focus { outline: none; border-color: var(--primary); }
+  .ai-btn {
+    background: var(--primary); color: #fff; border: none; border-radius: 8px;
+    padding: 0 18px; font-size: 13px; font-weight: 600; cursor: pointer; white-space: nowrap;
+    transition: all 0.2s;
+  }
+  .ai-btn:hover { background: var(--primary-dark); }
+  .ai-output {
+    background: rgba(0,0,0,0.3); border-radius: 8px; padding: 16px;
+    font-size: 13px; color: var(--text-dim); line-height: 1.8;
+    white-space: pre-wrap; min-height: 60px; max-height: 300px; overflow-y: auto;
+    display: none;
+  }
+  .ai-output.visible { display: block; animation: fadeIn 0.5s ease; }
+  .ai-typing { display: none; color: var(--text-muted); font-size: 13px; padding: 8px 0; }
+  .ai-typing.visible { display: block; }
+  .ai-typing::after { content: '...'; animation: dots 1.5s infinite; }
+  @keyframes dots { 0%,20%{content:'...'}40%{content:'..'}60%{content:'.'}80%,100%{content:'...'} }
+  @keyframes fadeIn { from{opacity:0} to{opacity:1} }
+
+  /* ===== 拖拽排序 ===== */
+  .drag-list { display: flex; flex-direction: column; gap: 8px; margin: 16px 0; min-height: 60px; }
+  .drag-item {
+    background: rgba(255,255,255,0.04); border: 1px solid var(--border);
+    border-radius: 8px; padding: 12px 16px; font-size: 14px;
+    cursor: grab; display: flex; align-items: center; gap: 10px;
+    transition: opacity 0.2s, transform 0.2s, box-shadow 0.2s, background 0.2s;
+    -webkit-user-select: none; user-select: none;
+    touch-action: none;
+  }
+  .drag-item:hover { background: rgba(79,110,247,0.06); }
+  .drag-item.dragging { opacity: 0.4; box-shadow: 0 4px 16px rgba(0,0,0,0.3); transform: scale(0.98); }
+  .drag-item.drag-over { border-color: var(--primary); background: rgba(79,110,247,0.1); }
+  .drag-handle { color: var(--text-muted); font-size: 18px; cursor: grab; flex-shrink: 0; }
+  .drag-handle::before { content: '⋮⋮'; letter-spacing: -2px; }
+  .drag-item.correct-pos { border-color: var(--success); background: rgba(74,222,128,0.05); }
+  .drag-placeholder {
+    border: 2px dashed var(--primary); border-radius: 8px; height: 44px;
+    background: rgba(79,110,247,0.05); transition: all 0.2s;
+  }
+
+  /* ===== 数据看板 ===== */
+  .data-dashboard {
+    background: rgba(0,0,0,0.2); border: 1px solid var(--border);
+    border-radius: var(--radius-sm); padding: 20px; margin: 20px 0;
+  }
+  .data-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; }
+  .data-item {
+    text-align: center; padding: 14px 8px;
+    background: rgba(255,255,255,0.03); border-radius: 8px;
+  }
+  .data-value { font-size: 22px; font-weight: 900; }
+  .data-value.good { color: var(--success); }
+  .data-value.warn { color: var(--warning); }
+  .data-value.bad { color: var(--danger); }
+  .data-label { font-size: 11px; color: var(--text-muted); margin-top: 4px; }
+  .data-target { font-size: 10px; color: var(--text-muted); }
+
+  /* ===== 能力画像 ===== */
+  .result-screen { text-align: center; padding: 20px 0; }
+  .result-title { font-size: 28px; font-weight: 900; margin-bottom: 8px; }
+  .result-ending {
+    font-size: 16px; padding: 10px 24px; border-radius: 20px;
+    display: inline-block; margin-bottom: 32px; font-weight: 600;
+  }
+  .ending-good { background: rgba(74,222,128,0.15); color: var(--success); }
+  .ending-normal { background: rgba(251,191,36,0.15); color: var(--warning); }
+  .ending-bad { background: rgba(248,113,113,0.15); color: var(--danger); }
+
+  .radar-container { max-width: 400px; margin: 0 auto 40px; }
+  .radar-canvas { width: 100%; max-width: 360px; }
+
+  .score-details { max-width: 500px; margin: 0 auto 32px; text-align: left; }
+  .score-row { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; }
+  .score-label { width: 100px; font-size: 13px; color: var(--text-dim); text-align: right; }
+  .score-bar-bg { flex: 1; height: 8px; background: rgba(255,255,255,0.08); border-radius: 4px; overflow: hidden; }
+  .score-bar-fill { height: 100%; border-radius: 4px; transition: width 1s ease; width: 0%; }
+  .score-num { width: 40px; font-size: 13px; font-weight: 700; }
+
+  .knowledge-summary {
+    background: var(--bg-card); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 24px; margin-bottom: 24px;
+    text-align: left;
+  }
+  .knowledge-summary h3 { font-size: 16px; margin-bottom: 12px; color: var(--accent); }
+  .knowledge-tag {
+    display: inline-block; background: rgba(79,110,247,0.1); border: 1px solid rgba(79,110,247,0.2);
+    color: var(--text-dim); font-size: 12px; padding: 4px 12px; border-radius: 12px;
+    margin: 4px 4px 4px 0;
+  }
+
+  /* ===== 分享卡片 ===== */
+  .share-card-preview {
+    background: linear-gradient(135deg, #1A2030, #2A3050);
+    border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 32px; max-width: 400px; margin: 0 auto 32px;
+    text-align: center;
+  }
+  .share-card-preview .share-name { font-size: 14px; color: var(--text-dim); margin-bottom: 4px; }
+  .share-card-preview .share-title { font-size: 22px; font-weight: 900; margin-bottom: 20px; }
+  .share-stats { display: flex; justify-content: center; gap: 24px; margin-bottom: 20px; }
+  .share-stat-num { font-size: 28px; font-weight: 900; }
+  .share-stat-label { font-size: 11px; color: var(--text-muted); }
+  .share-ending-text { font-size: 14px; font-weight: 600; margin-bottom: 16px; }
+  .share-tags { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px; }
+
+  /* ===== 时间线导航 ===== */
+  .timeline-nav {
+    display: flex; gap: 8px; padding: 16px 0; margin-bottom: 24px;
+    overflow-x: auto; scrollbar-width: none;
+  }
+  .timeline-nav::-webkit-scrollbar { display: none; }
+  .timeline-node {
+    flex-shrink: 0; width: 52px; height: 52px; border-radius: 50%;
+    background: rgba(255,255,255,0.05); border: 2px solid var(--border);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 20px; cursor: pointer; transition: all 0.3s; position: relative;
+  }
+  .timeline-node.active { border-color: var(--primary); background: rgba(79,110,247,0.15); }
+  .timeline-node.completed { border-color: var(--success); background: rgba(74,222,128,0.1); }
+  .timeline-node.locked { opacity: 0.4; }
+  .timeline-line {
+    flex-shrink: 0; width: 20px; height: 2px; background: var(--border);
+    margin-top: 25px;
+  }
+  .timeline-line.completed { background: var(--success); }
+
+  /* ===== 按钮组 ===== */
+  .action-bar {
+    display: flex; gap: 12px; justify-content: center; margin-top: 24px;
+    flex-wrap: wrap;
+  }
+  .btn-secondary {
+    background: rgba(255,255,255,0.05); color: var(--text); border: 1px solid var(--border);
+    padding: 12px 32px; border-radius: 30px; font-size: 14px; font-weight: 600;
+    cursor: pointer; transition: all 0.3s;
+  }
+  .btn-secondary:hover { background: rgba(255,255,255,0.1); }
+  .btn-accent {
+    background: linear-gradient(135deg, var(--accent), #F06A20);
+    color: #fff; border: none; padding: 14px 40px; border-radius: 30px;
+    font-size: 15px; font-weight: 700; cursor: pointer; letter-spacing: 0.5px;
+    transition: all 0.3s; box-shadow: 0 4px 20px rgba(255,140,66,0.3);
+  }
+  .btn-accent:hover { transform: translateY(-2px); box-shadow: 0 6px 28px rgba(255,140,66,0.4); }
+
+  /* ===== NPC 头像 ===== */
+  .npc-avatar {
+    width: 40px; height: 40px; border-radius: 50%; display: inline-flex;
+    align-items: center; justify-content: center; font-size: 20px;
+    margin-right: 10px; vertical-align: middle;
+  }
+  .npc-boss { background: rgba(248,113,113,0.15); }
+  .npc-dev { background: rgba(79,110,247,0.15); }
+  .npc-design { background: rgba(255,140,66,0.15); }
+  .npc-test { background: rgba(74,222,128,0.15); }
+
+  /* ===== 找茬游戏 ===== */
+  .find-bugs-ui {
+    background: rgba(0,0,0,0.3); border: 1px solid var(--border);
+    border-radius: var(--radius-sm); padding: 20px; margin: 16px 0;
+    font-family: 'Courier New', monospace; font-size: 13px; line-height: 1.8;
+    position: relative;
+  }
+  .code-line { padding: 2px 8px; border-radius: 3px; cursor: pointer; transition: background 0.2s; }
+  .code-line:hover { background: rgba(255,255,255,0.05); }
+  .code-line.found { background: rgba(248,113,113,0.15); border: 1px solid var(--danger); }
+  .code-keyword { color: #C792EA; }
+  .code-string { color: #C3E88D; }
+  .code-comment { color: #5C6678; }
+  .code-function { color: #82AAFF; }
+
+  /* ===== 埋点选择 ===== */
+  .checkbox-list { display: flex; flex-direction: column; gap: 8px; margin: 16px 0; }
+  .checkbox-item {
+    display: flex; align-items: center; gap: 10px; padding: 12px 16px;
+    background: rgba(255,255,255,0.03); border: 1px solid var(--border);
+    border-radius: 8px; cursor: pointer; transition: all 0.2s; font-size: 14px;
+  }
+  .checkbox-item:hover { background: rgba(79,110,247,0.06); }
+  .checkbox-item.selected { border-color: var(--primary); background: rgba(79,110,247,0.08); }
+  .checkbox-box {
+    width: 20px; height: 20px; border: 2px solid var(--text-muted); border-radius: 4px;
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+    transition: all 0.2s;
+  }
+  .checkbox-item.selected .checkbox-box { background: var(--primary); border-color: var(--primary); }
+  .checkbox-item.selected .checkbox-box::after { content: '✓'; color: #fff; font-size: 12px; font-weight: 700; }
+
+  /* ===== 响应式 ===== */
+  @media (max-width: 640px) {
+    .top-bar { padding: 10px 14px; }
+    .clock-badge { font-size: 13px; padding: 4px 10px; }
+    .trust-batteries { display: none; }
+    .scene-card { padding: 20px; }
+    .data-grid { grid-template-columns: repeat(2, 1fr); }
+    .attr-grid { grid-template-columns: 1fr; }
+    .intro-logo { font-size: 36px; }
+  }
+
+  /* ===== 隐藏/显示 ===== */
+  .hidden { display: none !important; }
+
+  /* ===== 提示气泡 ===== */
+  .tooltip {
+    position: absolute; bottom: -30px; left: 50%; transform: translateX(-50%);
+    background: var(--bg-card); border: 1px solid var(--border);
+    padding: 4px 10px; border-radius: 6px; font-size: 11px; color: var(--text-dim);
+    white-space: nowrap; opacity: 0; transition: opacity 0.3s;
+    pointer-events: none; z-index: 10;
+  }
+  .trust-battery:hover .tooltip { opacity: 1; }
+
+  /* ===== 成就弹窗 ===== */
+  .achievement-popup {
+    position: fixed; top: 80px; right: 20px; z-index: 200;
+    background: linear-gradient(135deg, var(--accent), #F06A20);
+    color: #fff; padding: 16px 24px; border-radius: var(--radius-sm);
+    box-shadow: var(--shadow); animation: slideInRight 0.5s ease;
+    display: flex; align-items: center; gap: 12px;
+  }
+  .achievement-popup.hidden { display: none; }
+  @keyframes slideInRight { from{transform:translateX(100%);opacity:0} to{transform:translateX(0);opacity:1} }
+  .achievement-icon { font-size: 28px; }
+  .achievement-text { font-size: 14px; font-weight: 600; }
+</style>
+</head>
+<body>
+
+<!-- 开场动画 -->
+<div class="intro-overlay" id="introOverlay">
+  <div class="intro-logo">产品跟练</div>
+  <div class="intro-sub">AI产品经理的一天 · 从需求到上线</div>
+  <div class="intro-loader"></div>
+</div>
+
+<!-- 成就弹窗 -->
+<div class="achievement-popup hidden" id="achievementPopup">
+  <div class="achievement-icon">🏆</div>
+  <div>
+    <div class="achievement-text" id="achievementText">成就解锁！</div>
+  </div>
+</div>
+
+<div class="app-container" id="appContainer">
+
+  <!-- 角色选择页 -->
+  <div id="characterScreen" class="character-screen">
+    <h1>🎮 产品跟练</h1>
+    <p class="subtitle">一天走完AI产品经理的全流程</p>
+
+    <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:24px;max-width:560px;margin:0 auto 32px;text-align:left;">
+      <p style="font-size:14px;color:var(--text-dim);line-height:1.9;" id="scriptIntro">
+        📅 <strong style="color:var(--text)">加载中...</strong>
+      </p>
+      <div style="margin-bottom:24px;">
+        <label style="font-size:13px;color:var(--text-muted);">📆 选择剧本日（体验不同剧情）：</label>
+        <select id="daySelector" style="background:var(--bg-card);color:var(--text);border:1px solid var(--border);border-radius:8px;padding:6px 12px;font-size:13px;margin-left:8px;">
+          <option value="auto">🎲 自动（按今天日期）</option>
+        </select>
+      </div>
+    </div>
+
+    <p style="font-size:15px;color:var(--text-dim);margin-bottom:16px;">选择你的初始擅长属性（选2项）：</p>
+    <div class="attr-grid" id="attrGrid">
+      <div class="attr-card" data-attr="analysis">
+        <div class="attr-icon">🔍</div>
+        <div class="attr-name">分析力</div>
+        <div class="attr-desc">需求拆解、数据分析更强</div>
+      </div>
+      <div class="attr-card" data-attr="communication">
+        <div class="attr-icon">🗣️</div>
+        <div class="attr-name">沟通力</div>
+        <div class="attr-desc">跨部门协作、说服他人更强</div>
+      </div>
+      <div class="attr-card" data-attr="tech">
+        <div class="attr-icon">💻</div>
+        <div class="attr-name">技术力</div>
+        <div class="attr-desc">理解AI能力边界、技术方案</div>
+      </div>
+      <div class="attr-card" data-attr="creativity">
+        <div class="attr-icon">🎨</div>
+        <div class="attr-name">创造力</div>
+        <div class="attr-desc">原型设计、用户体验更敏锐</div>
+      </div>
+    </div>
+
+    <button class="btn-primary" id="startBtn" disabled>开始今天的工作 →</button>
+  </div>
+
+  <!-- 主游戏区 -->
+  <div id="gameArea" class="hidden">
+
+    <!-- 顶部状态栏 -->
+    <div class="top-bar">
+      <div class="top-bar-left">
+        <div class="clock-badge" id="clockBadge">09:00</div>
+        <div class="progress-bar-container">
+          <div class="progress-bar-bg"><div class="progress-bar-fill" id="progressFill"></div></div>
+        </div>
+        <div class="trust-batteries" id="trustBatteries">
+          <div class="trust-battery" data-npc="boss" title="老板信任值">
+            <div class="trust-battery-fill" style="width:70%;background:var(--danger)"></div>
+            <span class="tooltip">老板 🧑‍💼</span>
+          </div>
+          <div class="trust-battery" data-npc="dev" title="开发信任值">
+            <div class="trust-battery-fill" style="width:70%;background:var(--primary)"></div>
+            <span class="tooltip">开发 👨‍💻</span>
+          </div>
+          <div class="trust-battery" data-npc="design" title="设计师信任值">
+            <div class="trust-battery-fill" style="width:70%;background:var(--accent)"></div>
+            <span class="tooltip">设计师 🎨</span>
+          </div>
+          <div class="trust-battery" data-npc="test" title="测试信任值">
+            <div class="trust-battery-fill" style="width:70%;background:var(--success)"></div>
+            <span class="tooltip">测试 🧪</span>
+          </div>
+        </div>
+      </div>
+      <div class="top-bar-right">
+        <button class="btn-secondary" style="padding:6px 14px;font-size:12px;" onclick="showMyRecords()">📖 我的</button>
+        <button class="btn-secondary" style="padding:6px 14px;font-size:12px;" onclick="restartGame()">🔄 重来</button>
+      </div>
+    </div>
+
+    <!-- 时间线 -->
+    <div class="timeline-nav" id="timelineNav"></div>
+
+    <!-- 场景内容区 -->
+    <div id="sceneContainer"></div>
+
+  </div>
+
+  <!-- 我的页面 -->
+  <div id="myRecordsScreen" class="hidden">
+    <div style="padding:20px 0;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:24px;">
+        <h2 style="font-size:24px;font-weight:900;">📖 我的学习记录</h2>
+        <button class="btn-secondary" style="padding:8px 16px;font-size:13px;" onclick="closeMyRecords()">← 返回</button>
+      </div>
+
+      <!-- 统计概览 -->
+      <div id="myStatsOverview" style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:24px;">
+        <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-sm);padding:20px;text-align:center;">
+          <div style="font-size:32px;font-weight:900;color:var(--primary);" id="statTotalRuns">0</div>
+          <div style="font-size:12px;color:var(--text-muted);margin-top:4px;">总练习次数</div>
+        </div>
+        <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-sm);padding:20px;text-align:center;">
+          <div style="font-size:32px;font-weight:900;color:var(--accent);" id="statAvgScore">0</div>
+          <div style="font-size:12px;color:var(--text-muted);margin-top:4px;">平均总分</div>
+        </div>
+        <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-sm);padding:20px;text-align:center;">
+          <div style="font-size:32px;font-weight:900;color:var(--success);" id="statBestEnding">—</div>
+          <div style="font-size:12px;color:var(--text-muted);margin-top:4px;">最佳结局</div>
+        </div>
+        <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-sm);padding:20px;text-align:center;">
+          <div style="font-size:32px;font-weight:900;color:var(--warning);" id="statKnowledgeCount">0</div>
+          <div style="font-size:12px;color:var(--text-muted);margin-top:4px;">累计知识点</div>
+        </div>
+      </div>
+
+      <!-- 历史记录列表 -->
+      <h3 style="font-size:16px;font-weight:700;margin-bottom:16px;color:var(--accent);">📋 练习历史</h3>
+      <div id="historyList" style="display:flex;flex-direction:column;gap:12px;margin-bottom:32px;">
+        <p style="color:var(--text-muted);font-size:14px;text-align:center;padding:40px 0;" id="emptyHistory">还没有练习记录，完成一次跟练后这里会自动保存。</p>
+      </div>
+
+      <!-- 知识点收藏 -->
+      <h3 style="font-size:16px;font-weight:700;margin-bottom:16px;color:var(--accent);">📚 累计学到的知识点</h3>
+      <div id="allKnowledgeTags" style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius);padding:24px;margin-bottom:24px;min-height:60px;">
+        <p style="color:var(--text-muted);font-size:14px;text-align:center;padding:16px 0;" id="emptyKnowledge">完成练习后，学到的知识点会自动保存在这里。</p>
+      </div>
+
+      <!-- 清除记录 -->
+      <div style="text-align:center;margin-top:32px;">
+        <button class="btn-secondary" style="padding:10px 24px;font-size:13px;color:var(--danger);border-color:var(--danger);" onclick="clearMyRecords()">🗑️ 清除所有记录</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 结果页 -->
+  <div id="resultScreen" class="hidden">
+    <div class="result-screen">
+      <div class="result-title">📊 能力画像报告</div>
+      <div class="result-ending" id="resultEnding">—</div>
+
+      <div class="radar-container">
+        <canvas class="radar-canvas" id="radarCanvas" width="360" height="360"></canvas>
+      </div>
+
+      <div class="score-details" id="scoreDetails"></div>
+
+      <div class="knowledge-summary">
+        <h3>📚 本次跟练学到的知识点</h3>
+        <div id="knowledgeTags"></div>
+      </div>
+
+      <div class="share-card-preview" id="shareCard"></div>
+
+      <div class="action-bar">
+        <button class="btn-secondary" onclick="restartGame()">🔄 再来一次（探索不同结局）</button>
+        <button class="btn-accent" onclick="window.print()">📸 保存/分享报告</button>
+      </div>
+
+      <p style="font-size:12px;color:var(--text-muted);margin-top:32px;">
+        💡 提示：不同选择会触发不同结局，试试看能不能解锁"AI产品总监"结局！
+      </p>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ============================================================
+//  产品跟练 — 30天每日剧本清单（内联版，单文件可直接打开）
+// ============================================================
+const DAILY_SCRIPTS = [
+  { day:1, date:"2026-01-01", week:"第1周·基础篇", difficulty:"⭐简单", bossRequirement:"用户一直在骂我们客服响应慢，你搞个AI智能客服，两周上线。", productName:"AI智能客服", productType:"对话Agent", industry:"电商", hiddenGoal:"降低客服人力成本30%", painPoints:["日均咨询量2000+","人工响应平均等待8分钟","用户满意度仅3.2分","客服团队12人三班倒"], successMetrics:["AI解决率>70%","平均响应<5秒","用户满意度>4.0","幻觉率<5%"], competitorHint:"竞品A知识库可视化强；竞品B响应快但幻觉率高；竞品C多语言强", specialTwist:"老板私下透露：效果好年底裁一半客服", dataDashboard:{calls:"1,247",resolveRate:"72%",transferRate:"28%",satisfaction:"4.1",avgResponse:"3.2s",hallucination:"8%"}, badge:"🎯入门挑战" },
+  { day:2, date:"2026-01-02", week:"第1周·基础篇", difficulty:"⭐简单", bossRequirement:"每人每周写周报要花2小时，做个AI自动写周报的工具，这周五就要看到demo。", productName:"AI周报助手", productType:"文本生成", industry:"企业内部工具", hiddenGoal:"提高员工满意度（老板其实想监控工作量）", painPoints:["人均写周报耗时2h/周","格式不统一","很多人周五下午才想起来写","跨部门协作记录经常遗漏"], successMetrics:["周报生成时间<3分钟","员工满意度>4.0","信息完整度>85%","自动抓取Git/飞书/邮件数据"], competitorHint:"市面有Notion AI、飞书智能伙伴，但缺少自动汇总工作数据能力", specialTwist:"HR希望周报里能体现加班时长数据……你懂的", dataDashboard:{reports:"86",genTime:"2.3min",completeness:"82%",satisfaction:"3.8",accuracy:"78%",usageRate:"65%"}, badge:"📝效率工具" },
+  { day:3, date:"2026-01-03", week:"第1周·基础篇", difficulty:"⭐⭐中等", bossRequirement:"竞品上线了AI图片识别功能，我们也要有！下个月发布会就要讲这个。", productName:"AI识图助手", productType:"多模态CV", industry:"社交/内容", hiddenGoal:"给市场部提供发布会噱头", painPoints:["用户上传图片后无法搜索","内容审核全靠人工看图","竞品已支持以图搜图","运营想做AI滤镜"], successMetrics:["识别准确率>90%","处理时间<2秒","支持50+物体类别","误判率<3%"], competitorHint:"竞品X用CLIP做以图搜图；竞品Y做AI自动打标签；都没做好场景理解", specialTwist:"法务突然找你：人脸数据不能存", dataDashboard:{uploads:"3,421",accuracy:"87%",avgTime:"1.8s",errorRate:"5%",privacyBlock:"12%",userLove:"3.5"}, badge:"👁️视觉智能" },
+  { day:4, date:"2026-01-04", week:"第1周·基础篇", difficulty:"⭐简单", bossRequirement:"老客户流失率太高了，搞个AI推荐系统，把人拉回来。", productName:"AI智能推荐引擎", productType:"推荐算法", industry:"电商/零售", hiddenGoal:"将月流失率从15%降到10%以下", painPoints:["月流失率15%","首页推荐点击率仅2%","用户说找不到想要的","运营手动配活动很累"], successMetrics:["推荐点击率>5%","转化率提升20%","用户停留时长+30%","召回率>60%"], competitorHint:"竞品A用协同过滤；竞品B接入大模型做对话式推荐；竞品C靠编辑精选", specialTwist:"数据团队告诉你：用户行为数据只有3个月，冷启动严重", dataDashboard:{ctr:"4.2%",conversion:"+15%",dwellTime:"+18%",recall:"48%",churnRate:"13%",coldStart:"35%"}, badge:"🎯增长黑客" },
+  { day:5, date:"2026-01-05", week:"第1周·基础篇", difficulty:"⭐⭐中等", bossRequirement:"每天开会2小时太浪费了，做个AI自动生成会议纪要的工具，明天就给我看到效果。", productName:"AI会议纪要助手", productType:"语音转写+摘要", industry:"企业内部", hiddenGoal:"老板想减少无效会议（其实是想监控各部门聊什么）", painPoints:["日均会议时长2h/人","会后没人看纪要","重要决策经常遗漏","跨部门会议信息不同步"], successMetrics:["转写准确率>95%","摘要关键信息覆盖率>90%","生成时间<会议时长50%","待办提取准确率>85%"], competitorHint:"飞书妙记、腾讯会议AI助手已做基础转写；差异点在智能摘要质量和待办自动分发", specialTwist:"某次董事会录音里有人说了不该说的话……AI要不要把这段也摘要进去？", dataDashboard:{meetings:"34",accuracy:"93%",coverage:"87%",todoExtract:"82%",usageRate:"71%",controversy:"1⚠️"}, badge:"🎙️语音智能" },
+  { day:6, date:"2026-01-06", week:"第1周·基础篇", difficulty:"⭐⭐中等", bossRequirement:"用户投诉我们搜索太烂了，搞个AI搜索，能理解自然语言那种。", productName:"AI自然语言搜索", productType:"NLP+搜索", industry:"内容/电商", hiddenGoal:"提升搜索转化率（直接影响GMV）", painPoints:["搜索无结果率25%","用户用自然语言搜不到","长尾query几乎全miss","运营配同义词很痛苦"], successMetrics:["无结果率<8%","自然语言理解准确率>85%","搜索到下单转化率+15%","长尾query覆盖率>70%"], competitorHint:"竞品A用BM25+向量混合；竞品B直接上大模型RAG；竞品C做AI对话式搜索", specialTwist:"搜索团队和AI团队互相看不上，你夹在中间当裁判", dataDashboard:{queries:"8,234",noResult:"12%",nluAcc:"81%",cvr:"+9%",longTail:"58%",teamWar:"⚡"}, badge:"🔍搜索进化" },
+  { day:7, date:"2026-01-07", week:"第1周·基础篇", difficulty:"⭐⭐中等", bossRequirement:"竞品有个AI写作助手火了，我们也做一个，要能帮用户写小红书文案。", productName:"AI种草文案助手", productType:"文本生成+风格模仿", industry:"内容营销", hiddenGoal:"拉动平台内容供给量（UGC飞轮）", painPoints:["优质内容创作者流失","新手不知道怎么写","平台内容同质化严重","广告主需要批量生产素材"], successMetrics:["文案生成满意度>4.0","AI辅助发布率>30%","内容互动率+25%","品牌安全违规率<1%"], competitorHint:"竞品用通用LLM写文案；差异化在做平台风格适配+爆款结构模板+实时热点结合", specialTwist:"有用户用AI生成了虚假测评，平台信誉受损——怎么嵌入合规检测？", dataDashboard:{generated:"2,156",satisfaction:"3.9",publishRate:"28%",engagement:"+18%",violation:"2.3%",gmv:"+12%"}, badge:"✍️内容生成" },
+  { day:8, date:"2026-01-08", week:"第2周·进阶篇", difficulty:"⭐⭐中等", bossRequirement:"我们要做AI Agent平台，让用户可以自己搭工作流，对标Coze和Dify。", productName:"AI Agent搭建平台", productType:"Agent+工作流", industry:"开发者工具", hiddenGoal:"抢占企业自动化入口（提高用户粘性）", painPoints:["企业内部重复流程多","低代码平台太复杂","竞品已跑通PMF","开发者社区有需求"], successMetrics:["周活Agent数>500","平均Agent完成率>80%","开发者NPS>50","企业客户>20家"], competitorHint:"Coze强在字节生态；Dify强在开源社区；你需要找到中国企业级差异化", specialTwist:"安全团队警告：Agent可以调用任意API，一旦出现prompt injection就是灾难", dataDashboard:{agents:"423",completion:"76%",nps:"47",enterprise:"15",securityIncident:"0",retention:"62%"}, badge:"🤖Agent时代" },
+  { day:9, date:"2026-01-09", week:"第2周·进阶篇", difficulty:"⭐⭐⭐困难", bossRequirement:"做个AI代码审查工具，帮开发提效，一个月内集成到我们的DevOps流程里。", productName:"AI Code Review助手", productType:"代码LLM+CI/CD", industry:"开发者工具", hiddenGoal:"减少线上Bug率（老板被CTO骂了）", painPoints:["线上Bug率居高不下","Code Review靠2个架构师","新人代码质量参差不齐","CI/CD流程缺少AI关卡"], successMetrics:["Bug检出率>70%","误报率<15%","MR合并时间缩短30%","开发者接受率>60%"], competitorHint:"GitHub Copilot做补全；CodeRabbit做Review；你需要做企业代码规范自适应", specialTwist:"有开发发现AI Review建议互相矛盾——同一个问题，AI这次说要改，下次说没问题", dataDashboard:{mrs:"187",bugDetect:"68%",falsePositive:"18%",mergeTime:"-22%",devAccept:"57%",trust:"📉"}, badge:"💻代码智能" },
+  { day:10, date:"2026-01-10", week:"第2周·进阶篇", difficulty:"⭐⭐中等", bossRequirement:"用户上传的文档太多了，做个AI文档助手，能问答、能总结、能翻译。", productName:"AI文档智能助手", productType:"RAG+文档处理", industry:"企业协作", hiddenGoal:"提高付费转化率（文档管理是刚需）", painPoints:["百页PDF没人愿意读","跨文档信息难以关联","翻译质量差被投诉","权限管理混乱"], successMetrics:["问答准确率>88%","百页文档处理<30秒","翻译质量评分>4.2","权限泄露事件=0"], competitorHint:"ChatPDF做单文档问答；Notion AI做笔记增强；你需要做企业级知识库+权限", specialTwist:"某员工上传了机密财报，AI把它总结后发给了全公司——权限隔离怎么做？", dataDashboard:{docs:"5,623",qaAcc:"85%",processTime:"24s",translation:"4.0",leakEvent:"1⚠️",upgrade:"+8%"}, badge:"📄知识管理" },
+  { day:11, date:"2026-01-11", week:"第2周·进阶篇", difficulty:"⭐⭐⭐困难", bossRequirement:"竞品用AI做了个性化学习路径，我们教育产品线也要有，暑假前上线。", productName:"AI个性化学习规划师", productType:"教育AI+自适应", industry:"在线教育", hiddenGoal:"提高完课率和续费率", painPoints:["完课率仅35%","统一进度不适合所有人","老师批改压力大","家长要求个性化反馈"], successMetrics:["完课率提升至55%","知识点掌握率+20%","家长满意度>4.3","老师效率提升40%"], competitorHint:"可汗学院做自适应练习；猿辅导做AI老师；差异化在学情诊断+动态调整", specialTwist:"有家长投诉AI给孩子推荐了超纲内容——个性化和安全边界怎么平衡？", dataDashboard:{students:"3,200",completion:"48%",mastery:"+15%",parentSat:"4.1",teacherEff:"+32%",complaint:"3"}, badge:"🎓教育智能" },
+  { day:12, date:"2026-01-12", week:"第2周·进阶篇", difficulty:"⭐⭐中等", bossRequirement:"做个AI陪练，帮销售团队练话术，要能模拟客户刁难。", productName:"AI销售陪练", productType:"角色扮演+实时反馈", industry:"企业培训", hiddenGoal:"缩短新人出单周期（从6个月→3个月）", painPoints:["新人前3个月几乎不开单","老销售没时间带新人","话术培训效果无法量化","丢单后不知道为什么输"], successMetrics:["新人出单周期缩短40%","话术掌握评分>4.0","模拟实战通过率>70%","新人NPS>45"], competitorHint:"竞品做通用对话练习；你需要做行业知识+真实客户画像+实时教练反馈", specialTwist:"有销售跟AI练完之后，用AI教的话术成功骗了客户——伦理红线在哪？", dataDashboard:{trainees:"56",cycleReduction:"32%",skillScore:"3.8",passRate:"68%",nps:"42",ethicsIssue:"1⚠️"}, badge:"🎭角色扮演" },
+  { day:13, date:"2026-01-13", week:"第2周·进阶篇", difficulty:"⭐⭐⭐困难", bossRequirement:"医院说我们的挂号系统太难用，做个AI导诊，能理解患者描述推荐科室。", productName:"AI智能导诊", productType:"医疗NLP+知识图谱", industry:"医疗健康", hiddenGoal:"减少挂错号率（降低医疗纠纷风险）", painPoints:["挂错号率18%","患者描述模糊","三甲医院科室太细分","急诊分诊靠经验"], successMetrics:["分诊准确率>90%","平均响应<10秒","急诊优先识别率>95%","患者满意度>4.2"], competitorHint:"竞品A做规则引擎；竞品B接大模型；你需要做医学知识图谱+症状推理链", specialTwist:"AI导诊把胸痛分到了骨科——医疗AI的容错率是零", dataDashboard:{visits:"892",accuracy:"87%",avgTime:"8s",emergencyDetect:"92%",satisfaction:"4.0",nearMiss:"2⚠️"}, badge:"🏥医疗AI" },
+  { day:14, date:"2026-01-14", week:"第2周·进阶篇", difficulty:"⭐⭐⭐困难", bossRequirement:"财务团队对账要3天，做个AI自动化工具，1小时搞定。", productName:"AI财务对账助手", productType:"文档理解+规则引擎", industry:"企业财务", hiddenGoal:"财务团队从20人缩减到10人", painPoints:["月结对账耗时3天","手工核对容易漏","多系统数据格式不统一","审计追溯困难"], successMetrics:["对账时间缩短80%","差错率<0.1%","多系统对接完成度100%","审计合规通过率100%"], competitorHint:"传统RPA做规则自动化；AI方案做智能匹配+异常检测+自动调账建议", specialTwist:"AI自动调了一笔50万的账，但没人知道它为什么这么调——可解释性是刚需", dataDashboard:{reconciliations:"234",timeReduction:"76%",errorRate:"0.3%",systemConn:"87%",auditReady:"92%",explainability:"📉"}, badge:"💰财务智能" },
+  { day:15, date:"2026-01-15", week:"第3周·高级篇", difficulty:"⭐⭐⭐困难", bossRequirement:"我们要做AI原生的CRM，颠覆Salesforce那种传统表单式体验。", productName:"AI原生CRM", productType:"Agent+企业级SaaS", industry:"企业服务", hiddenGoal:"抢Salesforce的中小企业客户", painPoints:["传统CRM填写率<40%","销售讨厌录数据","客户洞察靠人工分析","移动端体验差"], successMetrics:["数据自动填充率>80%","销售效率提升50%","客户洞察准确率>85%","移动端DAU/MAU>60%"], competitorHint:"Salesforce做Einstein AI叠加；你需要做AI Native从零设计，不是叠加", specialTwist:"销售发现AI自动录入的数据里有不该被记录的私下谈话——隐私红线", dataDashboard:{users:"1,200",autoFill:"73%",efficiency:"+42%",insight:"81%",mobile:"55%",privacyIssue:"1⚠️"}, badge:"🏢企业AI" },
+  { day:16, date:"2026-01-16", week:"第3周·高级篇", difficulty:"⭐⭐⭐困难", bossRequirement:"游戏里NPC太呆了，用AI让每个NPC都有独立人格，玩家能真正对话。", productName:"AI NPC人格系统", productType:"LLM+游戏引擎", industry:"游戏", hiddenGoal:"提高玩家留存和付费（沉浸感=钱）", painPoints:["NPC对话重复率高","玩家吐槽假","剧情分支靠手写成本高","海外玩家需要多语言"], successMetrics:["NPC对话重复率<5%","玩家沉浸感评分>4.5","剧情分支覆盖>100条","多语言支持10+"], competitorHint:"育碧做NPC AI原型；Replika做情感陪伴；游戏+AI的壁垒在性能+一致性+安全", specialTwist:"有玩家和NPC谈恋爱了，还充值了5000块——AI伴侣的伦理边界？", dataDashboard:{npcs:"45",repeatRate:"7%",immersion:"4.3",branches:"87",languages:"8",revenue:"+23%"}, badge:"🎮游戏AI" },
+  { day:17, date:"2026-01-17", week:"第3周·高级篇", difficulty:"⭐⭐⭐⭐极难", bossRequirement:"金融监管趋严，做个AI合规审查系统，自动扫描所有交易异常。", productName:"AI金融合规审查", productType:"规则推理+异常检测", industry:"金融科技", hiddenGoal:"避免监管罚款（去年罚了2000万）", painPoints:["合规团队200人仍不够","新规出台响应慢","跨境交易审查复杂","误报率太高浪费人力"], successMetrics:["违规检出率>99%","误报率<5%","新规响应<24小时","审计追溯100%覆盖"], competitorHint:"传统规则引擎误报高；AI方案做语义理解+关联图谱+自适应学习", specialTwist:"AI标记了一笔交易为可疑，但实际上是某大客户的正常大额转账——误杀VIP的代价", dataDashboard:{transactions:"2.3M",detection:"97%",falsePositive:"8%",responseTime:"18h",auditCover:"96%",vipKill:"3⚠️"}, badge:"🏦金融AI" },
+  { day:18, date:"2026-01-18", week:"第3周·高级篇", difficulty:"⭐⭐⭐困难", bossRequirement:"供应链总断，做个AI预测系统，提前预警原材料短缺。", productName:"AI供应链预警", productType:"时序预测+知识图谱", industry:"制造业/零售", hiddenGoal:"库存周转率提升30%（释放现金流）", painPoints:["断货损失年均500万","供应商交期不稳定","全球事件影响不可见","安全库存设定靠经验"], successMetrics:["断货预测准确率>85%","提前预警时间>14天","库存周转率+25%","供应商风险评分覆盖100%"], competitorHint:"SAP做传统ERP预测；新兴AI方案做实时事件驱动+多源数据融合", specialTwist:"AI预测某关键原料会短缺，建议提前囤货——结果囤完价格暴跌，谁背锅？", dataDashboard:{skus:"12,000",forecastAcc:"82%",leadTime:"12天",turnover:"+18%",supplierRisk:"76%",badCall:"1⚠️"}, badge:"📦供应链AI" },
+  { day:19, date:"2026-01-19", week:"第3周·高级篇", difficulty:"⭐⭐⭐困难", bossRequirement:"短视频平台内容审核跟不上，AI审核准确率要99.9%，明天就要方案。", productName:"AI内容安全审核", productType:"多模态审核+人工协同", industry:"内容平台", hiddenGoal:"降低平台被监管约谈风险", painPoints:["日均UGC内容500万条","人工审核团队2000人","新型违规手法层出不穷","跨境内容审核标准不同"], successMetrics:["审核准确率>99.5%","人工复审量<5%","新型违规识别<24h","多国合规标准覆盖"], competitorHint:"阿里绿网、腾讯天御做基础审核；AI 2026要做语义深层理解+跨模态关联", specialTwist:"AI把一条正常的社会议题讨论标记为敏感——过度审核正在杀死公共讨论", dataDashboard:{contents:"4.2M",accuracy:"99.1%",humanReview:"7%",newTypeDetect:"32h",countries:"15",overBlock:"⚠️"}, badge:"🛡️内容安全" },
+  { day:20, date:"2026-01-20", week:"第3周·高级篇", difficulty:"⭐⭐⭐困难", bossRequirement:"用户在我们的APP里问的问题千奇百怪，做个AI问答中枢，统一处理所有入口。", productName:"AI统一问答中枢", productType:"RAG+多源路由", industry:"平台型产品", hiddenGoal:"降低各业务线重复建设AI的成本", painPoints:["5个业务线各建AI","回答互相矛盾","维护成本倍增","用户体验不一致"], successMetrics:["统一路由准确率>90%","跨业务回答一致性>95%","维护成本降低60%","用户满意度>4.0"], competitorHint:"这是企业内部AI中台思路；关键在路由策略+知识隔离+效果统一度量", specialTwist:"某业务线的AI偷偷调用了另一个业务线的数据来回答——数据边界怎么划？", dataDashboard:{queries:"15K/day",routing:"87%",consistency:"92%",costReduction:"52%",satisfaction:"3.9",dataLeak:"1⚠️"}, badge:"🔀AI中台" },
+  { day:21, date:"2026-01-21", week:"第3周·高级篇", difficulty:"⭐⭐⭐⭐极难", bossRequirement:"我们要做AI辅助诊断，帮助基层医生提升诊断准确率，这不是赚快钱的项目。", productName:"AI辅助诊断系统", productType:"多模态医疗AI", industry:"医疗健康", hiddenGoal:"成为医院第二诊断意见标准工具", painPoints:["基层医院误诊率偏高","专家号一号难求","影像科医生严重不足","偏远地区医疗资源匮乏"], successMetrics:["诊断一致率>95%（vs专家）","影像识别敏感度>97%","基层医院覆盖>100家","FDA/NMPA认证通过"], competitorHint:"深睿、推想做单病种影像AI；你要做全科室+多模态+可解释才有壁垒", specialTwist:"AI给出一个诊断建议，和主治医生判断完全相反——谁听谁的？法律责任怎么定？", dataDashboard:{hospitals:"67",consistency:"93%",sensitivity:"96%",certification:"进行中",liabilityIssue:"⚖️",doctorTrust:"📊"}, badge:"🔬深度医疗" },
+  { day:22, date:"2026-01-22", week:"第4周·专家篇", difficulty:"⭐⭐⭐⭐极难", bossRequirement:"公司战略级项目：做一个AI产品经理的AI助手，让它帮你做需求分析、写PRD、跟项目。", productName:"AI产品经理搭档", productType:"Agent+多工具调用", industry:"AI for PM", hiddenGoal:"验证AI替代部分PM工作的可行性（你可能在给自己挖坟）", painPoints:["PM 70%时间花在沟通和文档","需求变更频繁导致返工","跨部门信息同步成本高","老板想知道AI能不能替代PM"], successMetrics:["需求分析自动完成度>60%","PRD初稿可用率>70%","项目跟进度提升40%","PM满意度>4.0"], competitorHint:"这是meta产品——用AI做AI产品的PM工具。竞品几乎没有，但技术难度极高", specialTwist:"AI搭档做出的决策越来越好，老板开始问：那我们还要PM干嘛？——你的产品成功了，但你的岗位呢？", dataDashboard:{autoComplete:"55%",prdUsable:"68%",trackingEff:"+35%",pmSat:"3.7",replacementRisk:"⚠️⚠️",ironyLevel:"MAX"}, badge:"🪞镜像挑战" },
+  { day:23, date:"2026-01-23", week:"第4周·专家篇", difficulty:"⭐⭐⭐困难", bossRequirement:"数据科学家离职了3个，MLOps流程全靠你一个人维护，搞个AI帮你管模型。", productName:"AI模型运维平台", productType:"MLOps+AI管理", industry:"AI基础设施", hiddenGoal:"减少对高级AI人才的依赖（降低人力成本）", painPoints:["模型版本管理混乱","线上模型效果衰减无人知","训练数据漂移未监控","部署流程全靠手工"], successMetrics:["模型上线时间缩短60%","效果衰减检测<24h","数据漂移告警准确率>90%","零人工部署操作"], competitorHint:"MLflow做实验管理；Weights&Biases做可视化；你需要做AI驱动的自动化MLOps", specialTwist:"AI自动把某个模型回滚了，但没人知道为什么——自动化决策的透明性是刚需", dataDashboard:{models:"34",deployTime:"-55%",driftDetect:"20h",autoRollback:"12",transparency:"📉",trust:"⚠️"}, badge:"⚙️AI基础设施" },
+  { day:24, date:"2026-01-24", week:"第4周·专家篇", difficulty:"⭐⭐⭐⭐极难", bossRequirement:"海外业务要扩张，但每个国家AI法规不同，做个合规AI系统，自动适配各地法律。", productName:"AI全球合规适配系统", productType:"法规NLP+策略引擎", industry:"跨国企业", hiddenGoal:"避免因合规问题被各国罚款（GDPR罚款可达全球营收4%）", painPoints:["欧盟AI Act即将生效","美国各州法律不同","中国算法备案要求","东南亚法规碎片化"], successMetrics:["法规覆盖>50个国家","合规检查自动率>85%","违规风险预警>90%","备案材料自动生成"], competitorHint:"这是超级蓝海——跨国AI合规没有任何成熟产品，但技术+法律双重门槛极高", specialTwist:"某国突然修改AI法规，你的系统需要在72小时内完成适配——否则全线产品在该国下架", dataDashboard:{countries:"42",autoCompliance:"78%",riskDetect:"85%",docGen:"进行中",emergencyPatch:"🔴",legalCost:"-30%"}, badge:"🌍全球合规" },
+  { day:25, date:"2026-01-25", week:"第4周·专家篇", difficulty:"⭐⭐⭐困难", bossRequirement:"我们要做AI原生的IDE，不是插件那种，是从底层重新设计的开发环境。", productName:"AI原生IDE", productType:"代码LLM+开发环境", industry:"开发者工具", hiddenGoal:"让开发者离不开我们的工具（生态锁定）", painPoints:["传统IDE+AI插件体验割裂","上下文理解有限","多文件协同编辑弱","调试AI生成的代码困难"], successMetrics:["代码生成接受率>75%","调试时间缩短50%","多文件理解准确率>85%","开发者NPS>60"], competitorHint:"Cursor做AI优先编辑器；GitHub Copilot做插件；你要做从零AI Native不是加AI功能", specialTwist:"AI IDE自动重构了一段核心代码，引入了微妙bug——当AI既是作者又是审查者时，谁来兜底？", dataDashboard:{users:"8,500",acceptRate:"71%",debugTime:"-42%",multiFile:"79%",nps:"55",selfBug:"⚠️"}, badge:"🛠️开发工具" },
+  { day:26, date:"2026-01-26", week:"第4周·专家篇", difficulty:"⭐⭐⭐⭐困难", bossRequirement:"你是产品VP了，现在要规划公司未来3年的AI产品矩阵，写一份战略PPT给董事会。", productName:"AI产品战略规划", productType:"战略层面", industry:"公司内部", hiddenGoal:"拿到预算，稳住自己的位置", painPoints:["公司在AI赛道落后竞品2年","CEO焦虑，董事会施压","技术团队能力参差不齐","现金流只能撑18个月"], successMetrics:["战略通过董事会审批","拿到预期预算","团队信服度>80%","3个MVP在6个月内验证"], competitorHint:"你需要分析OpenAI/Google/Anthropic的路线；国内大厂布局；垂直领域机会窗口", specialTwist:"CEO私下说：如果这次拿不到预算，可能要裁员30%——你的战略关乎所有人饭碗", dataDashboard:{boardApproval:"?",budgetTarget:"5000万",teamBuyIn:"?",mvpPlan:"3个",layoffRisk:"⚠️",moraleMap:"📉"}, badge:"👑战略大师" },
+  { day:27, date:"2026-01-27", week:"第4周·专家篇", difficulty:"⭐⭐⭐⭐⭐极难", bossRequirement:"竞品发布了比你强10倍的产品，你的产品要在一周内回应，否则客户全跑光了。", productName:"AI竞品反击战", productType:"危机管理", industry:"全行业", hiddenGoal:"保住核心客户，稳住股价", painPoints:["竞品性能碾压（响应快10倍）","3个大客户已提出换供应商","团队士气崩溃","媒体在唱衰你们"], successMetrics:["客户流失率<5%","紧急发布反击版本","媒体舆论扭转","团队士气恢复"], competitorHint:"你需要做：竞品拆解、差异化定位、紧急排期、客户沟通、PR反击", specialTwist:"竞品是用你们开源的代码做的——法务说可以告，但会暴露更多技术细节", dataDashboard:{churnRate:"4.2%",emergencyRelease:"🔴进行中",prSentiment:"负面62%",teamMorale:"2.8/5",lawsuit:"⚖️可选",stockPrice:"📉"}, badge:"⚔️绝地反击" },
+  { day:28, date:"2026-01-28", week:"第4周·专家篇", difficulty:"⭐⭐⭐中等", bossRequirement:"用户数据是我们的核心资产，做个AI数据平台，让内部各团队都能自助分析，不用排队等数据团队。", productName:"AI自助数据分析平台", productType:"LLM+BI+数据治理", industry:"企业内部", hiddenGoal:"数据团队不想当取数工具人，想转型做数据产品", painPoints:["取数需求排队2周","业务方看不懂SQL","数据口径不统一","敏感数据泄露风险"], successMetrics:["取数时间从2周→2小时","业务方自助率>70%","数据口径一致率>95%","零数据泄露事件"], competitorHint:"Tableau做可视化；PowerBI生态好；Looker做语义层；国内有帆软、观远；AI+BI是新风口", specialTwist:"某业务方用AI查到了不该看的数据（权限控制漏洞）——数据安全和易用性怎么平衡？", dataDashboard:{requests:"156",selfService:"65%",口径一致:"92%",securityIncident:"1",timeReduction:"85%",roi:"+200%"}, badge:"📊数据民主化" },
+  { day:29, date:"2026-01-29", week:"第4周·专家篇", difficulty:"⭐⭐⭐⭐困难", bossRequirement:"做个AI陪练，帮销售/客服/管理者做角色扮演训练，要能给他们实时反馈和改进建议。", productName:"AI角色扮演训练营", productType:"LLM+语音+实时反馈", industry:"企业培训", hiddenGoal:"替代昂贵的外部培训供应商", painPoints:["外训费用年均50万","培训效果无法量化","员工没时间参加线下培训","不同岗位需要不同场景"], successMetrics:["训练完成率>80%","技能提升可量化>30%","员工NPS>45","覆盖5+岗位场景"], competitorHint:"Replika做AI陪伴；Character.AI做角色扮演；但企业培训+实时反馈是蓝海", specialTwist:"有员工跟AI练销售话术时，AI给出了不道德但有效的建议——伦理边界在哪？", dataDashboard:{trainees:"89",completion:"78%",skillGain:"+28%",nps:"43",scenarios:"5/5",ethicsIncident:"1"}, badge:"🎓AI教练" },
+  { day:30, date:"2026-01-30", week:"毕业篇", difficulty:"🏆毕业考核", bossRequirement:"恭喜你，现在是AI产品总监了。公司给你一个空白画布——你来决定下一个颠覆性AI产品是什么，从0到1完整规划。", productName:"你定义的AI产品", productType:"自由发挥", industry:"你来选择", hiddenGoal:"证明你已经从执行者成长为定义者", painPoints:["你来定义问题","你来选技术路线","你来定成功标准","你来组建团队"], successMetrics:["产品愿景清晰度","可行性评估","商业价值论证","执行计划完整性"], competitorHint:"这一天的特殊规则：你将面对开放式问题，没有标准答案。你的每一个决策都会被评估。", specialTwist:"这不是模拟——老板说如果方案够好，真的会立项。这是你的机会。", dataDashboard:{visionClarity:"待评估",feasibility:"待评估",bizValue:"待评估",execPlan:"待评估",realProject:"可能变成真的"}, badge:"🎓毕业典礼" }
+];
+
+function getTodaysScript() {
+  const today = new Date();
+  const startDate = new Date("2026-01-01");
+  const dayDiff = Math.floor((today - startDate) / (1000 * 60 * 60 * 24));
+  const dayIndex = ((dayDiff % 30) + 30) % 30;
+  return DAILY_SCRIPTS[dayIndex];
+}
+function getScriptByDay(dayNumber) {
+  const idx = (dayNumber - 1) % 30;
+  return DAILY_SCRIPTS[idx];
+}
+
+// ===== 每日剧本系统 =====
+let currentScript = null;
+
+function loadTodaysScript() {
+  // 优先从URL参数获取指定天数
+  const urlParams = new URLSearchParams(window.location.search);
+  const dayParam = urlParams.get('day');
+  if (dayParam) {
+    currentScript = getScriptByDay(parseInt(dayParam));
+  } else {
+    currentScript = getTodaysScript();
+  }
+  return currentScript;
+}
+
+// 用剧本数据动态生成场景
+function buildScenesFromScript(script) {
+  const painText = script.painPoints.map(p => `• ${p}`).join('<br>');
+  const metricText = script.successMetrics.map(m => `• ${m}`).join('<br>');
+
+  return [
+    // ===== 第一幕：接到需求 =====
+    {
+      id: 0, time: '09:00', icon: '📋', title: '第一幕：接到需求',
+      npc: { name: '老板', avatar: '🧑‍💼', cls: 'npc-boss' },
+      story: `早上9点，老板把你叫进办公室，扔来一句话：<br><br>
+      <em style="color:var(--accent);font-size:16px;">"${script.bossRequirement}"</em><br><br>
+      你打开后台看了一眼数据：<br>${painText}<br>
+      <span style="font-size:13px;color:var(--text-muted);">🏷️ 产品类型：${script.productType} | 行业：${script.industry} | 难度：${script.difficulty}</span>`,
+      questions: [
+        {
+          title: '🎯 这个需求本质上是什么类型的AI问题？',
+          type: 'single',
+          choices: [
+            { id: 'a', text: '分类问题 — 把输入分到预定义类别', score: { insight: 10 }, feedback: { type: 'neutral', text: '部分正确。分类可能是其中一环，但还不够精准。' } },
+            { id: 'b', text: '生成问题 — 用大语言模型直接生成内容', score: { insight: 5 }, feedback: { type: 'neutral', text: '方向对，但太笼统。需要考虑可控性、知识范围。' } },
+            { id: 'c', text: 'Agent问题 — 需要理解意图、规划、执行动作', score: { insight: 20 }, feedback: { type: 'good', text: '精准！这个场景本质是Agent——理解→规划→执行→反馈的完整循环。' } },
+            { id: 'd', text: 'RAG问题 — 需要检索外部知识再生成', score: { insight: 15 }, feedback: { type: 'good', text: '很好！RAG是解决"AI不知道你公司数据"的核心方案，很多AI产品都基于此。' } },
+          ],
+          correctId: 'c'
+        },
+        {
+          title: '📌 你决定采用什么策略？（影响后续全局路线）',
+          type: 'route',
+          choices: [
+            { id: 'aggressive', text: '🔥 一步到位 — 全量上线，all in AI', score: { insight: -15, collaboration: -10 }, trust: { dev: -20, test: -15 }, feedback: { type: 'bad', text: '高风险！没有灰度验证就全量，一旦翻车就是品牌危机。开发心里已经在骂了。' }, route: 'aggressive' },
+            { id: 'balanced', text: '⚖️ AI辅助 + 人工兜底 — 稳妥方案', score: { insight: 15, collaboration: 10 }, trust: { dev: 10, test: 10 }, feedback: { type: 'good', text: '经典稳妥路线。AI处理标准场景，复杂/边缘case转人工。后续开发测试都好配合。' }, route: 'balanced' },
+            { id: 'mvp', text: '🧪 先做个MVP验证 — 小范围试水再迭代', score: { insight: 20, data: 15 }, trust: { boss: -10 }, feedback: { type: 'good', text: '聪明！先验证AI在你们场景的真实效果，用数据说服老板。不过老板可能会嫌慢。' }, route: 'mvp' },
+          ],
+          correctId: 'mvp'
+        },
+        {
+          title: `📏 你定义的成功指标有哪些？（多选）\n场景：${script.productName}`,
+          type: 'multi',
+          choices: [
+            { id: 'm1', text: `核心效果指标（如${script.successMetrics[0]}）`, correct: true, score: { insight: 10 } },
+            { id: 'm2', text: `用户体验指标（如${script.successMetrics[2]}）`, correct: true, score: { insight: 10, data: 5 } },
+            { id: 'm3', text: 'AI幻觉率/错误率 < 5%', correct: true, score: { insight: 15, doc: 5 }, knowledge: 'AI产品特殊指标：幻觉率是生命线，超过5%用户就会大规模投诉' },
+            { id: 'm4', text: '开发成本降低50%', correct: false, score: { insight: -5 }, feedback: '成本是结果指标，不是产品成功的直接衡量标准。先关注用户价值。' },
+            { id: 'm5', text: '系统响应时间 < 3秒', correct: true, score: { insight: 10 } },
+          ],
+          correctIds: ['m1','m2','m3','m5'],
+          multiFeedback: { good: '全部选对！你抓住了AI产品的核心指标体系。', partial: '大部分对了，注意AI产品要特别关注"幻觉/错误率"这个特有指标。', bad: '成功指标定义是PM的基本功，再想想哪些直接反映用户体验？' }
+        }
+      ],
+      knowledge: [
+        { title: 'AI问题分类框架', content: '分类（Classification）→ 适合标签/意图识别。生成（Generation）→ 适合文案/对话。RAG → 适合需要外部知识的场景。Agent → 适合需要多步推理+工具调用的场景。检索（Embedding）→ 适合搜索/推荐。' },
+        { title: 'SMART目标设定', content: 'Specific（具体）、Measurable（可衡量）、Achievable（可实现）、Relevant（相关）、Time-bound（有时限）。"满意度>4.0"比"提升体验"好100倍。' },
+      ],
+      onComplete: function() {
+        const route = state.choices['0_route'];
+        state.sceneFlags.route = route;
+        if (route === 'aggressive') showAchievement('⚠️ 选择了激进路线');
+        else if (route === 'mvp') { showAchievement('🧪 数据驱动思维解锁'); state.achievements.push('mvp_thinker'); }
+      }
+    },
+
+    // ===== 第二幕：需求分析 & 竞品调研 =====
+    {
+      id: 1, time: '10:00', icon: '🔍', title: '第二幕：需求分析 & 竞品调研',
+      npc: { name: '你（内心OS）', avatar: '🤔', cls: '' },
+      story: `你决定先看看竞品怎么做。市场上已经有类似产品了……<br><br>
+      你需要完成三件事：<br>
+      ① 用AI工具做竞品分析<br>
+      ② 明确核心用户画像<br>
+      ③ 对需求做优先级排序<br><br>
+      <span style="font-size:13px;color:var(--text-muted);">💡 今日提示：${script.competitorHint}</span>`,
+      aiInteraction: {
+        title: '🤖 AI竞品分析助手',
+        placeholder: `输入指令，让AI帮你分析${script.productName}的竞品，例如："分析竞品A、B、C的优劣对比"`,
+        responses: [
+          { trigger: '竞品', response: `📊 **${script.productName} 竞品分析报告**
+
+**市场格局：**
+${script.competitorHint}
+
+**我们的差异化机会：**
+→ 垂直场景深度（竞品都是通用方案）
+→ AI幻觉兜底机制（竞品普遍薄弱）
+→ 用户体验丝滑度（转人工/降级策略）
+→ 数据飞轮（用户反馈→模型迭代）
+
+**竞品定价参考：**
+• 竞品A：¥${Math.floor(Math.random()*2000+500)}/月起
+• 竞品B：¥${Math.floor(Math.random()*2000+1000)}/月起
+• 竞品C：$${Math.floor(Math.random()*100+50)}/月起
+
+**关键发现：**
+1. 头部竞品在「基础能力」上已趋同
+2. 差异化竞争点在「行业深度」和「服务体验」
+3. 价格战已打响，拼的是留存和口碑` },
+          { trigger: '默认', response: `📊 **AI竞品分析助手**
+
+告诉我你想分析哪些竞品，我来帮你做详细对比。
+
+试试输入："分析竞品A、B、C的优劣对比"
+
+我会从以下维度拆解：
+• 核心能力对比
+• 技术架构差异
+• 定价策略
+• 用户体验优劣
+• 差异化机会` },
+        ]
+      },
+      questions: [
+        {
+          title: '👤 谁是你的核心用户？（用户画像构建）',
+          type: 'single',
+          choices: [
+            { id: 'a', text: '所有用户 — 覆盖面越广越好', score: { insight: -5 }, feedback: { type: 'bad', text: '"所有用户"等于"没有用户"。PM第一课：聚焦核心场景。' } },
+            { id: 'b', text: '最高频的使用者 — 他们最痛', score: { insight: 15 }, feedback: { type: 'good', text: '精准！高频用户的痛点就是AI最擅长解决的标准化场景。' } },
+            { id: 'c', text: '新用户 — 他们需要引导', score: { insight: 5 }, feedback: { type: 'neutral', text: '新用户引导是重要场景，但不是"最痛"的那个。先解决存量痛点。' } },
+            { id: 'd', text: 'VIP大客户 — 他们付钱最多', score: { insight: 10 }, feedback: { type: 'good', text: 'B端视角很好！但也要考虑规模化——只服务大客户≠好产品。' } },
+          ],
+          correctId: 'b'
+        },
+      ],
+      dragSort: {
+        title: '📋 用MoSCoW法则对以下功能做优先级排序（拖拽排列）',
+        items: [
+          { id: 'm1', text: `M: 核心AI能力（${script.successMetrics[0]}）`, correctPos: 0 },
+          { id: 'm2', text: 'M: 降级/兜底方案（AI挂了怎么办）', correctPos: 1 },
+          { id: 's1', text: 'S: 数据看板（效果监控）', correctPos: 2 },
+          { id: 's2', text: 'S: 用户反馈收集闭环', correctPos: 3 },
+          { id: 'c1', text: 'C: 多语言支持', correctPos: 4 },
+          { id: 'w1', text: 'W: 高级定制功能（未来再做）', correctPos: 5 },
+        ],
+        knowledge: 'MoSCoW法则：Must have → Should have → Could have → Won\'t have this time。AI产品特别容易在"C"和"W"上浪费资源，记住：先活下来再谈情怀。'
+      },
+      knowledge: [
+        { title: 'MoSCoW优先级法', content: 'Must（必须有，没有就别上线）→ Should（应该有，没有用户会不满）→ Could（可以有，锦上添花）→ Won\'t（这次不做，但要记录）。每个迭代都要做这个排序。' },
+        { title: 'Kano模型', content: '基本型需求（不满足=差评）、期望型需求（满足越多越满意）、兴奋型需求（超出预期，口碑传播）。AI产品的"基本型"是准确，"兴奋型"可能是主动预判用户需求。' },
+      ],
+      onComplete: function() {
+        const dragScore = state.sceneFlags.dragScore || 0;
+        state.scores.competition += dragScore;
+        if (dragScore >= 80) { state.achievements.push('sort_master'); showAchievement('🏆 排序大师'); }
+      }
+    },
+
+    // ===== 第三幕：写PRD =====
+    {
+      id: 2, time: '11:00', icon: '📝', title: '第三幕：写PRD',
+      npc: { name: 'AI助手', avatar: '🤖', cls: '' },
+      story: `需求理清了，该写PRD了。你打开文档，决定让AI先帮你生成初稿……<br><br>
+      但记住：<strong style="color:var(--accent)">AI写的PRD不能直接用</strong>，你需要审核、补充、纠错。<br><br>
+      <span style="font-size:13px;color:var(--text-muted);">📌 今日产品：${script.productName} | 隐藏目标：${script.hiddenGoal}</span>`,
+      aiInteraction: {
+        title: '🤖 AI PRD生成器',
+        placeholder: `输入功能描述，AI帮你生成PRD，例如："写${script.productName}的PRD，包含核心功能和验收标准"`,
+        responses: [
+          { trigger: 'PRD', response: `# 📄 ${script.productName} PRD
+
+## 一、背景
+- ${script.painPoints.join('；')}
+- 目标：${script.successMetrics.join('；')}
+
+## 二、功能列表
+1. **核心AI能力**：${script.productType}主体功能
+2. **降级方案**：AI不可用时自动切换
+3. **数据回流**：用户反馈→模型迭代
+4. **管理后台**：运营/管理员操作界面
+
+## 三、核心流程
+用户输入 → AI处理 → 输出结果
+    ↓（失败/不满意）
+降级方案 / 转人工
+
+## 四、验收标准
+${metricText}
+
+## 五、异常场景
+- AI超时：3秒无响应 → 提示降级
+- AI输出异常：安全审核拦截
+- 服务不可用：返回友好提示+重试
+
+---
+⚠️ **AI生成完毕。请审核以上PRD，找出遗漏项。**` },
+          { trigger: '默认', response: `# 📄 ${script.productName} PRD（初稿）
+
+请告诉我你想要包含哪些功能模块，我来帮你生成结构化PRD。
+
+试试输入："写${script.productName}的PRD"
+
+我会生成包含以下结构的完整PRD：
+• 背景 & 目标
+• 功能列表
+• 核心流程图
+• 验收标准(AC)
+• 异常场景处理
+• 数据埋点方案` },
+        ]
+      },
+      findMissing: {
+        title: '🔍 审查PRD：找出以下AI生成的PRD中遗漏/有问题的地方（点击选中）',
+        items: [
+          { id: 'miss1', text: '❌ 缺少"AI幻觉/错误兜底方案" — 当AI输出错误时怎么处理', isIssue: true, feedback: '关键遗漏！AI产品必须有幻觉检测和兜底机制。' },
+          { id: 'miss2', text: '❌ 缺少"降级方案" — 当AI服务挂了怎么办', isIssue: true, feedback: '核心遗漏！依赖外部API必须有fallback。' },
+          { id: 'miss3', text: '⚠️ "转人工/人工介入"触发条件太单一', isIssue: true, feedback: '对！还需要考虑用户情绪检测、连续失败等触发条件。' },
+          { id: 'miss4', text: '✅ "数据回流"有提到用户反馈闭环', isIssue: false, feedback: '这个没问题，反馈闭环是AI产品迭代的核心。' },
+          { id: 'miss5', text: '❌ 缺少"敏感内容/合规审核" — AI可能输出违规内容', isIssue: true, feedback: '重要遗漏！AI输出必须经过安全审核层。' },
+          { id: 'miss6', text: '❌ 缺少"数据埋点方案" — 上线后怎么衡量效果', isIssue: true, feedback: '对！PM要提前规划好每个关键节点的数据回收。' },
+        ]
+      },
+      questions: [
+        {
+          title: '✍️ 你在PRD中最需要补充的是哪个模块？',
+          type: 'single',
+          choices: [
+            { id: 'a', text: '异常处理 & 降级方案', score: { doc: 20, insight: 10 }, feedback: { type: 'good', text: '最关键的补充！AI产品的异常处理比正常流程更重要——因为AI一定会出错。' } },
+            { id: 'b', text: 'UI交互细节', score: { doc: 10 }, feedback: { type: 'neutral', text: '重要但可以在原型阶段细化，PRD阶段先抓逻辑。' } },
+            { id: 'c', text: '项目排期表', score: { doc: 5 }, feedback: { type: 'neutral', text: '排期是项目管理的事，PRD聚焦"做什么"和"为什么"。' } },
+            { id: 'd', text: '竞品截图', score: { doc: 0 }, feedback: { type: 'bad', text: '竞品分析是上一幕的事，PRD里不需要大篇幅放竞品。' } },
+          ],
+          correctId: 'a'
+        },
+      ],
+      knowledge: [
+        { title: 'AI产品PRD的特殊性', content: '传统PRD写"输入→处理→输出"就够了。AI产品的PRD还要写：①幻觉处理策略 ②降级方案 ③置信度阈值 ④人工干预入口 ⑤数据回流闭环。' },
+        { title: '验收标准(AC)怎么写', content: '好的AC：可测试、可量化。"AI能回答问题"❌ → "在测试集上Top20高频问题准确率≥85%"✅' },
+      ],
+      onComplete: function() {
+        const foundCount = state.sceneFlags.findCount || 0;
+        state.scores.doc += foundCount * 8;
+        if (foundCount >= 5) { state.achievements.push('prd_master'); showAchievement('📝 PRD审查专家'); }
+      }
+    },
+
+    // ===== 第四幕：画原型 =====
+    {
+      id: 3, time: '13:30', icon: '🎨', title: '第四幕：画原型',
+      npc: { name: '设计师小李', avatar: '🎨', cls: 'npc-design' },
+      story: `下午了，该画原型。设计师小李在忙另一个项目，你决定先用AI出个方案……<br><br>
+      <span class="npc-name">🎨 设计师小李</span> <em>"你先出个框架，我晚点帮你细化视觉。记住，核心交互界面是最重要的。"</em>`,
+      aiInteraction: {
+        title: '🤖 AI原型生成器',
+        placeholder: `描述你想要的页面，AI帮你生成原型方案，例如："${script.productName}的核心交互界面"`,
+        responses: [
+          { trigger: '原型', response: `🎨 **${script.productName} 原型方案**
+
+\`\`\`
+┌─────────────────────────────────┐
+│ ← 返回        ${script.productName}     ⚙️   │
+├─────────────────────────────────┤
+│                                 │
+│   ┌──────────────────┐          │
+│   │ 🤖 您好！我是AI │          │
+│   │ 请问有什么可以   │          │
+│   │ 帮您？           │          │
+│   └──────────────────┘          │
+│         ┌──────────────────┐    │
+│         │ ${script.productType}输入...  │    │
+│         └──────────────────┘    │
+│   ┌──────────────────┐          │
+│   │ ⏳ AI正在思考...  │ ← Loading│
+│   └──────────────────┘          │
+│         ┌──────────────────┐    │
+│         │ 🆘 转人工服务    │    │
+│         └──────────────────┘    │
+├─────────────────────────────────┤
+│ [📎] [😊] │ 请输入...      │ [↑] │
+└─────────────────────────────────┘
+\`\`\`
+
+**交互说明：**
+1. AI回复时显示typing动画
+2. 连续2次不满意 → 底部出现"转人工"高亮
+3. 转人工等待时显示排队人数
+4. 输入框支持快捷操作
+
+**异常状态覆盖：**
+- 网络断开 → 顶部黄色提示条
+- AI超时(>5s) → 自动提示降级
+- 敏感词触发 → 温和提示` },
+          { trigger: '默认', response: `🎨 **AI原型生成器**
+
+告诉我你想要什么页面/组件，我来帮你生成原型描述。
+
+试试输入："生成${script.productName}的核心交互界面原型"
+
+我可以为你输出：
+• ASCII原型图
+• 组件结构说明
+• 交互状态定义
+• 异常场景覆盖清单` },
+        ]
+      },
+      questions: [
+        {
+          title: '🎯 "降级/转人工"入口应该放在哪里？',
+          type: 'single',
+          choices: [
+            { id: 'a', text: '藏在设置菜单里 — 鼓励多用AI', score: { design: -10, collaboration: -5 }, feedback: { type: 'bad', text: '用户找不到入口会暴怒。降级入口必须触手可及。' } },
+            { id: 'b', text: '固定在界面底部 — 始终可见', score: { design: 15 }, feedback: { type: 'good', text: '经典方案。用户随时可以一键切换，安全感十足。' } },
+            { id: 'c', text: 'AI主动推荐时出现 — 智能触发', score: { design: 20 }, feedback: { type: 'good', text: '最优解！AI检测到自己搞不定时主动推荐，既聪明又贴心。' } },
+            { id: 'd', text: '不需要降级按钮 — AI能解决一切', score: { design: -20 }, feedback: { type: 'bad', text: '这是幻觉。AI不可能100%解决问题，没有降级=自寻死路。' } },
+          ],
+          correctId: 'c'
+        },
+        {
+          title: '⏳ AI正在思考时（loading态），界面应该怎么设计？',
+          type: 'single',
+          choices: [
+            { id: 'a', text: '显示"正在输入…"文字即可', score: { design: 5 }, feedback: { type: 'neutral', text: '能用但太简陋。用户不知道要等多久。' } },
+            { id: 'b', text: '显示打字动画 + 预计等待时间', score: { design: 15 }, feedback: { type: 'good', text: '体验感拉满！用户知道AI在"思考"，焦虑感大幅降低。' } },
+            { id: 'c', text: '直接显示"请稍候"然后卡住', score: { design: -10 }, feedback: { type: 'bad', text: '最差体验。用户会以为系统挂了。' } },
+            { id: 'd', text: '先显示预设的引导选项', score: { design: 10 }, feedback: { type: 'good', text: '不错的思路！在等待的同时给用户其他选项，减少焦虑。' } },
+          ],
+          correctId: 'b'
+        },
+      ],
+      knowledge: [
+        { title: 'AI产品交互设计原则', content: '①永远让用户感知AI在"工作"（loading动画）②永远提供"退出AI"的出口 ③永远展示AI的能力边界 ④失败时要优雅（"这个问题我需要确认一下"而不是报错）。' },
+        { title: '异常状态覆盖清单', content: '画原型时至少要覆盖：网络断开、API超时、内容为空、输入超长、敏感词拦截、服务降级。每个状态都要有对应UI。' },
+      ],
+      onComplete: function() {
+        const designScore = state.scores.design;
+        if (designScore >= 60) state.trust.design = Math.min(100, state.trust.design + 15);
+      }
+    },
+
+    // ===== 第五幕：需求评审 & 跨部门撕扯 =====
+    {
+      id: 4, time: '15:00', icon: '🤝', title: '第五幕：需求评审 & 跨部门撕扯',
+      npc: { name: '评审会议室', avatar: '🏛️', cls: '' },
+      story: `评审会上，各方开始了……<br><br>
+      <span class="npc-name">👨‍💻 开发老张</span> <em>"这个排期至少3周，${script.productType}对接、降级方案、监控，哪个都不简单。"</em><br><br>
+      <span class="npc-name">🧪 测试小陈</span> <em>"AI的输出是随机的，我没法写死预期结果。"</em><br><br>
+      <span class="npc-name">🎨 设计师小李</span> <em>"降级入口太隐蔽了，用户找不到会骂人的。"</em><br><br>
+      老板在旁边盯着你。<br>
+      <span style="font-size:12px;color:var(--warning);">⚡ 今日隐藏信息：${script.specialTwist}</span>`,
+      questions: [
+        {
+          title: '⏰ 开发说3周排期，老板要求2周上线。你怎么应对？',
+          type: 'single',
+          choices: [
+            { id: 'a', text: '砍功能保时间 — MVP只保留核心链路', score: { collaboration: 20, insight: 10 }, trust: { dev: 15, boss: 5 }, feedback: { type: 'good', text: '优秀的产品决策！MVP思维，先上线核心链路，后续迭代。开发老张露出欣慰的微笑。' } },
+            { id: 'b', text: '加人赶进度 — 再调2个开发过来', score: { collaboration: -10 }, trust: { dev: -15 }, feedback: { type: 'bad', text: 'Brooks定律：往延期项目加人只会更延期。开发老张内心OS："又来一个不懂技术的PM。"' } },
+            { id: 'c', text: '说服老板延后deadline到3周', score: { collaboration: 5 }, trust: { boss: -15 }, feedback: { type: 'neutral', text: '合理但老板不高兴。如果数据支撑够强可以这么谈。' } },
+            { id: 'd', text: '全部压缩到2周，加班搞定', score: { collaboration: -20 }, trust: { dev: -25, test: -20 }, feedback: { type: 'bad', text: '开发测试信任值暴跌！压缩质量=上线翻车。' } },
+          ],
+          correctId: 'a'
+        },
+        {
+          title: '🧪 测试说AI输出随机无法写测试用例，你的方案是？',
+          type: 'single',
+          choices: [
+            { id: 'a', text: '用断言测试 — 只验证输出格式和关键实体', score: { doc: 15, collaboration: 10 }, trust: { test: 20 }, feedback: { type: 'good', text: '专业！AI测试不验证"标准答案"，而是验证"输出是否符合预期格式+关键实体命中"。测试小陈松了口气。' } },
+            { id: 'b', text: '准备100条标准QA对，做回归测试集', score: { doc: 10 }, trust: { test: 10 }, feedback: { type: 'good', text: '好思路！建立Golden Dataset是AI产品测试的标配。' } },
+            { id: 'c', text: 'AI测试交给AI — 用另一个模型来测', score: { doc: -5 }, feedback: { type: 'neutral', text: '听起来很酷但实操复杂。LLM-as-Judge有偏差问题。' } },
+            { id: 'd', text: '不写测试用例了，AI本身就是探索性的', score: { doc: -15 }, trust: { test: -25 }, feedback: { type: 'bad', text: '测试小陈已经准备好辞职信了。AI产品更需要测试。' } },
+          ],
+          correctId: 'a'
+        },
+        {
+          title: '📢 评审中老板突然加需求："顺便加个XX功能吧"，你怎么办？',
+          type: 'single',
+          choices: [
+            { id: 'a', text: '记录到需求池，排到V2.0', score: { collaboration: 15, insight: 10 }, trust: { dev: 10 }, feedback: { type: 'good', text: '完美处理！"记下来但不现在做"是PM的核心技能。' } },
+            { id: 'b', text: '当场拒绝："不行，scope已经定了"', score: { collaboration: -10 }, trust: { boss: -20 }, feedback: { type: 'bad', text: '太生硬。老板会觉得你不配合。可以先接住再管理预期。' } },
+            { id: 'c', text: '答应下来，加进本期', score: { collaboration: -15 }, trust: { dev: -20, test: -15 }, feedback: { type: 'bad', text: 'scope蔓延的开始。开发测试都要疯了。' } },
+            { id: 'd', text: '分析优先级后给出建议："ROI低，建议V2做"', score: { collaboration: 20, insight: 15 }, trust: { boss: 10 }, feedback: { type: 'good', text: '最佳回答！用数据和逻辑管理老板预期，既专业又合作。' } },
+          ],
+          correctId: 'd'
+        },
+      ],
+      knowledge: [
+        { title: '需求评审技巧', content: '①提前24h发PRD ②控制会议在1h内 ③准备好优先级排序 ④对争议点准备Plan B ⑤结束前确认Action Item和Owner。' },
+        { title: '干系人管理矩阵', content: '高权力+高利益（老板）→ 重点管理。高权力+低利益（法务）→ 令其满意。低权力+高利益（开发测试）→ 随时告知。低权力+低利益 → 监控即可。' },
+      ],
+      onComplete: function() {
+        if (state.trust.dev < 30) { showAchievement('⚠️ 开发团队信任危机'); state.sceneFlags.devStrike = true; }
+        if (state.trust.test < 30) { showAchievement('⚠️ 测试团队拒绝签字'); state.sceneFlags.testReject = true; }
+      }
+    },
+
+    // ===== 第六幕：跟开发 & 测试 =====
+    {
+      id: 5, time: '16:30', icon: '💻', title: '第六幕：跟开发 & 测试',
+      npc: { name: '开发老张', avatar: '👨‍💻', cls: 'npc-dev' },
+      story: `开发开始了。AI在帮你写代码，但Bug还是来了……<br><br>
+      <span class="npc-name">👨‍💻 开发老张</span> <em>"AI生成的代码有点问题，你帮忙看看？另外测试环境部署好了，你来走一遍。"</em>`,
+      codeReview: {
+        title: '🔎 Code Review：以下是AI生成的API调用代码，找出潜在问题（点击代码行）',
+        code: [
+          { text: 'async function callAI(userInput) {', cls: '' },
+          { text: '  const response = await fetch(AI_API_URL, {', cls: '' },
+          { text: '    method: "POST",', cls: '' },
+          { text: '    body: JSON.stringify({ input: userInput })', cls: 'bug', bugDesc: '缺少超时设置！AI API可能hang住几十秒' },
+          { text: '  });', cls: '' },
+          { text: '  const data = await response.json();', cls: 'bug', bugDesc: '没有检查response.ok，API返回错误时直接json()会抛异常' },
+          { text: '  return data.result;', cls: 'bug', bugDesc: '没有兜底值！data.result可能undefined' },
+          { text: '}', cls: '' },
+          { text: '', cls: '' },
+          { text: '// 处理用户请求', cls: '' },
+          { text: 'app.post("/api/process", async (req, res) => {', cls: '' },
+          { text: '  const result = await callAI(req.body.text);', cls: '' },
+          { text: '  res.json({ result });', cls: 'bug', bugDesc: '没有try-catch！任何异常都会导致服务500' },
+          { text: '});', cls: '' },
+        ],
+        bugs: 4
+      },
+      questions: [
+        {
+          title: '🐛 Bug Triage：收到以下Bug，你如何排优先级？',
+          type: 'single',
+          choices: [
+            { id: 'a', text: '先修所有Bug再上线 — 质量第一', score: { data: -5 }, feedback: { type: 'neutral', text: '理想主义。但区分Bug严重程度才是PM该做的。' } },
+            { id: 'b', text: 'P0: 安全/合规问题 → P1: 核心功能不可用 → P2: 体验问题', score: { data: 20, insight: 10 }, feedback: { type: 'good', text: '完美的优先级判断！合规最致命（P0），核心功能次之（P1），体验最后（P2）。' } },
+            { id: 'c', text: '按发现顺序修', score: { data: -10 }, feedback: { type: 'bad', text: 'PM的基本功就是排优先级，按时间顺序=没有优先级。' } },
+            { id: 'd', text: '全部标记为已知问题，上线后再说', score: { data: -15, collaboration: -10 }, trust: { test: -20 }, feedback: { type: 'bad', text: '测试小陈崩溃了。合规问题不上线前修好是要出大事的。' } },
+          ],
+          correctId: 'b'
+        },
+      ],
+      checkboxQ: {
+        title: `📊 数据埋点决策：以下哪些埋点是${script.productName}必须有的？（多选）`,
+        items: [
+          { id: 'e1', text: '每次AI处理的响应时间', correct: true },
+          { id: 'e2', text: 'AI输出被用户点赞/点踩', correct: true },
+          { id: 'e3', text: '降级/转人工按钮的触发率', correct: true },
+          { id: 'e4', text: '用户每次按键的具体字符', correct: false, feedback: '涉及隐私，且数据量巨大价值低' },
+          { id: 'e5', text: 'AI错误/幻觉检测结果', correct: true },
+          { id: 'e6', text: '页面背景色的色值', correct: false, feedback: '这不是数据埋点，这是设计稿' },
+        ],
+        correctIds: ['e1','e2','e3','e5']
+      },
+      knowledge: [
+        { title: 'Bug优先级划分', content: 'P0（致命）：系统崩溃/数据丢失/合规风险 → 立即修。P1（严重）：核心功能不可用 → 本迭代修。P2（一般）：功能有缺陷但不影响主流程 → 下个迭代。P3（建议）：体验优化 → 有空再说。' },
+        { title: 'AI产品的数据埋点', content: '除了常规埋点，AI产品必须多埋：①模型置信度分布 ②人工接管率 ③Bad Case自动收集 ④Prompt版本标记。这些数据是迭代AI效果的生命线。' },
+      ],
+      onComplete: function() {
+        const bugsFound = state.sceneFlags.bugsFound || 0;
+        state.scores.doc += bugsFound * 5;
+        if (bugsFound >= 3) { state.achievements.push('code_reviewer'); showAchievement('💻 Code Review达人'); }
+      }
+    },
+
+    // ===== 第七幕：上线 & 复盘 =====
+    {
+      id: 6, time: '18:30', icon: '🚀', title: '第七幕：上线 & 复盘',
+      npc: { name: '你（内心OS）', avatar: '🎯', cls: '' },
+      story: `终于到上线这一天了！但产品经理的工作远没有结束……<br><br>
+      产品已部署完毕，现在需要你做灰度发布决策，然后监控数据、分析Bad Case、规划迭代。<br><br>
+      <span style="font-size:12px;color:var(--text-muted);">📌 今日隐藏目标：${script.hiddenGoal}</span>`,
+      questions: [
+        {
+          title: '🚢 灰度发布策略：你选择？',
+          type: 'single',
+          choices: [
+            { id: 'a', text: '全量直接上线 — 没问题', score: { data: -15 }, feedback: { type: 'bad', text: 'AI产品全量上线=赌博。万一翻车，品牌形象受损不可逆。' } },
+            { id: 'b', text: '先放10%流量灰度3天，看数据再决定', score: { data: 20, insight: 10 }, feedback: { type: 'good', text: '标准灰度策略！小流量验证核心指标，有问题时影响范围可控。' } },
+            { id: 'c', text: '只对内测员工开放', score: { data: 5 }, feedback: { type: 'neutral', text: '内测是好的，但员工不是真实用户，行为模式差异大。' } },
+            { id: 'd', text: '先放50%看看', score: { data: 0 }, feedback: { type: 'neutral', text: '50%不算灰度了，出问题影响面还是太大。' } },
+          ],
+          correctId: 'b'
+        },
+      ],
+      dataDashboard: {
+        title: `📊 ${script.productName} 上线首日数据看板（灰度10%流量）`,
+        metrics: (() => {
+          const d = script.dataDashboard;
+          return [
+            { label: '核心指标1', value: d[Object.keys(d)[0]], target: script.successMetrics[0], status: 'good' },
+            { label: '核心指标2', value: d[Object.keys(d)[1]], target: script.successMetrics[1]||'-', status: 'good' },
+            { label: '核心指标3', value: d[Object.keys(d)[2]], target: script.successMetrics[2]||'-', status: 'good' },
+            { label: '用户满意度', value: d[Object.keys(d)[3]]||'4.0', target: '>4.0', status: 'good' },
+            { label: '响应时间', value: d[Object.keys(d)[4]]||'3s', target: '<5s', status: 'good' },
+            { label: '⚠️ 异常指标', value: d[Object.keys(d)[5]]||'8%', target: '<5%', status: 'warn' },
+          ];
+        })()
+      },
+      questions2: [
+        {
+          title: '📈 看完数据，你的判断是？',
+          type: 'single',
+          choices: [
+            { id: 'a', text: '全量上线！大部分指标达标了', score: { data: -5 }, feedback: { type: 'neutral', text: '有点急。异常指标超标，全量后可能引发大规模问题。' } },
+            { id: 'b', text: '优化核心问题 + 加检测机制，3天后再评估', score: { data: 20, insight: 15 }, feedback: { type: 'good', text: '精准决策！核心指标OK但异常指标需优化。针对性修复后再放量。' } },
+            { id: 'c', text: '回滚！数据不好', score: { data: -10 }, feedback: { type: 'bad', text: '过度反应。大部分指标达标，只有一个问题，修复即可不需要回滚。' } },
+            { id: 'd', text: '扩大灰度到30%，继续观察', score: { data: 10 }, feedback: { type: 'good', text: '稳妥选择。在可控范围内扩大样本量，验证更多边界case。' } },
+          ],
+          correctId: 'b'
+        },
+        {
+          title: '🔧 出现Bad Case，你如何处理？',
+          type: 'single',
+          choices: [
+            { id: 'a', text: '把Bad Case加入测试集，优化Prompt和知识库', score: { data: 20, doc: 10 }, feedback: { type: 'good', text: '标准闭环！Bad Case → 分析根因 → 优化 → 回归测试。这就是AI产品的迭代飞轮。' } },
+            { id: 'b', text: '忽略，个别用户挑剔', score: { data: -15 }, feedback: { type: 'bad', text: '每个Bad Case都是优化机会。忽略=放弃产品进步。' } },
+            { id: 'c', text: '降低AI使用比例，多转人工', score: { data: -5 }, feedback: { type: 'neutral', text: '治标不治本。应该让AI变聪明而不是躲着用。' } },
+            { id: 'd', text: '换一个更贵的模型', score: { data: 0 }, feedback: { type: 'neutral', text: '不一定解决问题。先分析Bad Case根因，可能是知识库缺失而非模型能力。' } },
+          ],
+          correctId: 'a'
+        },
+      ],
+      dragSort2: {
+        title: '📅 下一阶段迭代规划：对以下事项做优先级排序',
+        items: [
+          { id: 'v1', text: `V: 修复异常指标（优化核心算法）`, correctPos: 0 },
+          { id: 'v2', text: 'V: 扩大灰度到50%', correctPos: 1 },
+          { id: 'v3', text: 'V: 增加监控告警（实时感知异常）', correctPos: 2 },
+          { id: 'v4', text: 'V: 接入更多业务场景', correctPos: 3 },
+          { id: 'v5', text: 'V: 高级功能开发', correctPos: 4 },
+          { id: 'v6', text: 'V: 管理后台优化', correctPos: 5 },
+        ]
+      },
+      knowledge: [
+        { title: '灰度发布策略', content: '标准流程：1%→10%→30%→50%→100%，每阶段观察1-3天。关注指标：核心功能可用率、错误率、用户反馈。AI产品额外关注：幻觉率、置信度分布变化。' },
+        { title: 'Bad Case驱动迭代', content: 'AI产品的核心迭代方法论：收集Bad Case → 聚类分析 → 定位根因 → 针对性优化 → 回归验证。形成飞轮效应。' },
+        { title: '数据驱动决策', content: 'PM每天看数据不是看绝对值，而是看趋势+对比。同比（比上周）、环比（比昨天）、AB测试（比对照组）。没有对比的数据没有意义。' },
+      ],
+      onComplete: function() {
+        const dragScore = state.sceneFlags.dragScore2 || 0;
+        state.scores.data += dragScore;
+        calculateEnding();
+      }
+    },
+  ];
+}
+
+// ===== 游戏状态 =====
+const state = {
+  selectedAttrs: [],
+  currentScene: 0,
+  scores: { insight: 50, competition: 50, doc: 50, design: 50, collaboration: 50, data: 50 },
+  trust: { boss: 70, dev: 70, design: 70, test: 70 },
+  knowledge: [],
+  choices: {},
+  achievements: [],
+  sceneFlags: {},
+};
+
+// ===== 场景数据由 buildScenesFromScript() 动态生成 =====
+// (旧的硬编码 scenes 数组已移除，改为每日剧本驱动)
+var scenes = []; // 兼容引用，实际由 window.scenes 赋值
+
+// ===== 7幕剧本数据（动态模板） =====
+const scenesTemplate = [
+  {
+    id: 0, time: '09:00', icon: '📋', title: '第一幕：接到需求',
+    npc: { name: '老板', avatar: '🧑‍💼', cls: 'npc-boss' },
+    story: `周一晨会，老板扔来一句话：<br><br>
+    <em style="color:var(--accent);font-size:16px;">"用户一直在骂我们客服响应慢，你搞个AI智能客服，两周上线。"</em><br><br>
+    你打开后台看了一眼数据：<br>
+    • 日均客服咨询量 <strong>2,000+</strong><br>
+    • 人工响应平均等待 <strong>8分钟</strong><br>
+    • 用户满意度 <strong>3.2分</strong>（满分5分）<br>
+    • 客服团队 <strong>12人</strong>，三班倒还是忙不过来`,
+    questions: [
+      {
+        title: '🎯 这个需求本质上是一个什么类型的AI问题？',
+        type: 'single',
+        choices: [
+          { id: 'a', text: '分类问题 — 把用户问题分类后给标准答案', score: { insight: 10 }, feedback: { type: 'neutral', text: '部分正确。分类是其中一部分，但客服场景远不止分类。' } },
+          { id: 'b', text: '生成问题 — 用大语言模型直接生成回复', score: { insight: 5 }, feedback: { type: 'neutral', text: '方向对，但太笼统。需要考虑幻觉、可控性、知识范围。' } },
+          { id: 'c', text: 'Agent问题 — 需要理解意图、查知识库、执行动作', score: { insight: 20 }, feedback: { type: 'good', text: '精准！AI客服本质是Agent——理解用户意图→检索知识库→生成回复→必要时执行操作（如查订单）。' } },
+          { id: 'd', text: '都不是，就是个关键词匹配', score: { insight: -10 }, feedback: { type: 'bad', text: '2026年还做关键词匹配？用户会骂得更狠。' } },
+        ],
+        correctId: 'c'
+      },
+      {
+        title: '📌 你决定采用什么策略？（影响后续全局路线）',
+        type: 'route',
+        choices: [
+          { id: 'aggressive', text: '🔥 全部用AI替代人工 — 省钱省事', score: { insight: -15, collaboration: -10 }, trust: { dev: -20, test: -15 }, feedback: { type: 'bad', text: '高风险！AI幻觉、边缘case、用户情绪……全量上AI大概率翻车。开发心里已经在骂了。' }, route: 'aggressive' },
+          { id: 'balanced', text: '⚖️ AI辅助 + 人工兜底 — 稳妥方案', score: { insight: 15, collaboration: 10 }, trust: { dev: 10, test: 10 }, feedback: { type: 'good', text: '经典稳妥路线。AI处理标准问题，复杂/情绪化场景转人工。后续开发测试都好配合。' }, route: 'balanced' },
+          { id: 'mvp', text: '🧪 先做个MVP验证 — 小范围试水', score: { insight: 20, data: 15 }, trust: { boss: -10 }, feedback: { type: 'good', text: '聪明！先验证AI在你们场景的真实解决率，用数据说服老板。不过老板可能会嫌慢。' }, route: 'mvp' },
+        ],
+        correctId: 'mvp'
+      },
+      {
+        title: '📏 你定义的成功指标有哪些？（多选）',
+        type: 'multi',
+        choices: [
+          { id: 'resp_time', text: '平均响应时间 < 5秒', correct: true, score: { insight: 10 } },
+          { id: 'resolve_rate', text: 'AI自主解决率 > 70%', correct: true, score: { insight: 10, data: 5 } },
+          { id: 'satisfaction', text: '用户满意度 > 4.0分', correct: true, score: { insight: 10 } },
+          { id: 'cost', text: '客服人力成本降低50%', correct: false, score: { insight: -5 }, feedback: { type: 'neutral', text: '成本降低是结果指标，不是产品成功的直接衡量标准。先关注用户体验。' } },
+          { id: 'hallucination', text: '幻觉率 < 5%', correct: true, score: { insight: 15, doc: 5 }, knowledge: 'AI产品特殊指标：幻觉率是AI客服的生命线，超过5%用户就会大规模投诉' },
+        ],
+        correctIds: ['resp_time','resolve_rate','satisfaction','hallucination'],
+        multiFeedback: { good: '全部选对！你抓住了AI客服的核心指标体系。', partial: '大部分对了，注意AI产品要特别关注"幻觉率"这个特有指标。', bad: '成功指标定义是PM的基本功，再想想哪些直接反映用户体验？' }
+      }
+    ],
+    knowledge: [
+      { title: 'AI问题三分类', content: '分类（Classification）：把输入分到预定义类别 → 适合工单分类、意图识别。生成（Generation）：LLM自由生成文本 → 适合闲聊、文案。Agent：理解→规划→执行→反馈循环 → 适合客服、助手。' },
+      { title: 'SMART目标设定', content: 'Specific（具体）、Measurable（可衡量）、Achievable（可实现）、Relevant（相关）、Time-bound（有时限）。"满意度>4.0"比"提升体验"好100倍。' },
+    ],
+    onComplete: function() {
+      // 根据路线设置flag
+      const route = state.choices['0_route'];
+      state.sceneFlags.route = route;
+      if (route === 'aggressive') {
+        showAchievement('⚠️ 选择了激进路线');
+      } else if (route === 'mvp') {
+        showAchievement('🧪 数据驱动思维解锁');
+        state.achievements.push('mvp_thinker');
+      }
+    }
+  },
+
+  {
+    id: 1, time: '10:00', icon: '🔍', title: '第二幕：需求分析 & 竞品调研',
+    npc: { name: '你（内心OS）', avatar: '🤔', cls: '' },
+    story: `你决定先看看竞品怎么做。市场上已经有几款AI客服产品了……<br><br>
+    你需要完成三件事：<br>
+    ① 用AI工具做竞品分析<br>
+    ② 明确核心用户画像<br>
+    ③ 对需求做优先级排序`,
+    aiInteraction: {
+      title: '🤖 AI竞品分析助手',
+      placeholder: '输入指令，让AI帮你做竞品分析，例如："分析竞品A、B、C的AI客服功能优劣"',
+      responses: [
+        { trigger: '竞品', response: `📊 **AI竞品分析报告**
+
+| 维度 | 竞品A（腾讯企点） | 竞品B（阿里小蜜） | 竞品C（Zendesk AI） |
+|---|---|---|---|
+| 核心能力 | 多轮对话+知识库 | 意图识别+自动化 | 工单自动分类 |
+| 响应速度 | 2-3秒 | 1-2秒 | 3-5秒 |
+| 知识库管理 | 可视化编辑 | API对接 | 文档自动抽取 |
+| 转人工策略 | 置信度<60%转人工 | 用户主动+AI建议 | 关键词触发 |
+| 多语言 | 中英日韩 | 主要中文 | 40+语言 |
+| 定价 | ¥999/月起 | ¥1999/月起 | $99/月起 |
+
+**关键发现：**
+1. 竞品A的"知识库可视化编辑"是核心卖点，运营人员可自助维护
+2. 竞品B的响应最快，但幻觉率偏高（约12%）
+3. 竞品C的多语言能力是壁垒，但中文场景弱
+
+**我们的差异化机会：**
+→ 垂直行业深度（竞品都是通用方案）
+→ 幻觉兜底机制（竞品普遍薄弱）
+→ 人工接管体验（转人工的丝滑度）` },
+        { trigger: '默认', response: `📊 **AI竞品分析报告**
+
+告诉我你想分析哪些竞品，我可以帮你做详细的对比分析。
+
+例如试试输入："分析竞品A、B、C的AI客服功能优劣对比"
+
+我会从以下维度帮你拆解：
+• 核心能力对比
+• 技术架构差异
+• 定价策略
+• 用户体验优劣
+• 差异化机会` },
+      ]
+    },
+    questions: [
+      {
+        title: '👤 谁是你的核心用户？（用户画像构建）',
+        type: 'single',
+        choices: [
+          { id: 'a', text: '所有来咨询的用户 — 覆盖面越广越好', score: { insight: -5 }, feedback: { type: 'bad', text: '"所有用户"等于"没有用户"。PM的第一课：聚焦核心场景。' } },
+          { id: 'b', text: '高频咨询的VIP用户 — 他们最在意响应速度', score: { insight: 15 }, feedback: { type: 'good', text: '精准！VIP用户的高频问题正是AI最擅长处理的标准化场景。' } },
+          { id: 'c', text: '新用户 — 他们需要引导', score: { insight: 5 }, feedback: { type: 'neutral', text: '新用户引导是重要场景，但不是"最痛"的那个。先解决存量痛点。' } },
+          { id: 'd', text: '投诉用户 — 他们情绪最激烈', score: { insight: 0 }, feedback: { type: 'neutral', text: '投诉用户确实需要特殊处理，但这是"转人工"的场景，不是AI主攻方向。' } },
+        ],
+        correctId: 'b'
+      },
+    ],
+    dragSort: {
+      title: '📋 用MoSCoW法则对以下功能做优先级排序（拖拽排列）',
+      items: [
+        { id: 'm1', text: 'M: 智能问答（核心对话能力）', correctPos: 0 },
+        { id: 'm2', text: 'M: 转人工（AI搞不定时无缝切换）', correctPos: 1 },
+        { id: 's1', text: 'S: 多轮对话上下文记忆', correctPos: 2 },
+        { id: 's2', text: 'S: 知识库自助管理后台', correctPos: 3 },
+        { id: 'c1', text: 'C: 多语言支持', correctPos: 4 },
+        { id: 'w1', text: 'W: 语音输入（未来再做）', correctPos: 5 },
+      ],
+      knowledge: 'MoSCoW法则：Must have（必须有）→ Should have（应该有）→ Could have（可以有）→ Won\'t have this time（这次不做）。AI产品特别容易在"C"和"W"上浪费资源。'
+    },
+    knowledge: [
+      { title: 'MoSCoW优先级法', content: 'Must（必须有，没有就别上线）→ Should（应该有，没有用户会不满）→ Could（可以有，锦上添花）→ Won\'t（这次不做，但要记录）。每个迭代都要做这个排序。' },
+      { title: 'Kano模型', content: '基本型需求（不满足=差评）、期望型需求（满足越多越满意）、兴奋型需求（超出预期，口碑传播）。AI客服的"基本型"是回答准确，"兴奋型"可能是主动预判用户问题。' },
+    ],
+    onComplete: function() {
+      const dragScore = state.sceneFlags.dragScore || 0;
+      state.scores.competition += dragScore;
+      if (dragScore >= 80) { state.achievements.push('sort_master'); showAchievement('🏆 排序大师'); }
+    }
+  },
+
+  {
+    id: 2, time: '11:00', icon: '📝', title: '第三幕：写PRD',
+    npc: { name: 'AI助手', avatar: '🤖', cls: '' },
+    story: `需求理清了，该写PRD了。你打开文档，决定让AI先帮你生成初稿……<br><br>
+    但记住：<strong style="color:var(--accent)">AI写的PRD不能直接用</strong>，你需要审核、补充、纠错。`,
+    aiInteraction: {
+      title: '🤖 AI PRD生成器',
+      placeholder: '输入功能描述，AI帮你生成PRD初稿，例如："写一个AI客服的PRD，包含智能问答、转人工、多轮对话"',
+      responses: [
+        { trigger: 'PRD', response: `# 📄 AI智能客服 PRD
+
+## 一、背景
+- 日均咨询量2000+，人工响应8分钟，满意度3.2分
+- 目标：2周内上线MVP，AI解决率>70%
+
+## 二、功能列表
+1. **智能问答**：基于知识库的AI对话
+2. **多轮对话**：上下文记忆，连续追问
+3. **转人工**：AI置信度<60%自动转接
+4. **知识库管理**：运营后台可视化编辑
+
+## 三、核心流程
+用户发起咨询 → AI识别意图 → 检索知识库 → 生成回复
+    ↓（置信度低/用户不满）
+转人工 + 推送对话上下文
+
+## 四、验收标准
+- AI解决率 ≥ 70%
+- 平均响应 < 5秒
+- 用户满意度 ≥ 4.0
+- 幻觉率 < 5%
+
+## 五、异常场景
+- AI超时：3秒无响应 → 提示"正在为您转接人工"
+- AI答非所问：用户连续2次不满意 → 自动转人工
+- 知识库无答案：返回"我需要确认一下" + 创建工单
+
+---
+⚠️ **AI生成完毕。请审核以上PRD，找出遗漏项。**` },
+        { trigger: '默认', response: `# 📄 AI智能客服 PRD（初稿）
+
+请告诉我你想要包含哪些功能模块，我来帮你生成结构化PRD。
+
+试试输入："写一个AI客服的PRD，包含智能问答、转人工、多轮对话"
+
+我会为你生成包含以下结构的完整PRD：
+• 背景 & 目标
+• 功能列表
+• 核心流程图
+• 验收标准(AC)
+• 异常场景处理
+• 数据埋点方案` },
+      ]
+    },
+    findMissing: {
+      title: '🔍 审查PRD：找出以下AI生成的PRD中遗漏/有问题的地方（点击选中）',
+      items: [
+        { id: 'miss1', text: '❌ 缺少"AI幻觉兜底方案" — 当AI胡说八道时怎么处理', isIssue: true, feedback: '关键遗漏！AI产品必须有幻觉检测和兜底机制。' },
+        { id: 'miss2', text: '❌ 缺少"降级方案" — 当大模型API挂了怎么办', isIssue: true, feedback: '核心遗漏！依赖外部API必须有降级（fallback到规则引擎/人工）。' },
+        { id: 'miss3', text: '⚠️ "转人工"触发条件太单一 — 只靠置信度不够', isIssue: true, feedback: '对！还需要考虑用户情绪检测、连续追问失败等触发条件。' },
+        { id: 'miss4', text: '✅ "知识库管理"有提到运营后台', isIssue: false, feedback: '这个没问题，运营自助维护是标配。' },
+        { id: 'miss5', text: '❌ 缺少"敏感词/合规审核" — AI可能输出违规内容', isIssue: true, feedback: '重要遗漏！AI输出必须经过安全审核层。' },
+        { id: 'miss6', text: '❌ 缺少"数据埋点方案" — 上线后怎么衡量效果', isIssue: true, feedback: '对！PM要提前规划好每个关键节点的数据回收。' },
+      ]
+    },
+    questions: [
+      {
+        title: '✍️ 你在PRD中最需要补充的是哪个模块？（反映你的优先级判断）',
+        type: 'single',
+        choices: [
+          { id: 'a', text: '异常处理 & 降级方案', score: { doc: 20, insight: 10 }, feedback: { type: 'good', text: '最关键的补充！AI产品的异常处理比正常流程更重要——因为AI一定会出错。' } },
+          { id: 'b', text: 'UI交互细节', score: { doc: 10 }, feedback: { type: 'neutral', text: '重要但可以在原型阶段细化，PRD阶段先抓逻辑。' } },
+          { id: 'c', text: '项目排期表', score: { doc: 5 }, feedback: { type: 'neutral', text: '排期是项目管理的事，PRD聚焦"做什么"和"为什么"。' } },
+          { id: 'd', text: '竞品截图', score: { doc: 0 }, feedback: { type: 'bad', text: '竞品分析是上一幕的事，PRD里不需要大篇幅放竞品。' } },
+        ],
+        correctId: 'a'
+      },
+    ],
+    knowledge: [
+      { title: 'AI产品PRD的特殊性', content: '传统PRD写"输入→处理→输出"就够了。AI产品的PRD还要写：①幻觉处理策略 ②降级方案（API挂了怎么办）③置信度阈值设定 ④人工干预入口 ⑤数据回流闭环。' },
+      { title: '验收标准(AC)怎么写', content: '好的AC：可测试、可量化。"AI能回答问题"❌ → "在测试集上，AI对Top 20高频问题的回答准确率≥85%"✅' },
+    ],
+    onComplete: function() {
+      const foundCount = state.sceneFlags.findCount || 0;
+      state.scores.doc += foundCount * 8;
+      if (foundCount >= 5) { state.achievements.push('prd_master'); showAchievement('📝 PRD审查专家'); }
+    }
+  },
+
+  {
+    id: 3, time: '13:30', icon: '🎨', title: '第四幕：画原型',
+    npc: { name: '设计师小李', avatar: '🎨', cls: 'npc-design' },
+    story: `下午了，该画原型。设计师小李在忙另一个项目，你决定先用AI出个高保真原型描述……<br><br>
+    <span class="npc-name">🎨 设计师小李</span> <em>"你先出个框架，我晚点帮你细化视觉。记住，AI客服的对话框是最核心的界面。"</em>`,
+    aiInteraction: {
+      title: '🤖 AI原型生成器',
+      placeholder: '描述你想要的页面，AI帮你生成原型方案，例如："AI客服对话界面，包含输入框、消息气泡、转人工按钮"',
+      responses: [
+        { trigger: '对话', response: `🎨 **AI客服对话界面原型方案**
+
+\`\`\`
+┌─────────────────────────────────┐
+│ ← 返回        在线客服     ⚙️   │ ← 顶部栏
+├─────────────────────────────────┤
+│                                 │
+│   ┌──────────────────┐          │
+│   │ 🤖 您好！我是AI  │          │ ← AI消息气泡（左）
+│   │ 客服小智，请问有  │          │
+│   │ 什么可以帮您？    │          │
+│   └──────────────────┘          │
+│         ┌──────────────────┐    │
+│         │ 我的订单到哪了？ │    │ ← 用户消息气泡（右）
+│         └──────────────────┘    │
+│   ┌──────────────────┐          │
+│   │ 🤖 正在为您查询  │ ← Loading态│
+│   │ ⏳               │          │
+│   └──────────────────┘          │
+│         ┌──────────────────┐    │
+│         │ 转人工服务       │    │ ← 转人工按钮
+│         └──────────────────┘    │
+│   ┌──────────────────────┐      │
+│   │ 😊 已为您转接人工客服│ ← 成功│
+│   └──────────────────────┘      │
+├─────────────────────────────────┤
+│ [📎] [😊] │ 请输入您的问题... │ [↑] │ ← 输入栏
+└─────────────────────────────────┘
+\`\`\`
+
+**交互说明：**
+1. AI回复时显示typing动画（3种状态轮换）
+2. 连续2次回答不满意 → 底部出现"转人工"高亮按钮
+3. 转人工等待时显示排队人数
+4. 输入框支持快捷问题（高频问题标签）
+
+**异常状态覆盖：**
+- 网络断开 → 顶部显示黄色提示条
+- AI超时(>5s) → 自动提示转人工
+- 敏感词触发 → 消息不发送 + 温和提示` },
+        { trigger: '默认', response: `🎨 **AI原型生成器**
+
+告诉我你想要什么页面/组件，我来帮你生成原型描述和UI结构。
+
+试试输入："生成一个AI客服对话界面的原型，包含输入框、消息气泡、转人工按钮"
+
+我可以为你输出：
+• ASCII原型图
+• 组件结构说明
+• 交互状态定义
+• 异常场景覆盖清单` },
+      ]
+    },
+    questions: [
+      {
+        title: '🎯 "转人工"按钮应该放在哪里？（设计决策）',
+        type: 'single',
+        choices: [
+          { id: 'a', text: '藏在设置菜单里 — 鼓励用户多用AI', score: { design: -10, collaboration: -5 }, feedback: { type: 'bad', text: '用户找不到转人工入口会暴怒。AI客服的转人工必须触手可及。' } },
+          { id: 'b', text: '固定在输入框旁边 — 始终可见', score: { design: 15 }, feedback: { type: 'good', text: '经典方案。用户随时可以一键转人工，安全感十足。' } },
+          { id: 'c', text: 'AI主动推荐时出现 — 智能触发', score: { design: 20 }, feedback: { type: 'good', text: '最优解！AI检测到自己搞不定时主动推荐转人工，既聪明又贴心。' } },
+          { id: 'd', text: '不需要转人工按钮 — AI能解决一切', score: { design: -20 }, feedback: { type: 'bad', text: '这是幻觉。AI不可能100%解决问题，没有转人工=自寻死路。' } },
+        ],
+        correctId: 'c'
+      },
+      {
+        title: '⏳ AI正在思考时（loading态），界面应该怎么设计？',
+        type: 'single',
+        choices: [
+          { id: 'a', text: '显示"正在输入…"文字即可', score: { design: 5 }, feedback: { type: 'neutral', text: '能用但太简陋。用户不知道要等多久。' } },
+          { id: 'b', text: '显示打字动画 + 预计等待时间', score: { design: 15 }, feedback: { type: 'good', text: '体验感拉满！用户知道AI在"思考"，且有时间预期，焦虑感大幅降低。' } },
+          { id: 'c', text: '直接显示"请稍候"然后卡住', score: { design: -10 }, feedback: { type: 'bad', text: '这是最差的体验。用户会以为系统挂了。' } },
+          { id: 'd', text: '先显示预设的常见问题引导点击', score: { design: 10 }, feedback: { type: 'good', text: '不错的思路！在等待的同时给用户其他选项，减少焦虑。' } },
+        ],
+        correctId: 'b'
+      },
+    ],
+    knowledge: [
+      { title: 'AI产品交互设计原则', content: '①永远让用户感知AI在"工作"（loading动画）②永远提供"退出AI"的出口（转人工）③永远展示AI的能力边界（"我擅长回答XX类问题"）④失败时要优雅（"这个问题我需要确认一下"而不是报错）。' },
+      { title: '异常状态覆盖清单', content: '画原型时至少要覆盖：网络断开、API超时、内容为空、输入超长、敏感词拦截、服务降级。每个状态都要有对应的UI展示。' },
+    ],
+    onComplete: function() {
+      // 设计师信任
+      const designScore = state.scores.design;
+      if (designScore >= 60) state.trust.design = Math.min(100, state.trust.design + 15);
+    }
+  },
+
+  {
+    id: 4, time: '15:00', icon: '🤝', title: '第五幕：需求评审 & 跨部门撕扯',
+    npc: { name: '评审会议室', avatar: '🏛️', cls: '' },
+    story: `评审会上，各方开始了……<br><br>
+    <span class="npc-name">👨‍💻 开发老张</span> <em>"这个排期至少3周，AI对接、知识库、转人工，哪个都不简单。"</em><br><br>
+    <span class="npc-name">🧪 测试小陈</span> <em>"AI的测试用例怎么写？输出是随机的，我没法写死预期结果。"</em><br><br>
+    <span class="npc-name">🎨 设计师小李</span> <em>"转人工的入口太隐蔽了，用户找不到会骂人的。"</em><br><br>
+    老板在旁边盯着你。`,
+    questions: [
+      {
+        title: '⏰ 开发说3周排期，老板要求2周上线。你怎么应对？',
+        type: 'single',
+        choices: [
+          { id: 'a', text: '砍功能保时间 — MVP只保留智能问答+转人工', score: { collaboration: 20, insight: 10 }, trust: { dev: 15, boss: 5 }, feedback: { type: 'good', text: '优秀的产品决策！MVP思维，先上线核心链路，后续迭代。开发老张露出欣慰的微笑。' } },
+          { id: 'b', text: '加人赶进度 — 再调2个开发过来', score: { collaboration: -10 }, trust: { dev: -15 }, feedback: { type: 'bad', text: 'Brooks定律：往延期项目加人只会更延期。开发老张内心OS："又来一个不懂技术的PM。"' } },
+          { id: 'c', text: '说服老板延后deadline到3周', score: { collaboration: 5 }, trust: { boss: -15 }, feedback: { type: 'neutral', text: '合理但老板不高兴。如果数据支撑够强可以这么谈，但需要准备充分。' } },
+          { id: 'd', text: '全部压缩到2周，加班搞定', score: { collaboration: -20 }, trust: { dev: -25, test: -20 }, feedback: { type: 'bad', text: '开发测试信任值暴跌！加班文化只会让团队离心。而且压缩质量=上线翻车。' } },
+        ],
+        correctId: 'a'
+      },
+      {
+        title: '🧪 测试说AI输出随机无法写测试用例，你的方案是？',
+        type: 'single',
+        choices: [
+          { id: 'a', text: '用断言测试 — 只验证输出格式和关键实体', score: { doc: 15, collaboration: 10 }, trust: { test: 20 }, feedback: { type: 'good', text: '专业！AI测试不验证"标准答案"，而是验证"输出是否符合预期格式+关键实体是否命中"。测试小陈松了口气。' } },
+          { id: 'b', text: '准备100条标准QA对，做回归测试集', score: { doc: 10 }, trust: { test: 10 }, feedback: { type: 'good', text: '好思路！建立Golden Dataset是AI产品测试的标配。' } },
+          { id: 'c', text: 'AI测试交给AI — 用另一个模型来测', score: { doc: -5 }, feedback: { type: 'neutral', text: '听起来很酷但实操很复杂。LLM-as-Judge有偏差问题，不建议作为唯一手段。' } },
+          { id: 'd', text: '不写测试用例了，AI本身就是探索性的', score: { doc: -15 }, trust: { test: -25 }, feedback: { type: 'bad', text: '测试小陈已经准备好辞职信了。AI产品更需要测试，不是更少。' } },
+        ],
+        correctId: 'a'
+      },
+      {
+        title: '📢 评审中老板突然加需求："顺便加个语音输入吧"，你怎么办？',
+        type: 'single',
+        choices: [
+          { id: 'a', text: '记录到需求池，排到V2.0', score: { collaboration: 15, insight: 10 }, trust: { dev: 10 }, feedback: { type: 'good', text: '完美处理！"记下来但不现在做"是PM的核心技能。scope管理做得好。' } },
+          { id: 'b', text: '当场拒绝："不行，scope已经定了"', score: { collaboration: -10 }, trust: { boss: -20 }, feedback: { type: 'bad', text: '太生硬。老板会觉得你不配合。可以先接住再管理预期。' } },
+          { id: 'c', text: '答应下来，加进本期', score: { collaboration: -15 }, trust: { dev: -20, test: -15 }, feedback: { type: 'bad', text: 'scope蔓延的开始。开发测试都要疯了。' } },
+          { id: 'd', text: '分析优先级后给出建议："语音输入ROI低，建议V2做"', score: { collaboration: 20, insight: 15 }, trust: { boss: 10 }, feedback: { type: 'good', text: '最佳回答！用数据和逻辑管理老板预期，既展示了专业度又保持了合作态度。' } },
+        ],
+        correctId: 'd'
+      },
+    ],
+    knowledge: [
+      { title: '需求评审技巧', content: '①提前24h发PRD ②控制会议在1h内 ③准备好优先级排序 ④对争议点准备Plan B ⑤结束前确认Action Item和Owner。' },
+      { title: '干系人管理矩阵', content: '高权力+高利益（老板）→ 重点管理。高权力+低利益（法务）→ 令其满意。低权力+高利益（开发测试）→ 随时告知。低权力+低利益 → 监控即可。' },
+    ],
+    onComplete: function() {
+      // 检查信任值
+      if (state.trust.dev < 30) {
+        showAchievement('⚠️ 开发团队信任危机');
+        state.sceneFlags.devStrike = true;
+      }
+      if (state.trust.test < 30) {
+        showAchievement('⚠️ 测试团队拒绝签字');
+        state.sceneFlags.testReject = true;
+      }
+    }
+  },
+
+  {
+    id: 5, time: '16:30', icon: '💻', title: '第六幕：跟开发 & 测试',
+    npc: { name: '开发老张', avatar: '👨‍💻', cls: 'npc-dev' },
+    story: `开发开始了。AI在帮你写代码，但Bug还是来了……<br><br>
+    <span class="npc-name">👨‍💻 开发老张</span> <em>"AI生成的代码有点问题，你帮忙看看？另外测试环境部署好了，你来走一遍。"</em>`,
+    codeReview: {
+      title: '🔎 Code Review：以下是AI生成的API调用代码，找出潜在问题（点击代码行）',
+      code: [
+        { text: 'async function askAI(userMessage) {', cls: '' },
+        { text: '  const response = await fetch(AI_API_URL, {', cls: '' },
+        { text: '    method: "POST",', cls: '' },
+        { text: '    body: JSON.stringify({ message: userMessage })', cls: 'bug', bugDesc: '缺少超时设置！AI API可能hang住几十秒' },
+        { text: '  });', cls: '' },
+        { text: '  const data = await response.json();', cls: 'bug', bugDesc: '没有检查response.ok，API返回错误时直接json()会抛异常' },
+        { text: '  return data.reply;', cls: 'bug', bugDesc: '没有兜底值！data.reply可能undefined' },
+        { text: '}', cls: '' },
+        { text: '', cls: '' },
+        { text: '// 处理用户消息', cls: '' },
+        { text: 'app.post("/chat", async (req, res) => {', cls: '' },
+        { text: '  const reply = await askAI(req.body.msg);', cls: '' },
+        { text: '  res.json({ reply });', cls: 'bug', bugDesc: '没有try-catch！任何异常都会导致服务500' },
+        { text: '});', cls: '' },
+      ],
+      bugs: 4
+    },
+    questions: [
+      {
+        title: '🐛 Bug Triage：收到以下5个Bug，你如何排优先级？',
+        type: 'single',
+        choices: [
+          { id: 'a', text: '先修所有Bug再上线 — 质量第一', score: { data: -5 }, feedback: { type: 'neutral', text: '理想主义。但区分Bug严重程度才是PM该做的。' } },
+          { id: 'b', text: 'P0: AI回复包含敏感词 → P1: 转人工按钮不显示 → P2: 头像加载慢', score: { data: 20, insight: 10 }, feedback: { type: 'good', text: '完美的优先级判断！合规问题最致命（P0），核心功能缺失次之（P1），体验问题最后（P2）。' } },
+          { id: 'c', text: '按发现顺序修', score: { data: -10 }, feedback: { type: 'bad', text: 'PM的基本功就是排优先级，按时间顺序=没有优先级。' } },
+          { id: 'd', text: '全部标记为已知问题，上线后再说', score: { data: -15, collaboration: -10 }, trust: { test: -20 }, feedback: { type: 'bad', text: '测试小陈已经崩溃了。合规问题不上线前修好是要出大事的。' } },
+        ],
+        correctId: 'b'
+      },
+    ],
+    checkboxQ: {
+      title: '📊 数据埋点决策：以下哪些埋点是AI客服必须有的？（多选）',
+      items: [
+        { id: 'e1', text: '每次AI回复的响应时间', correct: true },
+        { id: 'e2', text: 'AI回复被用户点赞/点踩', correct: true },
+        { id: 'e3', text: '转人工按钮的点击率', correct: true },
+        { id: 'e4', text: '用户每次按键的具体字符', correct: false, feedback: '涉及隐私，且数据量巨大价值低' },
+        { id: 'e5', text: 'AI幻觉检测结果（疑似胡说八道）', correct: true },
+        { id: 'e6', text: '页面背景色的色值', correct: false, feedback: '这不是数据埋点，这是设计稿' },
+      ],
+      correctIds: ['e1','e2','e3','e5']
+    },
+    knowledge: [
+      { title: 'Bug优先级划分', content: 'P0（致命）：系统崩溃/数据丢失/合规风险 → 立即修。P1（严重）：核心功能不可用 → 本迭代修。P2（一般）：功能有缺陷但不影响主流程 → 下个迭代。P3（建议）：体验优化 → 有空再说。' },
+      { title: 'AI产品的数据埋点', content: '除了常规埋点，AI产品必须多埋：①模型置信度分布 ②人工接管率 ③Bad Case自动收集 ④Prompt版本标记。这些数据是迭代AI效果的生命线。' },
+    ],
+    onComplete: function() {
+      const bugsFound = state.sceneFlags.bugsFound || 0;
+      state.scores.doc += bugsFound * 5;
+      if (bugsFound >= 3) { state.achievements.push('code_reviewer'); showAchievement('💻 Code Review达人'); }
+    }
+  },
+
+  {
+    id: 6, time: '18:30', icon: '🚀', title: '第七幕：上线 & 复盘',
+    npc: { name: '你（内心OS）', avatar: '🎯', cls: '' },
+    story: `终于到上线这一天了！但产品经理的工作远没有结束……<br><br>
+    产品已部署完毕，现在需要你做灰度发布决策，然后监控数据、分析Bad Case、规划迭代。`,
+    questions: [
+      {
+        title: '🚢 灰度发布策略：你选择？',
+        type: 'single',
+        choices: [
+          { id: 'a', text: '全量直接上线 — 没问题', score: { data: -15 }, feedback: { type: 'bad', text: 'AI产品全量上线=赌博。万一幻觉率爆表，品牌形象受损不可逆。' } },
+          { id: 'b', text: '先放10%流量灰度3天，看数据再决定', score: { data: 20, insight: 10 }, feedback: { type: 'good', text: '标准灰度策略！小流量验证核心指标，有问题时影响范围可控。' } },
+          { id: 'c', text: '只对内测员工开放', score: { data: 5 }, feedback: { type: 'neutral', text: '内测是好的，但员工不是真实用户，行为模式差异大。' } },
+          { id: 'd', text: '先放50%看看', score: { data: 0 }, feedback: { type: 'neutral', text: '50%不算灰度了，算半全量。出问题影响面还是太大。' } },
+        ],
+        correctId: 'b'
+      },
+    ],
+    dataDashboard: {
+      title: '📊 AI客服上线首日数据看板（灰度10%流量）',
+      metrics: [
+        { label: '对话总量', value: '1,247', target: '>500', status: 'good' },
+        { label: 'AI解决率', value: '72%', target: '>70%', status: 'good' },
+        { label: '转人工率', value: '28%', target: '<30%', status: 'good' },
+        { label: '用户满意度', value: '4.1', target: '>4.0', status: 'good' },
+        { label: '平均响应', value: '3.2s', target: '<5s', status: 'good' },
+        { label: '⚠️ 幻觉率', value: '8%', target: '<5%', status: 'warn' },
+      ]
+    },
+    questions2: [
+      {
+        title: '📈 看完数据，你的判断是？',
+        type: 'single',
+        choices: [
+          { id: 'a', text: '全量上线！大部分指标达标了', score: { data: -5 }, feedback: { type: 'neutral', text: '有点急。幻觉率8%超标，全量后可能引发大规模投诉。' } },
+          { id: 'b', text: '优化知识库 + 加幻觉检测，3天后再评估全量', score: { data: 20, insight: 15 }, feedback: { type: 'good', text: '精准决策！核心指标OK但幻觉率需优化。针对性修复后再放量，是最专业的做法。' } },
+          { id: 'c', text: '回滚！数据不好', score: { data: -10 }, feedback: { type: 'bad', text: '过度反应。大部分指标达标，只有幻觉率一个问题，修复即可不需要回滚。' } },
+          { id: 'd', text: '扩大灰度到30%，继续观察', score: { data: 10 }, feedback: { type: 'good', text: '稳妥选择。在可控范围内扩大样本量，验证更多边界case。' } },
+        ],
+        correctId: 'b'
+      },
+      {
+        title: '🔧 用户反馈"AI答非所问"，你如何处理这个Bad Case？',
+        type: 'single',
+        choices: [
+          { id: 'a', text: '把Bad Case加入测试集，优化Prompt和知识库', score: { data: 20, doc: 10 }, feedback: { type: 'good', text: '标准闭环！Bad Case → 分析根因 → 优化Prompt/知识库 → 回归测试。这就是AI产品的迭代飞轮。' } },
+          { id: 'b', text: '忽略，个别用户挑剔', score: { data: -15 }, feedback: { type: 'bad', text: '每个Bad Case都是优化机会。忽略=放弃产品进步。' } },
+          { id: 'c', text: '降低AI使用比例，多转人工', score: { data: -5 }, feedback: { type: 'neutral', text: '治标不治本。应该让AI变聪明而不是躲着用。' } },
+          { id: 'd', text: '换一个更贵的模型', score: { data: 0 }, feedback: { type: 'neutral', text: '不一定解决问题。先分析Bad Case根因，可能是知识库缺失而非模型能力问题。' } },
+        ],
+        correctId: 'a'
+      },
+    ],
+    dragSort: {
+      title: '📅 V2.0迭代规划：对以下功能做优先级排序',
+      items: [
+        { id: 'v1', text: 'V: 降低幻觉率到<3%（优化Prompt+知识库）', correctPos: 0 },
+        { id: 'v2', text: 'V: 扩大灰度到50%', correctPos: 1 },
+        { id: 'v3', text: 'V: 增加多轮对话深度（>5轮）', correctPos: 2 },
+        { id: 'v4', text: 'V: 接入更多业务系统（查订单/退款）', correctPos: 3 },
+        { id: 'v5', text: 'V: 语音输入功能', correctPos: 4 },
+        { id: 'v6', text: 'V: 客服主管数据看板', correctPos: 5 },
+      ]
+    },
+    knowledge: [
+      { title: '灰度发布策略', content: '标准流程：1%→10%→30%→50%→100%，每阶段观察1-3天。关注指标：核心功能可用率、错误率、用户反馈。AI产品额外关注：幻觉率、置信度分布变化。' },
+      { title: 'Bad Case驱动迭代', content: 'AI产品的核心迭代方法论：收集Bad Case → 聚类分析 → 定位根因（知识库/Prompt/模型/数据）→ 针对性优化 → 回归验证。形成飞轮效应。' },
+      { title: '数据驱动决策', content: 'PM每天看数据不是看绝对值，而是看趋势+对比。同比（比上周）、环比（比昨天）、AB测试（比对照组）。没有对比的数据没有意义。' },
+    ],
+    onComplete: function() {
+      const dragScore = state.sceneFlags.dragScore2 || 0;
+      state.scores.data += dragScore;
+      // 计算结局
+      calculateEnding();
+    }
+  },
+];
+
+// ===== 初始化 =====
+document.addEventListener('DOMContentLoaded', function() {
+  // 加载今日剧本
+  loadTodaysScript();
+  updateScriptIntro();
+
+  // 填充日期选择器
+  const daySel = document.getElementById('daySelector');
+  DAILY_SCRIPTS.forEach(s => {
+    const opt = document.createElement('option');
+    opt.value = s.day;
+    opt.textContent = `Day ${s.day} | ${s.week} | ${s.productName} (${s.difficulty})`;
+    daySel.appendChild(opt);
+  });
+
+  // 日期选择变化
+  daySel.addEventListener('change', function() {
+    const val = this.value;
+    if (val === 'auto') {
+      currentScript = getTodaysScript();
+    } else {
+      currentScript = getScriptByDay(parseInt(val));
+    }
+    updateScriptIntro();
+  });
+
+  // 隐藏开场动画
+  setTimeout(() => {
+    document.getElementById('introOverlay').classList.add('hidden');
+    document.getElementById('appContainer').classList.add('visible');
+  }, 3000);
+
+  // 属性选择
+  const attrCards = document.querySelectorAll('.attr-card');
+  attrCards.forEach(card => {
+    card.addEventListener('click', () => {
+      const attr = card.dataset.attr;
+      const idx = state.selectedAttrs.indexOf(attr);
+      if (idx >= 0) {
+        state.selectedAttrs.splice(idx, 1);
+        card.classList.remove('selected');
+      } else if (state.selectedAttrs.length < 2) {
+        state.selectedAttrs.push(attr);
+        card.classList.add('selected');
+      }
+      document.getElementById('startBtn').disabled = state.selectedAttrs.length !== 2;
+    });
+  });
+
+  // 开始按钮
+  document.getElementById('startBtn').addEventListener('click', startGame);
+
+  // 检查已有学习记录，在角色选择页添加入口
+  checkExistingRecords();
+});
+
+// 更新剧本介绍文字
+function updateScriptIntro() {
+  const intro = document.getElementById('scriptIntro');
+  if (!intro || !currentScript) return;
+  intro.innerHTML = `
+    📅 <strong style="color:var(--text)">${currentScript.week} · Day ${currentScript.day}</strong>
+    ${currentScript.badge ? ` <span style="font-size:12px;">${currentScript.badge}</span>` : ''}<br>
+    ☕ 早上9:00，老板扔来一句话：<em style="color:var(--accent)">"${currentScript.bossRequirement}"</em><br>
+    🏷️ 产品：${currentScript.productName} | 类型：${currentScript.productType} | 行业：${currentScript.industry}<br>
+    🎯 你的任务：从接到需求到产品上线，做出每个环节的关键决策。<br>
+    ⏱️ 预计耗时：90-120分钟（也可分段体验）<br>
+    <span style="font-size:12px;color:var(--text-muted);">💡 提示：每天剧本不同，可下拉切换体验不同剧情</span>
+  `;
+}
+
+function initTimeline() {
+  const nav = document.getElementById('timelineNav');
+  const scenes = window.scenes || [];
+  nav.innerHTML = scenes.map((s, i) => {
+    const status = i === 0 ? 'active' : 'locked';
+    return `<div class="timeline-node ${status}" data-scene="${i}" onclick="jumpToScene(${i})">${s.icon}</div>` +
+           (i < scenes.length - 1 ? '<div class="timeline-line"></div>' : '');
+  }).join('');
+}
+
+function updateTimeline(currentIdx) {
+  const nodes = document.querySelectorAll('.timeline-node');
+  const lines = document.querySelectorAll('.timeline-line');
+  nodes.forEach((n, i) => {
+    n.classList.remove('active', 'completed', 'locked');
+    if (i < currentIdx) n.classList.add('completed');
+    else if (i === currentIdx) n.classList.add('active');
+    else n.classList.add('locked');
+  });
+  lines.forEach((l, i) => {
+    l.classList.toggle('completed', i < currentIdx);
+  });
+}
+
+function jumpToScene(idx) {
+  if (idx <= state.currentScene) {
+    state.currentScene = idx;
+    renderScene(idx);
+  }
+}
+
+function startGame() {
+  // 构建基于今日剧本的场景
+  window.scenes = buildScenesFromScript(currentScript);
+
+  // 应用初始属性加成
+  state.selectedAttrs.forEach(attr => {
+    switch(attr) {
+      case 'analysis': state.scores.insight += 10; break;
+      case 'communication': state.scores.collaboration += 10; break;
+      case 'tech': state.scores.doc += 10; break;
+      case 'creativity': state.scores.design += 10; break;
+    }
+  });
+
+  document.getElementById('characterScreen').classList.add('hidden');
+  document.getElementById('gameArea').classList.remove('hidden');
+  initTimeline();
+  renderScene(0);
+}
+
+function renderScene(idx) {
+  state.currentScene = idx;
+  const scene = (window.scenes || [])[idx];
+
+  // 更新顶部状态
+  document.getElementById('clockBadge').textContent = scene.time;
+  const progress = ((idx) / (window.scenes||[]).length * 100).toFixed(0);
+  document.getElementById('progressFill').style.width = progress + '%';
+  updateTimeline(idx);
+
+  const container = document.getElementById('sceneContainer');
+  let html = `
+    <div class="scene-card">
+      <div class="scene-header">
+        <div class="scene-icon">${scene.icon}</div>
+        <div class="scene-title">${scene.title}</div>
+        <div class="scene-time">${scene.time}</div>
+      </div>
+  `;
+
+  // NPC对话 + 故事
+  if (scene.npc) {
+    html += `<div class="npc-dialog"><span class="npc-name">${scene.npc.avatar} ${scene.npc.name}</span><br>${scene.story}</div>`;
+  } else {
+    html += `<div class="story-text">${scene.story}</div>`;
+  }
+
+  // AI互动区
+  if (scene.aiInteraction) {
+    html += `
+      <div class="ai-interaction">
+        <div class="ai-header">
+          <span class="ai-badge">AI</span>
+          <span class="ai-label">${scene.aiInteraction.title}</span>
+        </div>
+        <div class="ai-input-area">
+          <textarea class="ai-input" id="aiInput" placeholder="${scene.aiInteraction.placeholder}"></textarea>
+          <button class="ai-btn" onclick="runAI(${idx})">生成</button>
+        </div>
+        <div class="ai-typing" id="aiTyping">AI正在思考</div>
+        <div class="ai-output" id="aiOutput"></div>
+      </div>
+    `;
+  }
+
+  // 找茬游戏（第三幕）
+  if (scene.findMissing) {
+    html += `<div class="question-block"><div class="question-title">${scene.findMissing.title}</div>`;
+    html += `<div style="font-size:13px;color:var(--text-muted);margin-bottom:12px;">点击选中你认为有问题的项（共${scene.findMissing.items.filter(i=>i.isIssue).length}处问题）</div>`;
+    html += `<div class="checkbox-list" id="findList">`;
+    scene.findMissing.items.forEach(item => {
+      html += `<div class="checkbox-item" data-id="${item.id}" data-issue="${item.isIssue}" onclick="toggleFindItem(this,'${item.id}',${item.isIssue},'${item.feedback}')">
+        <div class="checkbox-box"></div>${item.text}
+      </div>`;
+    });
+    html += `</div></div>`;
+    html += `<div id="findFeedback"></div>`;
+    html += `<div class="action-bar"><button class="btn-primary" onclick="submitFindMissing(${idx})">提交审查结果</button></div>`;
+  }
+
+  // Code Review（第六幕）
+  if (scene.codeReview) {
+    html += `<div class="question-block"><div class="question-title">${scene.codeReview.title}</div>`;
+    html += `<div class="find-bugs-ui" id="codeArea">`;
+    scene.codeReview.code.forEach((line, i) => {
+      const cls = line.cls === 'bug' ? 'code-line' : 'code-line';
+      html += `<div class="${cls}" data-idx="${i}" data-bug="${line.cls==='bug'}" onclick="findBug(this,${i},'${line.bugDesc}')">${line.text || '&nbsp;'}</div>`;
+    });
+    html += `</div>`;
+    html += `<div id="bugFeedback" style="margin-top:12px;"></div>`;
+    html += `<div class="action-bar"><button class="btn-primary" onclick="submitBugs(${idx})">提交Code Review</button></div>`;
+  }
+
+  // 数据看板（第七幕）
+  if (scene.dataDashboard) {
+    html += `<div class="data-dashboard">
+      <div class="question-title" style="margin-bottom:16px;">${scene.dataDashboard.title}</div>
+      <div class="data-grid">`;
+    scene.dataDashboard.metrics.forEach(m => {
+      html += `<div class="data-item">
+        <div class="data-value ${m.status}">${m.value}</div>
+        <div class="data-label">${m.label}</div>
+        <div class="data-target">目标: ${m.target}</div>
+      </div>`;
+    });
+    html += `</div></div>`;
+  }
+
+  // 拖拽排序 (dragSort)
+  if (scene.dragSort) {
+    html += `<div class="question-block"><div class="question-title">${scene.dragSort.title}</div>`;
+    html += `<div style="font-size:12px;color:var(--text-muted);margin-bottom:8px;">拖拽条目进行排序（M/Must在最前面）</div>`;
+    html += `<div class="drag-list" id="dragList">`;
+    // 用Fisher-Yates洗牌保证随机
+    const shuffled = [...scene.dragSort.items];
+    for (let i = shuffled.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+    }
+    shuffled.forEach((item) => {
+      html += `<div class="drag-item" data-id="${item.id}" data-pos="${item.correctPos}" tabindex="0">
+        <span class="drag-handle" aria-label="拖拽手柄">⋮⋮</span><span class="drag-text">${item.text}</span>
+      </div>`;
+    });
+    html += `</div></div>`;
+    html += `<div class="action-bar"><button class="btn-primary" id="submitDrag_${idx}" onclick="submitDragSort(${idx})" disabled style="opacity:0.4;cursor:not-allowed;">确认排序</button></div>`;
+  }
+
+  // 拖拽排序2 (dragSort2 - 第七幕迭代规划)
+  if (scene.dragSort2) {
+    html += `<div class="question-block"><div class="question-title">${scene.dragSort2.title}</div>`;
+    html += `<div style="font-size:12px;color:var(--text-muted);margin-bottom:8px;">拖拽条目进行排序（最重要的最前面）</div>`;
+    html += `<div class="drag-list" id="dragList2">`;
+    const shuffled2 = [...scene.dragSort2.items];
+    for (let i = shuffled2.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [shuffled2[i], shuffled2[j]] = [shuffled2[j], shuffled2[i]];
+    }
+    shuffled2.forEach((item) => {
+      html += `<div class="drag-item" data-id="${item.id}" data-pos="${item.correctPos}" tabindex="0">
+        <span class="drag-handle" aria-label="拖拽手柄">⋮⋮</span><span class="drag-text">${item.text}</span>
+      </div>`;
+    });
+    html += `</div></div>`;
+    html += `<div class="action-bar"><button class="btn-primary" id="submitDrag2_${idx}" onclick="submitDragSort2(${idx})" disabled style="opacity:0.4;cursor:not-allowed;">确认排序</button></div>`;
+  }
+
+  // 多选题
+  if (scene.checkboxQ) {
+    html += `<div class="question-block"><div class="question-title">${scene.checkboxQ.title}</div>`;
+    html += `<div style="font-size:12px;color:var(--text-muted);margin-bottom:8px;">（共${scene.checkboxQ.correctIds.length}个正确选项）</div>`;
+    html += `<div class="checkbox-list" id="multiCheckList">`;
+    scene.checkboxQ.items.forEach(item => {
+      html += `<div class="checkbox-item" data-id="${item.id}" data-correct="${item.correct}" onclick="toggleMultiCheck(this,'${item.id}')">
+        <div class="checkbox-box"></div>${item.text}
+      </div>`;
+    });
+    html += `</div></div>`;
+    html += `<div class="action-bar"><button class="btn-primary" onclick="submitMultiCheck(${idx})">确认选择</button></div>`;
+  }
+
+  // 选择题
+  if (scene.questions) {
+    scene.questions.forEach((q, qi) => {
+      html += `<div class="question-block" id="qblock_${qi}">
+        <div class="question-title">${q.title}</div>
+        <div class="choice-list">`;
+      q.choices.forEach(c => {
+        html += `<div class="choice-item" data-qid="${qi}" data-cid="${c.id}" onclick="selectChoice(this,${idx},${qi},'${c.id}')">
+          <div class="choice-letter">${c.id.toUpperCase()}</div>
+          <div>${c.text}</div>
+        </div>`;
+      });
+      html += `</div><div id="feedback_${qi}"></div></div>`;
+    });
+  }
+
+  // 第七幕的questions2
+  if (scene.questions2) {
+    scene.questions2.forEach((q, qi) => {
+      const qIdx = qi + 100; // offset
+      html += `<div class="question-block" id="qblock_${qIdx}">
+        <div class="question-title">${q.title}</div>
+        <div class="choice-list">`;
+      q.choices.forEach(c => {
+        html += `<div class="choice-item" data-qid="${qIdx}" data-cid="${c.id}" onclick="selectChoice(this,${idx},${qIdx},'${c.id}')">
+          <div class="choice-letter">${c.id.toUpperCase()}</div>
+          <div>${c.text}</div>
+        </div>`;
+      });
+      html += `</div><div id="feedback_${qIdx}"></div></div>`;
+    });
+  }
+
+  // 知识卡片
+  if (scene.knowledge) {
+    scene.knowledge.forEach(k => {
+      html += `<div class="knowledge-card">
+        <div class="knowledge-title">💡 ${k.title}</div>
+        <div class="knowledge-content">${k.content}</div>
+      </div>`;
+      if (!state.knowledge.find(x => x.title === k.title)) {
+        state.knowledge.push(k);
+      }
+    });
+  }
+
+  // 导航按钮
+  html += `<div class="action-bar">`;
+  if (idx > 0) {
+    html += `<button class="btn-secondary" onclick="renderScene(${idx-1})">← 上一幕</button>`;
+  }
+  if (idx < (window.scenes||[]).length - 1) {
+    html += `<button class="btn-accent" id="nextBtn_${idx}" onclick="goNext(${idx})" ${scene.questions || scene.dragSort || scene.checkboxQ || scene.findMissing || scene.codeReview ? 'disabled style="opacity:0.4;cursor:not-allowed;"' : ''}>下一幕 →</button>`;
+  } else {
+    html += `<button class="btn-accent" id="nextBtn_${idx}" onclick="showResult()" ${scene.questions || scene.questions2 || scene.dragSort ? 'disabled style="opacity:0.4;cursor:not-allowed;"' : ''}>查看能力画像 →</button>`;
+  }
+  html += `</div>`;
+
+  html += `</div>`; // close scene-card
+  container.innerHTML = html;
+
+  // 初始化拖拽（第二幕 dragSort 和第七幕 dragSort2 都需要）
+  if (scene.dragSort || scene.dragSort2) initDragAndDrop();
+
+  // 更新信任电池显示
+  updateTrustDisplay();
+}
+
+// ===== AI互动 =====
+function runAI(sceneIdx) {
+  const input = document.getElementById('aiInput').value.trim();
+  const output = document.getElementById('aiOutput');
+  const typing = document.getElementById('aiTyping');
+
+  if (!input) { input.placeholder = '请先输入内容...'; return; }
+
+  typing.classList.add('visible');
+  output.classList.remove('visible');
+
+  setTimeout(() => {
+    typing.classList.remove('visible');
+    const scene = (window.scenes||[])[sceneIdx];
+    let response = '';
+    const found = scene.aiInteraction.responses.find(r => r.trigger !== '默认' && input.includes(r.trigger));
+    response = found ? found.response : scene.aiInteraction.responses.find(r => r.trigger === '默认').response;
+
+    output.textContent = response;
+    output.classList.add('visible');
+
+    // 加分
+    if (sceneIdx === 1) state.scores.competition += 10;
+    if (sceneIdx === 2) state.scores.doc += 5;
+    if (sceneIdx === 3) state.scores.design += 5;
+  }, 1500);
+}
+
+// ===== 选择题 =====
+function selectChoice(el, sceneIdx, qIdx, choiceId) {
+  const scene = (window.scenes||[])[sceneIdx];
+  const questions = scene.questions || [];
+  const questions2 = scene.questions2 || [];
+  const allQs = [...questions, ...questions2];
+  // Map qIdx to actual question
+  let q;
+  if (qIdx >= 100) q = questions2[qIdx - 100];
+  else q = questions[qIdx];
+
+  if (!q) return;
+
+  // 高亮选中
+  document.querySelectorAll(`.choice-item[data-qid="${qIdx}"]`).forEach(c => c.classList.remove('selected'));
+  el.classList.add('selected');
+
+  // 记录选择
+  state.choices[`${sceneIdx}_q${qIdx}`] = choiceId;
+
+  // 显示反馈
+  const choice = q.choices.find(c => c.id === choiceId);
+  if (choice && choice.feedback) {
+    const fbEl = document.getElementById(`feedback_${qIdx}`);
+    const fb = choice.feedback;
+    const cls = fb.type === 'good' ? 'feedback-good' : fb.type === 'bad' ? 'feedback-bad' : 'feedback-neutral';
+    fbEl.innerHTML = `<div class="feedback-box ${cls}">${fb.text}</div>`;
+  }
+
+  // 加分
+  if (choice && choice.score) {
+    Object.entries(choice.score).forEach(([k, v]) => {
+      state.scores[k] = Math.min(100, state.scores[k] + v);
+    });
+  }
+
+  // 信任值变化
+  if (choice && choice.trust) {
+    Object.entries(choice.trust).forEach(([k, v]) => {
+      state.trust[k] = Math.max(0, Math.min(100, state.trust[k] + v));
+    });
+    updateTrustDisplay();
+  }
+
+  // 知识卡片
+  if (choice && choice.knowledge && !state.knowledge.find(x => x.title === choice.knowledge.split(':')[0])) {
+    state.knowledge.push({ title: '提示', content: choice.knowledge });
+  }
+
+  // 检查是否所有题目都答了
+  checkSceneComplete(sceneIdx);
+}
+
+// ===== 找茬游戏 =====
+let findSelections = [];
+function toggleFindItem(el, id, isIssue, feedback) {
+  const wasSelected = el.classList.contains('selected');
+  if (wasSelected) {
+    el.classList.remove('selected');
+    findSelections = findSelections.filter(x => x.id !== id);
+  } else {
+    el.classList.add('selected');
+    findSelections.push({ id, isIssue, feedback });
+  }
+}
+
+function submitFindMissing(sceneIdx) {
+  const scene = (window.scenes||[])[sceneIdx];
+  const total = scene.findMissing.items.filter(i => i.isIssue).length;
+  const correct = findSelections.filter(s => s.isIssue).length;
+  const wrong = findSelections.filter(s => !s.isIssue).length;
+
+  state.sceneFlags.findCount = correct;
+
+  const fbEl = document.getElementById('findFeedback');
+  if (correct === total && wrong === 0) {
+    fbEl.innerHTML = `<div class="feedback-box feedback-good">🎯 完美！找出了全部${total}个问题，你对AI产品的特殊考量理解很深。</div>`;
+    state.scores.doc += 15;
+  } else if (correct >= total * 0.6) {
+    fbEl.innerHTML = `<div class="feedback-box feedback-neutral">找到了${correct}/${total}个问题，还有${total-correct}个遗漏。提示：关注"AI挂了怎么办"和"AI说错话怎么办"。</div>`;
+  } else {
+    fbEl.innerHTML = `<div class="feedback-box feedback-bad">只找到了${correct}/${total}个。AI产品的PRD核心就是"防AI出错"，再想想哪些场景会翻车？</div>`;
+  }
+
+  // 显示正确答案
+  scene.findMissing.items.forEach(item => {
+    if (item.isIssue) {
+      const el = document.querySelector(`.checkbox-item[data-id="${item.id}"]`);
+      if (el && !el.classList.contains('selected')) {
+        el.style.borderColor = 'var(--warning)';
+        el.style.background = 'rgba(251,191,36,0.05)';
+      }
+    }
+  });
+
+  checkSceneComplete(sceneIdx);
+}
+
+// ===== Code Review =====
+let bugSelections = [];
+function findBug(el, idx, desc) {
+  if (el.classList.contains('found')) return;
+  el.classList.add('found');
+  bugSelections.push({ idx, desc });
+
+  const fbEl = document.getElementById('bugFeedback');
+  fbEl.innerHTML = `<div class="feedback-box feedback-good" style="display:inline-block;margin-top:8px;">🐛 发现Bug！${desc}</div>`;
+  setTimeout(() => { fbEl.innerHTML = ''; }, 3000);
+}
+
+function submitBugs(sceneIdx) {
+  const scene = (window.scenes||[])[sceneIdx];
+  const total = scene.codeReview.bugs;
+  const found = bugSelections.length;
+  state.sceneFlags.bugsFound = found;
+
+  const fbEl = document.getElementById('bugFeedback');
+  if (found === total) {
+    fbEl.innerHTML = `<div class="feedback-box feedback-good">🏆 全部${total}个Bug都找到了！你具备优秀PM的代码审查意识。</div>`;
+  } else {
+    fbEl.innerHTML = `<div class="feedback-box feedback-neutral">找到${found}/${total}个。遗漏的：超时设置、error handling、兜底值、try-catch。AI生成的代码永远要Review！</div>`;
+    // 高亮遗漏的
+    document.querySelectorAll('.code-line:not(.found)').forEach(line => {
+      if (line.dataset.bug === 'true') {
+        line.style.borderColor = 'var(--warning)';
+      }
+    });
+  }
+
+  checkSceneComplete(sceneIdx);
+}
+
+// ===== 拖拽排序（鼠标 + 移动端 Touch 兼容） =====
+function initDragAndDrop() {
+  const lists = ['dragList', 'dragList2'];
+  lists.forEach(listId => {
+    const list = document.getElementById(listId);
+    if (!list) return;
+
+    let dragEl = null;       // 当前拖动的元素
+    let placeholder = null;  // 占位符
+    let startY = 0, startX = 0;
+
+    // ---------- 工具函数 ----------
+    function getDragData(el) {
+      return {
+        id: el.dataset.id,
+        pos: parseInt(el.dataset.pos, 10)
+      };
+    }
+    function createPlaceholder() {
+      const ph = document.createElement('div');
+      ph.className = 'drag-placeholder';
+      return ph;
+    }
+    function clearDragOverStyles() {
+      list.querySelectorAll('.drag-item.drag-over').forEach(n => n.classList.remove('drag-over'));
+    }
+    function findInsertTarget(clientY) {
+      const items = [...list.querySelectorAll('.drag-item:not(.dragging)')];
+      for (const item of items) {
+        const r = item.getBoundingClientRect();
+        if (clientY < r.top + r.height / 2) return item;
+      }
+      return null;
+    }
+    function enableSubmit() {
+      const idx = listId === 'dragList' ? 1 : 6;
+      const btn = document.getElementById(listId === 'dragList' ? 'submitDrag_' + idx : 'submitDrag2_' + idx);
+      if (btn) { btn.disabled = false; btn.style.opacity = '1'; btn.style.cursor = 'pointer'; }
+    }
+
+    // ---------- HTML5 拖放（PC 鼠标） ----------
+    list.querySelectorAll('.drag-item').forEach(item => {
+      item.setAttribute('draggable', 'true');
+      item.addEventListener('dragstart', function(e) {
+        dragEl = this;
+        this.classList.add('dragging');
+        e.dataTransfer.effectAllowed = 'move';
+        // Firefox 必须设置 setData 才能拖
+        try { e.dataTransfer.setData('text/plain', this.dataset.id); } catch(_) {}
+      });
+      item.addEventListener('dragend', function() {
+        this.classList.remove('dragging');
+        clearDragOverStyles();
+        dragEl = null;
+      });
+      item.addEventListener('dragover', function(e) {
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'move';
+        if (this === dragEl) return;
+        const r = this.getBoundingClientRect();
+        const before = e.clientY < r.top + r.height / 2;
+        clearDragOverStyles();
+        this.classList.add('drag-over');
+        if (before) {
+          list.insertBefore(dragEl, this);
+        } else {
+          list.insertBefore(dragEl, this.nextSibling);
+        }
+      });
+      item.addEventListener('dragleave', function() {
+        this.classList.remove('drag-over');
+      });
+      item.addEventListener('drop', function(e) {
+        e.preventDefault();
+        clearDragOverStyles();
+        enableSubmit();
+      });
+    });
+
+    // ---------- 移动端 Touch 事件 ----------
+    list.querySelectorAll('.drag-item').forEach(item => {
+      item.addEventListener('touchstart', function(e) {
+        const t = e.touches[0];
+        startY = t.clientY; startX = t.clientX;
+        dragEl = this;
+        placeholder = createPlaceholder();
+        // 立即把占位符放到当前元素后面
+        this.parentNode.insertBefore(placeholder, this.nextSibling);
+        this.classList.add('dragging');
+        // 防止滚动
+        e.preventDefault();
+      }, { passive: false });
+
+      item.addEventListener('touchmove', function(e) {
+        if (!dragEl) return;
+        const t = e.touches[0];
+        const dy = t.clientY - startY;
+        // 视觉跟随手指
+        dragEl.style.transform = `translateY(${dy}px)`;
+        // 占位符跟随
+        const target = findInsertTarget(t.clientY);
+        if (target && target !== placeholder) {
+          list.insertBefore(placeholder, target);
+        } else if (!target && placeholder !== list.lastElementChild) {
+          list.appendChild(placeholder);
+        }
+        e.preventDefault();
+      }, { passive: false });
+
+      item.addEventListener('touchend', function() {
+        if (!dragEl) return;
+        dragEl.style.transform = '';
+        dragEl.classList.remove('dragging');
+        // 把真实元素放到占位符位置
+        if (placeholder && placeholder.parentNode) {
+          placeholder.parentNode.insertBefore(dragEl, placeholder);
+          placeholder.remove();
+        }
+        placeholder = null; dragEl = null;
+        clearDragOverStyles();
+        enableSubmit();
+      });
+    });
+
+    // ---------- 键盘可访问性（方向键上下移动） ----------
+    list.querySelectorAll('.drag-item').forEach((item, i, all) => {
+      item.addEventListener('keydown', function(e) {
+        if (e.key !== 'ArrowUp' && e.key !== 'ArrowDown') return;
+        e.preventDefault();
+        const arr = [...list.querySelectorAll('.drag-item')];
+        const idx = arr.indexOf(this);
+        const swap = e.key === 'ArrowUp' ? idx - 1 : idx + 1;
+        if (swap < 0 || swap >= arr.length) return;
+        if (e.key === 'ArrowUp') {
+          list.insertBefore(this, arr[swap]);
+        } else {
+          list.insertBefore(this, arr[swap].nextSibling);
+        }
+        this.focus();
+        enableSubmit();
+      });
+    });
+  });
+}
+
+function submitDragSort(sceneIdx) {
+  const scene = (window.scenes||[])[sceneIdx];
+  const items = document.querySelectorAll('#dragList .drag-item');
+  let correct = 0;
+  items.forEach((item, i) => {
+    const correctPos = parseInt(item.dataset.pos);
+    if (correctPos === i) correct++;
+    if (correctPos === i) item.classList.add('correct-pos');
+  });
+
+  const total = scene.dragSort.items.length;
+  const score = Math.round(correct / total * 100);
+  state.sceneFlags[sceneIdx === 1 ? 'dragScore' : 'dragScore2'] = score;
+
+  const fbKey = sceneIdx === 1 ? 'feedback' : 'feedback2';
+  // 简单反馈
+  const container = document.getElementById('sceneContainer');
+  let fbHtml = '';
+  if (correct === total) {
+    fbHtml = `<div class="feedback-box feedback-good">🎯 完美排序！你对需求优先级的理解非常专业。</div>`;
+  } else if (correct >= total * 0.7) {
+    fbHtml = `<div class="feedback-box feedback-neutral">${correct}/${total} 正确。记住：Must have永远排在最前面，Won't have在最后。</div>`;
+  } else {
+    fbHtml = `<div class="feedback-box feedback-bad">${correct}/${total} 正确。提示：先区分"必须有"和"锦上添花"，再排内部顺序。</div>`;
+  }
+
+  // 插入反馈
+  const existingFb = document.getElementById('dragFb');
+  if (existingFb) existingFb.remove();
+  const fb = document.createElement('div');
+  fb.id = 'dragFb';
+  fb.innerHTML = fbHtml;
+  container.querySelector('.scene-card').appendChild(fb);
+
+  checkSceneComplete(sceneIdx);
+}
+
+// ===== 拖拽排序2（第七幕迭代规划） =====
+function submitDragSort2(sceneIdx) {
+  const scene = window.scenes[sceneIdx];
+  const items = document.querySelectorAll('#dragList2 .drag-item');
+  let correct = 0;
+  items.forEach((item, i) => {
+    const correctPos = parseInt(item.dataset.pos);
+    if (correctPos === i) correct++;
+    if (correctPos === i) item.classList.add('correct-pos');
+  });
+
+  const total = scene.dragSort2.items.length;
+  const score = Math.round(correct / total * 100);
+  state.sceneFlags.dragScore2 = score;
+
+  const container = document.getElementById('sceneContainer');
+  let fbHtml = '';
+  if (correct === total) {
+    fbHtml = `<div class="feedback-box feedback-good">🎯 完美排序！你对迭代优先级的理解非常专业。</div>`;
+  } else if (correct >= total * 0.7) {
+    fbHtml = `<div class="feedback-box feedback-neutral">${correct}/${total} 正确。记住：先修核心问题，再放量，再扩展。</div>`;
+  } else {
+    fbHtml = `<div class="feedback-box feedback-bad">${correct}/${total} 正确。提示：修复异常指标永远排第一，然后是放量验证。</div>`;
+  }
+
+  const existingFb = document.getElementById('dragFb2');
+  if (existingFb) existingFb.remove();
+  const fb = document.createElement('div');
+  fb.id = 'dragFb2';
+  fb.innerHTML = fbHtml;
+  container.querySelector('.scene-card').appendChild(fb);
+
+  checkSceneComplete(sceneIdx);
+}
+
+// ===== 多选 =====
+let multiSelections = [];
+function toggleMultiCheck(el, id) {
+  const wasSelected = el.classList.contains('selected');
+  if (wasSelected) {
+    el.classList.remove('selected');
+    multiSelections = multiSelections.filter(x => x !== id);
+  } else {
+    el.classList.add('selected');
+    multiSelections.push(id);
+  }
+}
+
+function submitMultiCheck(sceneIdx) {
+  const scene = (window.scenes||[])[sceneIdx];
+  const correctIds = scene.checkboxQ.correctIds;
+  const correct = multiSelections.filter(id => correctIds.includes(id)).length;
+  const wrong = multiSelections.filter(id => !correctIds.includes(id)).length;
+  const missed = correctIds.filter(id => !multiSelections.includes(id)).length;
+
+  // 评分
+  const allCorrect = correct === correctIds.length && wrong === 0;
+  if (allCorrect) {
+    state.scores.data += 15;
+    state.scores.insight += 5;
+  } else {
+    state.scores.data += Math.max(0, correct * 3 - wrong * 3);
+  }
+
+  // 反馈
+  const container = document.getElementById('sceneContainer');
+  const fb = document.createElement('div');
+  fb.id = 'multiFb';
+  if (allCorrect) {
+    fb.innerHTML = `<div class="feedback-box feedback-good">🎯 全部选对！你掌握了AI产品数据埋点的核心要素。</div>`;
+  } else {
+    fb.innerHTML = `<div class="feedback-box feedback-${missed > correct ? 'bad' : 'neutral'}">选对${correct}/${correctIds.length}，多选${wrong}个，漏选${missed}个。关键埋点：响应时间、点赞/踩、转人工率、幻觉检测。</div>`;
+  }
+  container.querySelector('.scene-card').appendChild(fb);
+
+  // 标记多选已完成
+  state.choices[`${sceneIdx}_multicheck`] = 'done';
+  checkSceneComplete(sceneIdx);
+}
+
+// ===== 检查场景完成 =====
+function checkSceneComplete(sceneIdx) {
+  const scene = (window.scenes||[])[sceneIdx];
+  let complete = true;
+
+  // 检查所有选择题是否已答
+  const qList = scene.questions || [];
+  const q2List = scene.questions2 || [];
+  qList.forEach((q, qi) => {
+    const key = `${sceneIdx}_q${qi}`;
+    if (!state.choices[key]) complete = false;
+  });
+  q2List.forEach((q, qi) => {
+    const key = `${sceneIdx}_q${qi + 100}`;
+    if (!state.choices[key]) complete = false;
+  });
+
+  // 特殊场景需要额外检查
+  if (scene.findMissing && (state.sceneFlags.findCount === undefined)) complete = false;
+  if (scene.codeReview && (state.sceneFlags.bugsFound === undefined)) complete = false;
+  if (scene.dragSort) {
+    if (state.sceneFlags.dragScore === undefined) complete = false;
+  }
+  if (scene.dragSort2) {
+    if (state.sceneFlags.dragScore2 === undefined) complete = false;
+  }
+  if (scene.checkboxQ) {
+    if (!state.choices[`${sceneIdx}_multicheck`]) complete = false;
+  }
+
+  // 启用下一幕按钮
+  if (complete) {
+    const btn = document.getElementById(`nextBtn_${sceneIdx}`);
+    if (btn) {
+      btn.disabled = false;
+      btn.style.opacity = '1';
+      btn.style.cursor = 'pointer';
+    }
+    // 触发场景完成回调
+    if (scene.onComplete) scene.onComplete();
+  }
+}
+
+function goNext(idx) {
+  if (idx < (window.scenes||[]).length - 1) {
+    // 清空临时状态
+    findSelections = [];
+    bugSelections = [];
+    multiSelections = [];
+    renderScene(idx + 1);
+  }
+}
+
+// ===== 信任值显示 =====
+function updateTrustDisplay() {
+  const npcs = ['boss', 'dev', 'design', 'test'];
+  const colors = { boss: 'var(--danger)', dev: 'var(--primary)', design: 'var(--accent)', test: 'var(--success)' };
+  npcs.forEach(npc => {
+    const el = document.querySelector(`.trust-battery[data-npc="${npc}"] .trust-battery-fill`);
+    if (el) {
+      el.style.width = state.trust[npc] + '%';
+      el.style.background = state.trust[npc] >= 50 ? colors[npc] : 'var(--danger)';
+    }
+  });
+}
+
+// ===== 成就系统 =====
+function showAchievement(text) {
+  const popup = document.getElementById('achievementPopup');
+  document.getElementById('achievementText').textContent = text;
+  popup.classList.remove('hidden');
+  setTimeout(() => popup.classList.add('hidden'), 3000);
+}
+
+// ===== 结局计算 =====
+function calculateEnding() {
+  // 综合评分
+  const avg = Object.values(state.scores).reduce((a,b) => a+b, 0) / 6;
+  const trustAvg = Object.values(state.trust).reduce((a,b) => a+b, 0) / 4;
+
+  let ending, endingClass, endingText;
+  if (avg >= 70 && trustAvg >= 60 && state.achievements.length >= 2) {
+    ending = 'good';
+    endingClass = 'ending-good';
+    endingText = '🎉 好结局：你成了AI产品总监！';
+  } else if (avg >= 50 && trustAvg >= 40) {
+    ending = 'normal';
+    endingClass = 'ending-normal';
+    endingText = '📈 普通结局：你在摸爬滚打中成长';
+  } else {
+    ending = 'bad';
+    endingClass = 'ending-bad';
+    endingText = '💥 坏结局：你被老板叫去喝茶了';
+  }
+
+  state.ending = { type: ending, text: endingText, class: endingClass };
+  state.endingType = ending;
+}
+
+// ===== 结果页 =====
+function showResult() {
+  document.getElementById('gameArea').classList.add('hidden');
+  document.getElementById('resultScreen').classList.remove('hidden');
+
+  // 结局
+  const endingEl = document.getElementById('resultEnding');
+  endingEl.textContent = state.ending.text;
+  endingEl.className = 'result-ending ' + state.ending.class;
+
+  // 雷达图
+  drawRadarChart();
+
+  // 分数详情
+  const labels = { insight: '需求洞察力', competition: '竞品分析力', doc: '文档撰写力', design: '原型设计力', collaboration: '跨部门协作', data: '数据思维' };
+  const colors = { insight: '#4F6EF7', competition: '#8B5CF6', doc: '#FF8C42', design: '#EC4899', collaboration: '#10B981', data: '#F59E0B' };
+  let scoreHtml = '';
+  Object.entries(state.scores).forEach(([k, v]) => {
+    const stars = '★'.repeat(Math.round(v/20)) + '☆'.repeat(5-Math.round(v/20));
+    scoreHtml += `<div class="score-row">
+      <div class="score-label">${labels[k]}</div>
+      <div class="score-bar-bg"><div class="score-bar-fill" style="width:${v}%;background:${colors[k]}"></div></div>
+      <div class="score-num" style="color:${colors[k]}">${v}</div>
+    </div>`;
+  });
+  document.getElementById('scoreDetails').innerHTML = scoreHtml;
+
+  // 触发动画
+  setTimeout(() => {
+    document.querySelectorAll('.score-bar-fill').forEach(bar => {
+      bar.style.width = bar.style.width;
+    });
+  }, 100);
+
+  // 知识卡片
+  let knowHtml = '';
+  state.knowledge.forEach(k => {
+    knowHtml += `<span class="knowledge-tag">${k.title}</span>`;
+  });
+  document.getElementById('knowledgeTags').innerHTML = knowHtml;
+
+  // 分享卡片
+  const routeText = state.sceneFlags.route === 'aggressive' ? '激进派' : state.sceneFlags.route === 'mvp' ? '数据驱动派' : '稳健派';
+  document.getElementById('shareCard').innerHTML = `
+    <div class="share-name">AI产品经理的一天 · 产品跟练</div>
+    <div class="share-title">我的能力画像</div>
+    <div class="share-stats">
+      <div><div class="share-stat-num" style="color:var(--primary)">${Math.round(Object.values(state.scores).reduce((a,b)=> a+b,0)/6)}</div><div class="share-stat-label">综合评分</div></div>
+      <div><div class="share-stat-num" style="color:var(--accent)">${state.knowledge.length}</div><div class="share-stat-label">知识点</div></div>
+      <div><div class="share-stat-num" style="color:var(--success)">${state.achievements.length}</div><div class="share-stat-label">成就</div></div>
+    </div>
+    <div class="share-ending-text" style="color:${state.ending.type==='good'?'var(--success)':state.ending.type==='normal'?'var(--warning)':'var(--danger)'}">${state.ending.text}</div>
+    <div class="share-tags">
+      <span class="knowledge-tag">${routeText}</span>
+      ${state.achievements.includes('mvp_thinker') ? '<span class="knowledge-tag">🧪数据思维</span>' : ''}
+      ${state.achievements.includes('prd_master') ? '<span class="knowledge-tag">📝PRD专家</span>' : ''}
+      ${state.achievements.includes('code_reviewer') ? '<span class="knowledge-tag">💻Code Review</span>' : ''}
+      ${state.achievements.includes('sort_master') ? '<span class="knowledge-tag">🏆排序大师</span>' : ''}
+    </div>
+  `;
+
+  saveCurrentRun();
+}
+
+// ===== 雷达图绘制 =====
+function drawRadarChart() {
+  const canvas = document.getElementById('radarCanvas');
+  if (!canvas || !canvas.getContext) return;
+  const ctx = canvas.getContext('2d');
+  if (!ctx) return;
+  const w = canvas.width, h = canvas.height;
+  const cx = w/2, cy = h/2, r = 130;
+  ctx.clearRect(0,0,w,h);
+
+  const labels = ['需求洞察', '竞品分析', '文档撰写', '原型设计', '跨部门协作', '数据思维'];
+  const keys = ['insight', 'competition', 'doc', 'design', 'collaboration', 'data'];
+  const values = keys.map(k => state.scores[k] / 100);
+  const angleStep = (Math.PI * 2) / 6;
+
+  // 网格
+  for (let level = 1; level <= 5; level++) {
+    ctx.beginPath();
+    for (let i = 0; i < 6; i++) {
+      const angle = i * angleStep - Math.PI / 2;
+      const x = cx + Math.cos(angle) * (r * level / 5);
+      const y = cy + Math.sin(angle) * (r * level / 5);
+      i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+    }
+    ctx.closePath();
+    ctx.strokeStyle = 'rgba(255,255,255,0.08)';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+  }
+
+  // 轴线
+  for (let i = 0; i < 6; i++) {
+    const angle = i * angleStep - Math.PI / 2;
+    ctx.beginPath();
+    ctx.moveTo(cx, cy);
+    ctx.lineTo(cx + Math.cos(angle) * r, cy + Math.sin(angle) * r);
+    ctx.strokeStyle = 'rgba(255,255,255,0.08)';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+
+    // 标签
+    ctx.fillStyle = '#8B95A8';
+    ctx.font = '12px Noto Sans SC';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    const lx = cx + Math.cos(angle) * (r + 24);
+    const ly = cy + Math.sin(angle) * (r + 24);
+    ctx.fillText(labels[i], lx, ly);
+  }
+
+  // 数据区域
+  ctx.beginPath();
+  values.forEach((v, i) => {
+    const angle = i * angleStep - Math.PI / 2;
+    const x = cx + Math.cos(angle) * r * v;
+    const y = cy + Math.sin(angle) * r * v;
+    i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+  });
+  ctx.closePath();
+  ctx.fillStyle = 'rgba(79,110,247,0.2)';
+  ctx.fill();
+  ctx.strokeStyle = '#4F6EF7';
+  ctx.lineWidth = 2;
+  ctx.stroke();
+
+  // 数据点
+  values.forEach((v, i) => {
+    const angle = i * angleStep - Math.PI / 2;
+    const x = cx + Math.cos(angle) * r * v;
+    const y = cy + Math.sin(angle) * r * v;
+    ctx.beginPath();
+    ctx.arc(x, y, 4, 0, Math.PI * 2);
+    ctx.fillStyle = '#FF8C42';
+    ctx.fill();
+  });
+}
+
+// ===== 重新开始 =====
+function restartGame() {
+  // 重新加载剧本
+  loadTodaysScript();
+  updateScriptIntro();
+
+  // 重置所有状态
+  state.selectedAttrs = [];
+  state.currentScene = 0;
+  state.scores = { insight: 50, competition: 50, doc: 50, design: 50, collaboration: 50, data: 50 };
+  state.trust = { boss: 70, dev: 70, design: 70, test: 70 };
+  state.knowledge = [];
+  state.choices = {};
+  state.achievements = [];
+  state.sceneFlags = {};
+
+  document.getElementById('resultScreen').classList.add('hidden');
+  document.getElementById('gameArea').classList.add('hidden');
+  document.getElementById('characterScreen').classList.remove('hidden');
+
+  // 重置属性选择
+  document.querySelectorAll('.attr-card').forEach(c => c.classList.remove('selected'));
+  document.getElementById('startBtn').disabled = true;
+
+  // 重置临时变量
+  findSelections = [];
+  bugSelections = [];
+  multiSelections = [];
+}
+
+// ============================================================
+// 我的学习记录 — localStorage 持久化
+// ============================================================
+const STORAGE_KEY = 'ai-pm-game-records';
+
+function loadRecords() {
+  try {
+    const data = localStorage.getItem(STORAGE_KEY);
+    return data ? JSON.parse(data) : { history: [], knowledge: {} };
+  } catch(e) {
+    return { history: [], knowledge: {} };
+  }
+}
+
+function saveRecords(records) {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(records));
+  } catch(e) {}
+}
+
+function saveCurrentRun() {
+  const records = loadRecords();
+  const scoreValues = Object.values(state.scores);
+  const totalScore = scoreValues.reduce((a,b) => a+b, 0);
+  const avgScore = Math.round(totalScore / scoreValues.length);
+
+  const run = {
+    date: new Date().toISOString(),
+    scriptDay: currentScript ? currentScript.day : null,
+    productName: currentScript ? currentScript.productName : '未知',
+    badge: currentScript ? currentScript.badge : '',
+    difficulty: currentScript ? currentScript.difficulty : '',
+    scores: { ...state.scores },
+    avgScore: avgScore,
+    ending: state.ending || '普通结局',
+    endingType: state.endingType || 'normal',
+    attrs: [...state.selectedAttrs],
+    knowledgeCount: state.knowledge.length,
+    trust: { ...state.trust },
+  };
+
+  records.history.unshift(run);
+
+  if (records.history.length > 100) {
+    records.history = records.history.slice(0, 100);
+  }
+
+  state.knowledge.forEach(k => {
+    const key = k.title;
+    if (!records.knowledge[key]) {
+      records.knowledge[key] = { content: k.content, count: 0 };
+    }
+    records.knowledge[key].count++;
+  });
+
+  saveRecords(records);
+}
+
+function showMyRecords() {
+  const wasInGame = !document.getElementById('gameArea').classList.contains('hidden');
+  const wasInResult = !document.getElementById('resultScreen').classList.contains('hidden');
+  document.getElementById('characterScreen').classList.add('hidden');
+  document.getElementById('gameArea').classList.add('hidden');
+  document.getElementById('resultScreen').classList.add('hidden');
+  document.getElementById('myRecordsScreen').classList.remove('hidden');
+
+  document.getElementById('myRecordsScreen').dataset.returnTo = wasInResult ? 'result' : (wasInGame ? 'game' : 'character');
+
+  renderMyRecords();
+}
+
+function closeMyRecords() {
+  const screen = document.getElementById('myRecordsScreen');
+  const returnTo = screen.dataset.returnTo || 'character';
+  screen.classList.add('hidden');
+
+  if (returnTo === 'result') {
+    document.getElementById('resultScreen').classList.remove('hidden');
+  } else if (returnTo === 'game') {
+    document.getElementById('gameArea').classList.remove('hidden');
+  } else {
+    document.getElementById('characterScreen').classList.remove('hidden');
+  }
+}
+
+function renderMyRecords() {
+  const records = loadRecords();
+  const history = records.history || [];
+  const knowledge = records.knowledge || {};
+
+  document.getElementById('statTotalRuns').textContent = history.length;
+
+  const allAvgScores = history.map(h => h.avgScore || 0);
+  const overallAvg = allAvgScores.length > 0
+    ? Math.round(allAvgScores.reduce((a,b) => a+b, 0) / allAvgScores.length)
+    : 0;
+  document.getElementById('statAvgScore').textContent = overallAvg;
+
+  const endingRank = { 'good': 3, 'normal': 2, 'bad': 1 };
+  let bestEnding = '—';
+  let bestRank = 0;
+  history.forEach(h => {
+    const rank = endingRank[h.endingType] || 0;
+    if (rank > bestRank) {
+      bestRank = rank;
+      bestEnding = h.ending || '—';
+    }
+  });
+  document.getElementById('statBestEnding').textContent = bestEnding;
+
+  const knowledgeCount = Object.keys(knowledge).length;
+  document.getElementById('statKnowledgeCount').textContent = knowledgeCount;
+
+  const historyList = document.getElementById('historyList');
+  if (history.length === 0) {
+    historyList.innerHTML = '<p style="color:var(--text-muted);font-size:14px;text-align:center;padding:40px 0;">还没有练习记录，完成一次跟练后这里会自动保存。</p>';
+  } else {
+    historyList.innerHTML = history.map((h, i) => {
+      const date = new Date(h.date);
+      const dateStr = `${date.getMonth()+1}/${date.getDate()} ${String(date.getHours()).padStart(2,'0')}:${String(date.getMinutes()).padStart(2,'0')}`;
+      const scoreColor = h.avgScore >= 75 ? 'var(--success)' : (h.avgScore >= 50 ? 'var(--warning)' : 'var(--danger)');
+      const endingColor = h.endingType === 'good' ? 'var(--success)' : (h.endingType === 'bad' ? 'var(--danger)' : 'var(--warning)');
+
+      const scoreBar = Object.entries(h.scores).map(([k,v]) => {
+        const labels = {insight:'洞察',competition:'竞品',doc:'文档',design:'设计',collaboration:'协作',data:'数据'};
+        return `<span style="display:inline-block;margin-right:8px;font-size:11px;color:var(--text-dim);">${labels[k]||k} <strong style="color:${v>=70?'var(--success)':v>=40?'var(--warning)':'var(--danger)'}">${v}</strong></span>`;
+      }).join('');
+
+      return `
+        <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-sm);padding:16px 20px;">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px;">
+            <div>
+              <span style="font-size:20px;">${h.badge||'📋'}</span>
+              <span style="font-size:15px;font-weight:700;margin-left:8px;">${h.productName}</span>
+              <span style="font-size:11px;color:var(--text-muted);margin-left:8px;">${h.difficulty||''}</span>
+            </div>
+            <div style="text-align:right;">
+              <div style="font-size:12px;color:var(--text-muted);">${dateStr}</div>
+              <div style="font-size:11px;color:var(--text-muted);">第${h.scriptDay||'?'}天</div>
+            </div>
+          </div>
+          <div style="display:flex;align-items:center;gap:12px;margin-bottom:8px;">
+            <div style="font-size:24px;font-weight:900;color:${scoreColor};">${h.avgScore}</div>
+            <div style="font-size:12px;color:var(--text-muted);">平均分</div>
+            <div style="flex:1;"></div>
+            <div style="padding:4px 12px;border-radius:12px;font-size:12px;font-weight:600;background:rgba(${h.endingType==='good'?'74,222,128':h.endingType==='bad'?'248,113,113':'251,191,36'},0.15);color:${endingColor};">${h.ending||'普通结局'}</div>
+          </div>
+          <div style="font-size:12px;line-height:1.8;">${scoreBar}</div>
+          <div style="font-size:11px;color:var(--text-muted);margin-top:6px;">📚 学到 ${h.knowledgeCount||0} 个知识点 · 属性：${(h.attrs||[]).map(a=>({analysis:'分析力',communication:'沟通力',tech:'技术力',creativity:'创造力'}[a]||a)).join('、')||'无'}</div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  const knowledgeEl = document.getElementById('allKnowledgeTags');
+  const knowledgeEntries = Object.entries(knowledge).sort((a,b) => b[1].count - a[1].count);
+  if (knowledgeEntries.length === 0) {
+    knowledgeEl.innerHTML = '<p style="color:var(--text-muted);font-size:14px;text-align:center;padding:16px 0;">完成练习后，学到的知识点会自动保存在这里。</p>';
+  } else {
+    knowledgeEl.innerHTML = knowledgeEntries.map(([title, info]) => {
+      return `<div style="margin-bottom:16px;padding-bottom:16px;border-bottom:1px solid var(--border);">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+          <span style="background:rgba(79,110,247,0.1);border:1px solid rgba(79,110,247,0.2);color:var(--text-dim);font-size:12px;padding:4px 12px;border-radius:12px;">${title}</span>
+          <span style="font-size:11px;color:var(--text-muted);">×${info.count}次</span>
+        </div>
+        <p style="font-size:13px;color:var(--text-dim);line-height:1.8;margin:0;">${info.content}</p>
+      </div>`;
+    }).join('');
+  }
+}
+
+function clearMyRecords() {
+  if (confirm('确定要清除所有学习记录吗？此操作不可撤销。')) {
+    localStorage.removeItem(STORAGE_KEY);
+    renderMyRecords();
+  }
+}
+
+// 在角色选择页也添加入口
+function checkExistingRecords() {
+  const records = loadRecords();
+  if (records.history && records.history.length > 0) {
+    const existing = document.getElementById('recordsEntryBtn');
+    if (!existing) {
+      const btn = document.createElement('button');
+      btn.id = 'recordsEntryBtn';
+      btn.className = 'btn-secondary';
+      btn.style.cssText = 'margin-top:16px;padding:10px 28px;font-size:14px;';
+      btn.innerHTML = `📖 我的学习记录 (${records.history.length})`;
+      btn.onclick = showMyRecords;
+      document.getElementById('startBtn').parentElement.appendChild(btn);
+    } else {
+      existing.innerHTML = `📖 我的学习记录 (${records.history.length})`;
+    }
+  }
+}
+</script>
+</body>
+</html>

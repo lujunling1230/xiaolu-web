@@ -1,0 +1,30 @@
+.to-top {
+  position: fixed;
+  right: 22px;
+  bottom: 22px;
+  z-index: 90;
+  display: grid;
+  width: 46px;
+  height: 46px;
+  place-items: center;
+  border: 1px solid var(--line);
+  border-radius: 50%;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-mono);
+  cursor: pointer;
+  opacity: 0;
+  transform: translateY(12px);
+  transition: opacity 0.3s var(--ease), transform 0.3s var(--ease),
+    background 0.3s var(--ease), color 0.3s var(--ease);
+}
+
+.to-top.is-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.to-top:hover {
+  background: var(--ink);
+  color: var(--paper);
+}

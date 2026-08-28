@@ -107,7 +107,7 @@ const ContactPage: React.FC = () => {
               <circle cx="14" cy="11" r="1" fill="#558B2F" />
               <circle cx="12" cy="15" r="1.2" fill="#558B2F" opacity="0.6" />
             </svg>
-            <span style={{ fontFamily: '"Noto Sans SC", sans-serif', fontSize: "1.2rem", fontWeight: 600, color: "#558B2F", letterSpacing: "0.06em" }}>luro</span>
+            <span style={{ fontFamily: '"Noto Sans SC", sans-serif', fontSize: "1.2rem", fontWeight: 600, color: "#558B2F", letterSpacing: "0.06em" }}>Rosy</span>
           </Link>
           <Link to="/" className="cp-nav-back">← 返回首页</Link>
         </div>

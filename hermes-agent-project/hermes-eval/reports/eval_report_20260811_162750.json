@@ -1,0 +1,95 @@
+{
+  "summary": {
+    "total_evaluated": 3,
+    "average_score": 0.98,
+    "max_score": 1.0,
+    "min_score": 0.94,
+    "grade_distribution": {
+      "S": 3,
+      "A": 0,
+      "B": 0,
+      "C": 0,
+      "D": 0
+    },
+    "avg_response_time": 17.85
+  },
+  "category_breakdown": {
+    "research": {
+      "count": 3,
+      "average": 0.98,
+      "max": 1.0,
+      "min": 0.94
+    }
+  },
+  "difficulty_breakdown": {
+    "easy": {
+      "count": 1,
+      "average": 1.0,
+      "max": 1.0,
+      "min": 1.0
+    },
+    "medium": {
+      "count": 2,
+      "average": 0.97,
+      "max": 1.0,
+      "min": 0.94
+    }
+  },
+  "detailed_results": [
+    {
+      "id": "eval-001",
+      "category": "research",
+      "difficulty": "easy",
+      "task": "简要说明 React Hooks 的核心优势，列举 3 个常用 Hook。",
+      "response": "React Hooks 的核心优势在于：**让函数组件具备状态管理和副作用处理能力，从而摆脱类组件的复杂性，提升代码的可读性、可复用性和可测试性**。它遵循“关注点分离”原则，将逻辑（如数据获取、订阅、定时器等）按功能组织，而非强制按生命周期拆分，使逻辑更内聚、更易抽取和共享。\n\n三个常用 Hook：\n\n1. **`useState`**：用于在函数组件中声明和管理局部状态（替代类组件中的 `this.state` 和 `setState`）。  \n   ```jsx\n   const [count, setCount] = useState(0);\n   ```\n\n2. **`useEffect`**：用于处理副作用（如数据获取、订阅、DOM 操作、清理等），统一替代 `componentDidMount`、`componentDidUpdate` 和 `componentWillUnmount`。  \n   ```jsx\n   useEffect(() => { /* 副作用逻辑 */ return () => { /* 清理逻辑 */ }; }, [deps]);\n   ```\n\n3. **`useContext`**：用于访问 React 上下文（Context），避免层层手动传递 props（即“props drilling”），实现跨层级状态共享。  \n   ```jsx\n   const value = useContext(MyContext);\n   ```\n\n✅ 补充说明：所有 Hook 遵循**规则约束**（如只能在顶层调用、仅在 React 函数组件或自定义 Hook 中使用），确保其行为可预测、可调试。",
+      "response_preview": "React Hooks 的核心优势在于：**让函数组件具备状态管理和副作用处理能力，从而摆脱类组件的复杂性，提升代码的可读性、可复用性和可测试性**。它遵循“关注点分离”原则，将逻辑（如数据获取、订阅、定时器等）按功能组织，而非强制按生命周期拆分，使逻辑更内聚、更易抽取和共享。\n\n三个常用 Hook：\n\n1. **`useState`**：用于在函数组件中声明和管理局部状态（替代类组件中的 `th...",
+      "response_length": 726,
+      "response_time_s": 10.84,
+      "metrics": {
+        "keyword_coverage": 1.0,
+        "response_relevance": 1.0,
+        "response_length": 1.0
+      },
+      "total_score": 1.0,
+      "grade": "S",
+      "model": "qwen-plus"
+    },
+    {
+      "id": "eval-002",
+      "category": "research",
+      "difficulty": "medium",
+      "task": "对比 REST API 和 GraphQL 的优缺点，各列出 3 个。",
+      "response": "以下是 **REST API** 和 **GraphQL** 的核心优缺点对比，各列出 3 个关键点（兼顾实用性、开发体验与系统架构视角）：\n\n---\n\n### ✅ REST API 的优点  \n1. **成熟稳定，生态完善**  \n   - 协议标准（HTTP 方法 + 状态码 + URI 设计）被广泛支持，工具链（如 Postman、Swagger、各类 SDK）、网关、缓存（CDN/浏览器/代理）、监控和安全方案（OAuth2、JWT 集成）极其成熟。\n\n2. **天然支持 HTTP 缓存与分层优化**  \n   - 可通过 `Cache-Control`、ETag、304 响应等机制实现细粒度缓存；CDN 可直接缓存 GET 请求，显著降低后端负载。\n\n3. **简单直观，学习成本低、易于调试**  \n   - 资源导向设计（如 `/users`, `/users/123/posts`）语义清晰；单个端点返回固定结构，便于前端理解与测试，适合中小型项目或团队协作初期。\n\n---\n\n### ❌ REST API 的缺点  \n1. **过度获取（Over-fetching）或获取不足（Under-fetching）**  \n   - 客户端无法精准声明所需字段（如仅需用户头像和昵称，却返回整个 `User` 对象）；复杂场景需多次请求（如获取文章+作者+评论+点赞数），导致 N+1 查询问题。\n\n2. **版本管理繁琐**  \n   - 接口演进常需维护多版本（如 `/api/v1/users`, `/api/v2/users`），增加后端维护负担与客户端兼容性成本。\n\n3. **端点膨胀与耦合性强**  \n   - 为满足不同前端需求，易衍生大量定制化端点（如 `/users/recent`, `/users/with-posts`），违背 REST 统一接口原则，导致服务边界模糊、复用性下降。\n\n---\n\n### ✅ GraphQL 的优点  \n1. **精准数据获取，避免冗余传输**  \n   - 客户端在查询中明确声明所需字段与嵌套关系（如 `{ user(id: \"1\") { name, avatar, posts { title, likes } } }`），服务端按需组装响应，提升网络效率与移动端体验。\n\n2. **单一入口 + 强类型 Schema**  \n   - 所有请求走同一端点（如 `/graphql`），配合 SDL（Schema Definition Language）自动生成文档、类型校验、IDE 自动补全、Mock 数据与前端类型推导（如 TypeScript），大幅提升开发效率与前后端契约可靠性。\n\n3. **高效聚合多源数据**  \n   - Resolver 机制允许在服务层灵活编排来自数据库、微服务、第三方 API 的数据，前端无需关心数据来源，简化复杂页面的数据获取逻辑（如“个人主页”整合用户、动态、关注、通知等异构数据）。\n\n---\n\n### ❌ GraphQL 的缺点  \n1. **缓存复杂，难以利用 HTTP 缓存机制**  \n   - 查询由动态 JSON 请求体决定，URL 不唯一，传统 CDN/浏览器缓存失效；需依赖 Apollo Client 等客户端缓存或定制服务端缓存策略（如持久化查询 + 摘要缓存），运维成本上升。\n\n2. **服务端性能风险与安全挑战**  \n   - 深度嵌套查询（如 `{ a { b { c { d { e } } } } }`）可能触发循环/爆炸式数据加载（N+1 问题更隐蔽）；缺乏内置限流/配额机制，易受恶意查询攻击（需引入深度限制、复杂度分析、查询白名单等防护）。\n\n3. **学习曲线陡峭 & 工程复杂度高**  \n   - 需理解 Schema 设计、Resolver 编写、数据加载器（DataLoader）、错误处理规范（GraphQL 错误不映射 HTTP 状态码）；调试难度高于 REST（如错误定位、日志追踪、性能分析需专用工具如 Apollo Studio）。\n\n---\n\n📌 **选型建议简记**：  \n- 选 **REST**：团队规模小、业务稳定、对缓存/SEO/CDN 依赖强、已有成熟 HTTP 架构。  \n- 选 **GraphQL**：多端（Web/iOS/Android）需求差异大、数据关系复杂、追求极致 API 效率与前端自主权、具备配套工程能力（类型安全、监控、安全防护）。\n\n需要我帮你结合具体场景（如电商后台、IoT 设备管理、内容聚合 App）做技术选型分析，欢迎随时提出！ 🚀",
+      "response_preview": "以下是 **REST API** 和 **GraphQL** 的核心优缺点对比，各列出 3 个关键点（兼顾实用性、开发体验与系统架构视角）：\n\n---\n\n### ✅ REST API 的优点  \n1. **成熟稳定，生态完善**  \n   - 协议标准（HTTP 方法 + 状态码 + URI 设计）被广泛支持，工具链（如 Postman、Swagger、各类 SDK）、网关、缓存（CDN/浏览器/...",
+      "response_length": 1935,
+      "response_time_s": 22.35,
+      "metrics": {
+        "keyword_coverage": 0.8,
+        "response_relevance": 1.0,
+        "response_length": 1.0
+      },
+      "total_score": 0.94,
+      "grade": "S",
+      "model": "qwen-plus"
+    },
+    {
+      "id": "eval-003",
+      "category": "research",
+      "difficulty": "medium",
+      "task": "解释什么是 RAG（检索增强生成），并说明它解决了 LLM 的什么问题。",
+      "response": "RAG（Retrieval-Augmented Generation，检索增强生成）是一种将**信息检索（Retrieval）**与**语言模型生成（Generation）**相结合的混合式人工智能架构。其核心思想是：在大语言模型（LLM）生成答案之前，先从外部知识源（如文档库、数据库、知识图谱或互联网快照）中**动态检索与当前问题最相关的上下文片段**，再将这些检索到的事实性信息作为额外输入（prompt 中的 context），引导 LLM 生成更准确、可信、可溯源的回答。\n\n---\n\n### 🔍 RAG 的典型工作流程：\n1. **用户提问**（Query）  \n2. **检索阶段**：  \n   - 将问题向量化（如用稠密检索器 *Dense Retriever* 或结合关键词/稀疏检索）；  \n   - 在向量数据库或文档索引中检索 Top-K 个最相关文本片段（chunks/documents）；  \n3. **增强阶段**：  \n   - 将检索结果（含原文片段、来源元数据等）拼接到提示词（prompt）中，例如：  \n     ```\n     根据以下信息回答问题：\n     [检索到的文档1]：……  \n     [检索到的文档2]：……  \n     问题：XXX？  \n     答案：\n     ```  \n4. **生成阶段**：  \n   - LLM 基于增强后的 prompt 进行条件生成，输出答案。\n\n> ✅ 关键特点：**无需微调模型参数**，即可让通用 LLM 具备特定领域知识和实时信息能力。\n\n---\n\n### ❓RAG 解决了 LLM 的哪些关键问题？\n\n| LLM 固有局限 | RAG 如何解决 |\n|--------------|----------------|\n| **知识静态性（Knowledge Cutoff）**<br>训练数据截止后发生的事件、新术语、政策更新等无法知晓。 | ✅ 检索外部实时/定制化知识库（如企业文档、最新财报、内部Wiki），突破训练数据时间边界。 |\n| **幻觉（Hallucination）**<br>LLM 可能编造看似合理但错误或无依据的事实。 | ✅ 提供真实、可验证的上下文依据，显著降低虚构风险；答案“有据可查”，支持溯源（如标注引用段落）。 |\n| **领域适应成本高**<br>为垂直领域（医疗、法律、金融）微调 LLM 需大量标注数据与算力。 | ✅ 仅需构建领域知识库 + 调整检索器，即可快速适配新领域，零样本/少样本即可生效。 |\n| **隐私与可控性差**<br>直接使用公有云 LLM 处理敏感数据存在泄露风险；且无法控制知识来源。 | ✅ 知识库可部署在私有环境（如本地向量库），检索与生成全程可控；敏感信息不进入模型训练流程。 |\n| **长尾问题覆盖不足**<br>训练数据中罕见实体、小众术语或复杂专业问题缺乏足够支撑。 | ✅ 检索可精准召回长尾知识片段，弥补统计规律的不足，提升冷启动与边缘场景表现。 |\n\n---\n\n### 🌟 补充说明：\n- RAG ≠ 简单的“搜索引擎+ChatGPT”：高质量 RAG 需要精细设计——包括分块策略（chunking）、嵌入模型选择、重排序（re-ranking）、查询改写（query expansion）、去噪与摘要等优化环节。\n- 它与**微调（Fine-tuning）**形成互补：微调提升模型“内化能力”，RAG 强化“外挂知识+可解释性”。实践中常组合使用（如 RAG + LoRA 微调）。\n- 当前挑战包括：检索噪声、上下文长度限制、多跳推理困难、检索-生成耦合偏差等，也是研究热点（如 HyDE、FLARE、RAG-Fusion 等进阶方法）。\n\n---\n\n✅ 总结一句话：  \n**RAG 是让大语言模型“边查资料边答题”的智能范式，它把 LLM 从一个“靠记忆答题的学生”，升级为一个“会查阅权威资料并严谨作答的研究者”。**\n\n如需，我可进一步提供 RAG 架构图、代码示例（如用 LangChain + FAISS 实现简易 RAG）或对比 RAG vs 微调 vs 提示工程的适用场景。",
+      "response_preview": "RAG（Retrieval-Augmented Generation，检索增强生成）是一种将**信息检索（Retrieval）**与**语言模型生成（Generation）**相结合的混合式人工智能架构。其核心思想是：在大语言模型（LLM）生成答案之前，先从外部知识源（如文档库、数据库、知识图谱或互联网快照）中**动态检索与当前问题最相关的上下文片段**，再将这些检索到的事实性信息作为额外输入（p...",
+      "response_length": 1751,
+      "response_time_s": 20.36,
+      "metrics": {
+        "keyword_coverage": 1.0,
+        "response_relevance": 1.0,
+        "response_length": 1.0
+      },
+      "total_score": 1.0,
+      "grade": "S",
+      "model": "qwen-plus"
+    }
+  ],
+  "eval_timestamp": "2026-08-11 16:27:50"
+}

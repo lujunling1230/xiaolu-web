@@ -2,6 +2,7 @@ import { useState, useCallback } from "react";
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
 import { track } from "../utils/track";
+import DeerLogo from "../components/DeerLogo";
 
 /* ============================================================
  * ContactPage 联系方式独立页面
@@ -97,16 +98,7 @@ const ContactPage: React.FC = () => {
       <nav className="cp-nav">
         <div className="cp-nav-inner">
           <Link to="/" className="cp-nav-logo">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M8 6C6 4 4 4 3 5C2 6 3 8 5 9" stroke="#558B2F" strokeWidth="1.4" fill="none" strokeLinecap="round" strokeLinejoin="round" />
-              <path d="M16 6C18 4 20 4 21 5C22 6 21 8 19 9" stroke="#558B2F" strokeWidth="1.4" fill="none" strokeLinecap="round" strokeLinejoin="round" />
-              <ellipse cx="12" cy="12" rx="5" ry="6" fill="rgba(85,139,47,0.08)" stroke="#558B2F" strokeWidth="1.2" />
-              <ellipse cx="8" cy="9" rx="2" ry="3" fill="none" stroke="#558B2F" strokeWidth="1" transform="rotate(-20 8 9)" />
-              <ellipse cx="16" cy="9" rx="2" ry="3" fill="none" stroke="#558B2F" strokeWidth="1" transform="rotate(20 16 9)" />
-              <circle cx="10" cy="11" r="1" fill="#558B2F" />
-              <circle cx="14" cy="11" r="1" fill="#558B2F" />
-              <circle cx="12" cy="15" r="1.2" fill="#558B2F" opacity="0.6" />
-            </svg>
+            <DeerLogo size={28} />
             <span style={{ fontFamily: '"Noto Sans SC", sans-serif', fontSize: "1.2rem", fontWeight: 600, color: "#558B2F", letterSpacing: "0.06em" }}>Rosy</span>
           </Link>
           <Link to="/" className="cp-nav-back">← 返回首页</Link>

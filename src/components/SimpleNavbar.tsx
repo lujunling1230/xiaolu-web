@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 import { track } from "../utils/track";
+import DeerLogo from "./DeerLogo";
 
 /* ============================================================
  * SimpleNavbar 横向导航栏（全宽版）
@@ -34,16 +35,7 @@ const BrandLogo: React.FC<{ onClick: () => void }> = ({ onClick }) => (
     className="sn-logo"
     aria-label="返回首页"
   >
-    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-      <path d="M8 6C6 4 4 4 3 5C2 6 3 8 5 9" stroke="#5d8a6a" strokeWidth="1.4" fill="none" strokeLinecap="round" strokeLinejoin="round" />
-      <path d="M16 6C18 4 20 4 21 5C22 6 21 8 19 9" stroke="#5d8a6a" strokeWidth="1.4" fill="none" strokeLinecap="round" strokeLinejoin="round" />
-      <ellipse cx="12" cy="12" rx="5" ry="6" fill="rgba(93,138,106,0.1)" stroke="#5d8a6a" strokeWidth="1.2" />
-      <ellipse cx="8" cy="9" rx="2" ry="3" fill="rgba(93,138,106,0.08)" stroke="#5d8a6a" strokeWidth="1" transform="rotate(-20 8 9)" />
-      <ellipse cx="16" cy="9" rx="2" ry="3" fill="rgba(93,138,106,0.08)" stroke="#5d8a6a" strokeWidth="1" transform="rotate(20 16 9)" />
-      <circle cx="10" cy="11" r="1" fill="#5d8a6a" />
-      <circle cx="14" cy="11" r="1" fill="#5d8a6a" />
-      <circle cx="12" cy="15" r="1.2" fill="#5d8a6a" opacity="0.6" />
-    </svg>
+    <DeerLogo size={32} />
     <span className="sn-brand">Rosy</span>
   </a>
 );

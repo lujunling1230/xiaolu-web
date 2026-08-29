@@ -7,6 +7,7 @@ import {
   AIReverseRecommendResponse,
   AIForwardGenerateResponse,
 } from "../types";
+import ChatPanel from "./ChatPanel";
 
 /* ============================================================
    类型定义
@@ -92,7 +93,7 @@ const CROWD_TAGS = ["带老人", "带小孩", "无特殊需求"] as const;
 
 const COMPACTNESS_LABELS = ["轻松", "适中", "紧凑"] as const;
 
-type TabType = "reverse" | "forward";
+type TabType = "reverse" | "forward" | "chat";
 
 /* ============================================================
    组件
@@ -295,6 +296,12 @@ export default function AIAssistantPanel({
     }
   };
 
+  /* ChatPanel 保存攻略（接受参数版） */
+  const handleChatSavePlan = (city: City, plan: AIForwardGenerateResponse) => {
+    onSavePlan(city, plan);
+    showToast("攻略已保存到城市记忆");
+  };
+
   /* ---- 构建摘要文案 ---- */
   const buildSummary = () => {
     const seasonText =
@@ -396,6 +403,12 @@ export default function AIAssistantPanel({
           >
             替我规划
           </button>
+          <button
+            className={`rg-ai-tabs__btn${activeTab === "chat" ? " rg-ai-tabs__btn--active" : ""}`}
+            onClick={() => setActiveTab("chat")}
+          >
+            对话规划
+          </button>
         </div>
 
         {/* 内容区 */}
@@ -422,7 +435,7 @@ export default function AIAssistantPanel({
               onSubmit={handleReverseRecommend}
               onAdopt={handleAdopt}
             />
-          ) : (
+          ) : activeTab === "forward" ? (
             <ForwardTab
               cities={cities}
               selectedCity={selectedCity}
@@ -436,6 +449,12 @@ export default function AIAssistantPanel({
               onCompactnessChange={setCompactness}
               onSubmit={handleForwardGenerate}
               onSave={handleSavePlan}
+            />
+          ) : (
+            <ChatPanel
+              cities={cities}
+              onAdoptCity={handleAdopt}
+              onSavePlan={handleChatSavePlan}
             />
           )}
         </div>
